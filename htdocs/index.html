@@ -441,16 +441,13 @@
                         <h2 class="text-lg font-bold truncate" x-text="currentPost.title"></h2>
                         <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap">
                             <a
-                                :href="getFeedSiteUrl(currentPost.feed_id)"
+                                :href="getFeedSiteUrl(currentPost.feed_id) || '#'"
                                 x-text="getFeedTitle(currentPost.feed_id)"
-                                x-show="getFeedSiteUrl(currentPost.feed_id)"
                                 target="_blank"
-                                class="hover:text-blue-500 hover:underline"
+                                rel="noopener"
+                                :class="getFeedSiteUrl(currentPost.feed_id) ? 'hover:text-blue-500 hover:underline cursor-pointer' : 'cursor-default'"
+                                @click="!getFeedSiteUrl(currentPost.feed_id) && $event.preventDefault()"
                             ></a>
-                            <span
-                                x-text="getFeedTitle(currentPost.feed_id)"
-                                x-show="!getFeedSiteUrl(currentPost.feed_id)"
-                            ></span>
                             <span>|</span>
                             <span x-text="formatDate(currentPost.published_at || currentPost.fetched_at)"></span>
                             <template x-if="currentPost.author">
