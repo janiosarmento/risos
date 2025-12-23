@@ -31,3 +31,4 @@ slowapi>=0.1.9
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pyyaml
+psutil>=5.9.0
