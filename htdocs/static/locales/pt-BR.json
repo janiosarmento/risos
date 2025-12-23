@@ -84,7 +84,9 @@
     "save": "Salvar",
     "cancel": "Cancelar",
     "noFeeds": "Nenhum feed adicionado",
-    "unreadCount": "não lidos"
+    "unreadCount": "não lidos",
+    "refresh": "Atualizar feed agora",
+    "refreshResult": "{new} posts novos, {skipped} ignorados"
   },
   "opml": {
     "importTitle": "Importar OPML",
@@ -107,6 +109,7 @@
     "createFeed": "Erro ao criar feed",
     "saveFeed": "Erro ao salvar feed",
     "deleteFeed": "Erro ao excluir feed",
+    "refreshFeed": "Erro ao atualizar feed",
     "importOpml": "Erro ao importar OPML",
     "generic": "Erro ao importar"
   },

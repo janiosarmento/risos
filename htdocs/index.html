@@ -285,20 +285,34 @@
                     <!-- Post List Header -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div class="flex items-center justify-between">
-                            <h2 class="font-medium">
-                                <a
-                                    x-show="filter === 'feed' && getFeedSiteUrl(filterId)"
-                                    :href="getFeedSiteUrl(filterId)"
-                                    x-text="getFilterTitle()"
-                                    target="_blank"
-                                    rel="noopener"
-                                    class="hover:text-blue-500 hover:underline"
-                                ></a>
-                                <span
-                                    x-show="filter !== 'feed' || !getFeedSiteUrl(filterId)"
-                                    x-text="getFilterTitle()"
-                                ></span>
-                            </h2>
+                            <div class="flex items-center gap-2">
+                                <h2 class="font-medium">
+                                    <a
+                                        x-show="filter === 'feed' && getFeedSiteUrl(filterId)"
+                                        :href="getFeedSiteUrl(filterId)"
+                                        x-text="getFilterTitle()"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="hover:text-blue-500 hover:underline"
+                                    ></a>
+                                    <span
+                                        x-show="filter !== 'feed' || !getFeedSiteUrl(filterId)"
+                                        x-text="getFilterTitle()"
+                                    ></span>
+                                </h2>
+                                <!-- Refresh feed button -->
+                                <button
+                                    x-show="filter === 'feed'"
+                                    @click="refreshFeed(filterId)"
+                                    :disabled="refreshingFeed"
+                                    class="p-1 text-gray-400 hover:text-blue-500 disabled:opacity-50"
+                                    :title="t('feeds.refresh')"
+                                >
+                                    <svg class="w-4 h-4" :class="refreshingFeed && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                            </div>
                             <div class="flex items-center gap-2 text-sm">
                                 <button
                                     @click="toggleSelectMode()"

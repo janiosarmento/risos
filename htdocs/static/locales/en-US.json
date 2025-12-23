@@ -84,7 +84,9 @@
     "save": "Save",
     "cancel": "Cancel",
     "noFeeds": "No feeds added",
-    "unreadCount": "unread"
+    "unreadCount": "unread",
+    "refresh": "Refresh feed now",
+    "refreshResult": "{new} new posts, {skipped} skipped"
   },
   "opml": {
     "importTitle": "Import OPML",
@@ -107,6 +109,7 @@
     "createFeed": "Error creating feed",
     "saveFeed": "Error saving feed",
     "deleteFeed": "Error deleting feed",
+    "refreshFeed": "Error refreshing feed",
     "importOpml": "Error importing OPML",
     "generic": "Error importing"
   },

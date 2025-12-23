@@ -24,6 +24,7 @@ function app() {
         loading: false,
         loadingContent: false,
         refreshing: false,
+        refreshingFeed: false,
         regeneratingSummary: false,
         selectedIndex: -1,
         hasMore: true,
@@ -895,6 +896,25 @@ function app() {
                 alert(this.t('errors.saveFeed') + ': ' + error.message);
             } finally {
                 this.savingFeed = false;
+            }
+        },
+
+        async refreshFeed(feedId) {
+            if (this.refreshingFeed) return;
+            this.refreshingFeed = true;
+            try {
+                const result = await this.fetchApi(`/feeds/${feedId}/refresh`, { method: 'POST' });
+                await this.loadFeeds();
+                await this.loadPosts(true);
+                const msg = this.t('feeds.refreshResult')
+                    .replace('{new}', result.new_posts)
+                    .replace('{skipped}', result.skipped_duplicates);
+                alert(msg);
+            } catch (error) {
+                console.error('Failed to refresh feed:', error);
+                alert(this.t('errors.refreshFeed') + ': ' + error.message);
+            } finally {
+                this.refreshingFeed = false;
             }
         },
 
