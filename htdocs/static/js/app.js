@@ -883,6 +883,7 @@ function app() {
                 await this.fetchApi(`/feeds/${this.editingFeed.id}`, {
                     method: 'PUT',
                     body: JSON.stringify({
+                        url: this.editingFeed.url,
                         title: this.editingFeed.title,
                         category_id: this.editingFeed.category_id || null,
                     }),
