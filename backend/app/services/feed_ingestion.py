@@ -46,7 +46,7 @@ def _check_duplicate_by_guid(
     Returns:
         Tuple de (é_duplicado, houve_colisão)
     """
-    if not guid or feed.guid_unreliable:
+    if not guid:
         return False, False
 
     existing = db.query(Post).filter(
@@ -56,6 +56,11 @@ def _check_duplicate_by_guid(
 
     if not existing:
         return False, False
+
+    # Se guid_unreliable, ainda precisamos detectar duplicata para evitar
+    # violação de constraint, mas não fazemos detecção de colisão
+    if feed.guid_unreliable:
+        return True, False
 
     # Verificar colisão (mesmo GUID, URL diferente)
     collision = (
