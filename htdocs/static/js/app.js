@@ -430,6 +430,11 @@ function app() {
             return feed ? feed.title : this.t('time.unknown');
         },
 
+        getFeedSiteUrl(feedId) {
+            const feed = this.feeds.find(f => f.id === feedId);
+            return feed ? feed.site_url : null;
+        },
+
         // Post operations
         async openPost(post) {
             // Clear previous content to avoid showing stale data
