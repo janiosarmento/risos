@@ -285,7 +285,20 @@
                     <!-- Post List Header -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div class="flex items-center justify-between">
-                            <h2 class="font-medium" x-text="getFilterTitle()"></h2>
+                            <h2 class="font-medium">
+                                <a
+                                    x-show="filter === 'feed' && getFeedSiteUrl(filterId)"
+                                    :href="getFeedSiteUrl(filterId)"
+                                    x-text="getFilterTitle()"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="hover:text-blue-500 hover:underline"
+                                ></a>
+                                <span
+                                    x-show="filter !== 'feed' || !getFeedSiteUrl(filterId)"
+                                    x-text="getFilterTitle()"
+                                ></span>
+                            </h2>
                             <div class="flex items-center gap-2 text-sm">
                                 <button
                                     @click="toggleSelectMode()"
