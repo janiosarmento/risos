@@ -1,5 +1,5 @@
 /**
- * RSS Reader - Alpine.js Application
+ * Risos - Alpine.js Application
  */
 
 const API_BASE = '/api';
