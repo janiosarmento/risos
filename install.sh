@@ -76,21 +76,61 @@ echo_info "Setting up Python virtual environment..."
 
 cd "$BACKEND_DIR"
 
+# Check Python3 is available
+if ! command -v python3 &> /dev/null; then
+    echo_error "python3 not found. Please install Python 3.8+ first."
+    exit 1
+fi
+
+PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+echo_info "Found Python $PYTHON_VERSION"
+
 # Create venv if it doesn't exist
 if [ ! -d "venv" ]; then
-    python3 -m venv venv
+    echo_info "Creating virtual environment..."
+    if ! python3 -m venv venv; then
+        echo_error "Failed to create virtual environment"
+        echo_error "Try: apt install python3-venv"
+        exit 1
+    fi
     echo_info "Virtual environment created"
 else
     echo_info "Virtual environment already exists"
 fi
 
+# Verify venv was created properly
+if [ ! -f "venv/bin/activate" ]; then
+    echo_error "Virtual environment is broken (no activate script)"
+    echo_error "Try: rm -rf venv && re-run this script"
+    exit 1
+fi
+
 # Activate and install dependencies
+echo_info "Installing Python dependencies..."
 source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+
+if ! pip install --upgrade pip 2>&1 | tee /tmp/pip_upgrade.log; then
+    echo_error "Failed to upgrade pip. Check /tmp/pip_upgrade.log"
+    deactivate
+    exit 1
+fi
+
+if ! pip install -r requirements.txt 2>&1 | tee /tmp/pip_install.log; then
+    echo_error "Failed to install dependencies. Check /tmp/pip_install.log"
+    deactivate
+    exit 1
+fi
+
 deactivate
 
-echo_info "Dependencies installed"
+# Verify gunicorn was installed
+if [ ! -f "venv/bin/gunicorn" ]; then
+    echo_error "gunicorn not found after installation!"
+    echo_error "Check /tmp/pip_install.log for errors"
+    exit 1
+fi
+
+echo_info "Dependencies installed successfully"
 
 # =============================================================================
 # Configuration Files
