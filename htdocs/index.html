@@ -28,78 +28,7 @@
         }
     </script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        [x-cloak] { display: none !important; }
-        .prose img { max-width: 100%; height: auto; }
-        .prose a { color: #3b82f6; text-decoration: underline; }
-        .post-content { line-height: 1.7; }
-        .post-content p { margin-bottom: 1rem; }
-        /* Scrollbar - Dark */
-        .dark .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-        .dark .scrollbar-thin::-webkit-scrollbar-track { background: #1f2937; }
-        .dark .scrollbar-thin::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-        /* Scrollbar - Light */
-        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: #e5e7eb; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 3px; }
-        /* Forcar quebra de linha em textos longos */
-        .post-content, .summary-content {
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            word-break: break-word;
-            max-width: 100%;
-        }
-        .post-content {
-            overflow-x: auto;
-            min-width: 0;
-        }
-        .post-content * {
-            max-width: 100%;
-        }
-        .post-content pre {
-            max-width: 100%;
-            overflow-x: auto;
-        }
-        .post-content code {
-            word-break: break-all;
-        }
-        .post-content table {
-            display: block;
-            overflow-x: auto;
-            max-width: 100%;
-        }
-        /* Fix flex children overflow */
-        .flex-1 {
-            min-width: 0;
-        }
-        .summary-content {
-            white-space: pre-wrap;
-        }
-        /* Code blocks - Dark */
-        .dark .post-content pre {
-            background: #1a1a2e;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-        /* Code blocks - Light */
-        .post-content pre {
-            background: #f3f4f6;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-        .post-content pre code {
-            font-family: ui-monospace, monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-        .post-content pre code .line {
-            display: block;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/app.css?v=20231223a">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -588,9 +517,9 @@
                     </div>
 
                     <!-- Right Column: AI Summary -->
-                    <div class="w-1/3 flex flex-col bg-blue-50 dark:bg-gray-850 min-w-[300px]">
-                        <div class="px-4 py-2 bg-blue-100 dark:bg-gray-800 border-b border-blue-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between min-h-[42px]">
-                            <h3 class="text-sm font-medium text-blue-600 dark:text-blue-400" x-text="t('modal.aiSummary')"></h3>
+                    <div class="w-1/3 flex flex-col bg-blue-50 dark:bg-slate-800 min-w-[300px]">
+                        <div class="px-4 py-2 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between min-h-[42px]">
+                            <h3 class="text-sm font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
                             <button
                                 @click="regenerateSummary()"
                                 class="text-xs px-2 py-1 rounded transition-colors"
@@ -613,14 +542,14 @@
                                 </span>
                             </button>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin bg-blue-50 dark:bg-slate-800">
                             <!-- Resumo disponivel -->
                             <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
-                                <div class="text-gray-800 dark:text-gray-200 leading-relaxed summary-content" x-text="currentPost.summary_pt"></div>
+                                <div class="text-gray-800 dark:text-gray-100 leading-relaxed summary-content" x-text="currentPost.summary_pt"></div>
                             </template>
                             <!-- Gerando resumo -->
                             <template x-if="currentPost.summary_status === 'pending'">
-                                <div class="text-gray-500 italic">
+                                <div class="text-gray-500 dark:text-gray-300 italic">
                                     <div class="flex items-center gap-2">
                                         <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -632,7 +561,7 @@
                             </template>
                             <!-- Sem resumo disponivel -->
                             <template x-if="!currentPost.summary_pt && currentPost.summary_status !== 'pending'">
-                                <div class="text-gray-500">
+                                <div class="text-gray-500 dark:text-gray-300">
                                     <p class="italic mb-4" x-text="t('modal.generateFailed')"></p>
                                     <p class="text-sm" x-text="t('modal.antiBotReasons')"></p>
                                     <ul class="text-sm mt-2 list-disc list-inside space-y-1">
@@ -984,6 +913,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20231223s"></script>
+    <script src="/static/js/app.js?v=20231223u"></script>
 </body>
 </html>

@@ -1,0 +1,115 @@
+/* Risos RSS Reader - Main Stylesheet */
+
+/* Alpine.js cloak */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Prose content */
+.prose img {
+    max-width: 100%;
+    height: auto;
+}
+
+.prose a {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+/* Post content */
+.post-content {
+    line-height: 1.7;
+    overflow-x: auto;
+    min-width: 0;
+}
+
+.post-content p {
+    margin-bottom: 1rem;
+}
+
+.post-content * {
+    max-width: 100%;
+}
+
+.post-content pre {
+    background: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    max-width: 100%;
+}
+
+.post-content code {
+    word-break: break-all;
+}
+
+.post-content pre code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.post-content pre code .line {
+    display: block;
+}
+
+.post-content table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Summary content */
+.summary-content {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+/* Force word break on long text */
+.post-content {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+/* Fix flex children overflow */
+.flex-1 {
+    min-width: 0;
+}
+
+/* Scrollbar - Light */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: #e5e7eb;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 3px;
+}
+
+/* ============================================
+   Dark Mode Styles
+   ============================================ */
+
+/* Scrollbar - Dark */
+.dark .scrollbar-thin::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+/* Code blocks - Dark */
+.dark .post-content pre {
+    background: #1a1a2e;
+}
