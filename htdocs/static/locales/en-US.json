@@ -1,0 +1,125 @@
+{
+  "app": {
+    "title": "RSS Reader",
+    "loading": "Loading...",
+    "loadingMore": "Loading more...",
+    "loadMore": "Load more",
+    "endOfList": "End of list",
+    "logout": "Logout"
+  },
+  "auth": {
+    "password": "Password",
+    "login": "Login",
+    "loggingIn": "Logging in..."
+  },
+  "sidebar": {
+    "unread": "Unread",
+    "all": "All",
+    "noCategory": "Uncategorized",
+    "settings": "Settings",
+    "refresh": "Refresh"
+  },
+  "posts": {
+    "noPosts": "No posts found",
+    "markAllRead": "Mark all as read",
+    "markAsRead": "Mark as read",
+    "select": "Select",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "selected": "selected"
+  },
+  "modal": {
+    "close": "Close",
+    "original": "Original",
+    "originalContent": "Original Content",
+    "aiSummary": "AI Summary",
+    "generating": "Generating...",
+    "regenerate": "Regenerate",
+    "tryGenerate": "Try to generate summary",
+    "generateFailed": "Could not generate summary for this post.",
+    "antiBot": "The page has anti-bot protection",
+    "antiBotReasons": "This can happen when:",
+    "antiBotReason1": "The site blocks automated access",
+    "antiBotReason2": "The content is video or media",
+    "shortcuts": "ESC close | M read/unread",
+    "navShortcuts": "J/K navigate posts",
+    "read": "Read",
+    "unread": "Unread",
+    "noContent": "No content available"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "categories": "Categories",
+      "feeds": "Feeds",
+      "opml": "OPML",
+      "general": "General"
+    },
+    "close": "Close",
+    "theme": "Appearance",
+    "themeDesc": "Choose how the app looks",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language",
+    "languageDesc": "Select your preferred language"
+  },
+  "categories": {
+    "newPlaceholder": "New category name",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "noCategories": "No categories created"
+  },
+  "feeds": {
+    "urlPlaceholder": "RSS/Atom feed URL",
+    "titlePlaceholder": "Feed title",
+    "selectCategory": "Choose a category",
+    "add": "Add",
+    "adding": "Fetching posts...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "noFeeds": "No feeds added",
+    "unreadCount": "unread"
+  },
+  "opml": {
+    "importTitle": "Import OPML",
+    "importDesc": "Import feeds from other readers like Feedly, Inoreader, etc.",
+    "chooseFile": "Choose file...",
+    "importing": "Importing...",
+    "exportTitle": "Export OPML",
+    "exportDesc": "Export your feeds to use in another reader.",
+    "download": "Download OPML",
+    "imported": "imported",
+    "duplicates": "duplicates",
+    "errors": "errors"
+  },
+  "errors": {
+    "markPostsRead": "Error marking posts as read",
+    "regenerateSummary": "Error regenerating summary",
+    "createCategory": "Error creating category",
+    "saveCategory": "Error saving category",
+    "deleteCategory": "Error deleting category",
+    "createFeed": "Error creating feed",
+    "saveFeed": "Error saving feed",
+    "deleteFeed": "Error deleting feed",
+    "importOpml": "Error importing OPML",
+    "generic": "Error importing"
+  },
+  "confirm": {
+    "deleteCategory": "Delete \"{name}\"?",
+    "deleteCategoryWithFeeds": "Delete \"{name}\"? The {count} feeds will be moved to another category.",
+    "deleteFeed": "Delete feed \"{title}\"? All posts will be removed."
+  },
+  "success": {
+    "feedAdded": "Feed added with {count} posts!"
+  },
+  "time": {
+    "now": "now",
+    "unknown": "Unknown"
+  }
+}

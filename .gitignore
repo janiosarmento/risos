@@ -1,0 +1,61 @@
+# =============================================================================
+# Risos - Git Ignore
+# =============================================================================
+
+# WordOps / Server-specific
+conf/
+logs/
+nginx/
+
+# Internal development docs
+PLANO.md
+PROGRESSO.md
+PROJETO.md
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment and secrets
+.env
+*.env.local
+backend/.env
+
+# Data and logs
+data/
+*.db
+*.sqlite
+*.log
+backend/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary
+*.tmp
+*.temp
+*.bak

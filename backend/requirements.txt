@@ -1,0 +1,33 @@
+# FastAPI e servidor
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Banco de dados
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Configuração
+pydantic-settings>=2.0.0
+
+# Parsing de feeds e conteúdo
+feedparser>=6.0.0
+httpx>=0.26.0
+readability-lxml>=0.8.0
+lxml>=5.0.0
+lxml-html-clean>=0.1.0
+bleach>=6.1.0
+
+# Background jobs
+apscheduler>=3.10.0
+
+# Autenticação
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.6
+
+# Rate limiting
+slowapi>=0.1.9
+
+# Testes
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pyyaml

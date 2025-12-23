@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "8100:8000"
+    volumes:
+      - ./data:/app/data
+      - ./backend/.env:/app/.env:ro
+      - ./backend/prompts.yaml:/app/prompts.yaml:ro
+    environment:
+      - DATABASE_PATH=/app/data/reader.db
+      - LOG_FILE=/app/data/app.log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: nginx for serving frontend
+  # Uncomment if you want nginx in Docker too
+  # nginx:
+  #   image: nginx:alpine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./htdocs:/usr/share/nginx/html:ro
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #   depends_on:
+  #     - backend
+
+volumes:
+  data:

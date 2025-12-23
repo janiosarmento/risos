@@ -1,0 +1,969 @@
+/**
+ * RSS Reader - Alpine.js Application
+ */
+
+const API_BASE = '/api';
+
+function app() {
+    return {
+        // Authentication
+        token: null,
+        password: '',
+        logging: false,
+        loginError: null,
+
+        // Data
+        feeds: [],
+        categories: [],
+        posts: [],
+        currentPost: null,
+
+        // UI State
+        filter: 'unread',
+        filterId: null,
+        loading: false,
+        loadingContent: false,
+        refreshing: false,
+        regeneratingSummary: false,
+        selectedIndex: -1,
+        hasMore: true,
+        offset: 0,
+        pageSize: 50,
+        totalPostsCount: 0,
+        showReadPosts: false,
+        selectedPosts: new Set(),
+        selectMode: false,
+        collapsedCategories: new Set(JSON.parse(localStorage.getItem('rss_collapsed_categories') || '[]')),
+
+        // Settings
+        showSettings: false,
+        settingsTab: 'categories',
+        newCategoryName: '',
+        newFeed: { url: '', category_id: '' },
+        editingCategory: null,
+        editingFeed: null,
+        savingCategory: false,
+        savingFeed: false,
+        importingOpml: false,
+        opmlResult: null,
+
+        // Health
+        healthWarning: null,
+
+        // i18n
+        locale: localStorage.getItem('rss_locale') || 'pt-BR',
+        translations: {},
+        availableLocales: [
+            { code: 'pt-BR', name: 'Português (Brasil)' },
+            { code: 'en-US', name: 'English (US)' }
+        ],
+
+        // Theme
+        theme: localStorage.getItem('rss_theme') || 'system',
+        availableThemes: [
+            { value: 'system', labelKey: 'settings.themeSystem' },
+            { value: 'light', labelKey: 'settings.themeLight' },
+            { value: 'dark', labelKey: 'settings.themeDark' }
+        ],
+
+        // Computed
+        get totalPosts() {
+            return this.totalPostsCount;
+        },
+
+        get totalUnread() {
+            return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0);
+        },
+
+        get opmlResultText() {
+            if (!this.opmlResult) return '';
+            const { imported, skipped, errors } = this.opmlResult;
+            let text = `${imported} ${this.t('opml.imported')}`;
+            if (skipped > 0) text += `, ${skipped} ${this.t('opml.duplicates')}`;
+            if (errors?.length > 0) text += `, ${errors.length} ${this.t('opml.errors')}`;
+            return text;
+        },
+
+        // Translation function
+        t(key, fallback = null) {
+            const keys = key.split('.');
+            let value = this.translations;
+            for (const k of keys) {
+                if (value && typeof value === 'object' && k in value) {
+                    value = value[k];
+                } else {
+                    return fallback || key;
+                }
+            }
+            return value || fallback || key;
+        },
+
+        async loadLocale(locale) {
+            try {
+                const response = await fetch(`/static/locales/${locale}.json`);
+                if (response.ok) {
+                    this.translations = await response.json();
+                    this.locale = locale;
+                    localStorage.setItem('rss_locale', locale);
+                }
+            } catch (e) {
+                console.error('Failed to load locale:', locale, e);
+            }
+        },
+
+        async setLocale(locale) {
+            await this.loadLocale(locale);
+        },
+
+        setTheme(theme) {
+            this.theme = theme;
+            localStorage.setItem('rss_theme', theme);
+            this.applyTheme();
+        },
+
+        applyTheme() {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const shouldBeDark = this.theme === 'dark' || (this.theme === 'system' && prefersDark);
+
+            if (shouldBeDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        },
+
+        // Initialize
+        async init() {
+            // Load translations
+            await this.loadLocale(this.locale);
+
+            // Apply theme and listen for system theme changes
+            this.applyTheme();
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (this.theme === 'system') {
+                    this.applyTheme();
+                }
+            });
+
+            // Check for stored token
+            const storedToken = sessionStorage.getItem('rss_token');
+            if (storedToken) {
+                this.token = storedToken;
+                await this.loadData();
+            }
+
+            // Setup keyboard shortcuts
+            this.setupKeyboardShortcuts();
+
+            // Setup back button handler for modals
+            this.setupBackButtonHandler();
+        },
+
+        setupBackButtonHandler() {
+            window.addEventListener('popstate', (event) => {
+                // Back button pressed - close any open modal
+                if (this.currentPost) {
+                    this.currentPost = null;
+                }
+                if (this.showSettings) {
+                    this._closeSettingsInternal();
+                }
+            });
+        },
+
+        setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ignore if in input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                    return;
+                }
+
+                // If settings is open
+                if (this.showSettings) {
+                    if (e.key === 'Escape') {
+                        this.closeSettings();
+                    }
+                    return;
+                }
+
+                // If post modal is open
+                if (this.currentPost) {
+                    if (e.key === 'Escape') {
+                        this.closePost();
+                    } else if (e.key === 'm' || e.key === 'M') {
+                        this.toggleRead(this.currentPost);
+                    } else if (e.key === 'j' || e.key === 'J') {
+                        this.nextPost();
+                    } else if (e.key === 'k' || e.key === 'K') {
+                        this.prevPost();
+                    }
+                    return;
+                }
+
+                // Main view shortcuts
+                if (e.key === 'j' || e.key === 'J') {
+                    e.preventDefault();
+                    this.selectNext();
+                } else if (e.key === 'k' || e.key === 'K') {
+                    e.preventDefault();
+                    this.selectPrev();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                        this.openPost(this.posts[this.selectedIndex]);
+                    }
+                } else if (e.key === 'm' || e.key === 'M') {
+                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                        this.toggleRead(this.posts[this.selectedIndex]);
+                    }
+                } else if (e.key === 'r' || e.key === 'R') {
+                    this.refreshFeeds();
+                }
+            });
+        },
+
+        // Auth methods
+        async login() {
+            this.logging = true;
+            this.loginError = null;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: this.password }),
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Login failed');
+                }
+
+                const data = await response.json();
+                this.token = data.token;
+                sessionStorage.setItem('rss_token', this.token);
+                this.password = '';
+                await this.loadData();
+            } catch (error) {
+                this.loginError = error.message;
+            } finally {
+                this.logging = false;
+            }
+        },
+
+        async logout() {
+            try {
+                await this.fetchApi('/auth/logout', { method: 'POST' });
+            } catch (e) {
+                // Ignore logout errors
+            }
+            this.token = null;
+            sessionStorage.removeItem('rss_token');
+            this.feeds = [];
+            this.categories = [];
+            this.posts = [];
+            this.currentPost = null;
+        },
+
+        // API helper
+        async fetchApi(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            };
+
+            if (this.token) {
+                headers['Authorization'] = `Bearer ${this.token}`;
+            }
+
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                ...options,
+                headers,
+            });
+
+            if (response.status === 401) {
+                this.logout();
+                throw new Error('Session expired');
+            }
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.detail || 'Request failed');
+            }
+
+            // Handle 204 No Content
+            if (response.status === 204) {
+                return null;
+            }
+
+            return response.json();
+        },
+
+        // Data loading
+        async loadData() {
+            await Promise.all([
+                this.loadFeeds(),
+                this.loadCategories(),
+            ]);
+            await this.loadPosts(true);
+            this.checkHealth();
+        },
+
+        async loadFeeds() {
+            try {
+                this.feeds = await this.fetchApi('/feeds');
+            } catch (error) {
+                console.error('Failed to load feeds:', error);
+            }
+        },
+
+        async loadCategories() {
+            try {
+                this.categories = await this.fetchApi('/categories');
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        },
+
+        async loadPosts(reset = false) {
+            if (this.loading) return;
+
+            if (reset) {
+                this.posts = [];
+                this.offset = 0;
+                this.hasMore = true;
+                this.selectedIndex = -1;
+                this.totalPostsCount = 0;
+            }
+
+            this.loading = true;
+
+            try {
+                const params = new URLSearchParams({
+                    offset: this.offset,
+                    limit: this.pageSize,
+                });
+
+                // Apply unread filter unless showing all
+                if (!this.showReadPosts) {
+                    params.set('unread_only', 'true');
+                }
+
+                // Apply feed/category filter
+                if (this.filter === 'feed') {
+                    params.set('feed_id', this.filterId);
+                } else if (this.filter === 'category') {
+                    params.set('category_id', this.filterId);
+                }
+
+                const data = await this.fetchApi(`/posts?${params}`);
+
+                if (reset) {
+                    this.posts = data.posts;
+                } else {
+                    this.posts = [...this.posts, ...data.posts];
+                }
+
+                this.totalPostsCount = data.total || 0;
+                this.hasMore = data.has_more || false;
+                this.offset += data.posts.length;
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async checkHealth() {
+            try {
+                const data = await this.fetchApi('/admin/status');
+                this.healthWarning = data.health_warning;
+            } catch (e) {
+                // Ignore health check errors
+            }
+        },
+
+        // Filters
+        setFilter(type, id = null) {
+            this.filter = type;
+            this.filterId = id;
+            this.loadPosts(true);
+        },
+
+        getFilterTitle() {
+            let title = '';
+            if (this.filter === 'unread') {
+                title = this.t('sidebar.unread');
+            } else if (this.filter === 'feed') {
+                const feed = this.feeds.find(f => f.id === this.filterId);
+                title = feed ? feed.title : 'Feed';
+            } else if (this.filter === 'category') {
+                const cat = this.categories.find(c => c.id === this.filterId);
+                title = cat ? cat.name : this.t('settings.tabs.categories');
+            }
+            return title;
+        },
+
+        getCategoryUnread(categoryId) {
+            return this.feeds
+                .filter(f => f.category_id === categoryId)
+                .reduce((sum, f) => sum + (f.unread_count || 0), 0);
+        },
+
+        toggleCategoryCollapse(categoryId) {
+            if (this.collapsedCategories.has(categoryId)) {
+                this.collapsedCategories.delete(categoryId);
+            } else {
+                this.collapsedCategories.add(categoryId);
+            }
+            localStorage.setItem('rss_collapsed_categories', JSON.stringify([...this.collapsedCategories]));
+        },
+
+        isCategoryCollapsed(categoryId) {
+            return this.collapsedCategories.has(categoryId);
+        },
+
+        getFeedTitle(feedId) {
+            const feed = this.feeds.find(f => f.id === feedId);
+            return feed ? feed.title : this.t('time.unknown');
+        },
+
+        // Post operations
+        async openPost(post) {
+            // Clear previous content to avoid showing stale data
+            this.currentPost = {
+                ...post,
+                full_content: null,
+                summary_pt: null,
+                summary_status: 'pending',
+            };
+            this.loadingContent = true;
+
+            // Push state for back button support
+            history.pushState({ modal: 'post', postId: post.id }, '');
+
+            // Find index
+            const index = this.posts.findIndex(p => p.id === post.id);
+            if (index >= 0) {
+                this.selectedIndex = index;
+            }
+
+            // Mark as read
+            if (!post.is_read) {
+                await this.markPostRead(post, true);
+            }
+
+            // Load full post detail (includes full_content and summary_pt)
+            try {
+                const data = await this.fetchApi(`/posts/${post.id}`);
+                // Clean non-breaking spaces from text fields
+                if (data.full_content) data.full_content = this.cleanText(data.full_content);
+                if (data.summary_pt) data.summary_pt = this.cleanText(data.summary_pt);
+                if (data.one_line_summary) data.one_line_summary = this.cleanText(data.one_line_summary);
+                this.currentPost = { ...this.currentPost, ...data };
+                // Update in list too
+                const listPost = this.posts.find(p => p.id === post.id);
+                if (listPost) {
+                    listPost.full_content = data.full_content;
+                    listPost.summary_pt = data.summary_pt;
+                    listPost.one_line_summary = data.one_line_summary;
+                }
+            } catch (e) {
+                console.error('Failed to load post detail:', e);
+                // Reset summary status on error
+                this.currentPost.summary_status = 'failed';
+            } finally {
+                this.loadingContent = false;
+            }
+        },
+
+        closePost() {
+            if (this.currentPost) {
+                // Close modal directly
+                this.currentPost = null;
+                // Also go back in history if we have a state for this modal
+                if (history.state && history.state.modal === 'post') {
+                    history.back();
+                }
+            }
+        },
+
+        async toggleRead(post) {
+            const newState = !post.is_read;
+            await this.markPostRead(post, newState);
+        },
+
+        async markPostRead(post, isRead) {
+            try {
+                await this.fetchApi(`/posts/${post.id}/read`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ is_read: isRead }),
+                });
+
+                // Update post in list
+                const listPost = this.posts.find(p => p.id === post.id);
+                if (listPost) {
+                    listPost.is_read = isRead;
+                }
+
+                // Update current post if open
+                if (this.currentPost && this.currentPost.id === post.id) {
+                    this.currentPost.is_read = isRead;
+                }
+
+                // Update feed unread count
+                const feed = this.feeds.find(f => f.id === post.feed_id);
+                if (feed) {
+                    feed.unread_count = Math.max(0, (feed.unread_count || 0) + (isRead ? -1 : 1));
+                }
+            } catch (error) {
+                console.error('Failed to mark post read:', error);
+            }
+        },
+
+        async markAllRead() {
+            try {
+                const body = {};
+
+                if (this.filter === 'feed') {
+                    body.feed_id = this.filterId;
+                } else if (this.filter === 'category') {
+                    body.category_id = this.filterId;
+                }
+                // else marks all
+
+                await this.fetchApi('/posts/mark-read', {
+                    method: 'POST',
+                    body: JSON.stringify(body),
+                });
+
+                // Reload data
+                await this.loadFeeds();
+                await this.loadPosts(true);
+            } catch (error) {
+                console.error('Failed to mark all read:', error);
+            }
+        },
+
+        // Refresh
+        async refreshFeeds() {
+            if (this.refreshing) return;
+            this.refreshing = true;
+
+            try {
+                // Refresh feeds that need updating
+                const feedsToRefresh = this.filter === 'feed'
+                    ? this.feeds.filter(f => f.id === this.filterId)
+                    : this.feeds.slice(0, 5); // Limit to 5 feeds at a time
+
+                for (const feed of feedsToRefresh) {
+                    try {
+                        await this.fetchApi(`/feeds/${feed.id}/refresh`, { method: 'POST' });
+                    } catch (e) {
+                        console.error(`Failed to refresh feed ${feed.id}:`, e);
+                    }
+                }
+
+                // Reload data
+                await this.loadFeeds();
+                await this.loadPosts(true);
+            } finally {
+                this.refreshing = false;
+            }
+        },
+
+        // Navigation
+        selectNext() {
+            if (this.selectedIndex < this.posts.length - 1) {
+                this.selectedIndex++;
+                this.scrollToSelected();
+            }
+        },
+
+        selectPrev() {
+            if (this.selectedIndex > 0) {
+                this.selectedIndex--;
+                this.scrollToSelected();
+            }
+        },
+
+        scrollToSelected() {
+            const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
+            if (el) {
+                el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        },
+
+        nextPost() {
+            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
+            if (currentIndex < this.posts.length - 1) {
+                this.openPost(this.posts[currentIndex + 1]);
+            }
+        },
+
+        prevPost() {
+            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
+            if (currentIndex > 0) {
+                this.openPost(this.posts[currentIndex - 1]);
+            }
+        },
+
+        canGoPrev() {
+            if (!this.currentPost) return false;
+            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
+            return currentIndex > 0;
+        },
+
+        canGoNext() {
+            if (!this.currentPost) return false;
+            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
+            return currentIndex < this.posts.length - 1;
+        },
+
+        // Infinite scroll
+        handleScroll(event) {
+            const el = event.target;
+            const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+
+            if (nearBottom && this.hasMore && !this.loading) {
+                this.loadPosts();
+            }
+        },
+
+        // Selection
+        toggleSelectMode() {
+            this.selectMode = !this.selectMode;
+            if (!this.selectMode) {
+                this.selectedPosts.clear();
+            }
+        },
+
+        togglePostSelection(postId) {
+            if (this.selectedPosts.has(postId)) {
+                this.selectedPosts.delete(postId);
+            } else {
+                this.selectedPosts.add(postId);
+            }
+            // Force reactivity
+            this.selectedPosts = new Set(this.selectedPosts);
+        },
+
+        isPostSelected(postId) {
+            return this.selectedPosts.has(postId);
+        },
+
+        selectAllVisible() {
+            this.posts.forEach(p => this.selectedPosts.add(p.id));
+            this.selectedPosts = new Set(this.selectedPosts);
+        },
+
+        deselectAll() {
+            this.selectedPosts.clear();
+            this.selectedPosts = new Set(this.selectedPosts);
+        },
+
+        async markSelectedAsRead() {
+            if (this.selectedPosts.size === 0) return;
+
+            const postIds = Array.from(this.selectedPosts);
+
+            try {
+                await this.fetchApi('/posts/mark-read', {
+                    method: 'POST',
+                    body: JSON.stringify({ post_ids: postIds }),
+                });
+
+                // Update local state
+                this.posts.forEach(p => {
+                    if (this.selectedPosts.has(p.id)) {
+                        p.is_read = true;
+                    }
+                });
+
+                // Update feed unread counts
+                await this.loadFeeds();
+
+                // Clear selection
+                this.selectedPosts.clear();
+                this.selectedPosts = new Set(this.selectedPosts);
+                this.selectMode = false;
+
+                // Reload if showing unread only
+                if (!this.showReadPosts) {
+                    await this.loadPosts(true);
+                }
+            } catch (error) {
+                console.error('Failed to mark posts as read:', error);
+                alert(this.t('errors.markPostsRead'));
+            }
+        },
+
+        // Regenerate AI Summary
+        async regenerateSummary() {
+            if (!this.currentPost || this.regeneratingSummary) return;
+
+            this.regeneratingSummary = true;
+
+            try {
+                const data = await this.fetchApi(`/posts/${this.currentPost.id}/regenerate-summary`, {
+                    method: 'POST',
+                });
+
+                // Update current post with new summary (clean non-breaking spaces)
+                this.currentPost.summary_pt = this.cleanText(data.summary_pt);
+                this.currentPost.one_line_summary = this.cleanText(data.one_line_summary);
+                this.currentPost.summary_status = 'ready';
+
+                // Update in list too
+                const listPost = this.posts.find(p => p.id === this.currentPost.id);
+                if (listPost) {
+                    listPost.one_line_summary = data.one_line_summary;
+                    listPost.summary_status = 'ready';
+                }
+            } catch (error) {
+                console.error('Failed to regenerate summary:', error);
+                alert(this.t('errors.regenerateSummary') + ': ' + error.message);
+            } finally {
+                this.regeneratingSummary = false;
+            }
+        },
+
+        // Text cleaning
+        cleanText(text) {
+            if (!text) return text;
+            // Replace all types of non-breaking spaces with regular spaces
+            // \u00A0 = NO-BREAK SPACE
+            // \u202F = NARROW NO-BREAK SPACE
+            // \u2007 = FIGURE SPACE
+            // \u2060 = WORD JOINER
+            return text.replace(/[\u00A0\u202F\u2007\u2060]/g, ' ').replace(/&nbsp;/g, ' ');
+        },
+
+        // Formatting
+        formatDate(dateStr) {
+            if (!dateStr) return '';
+
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = now - date;
+
+            // Less than 1 hour
+            if (diff < 3600000) {
+                const mins = Math.floor(diff / 60000);
+                return mins <= 1 ? this.t('time.now') : `${mins}min`;
+            }
+
+            // Less than 24 hours
+            if (diff < 86400000) {
+                const hours = Math.floor(diff / 3600000);
+                return `${hours}h`;
+            }
+
+            // Less than 7 days
+            if (diff < 604800000) {
+                const days = Math.floor(diff / 86400000);
+                return `${days}d`;
+            }
+
+            // Format as date
+            return date.toLocaleDateString('pt-BR', {
+                day: 'numeric',
+                month: 'short',
+            });
+        },
+
+        // Settings - Categories
+        async createCategory() {
+            if (!this.newCategoryName.trim()) return;
+            this.savingCategory = true;
+            try {
+                await this.fetchApi('/categories', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: this.newCategoryName.trim() }),
+                });
+                this.newCategoryName = '';
+                await this.loadCategories();
+            } catch (error) {
+                console.error('Failed to create category:', error);
+                alert(this.t('errors.createCategory') + ': ' + error.message);
+            } finally {
+                this.savingCategory = false;
+            }
+        },
+
+        startEditCategory(category) {
+            this.editingCategory = { ...category };
+        },
+
+        cancelEditCategory() {
+            this.editingCategory = null;
+        },
+
+        async saveCategory() {
+            if (!this.editingCategory || !this.editingCategory.name.trim()) return;
+            this.savingCategory = true;
+            try {
+                await this.fetchApi(`/categories/${this.editingCategory.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name: this.editingCategory.name.trim() }),
+                });
+                this.editingCategory = null;
+                await this.loadCategories();
+            } catch (error) {
+                console.error('Failed to save category:', error);
+                alert(this.t('errors.saveCategory') + ': ' + error.message);
+            } finally {
+                this.savingCategory = false;
+            }
+        },
+
+        async deleteCategory(category) {
+            const feedCount = this.feeds.filter(f => f.category_id === category.id).length;
+            const msg = feedCount > 0
+                ? this.t('confirm.deleteCategoryWithFeeds').replace('{name}', category.name).replace('{count}', feedCount)
+                : this.t('confirm.deleteCategory').replace('{name}', category.name);
+            if (!confirm(msg)) return;
+
+            try {
+                await this.fetchApi(`/categories/${category.id}`, { method: 'DELETE' });
+                await Promise.all([this.loadCategories(), this.loadFeeds()]);
+            } catch (error) {
+                console.error('Failed to delete category:', error);
+                alert(this.t('errors.deleteCategory') + ': ' + error.message);
+            }
+        },
+
+        // Settings - Feeds
+        async createFeed() {
+            if (!this.newFeed.url.trim()) return;
+            this.savingFeed = true;
+            try {
+                const feed = await this.fetchApi('/feeds', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        url: this.newFeed.url.trim(),
+                        category_id: this.newFeed.category_id || null,
+                    }),
+                });
+                this.newFeed = { url: '', category_id: '' };
+                await this.loadFeeds();
+                // Reload posts to show new content
+                await this.loadPosts(true);
+                // Show success message
+                if (feed.unread_count > 0) {
+                    alert(this.t('success.feedAdded').replace('{count}', feed.unread_count));
+                }
+            } catch (error) {
+                console.error('Failed to create feed:', error);
+                alert(this.t('errors.createFeed') + ': ' + error.message);
+            } finally {
+                this.savingFeed = false;
+            }
+        },
+
+        startEditFeed(feed) {
+            this.editingFeed = { ...feed };
+        },
+
+        cancelEditFeed() {
+            this.editingFeed = null;
+        },
+
+        async saveFeed() {
+            if (!this.editingFeed) return;
+            this.savingFeed = true;
+            try {
+                await this.fetchApi(`/feeds/${this.editingFeed.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        title: this.editingFeed.title,
+                        category_id: this.editingFeed.category_id || null,
+                    }),
+                });
+                this.editingFeed = null;
+                await this.loadFeeds();
+            } catch (error) {
+                console.error('Failed to save feed:', error);
+                alert(this.t('errors.saveFeed') + ': ' + error.message);
+            } finally {
+                this.savingFeed = false;
+            }
+        },
+
+        async deleteFeed(feed) {
+            if (!confirm(this.t('confirm.deleteFeed').replace('{title}', feed.title))) return;
+
+            try {
+                await this.fetchApi(`/feeds/${feed.id}`, { method: 'DELETE' });
+                await this.loadFeeds();
+                if (this.filter === 'feed' && this.filterId === feed.id) {
+                    this.setFilter('unread');
+                }
+            } catch (error) {
+                console.error('Failed to delete feed:', error);
+                alert(this.t('errors.deleteFeed') + ': ' + error.message);
+            }
+        },
+
+        async handleOpmlFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            this.importingOpml = true;
+            this.opmlResult = null;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/feeds/import-opml', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                    },
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || this.t('errors.generic'));
+                }
+
+                this.opmlResult = await response.json();
+
+                // Reload feeds and categories
+                await this.loadFeeds();
+                await this.loadCategories();
+
+            } catch (error) {
+                console.error('Failed to import OPML:', error);
+                alert(this.t('errors.importOpml') + ': ' + error.message);
+            } finally {
+                this.importingOpml = false;
+                // Reset file input
+                event.target.value = '';
+            }
+        },
+
+        openSettings() {
+            this.showSettings = true;
+            history.pushState({ modal: 'settings' }, '');
+        },
+
+        closeSettings() {
+            if (this.showSettings) {
+                history.back();
+            }
+        },
+
+        _closeSettingsInternal() {
+            this.showSettings = false;
+            this.editingCategory = null;
+            this.editingFeed = null;
+            this.newCategoryName = '';
+            this.newFeed = { url: '', category_id: '' };
+        },
+    };
+}

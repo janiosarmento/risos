@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSS Reader</title>
+    <script>
+        // Suppress Tailwind CDN production warning
+        const origWarn = console.warn;
+        console.warn = (...args) => {
+            if (args[0]?.includes?.('cdn.tailwindcss.com')) return;
+            origWarn.apply(console, args);
+        };
+        // Apply theme before page renders to prevent flash
+        (function() {
+            const stored = localStorage.getItem('rss_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = stored || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .prose img { max-width: 100%; height: auto; }
+        .prose a { color: #3b82f6; text-decoration: underline; }
+        .post-content { line-height: 1.7; }
+        .post-content p { margin-bottom: 1rem; }
+        /* Scrollbar - Dark */
+        .dark .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .dark .scrollbar-thin::-webkit-scrollbar-track { background: #1f2937; }
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        /* Scrollbar - Light */
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #e5e7eb; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 3px; }
+        /* Forcar quebra de linha em textos longos */
+        .post-content, .summary-content {
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
+        }
+        .post-content {
+            overflow-x: auto;
+            min-width: 0;
+        }
+        .post-content * {
+            max-width: 100%;
+        }
+        .post-content pre {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        .post-content code {
+            word-break: break-all;
+        }
+        .post-content table {
+            display: block;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        /* Fix flex children overflow */
+        .flex-1 {
+            min-width: 0;
+        }
+        .summary-content {
+            white-space: pre-wrap;
+        }
+        /* Code blocks - Dark */
+        .dark .post-content pre {
+            background: #1a1a2e;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        /* Code blocks - Light */
+        .post-content pre {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        .post-content pre code {
+            font-family: ui-monospace, monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .post-content pre code .line {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+    <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
+
+        <!-- Health Warning Banner -->
+        <div x-show="healthWarning" class="bg-yellow-600 text-yellow-100 px-4 py-2 text-sm flex items-center justify-between">
+            <span x-text="healthWarning"></span>
+            <button @click="healthWarning = null" class="ml-4 hover:text-white">&times;</button>
+        </div>
+
+        <!-- Login Screen -->
+        <template x-if="!token">
+            <div class="flex-1 flex items-center justify-center">
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
+                    <h1 class="text-2xl font-bold mb-6 text-center" x-text="t('app.title')"></h1>
+                    <form @submit.prevent="login()">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2" x-text="t('auth.password')"></label>
+                            <input
+                                type="password"
+                                x-model="password"
+                                class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                :placeholder="t('auth.password')"
+                                autofocus
+                            >
+                        </div>
+                        <div x-show="loginError" class="mb-4 text-red-400 text-sm" x-text="loginError"></div>
+                        <button
+                            type="submit"
+                            class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-medium transition"
+                            :disabled="logging"
+                        >
+                            <span x-show="!logging" x-text="t('auth.login')"></span>
+                            <span x-show="logging" x-text="t('auth.loggingIn')"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </template>
+
+        <!-- Main App -->
+        <template x-if="token">
+            <div class="flex-1 flex overflow-hidden">
+
+                <!-- Sidebar -->
+                <aside class="w-64 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-200 dark:border-gray-700">
+                    <!-- Header -->
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <h1 class="font-bold text-lg" x-text="t('app.title')"></h1>
+                        <div class="flex items-center gap-2">
+                            <button @click="openSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :title="t('sidebar.settings')">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </button>
+                            <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm" x-text="t('app.logout')"></button>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex gap-2">
+                        <button
+                            @click="markAllRead()"
+                            class="flex-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
+                            x-text="t('posts.markAllRead')"
+                        ></button>
+                        <button
+                            @click="refreshFeeds()"
+                            class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
+                            :disabled="refreshing"
+                        >
+                            <span x-show="!refreshing" x-text="t('sidebar.refresh')"></span>
+                            <span x-show="refreshing">...</span>
+                        </button>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            @click="showReadPosts = false; setFilter('unread')"
+                            class="w-full text-left px-3 py-2 rounded text-sm"
+                            :class="filter === 'unread' && !showReadPosts ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                        >
+                            <span x-text="t('sidebar.unread')"></span>
+                            <span
+                                class="float-right"
+                                :class="filter === 'unread' && !showReadPosts ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
+                                x-text="totalUnread"
+                            ></span>
+                        </button>
+                    </div>
+
+                    <!-- Categories & Feeds Tree -->
+                    <nav class="flex-1 overflow-y-auto scrollbar-thin p-2">
+                        <template x-for="category in categories" :key="category.id">
+                            <div class="mb-1">
+                                <!-- Category header -->
+                                <div
+                                    class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1"
+                                    :class="filter === 'category' && filterId === category.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                >
+                                    <!-- Chevron toggle -->
+                                    <button
+                                        @click.stop="toggleCategoryCollapse(category.id)"
+                                        class="p-0.5 -ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-transform"
+                                        :class="filter === 'category' && filterId === category.id ? 'hover:bg-blue-500' : ''"
+                                    >
+                                        <svg
+                                            class="w-3 h-3 transition-transform duration-200"
+                                            :class="isCategoryCollapsed(category.id) ? '' : 'rotate-90'"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+                                    <!-- Folder icon -->
+                                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" :class="filter === 'category' && filterId === category.id ? 'text-white/70' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                    </svg>
+                                    <!-- Category name (clickable to filter) -->
+                                    <button
+                                        @click="setFilter('category', category.id)"
+                                        class="flex-1 truncate text-left"
+                                        x-text="category.name"
+                                    ></button>
+                                    <span
+                                        x-show="getCategoryUnread(category.id) > 0"
+                                        class="bg-blue-500 text-white text-xs px-1.5 rounded"
+                                        :class="filter === 'category' && filterId === category.id ? 'bg-white/20' : ''"
+                                        x-text="getCategoryUnread(category.id)"
+                                    ></span>
+                                </div>
+                                <!-- Feeds inside category -->
+                                <div
+                                    x-show="!isCategoryCollapsed(category.id)"
+                                    x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 -translate-y-2"
+                                    x-transition:enter-end="opacity-100 translate-y-0"
+                                    x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100 translate-y-0"
+                                    x-transition:leave-end="opacity-0 -translate-y-2"
+                                    class="ml-4 border-l border-gray-300 dark:border-gray-700 pl-2"
+                                >
+                                    <template x-for="feed in feeds.filter(f => f.category_id === category.id)" :key="feed.id">
+                                        <button
+                                            @click="setFilter('feed', feed.id)"
+                                            class="w-full text-left px-2 py-1 rounded text-sm truncate text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                                            :class="filter === 'feed' && filterId === feed.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                        >
+                                            <svg class="w-3 h-3 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M5 3a1 1 0 000 2c5.523 0 10 4.477 10 10a1 1 0 102 0C17 8.373 11.627 3 5 3z"></path>
+                                                <path d="M4 9a1 1 0 011-1 7 7 0 017 7 1 1 0 11-2 0 5 5 0 00-5-5 1 1 0 01-1-1z"></path>
+                                                <path d="M3 15a2 2 0 114 0 2 2 0 01-4 0z"></path>
+                                            </svg>
+                                            <span class="flex-1 truncate" x-text="feed.title"></span>
+                                            <span
+                                                x-show="feed.unread_count > 0"
+                                                class="bg-blue-500 text-white text-xs px-1.5 rounded flex-shrink-0"
+                                                x-text="feed.unread_count"
+                                            ></span>
+                                            <span
+                                                x-show="feed.error_count > 0"
+                                                class="text-red-400 text-xs flex-shrink-0"
+                                                title="Feed com erros"
+                                            >!</span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </nav>
+
+                    <!-- Status -->
+                    <div class="p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+                        <span x-text="feeds.length"></span> feeds |
+                        <span x-text="totalPosts"></span> posts
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="flex-1 flex flex-col overflow-hidden">
+                    <!-- Post List Header -->
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <div class="flex items-center justify-between">
+                            <h2 class="font-medium" x-text="getFilterTitle()"></h2>
+                            <div class="flex items-center gap-2 text-sm">
+                                <button
+                                    @click="toggleSelectMode()"
+                                    class="px-2 py-1 rounded"
+                                    :class="selectMode ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    x-text="t('posts.select')"
+                                ></button>
+                                <span class="text-gray-400 dark:text-gray-600">|</span>
+                                <button
+                                    @click="showReadPosts = false; loadPosts(true)"
+                                    class="px-2 py-1 rounded"
+                                    :class="!showReadPosts ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    x-text="t('sidebar.unread')"
+                                ></button>
+                                <button
+                                    @click="showReadPosts = true; loadPosts(true)"
+                                    class="px-2 py-1 rounded"
+                                    :class="showReadPosts ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    x-text="t('sidebar.all')"
+                                ></button>
+                            </div>
+                        </div>
+                        <!-- Selection toolbar -->
+                        <div x-show="selectMode" class="mt-3 flex items-center gap-3 text-sm">
+                            <button
+                                @click="selectAllVisible()"
+                                class="text-blue-500 hover:text-blue-400"
+                                x-text="t('posts.selectAll')"
+                            ></button>
+                            <button
+                                @click="deselectAll()"
+                                class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                x-text="t('posts.clear')"
+                            ></button>
+                            <span class="text-gray-500" x-text="selectedPosts.size + ' ' + t('posts.selected')"></span>
+                            <button
+                                @click="markSelectedAsRead()"
+                                class="ml-auto px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white"
+                                :disabled="selectedPosts.size === 0"
+                                :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
+                                x-text="t('posts.markAsRead')"
+                            ></button>
+                        </div>
+                    </div>
+
+                    <!-- Post List -->
+                    <div
+                        class="flex-1 overflow-y-auto scrollbar-thin"
+                        @scroll="handleScroll($event)"
+                    >
+                        <template x-if="loading && posts.length === 0">
+                            <div class="p-8 text-center text-gray-500" x-text="t('app.loading')"></div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0">
+                            <div class="p-8 text-center text-gray-500" x-text="t('posts.noPosts')"></div>
+                        </template>
+
+                        <template x-for="(post, index) in posts" :key="post.id">
+                            <article
+                                @click="selectMode ? togglePostSelection(post.id) : openPost(post)"
+                                @keydown.enter="selectMode ? togglePostSelection(post.id) : openPost(post)"
+                                tabindex="0"
+                                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition"
+                                :class="{
+                                    'bg-gray-100 dark:bg-gray-800': selectedIndex === index,
+                                    'hover:bg-gray-100 dark:hover:bg-gray-800': selectedIndex !== index,
+                                    'opacity-60': post.is_read,
+                                    'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id)
+                                }"
+                                :data-index="index"
+                            >
+                                <div class="flex items-start gap-3">
+                                    <!-- Checkbox para selecao -->
+                                    <div
+                                        x-show="selectMode"
+                                        class="flex-shrink-0 mt-1"
+                                        @click.stop="togglePostSelection(post.id)"
+                                    >
+                                        <div
+                                            class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
+                                            :class="isPostSelected(post.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-500 hover:border-blue-400'"
+                                        >
+                                            <svg
+                                                x-show="isPostSelected(post.id)"
+                                                class="w-3 h-3 text-white"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <!-- Indicador de nao lido -->
+                                    <div
+                                        x-show="!selectMode"
+                                        class="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                                        :class="post.is_read ? 'bg-gray-400 dark:bg-gray-600' : 'bg-blue-500'"
+                                    ></div>
+                                    <div class="flex-1 min-w-0">
+                                        <h3
+                                            class="font-medium mb-1 line-clamp-2"
+                                            :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
+                                            x-text="post.title"
+                                        ></h3>
+                                        <div class="text-sm text-gray-500 flex items-center gap-2">
+                                            <span x-text="getFeedTitle(post.feed_id)"></span>
+                                            <span>-</span>
+                                            <span x-text="formatDate(post.published_at || post.fetched_at)"></span>
+                                        </div>
+                                        <p
+                                            x-show="post.one_line_summary && !post.one_line_summary.toLowerCase().includes('sem artigo')"
+                                            class="mt-1 text-sm text-gray-500 dark:text-gray-400 italic"
+                                            x-text="post.one_line_summary"
+                                        ></p>
+                                    </div>
+                                </div>
+                            </article>
+                        </template>
+
+                        <template x-if="loading && posts.length > 0">
+                            <div class="p-4 text-center text-gray-500" x-text="t('app.loadingMore')"></div>
+                        </template>
+
+                        <template x-if="hasMore && !loading && posts.length > 0">
+                            <div class="p-4 text-center">
+                                <button
+                                    @click="loadPosts()"
+                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-sm"
+                                    x-text="t('app.loadMore')"
+                                ></button>
+                            </div>
+                        </template>
+
+                        <template x-if="!hasMore && posts.length > 0">
+                            <div class="p-4 text-center text-gray-600 text-sm" x-text="t('app.endOfList')"></div>
+                        </template>
+                    </div>
+                </main>
+            </div>
+        </template>
+
+        <!-- Post Modal - Fullscreen Two Columns -->
+        <template x-if="currentPost">
+            <div
+                class="fixed inset-0 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col"
+                @keydown.escape.window="closePost()"
+            >
+                <!-- Modal Header -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0">
+                    <div class="flex-1 min-w-0 pr-4">
+                        <h2 class="text-lg font-bold truncate" x-text="currentPost.title"></h2>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap">
+                            <span x-text="getFeedTitle(currentPost.feed_id)"></span>
+                            <span>|</span>
+                            <span x-text="formatDate(currentPost.published_at || currentPost.fetched_at)"></span>
+                            <template x-if="currentPost.author">
+                                <span class="flex items-center gap-2">
+                                    <span>|</span>
+                                    <span x-text="currentPost.author"></span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <!-- Navegacao anterior/proximo -->
+                        <div class="flex items-center gap-1 mr-2">
+                            <button
+                                @click="prevPost()"
+                                class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                :disabled="!canGoPrev()"
+                                title="Post anterior (K)"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            <button
+                                @click="nextPost()"
+                                class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                :disabled="!canGoNext()"
+                                title="Proximo post (J)"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <button
+                            @click="toggleRead(currentPost)"
+                            class="text-sm px-3 py-1 rounded text-white"
+                            :class="currentPost.is_read ? 'bg-gray-500 dark:bg-gray-700 hover:bg-gray-600 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'"
+                        >
+                            <span x-text="currentPost.is_read ? t('modal.unread') : t('modal.read')"></span>
+                        </button>
+                        <a
+                            :href="currentPost.url"
+                            target="_blank"
+                            class="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
+                            x-text="t('modal.original')"
+                        ></a>
+                        <button @click="closePost()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl ml-2" :title="t('modal.close')">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Two Column Content -->
+                <div class="flex-1 flex overflow-hidden">
+                    <!-- Left Column: Original Content -->
+                    <div class="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700">
+                        <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400" x-text="t('modal.originalContent')"></h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin bg-white dark:bg-gray-900">
+                            <template x-if="loadingContent">
+                                <div class="text-center text-gray-500 py-8" x-text="t('app.loading')"></div>
+                            </template>
+                            <template x-if="!loadingContent">
+                                <div
+                                    class="post-content text-gray-800 dark:text-gray-200"
+                                    x-html="currentPost.full_content || currentPost.content || t('modal.noContent')"
+                                ></div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: AI Summary -->
+                    <div class="w-1/3 flex flex-col bg-blue-50 dark:bg-gray-850 min-w-[300px]">
+                        <div class="px-4 py-2 bg-blue-100 dark:bg-gray-800 border-b border-blue-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-blue-600 dark:text-blue-400" x-text="t('modal.aiSummary')"></h3>
+                            <button
+                                @click="regenerateSummary()"
+                                class="text-xs px-2 py-1 rounded transition-colors"
+                                :class="regeneratingSummary ? 'bg-gray-400 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
+                                :disabled="regeneratingSummary"
+                                :title="t('modal.regenerate')"
+                            >
+                                <span x-show="!regeneratingSummary" class="flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    <span x-text="t('modal.regenerate')"></span>
+                                </span>
+                                <span x-show="regeneratingSummary" class="flex items-center gap-1">
+                                    <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-text="t('modal.generating')"></span>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                            <!-- Resumo disponivel -->
+                            <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
+                                <div class="text-gray-800 dark:text-gray-200 leading-relaxed summary-content" x-text="currentPost.summary_pt"></div>
+                            </template>
+                            <!-- Gerando resumo -->
+                            <template x-if="currentPost.summary_status === 'pending'">
+                                <div class="text-gray-500 italic">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span x-text="t('modal.generating')"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            <!-- Sem resumo disponivel -->
+                            <template x-if="!currentPost.summary_pt && currentPost.summary_status !== 'pending'">
+                                <div class="text-gray-500">
+                                    <p class="italic mb-4" x-text="t('modal.generateFailed')"></p>
+                                    <p class="text-sm" x-text="t('modal.antiBotReasons')"></p>
+                                    <ul class="text-sm mt-2 list-disc list-inside space-y-1">
+                                        <li x-text="t('modal.antiBotReason1')"></li>
+                                        <li x-text="t('modal.antiBotReason2')"></li>
+                                        <li x-text="t('modal.antiBot')"></li>
+                                    </ul>
+                                    <button
+                                        @click="regenerateSummary()"
+                                        class="mt-4 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm"
+                                        :disabled="regeneratingSummary"
+                                    >
+                                        <span x-show="!regeneratingSummary" x-text="t('modal.tryGenerate')"></span>
+                                        <span x-show="regeneratingSummary" x-text="t('modal.generating')"></span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 flex justify-between bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                    <span x-text="t('modal.shortcuts')"></span>
+                    <span x-text="t('modal.navShortcuts')"></span>
+                </div>
+            </div>
+        </template>
+
+        <!-- Settings Modal -->
+        <template x-if="showSettings">
+            <div
+                class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+                @click.self="closeSettings()"
+                @keydown.escape.window="closeSettings()"
+            >
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                    <!-- Header -->
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <h2 class="text-lg font-bold" x-text="t('settings.title')"></h2>
+                        <button @click="closeSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl">&times;</button>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="flex border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            @click="settingsTab = 'categories'"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'categories' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.categories')"
+                        ></button>
+                        <button
+                            @click="settingsTab = 'feeds'"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'feeds' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.feeds')"
+                        ></button>
+                        <button
+                            @click="settingsTab = 'opml'"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'opml' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.opml')"
+                        ></button>
+                        <button
+                            @click="settingsTab = 'general'"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'general' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.general')"
+                        ></button>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <!-- Categories Tab -->
+                        <div x-show="settingsTab === 'categories'">
+                            <!-- Add Category -->
+                            <form @submit.prevent="createCategory()" class="mb-4 flex gap-2">
+                                <input
+                                    type="text"
+                                    x-model="newCategoryName"
+                                    :placeholder="t('categories.newPlaceholder')"
+                                    class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                >
+                                <button
+                                    type="submit"
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
+                                    :disabled="savingCategory || !newCategoryName.trim()"
+                                >
+                                    <span x-show="!savingCategory" x-text="t('categories.create')"></span>
+                                    <span x-show="savingCategory">...</span>
+                                </button>
+                            </form>
+
+                            <!-- Categories List -->
+                            <div class="space-y-2">
+                                <template x-for="category in categories" :key="category.id">
+                                    <div class="bg-gray-100 dark:bg-gray-700 rounded p-3">
+                                        <!-- View Mode -->
+                                        <div x-show="!editingCategory || editingCategory.id !== category.id" class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2">
+                                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                                                </svg>
+                                                <span x-text="category.name" class="font-medium"></span>
+                                                <span class="text-gray-500 text-sm" x-text="'(' + feeds.filter(f => f.category_id === category.id).length + ' feeds)'"></span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <button
+                                                    @click="startEditCategory(category)"
+                                                    class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 text-sm"
+                                                    x-text="t('categories.edit')"
+                                                ></button>
+                                                <button
+                                                    @click="deleteCategory(category)"
+                                                    class="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm"
+                                                    x-text="t('categories.delete')"
+                                                ></button>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Mode -->
+                                        <div x-show="editingCategory && editingCategory.id === category.id" class="flex gap-2">
+                                            <input
+                                                type="text"
+                                                x-model="editingCategory.name"
+                                                class="flex-1 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <button
+                                                @click="saveCategory()"
+                                                class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+                                                :disabled="savingCategory"
+                                                x-text="t('categories.save')"
+                                            ></button>
+                                            <button
+                                                @click="cancelEditCategory()"
+                                                class="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded text-sm"
+                                                x-text="t('categories.cancel')"
+                                            ></button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="categories.length === 0">
+                                    <div class="text-gray-500 text-center py-4" x-text="t('categories.noCategories')"></div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Feeds Tab -->
+                        <div x-show="settingsTab === 'feeds'">
+                            <!-- Add Feed -->
+                            <form @submit.prevent="createFeed()" class="mb-4 space-y-2">
+                                <div class="flex gap-2">
+                                    <input
+                                        type="url"
+                                        x-model="newFeed.url"
+                                        :placeholder="t('feeds.urlPlaceholder')"
+                                        class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    >
+                                    <select
+                                        x-model="newFeed.category_id"
+                                        class="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        required
+                                    >
+                                        <option value="" disabled selected x-text="t('feeds.selectCategory')"></option>
+                                        <template x-for="cat in categories" :key="cat.id">
+                                            <option :value="cat.id" x-text="cat.name"></option>
+                                        </template>
+                                    </select>
+                                    <button
+                                        type="submit"
+                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium whitespace-nowrap min-w-[120px]"
+                                        :disabled="savingFeed || !newFeed.url.trim() || !newFeed.category_id"
+                                    >
+                                        <span x-show="!savingFeed" x-text="t('feeds.add')"></span>
+                                        <span x-show="savingFeed" x-text="t('feeds.adding')"></span>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Feeds List -->
+                            <div class="space-y-2">
+                                <template x-for="feed in feeds" :key="feed.id">
+                                    <div class="bg-gray-100 dark:bg-gray-700 rounded p-3">
+                                        <!-- View Mode -->
+                                        <div x-show="!editingFeed || editingFeed.id !== feed.id">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <svg class="w-3 h-3 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M5 3a1 1 0 000 2c5.523 0 10 4.477 10 10a1 1 0 102 0C17 8.373 11.627 3 5 3z"></path>
+                                                            <path d="M4 9a1 1 0 011-1 7 7 0 017 7 1 1 0 11-2 0 5 5 0 00-5-5 1 1 0 01-1-1z"></path>
+                                                            <path d="M3 15a2 2 0 114 0 2 2 0 01-4 0z"></path>
+                                                        </svg>
+                                                        <span x-text="feed.title" class="font-medium truncate"></span>
+                                                        <span x-show="feed.error_count > 0" class="text-red-400 text-xs">!</span>
+                                                    </div>
+                                                    <div class="text-sm text-gray-500 truncate mt-1" x-text="feed.url"></div>
+                                                    <div class="text-xs text-gray-500 mt-1">
+                                                        <span x-text="categories.find(c => c.id === feed.category_id)?.name || t('sidebar.noCategory')"></span>
+                                                        <span> | </span>
+                                                        <span x-text="feed.unread_count + ' ' + t('feeds.unreadCount')"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center gap-2 ml-2 flex-shrink-0">
+                                                    <button
+                                                        @click="startEditFeed(feed)"
+                                                        class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 text-sm"
+                                                        x-text="t('feeds.edit')"
+                                                    ></button>
+                                                    <button
+                                                        @click="deleteFeed(feed)"
+                                                        class="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm"
+                                                        x-text="t('feeds.delete')"
+                                                    ></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Mode -->
+                                        <div x-show="editingFeed && editingFeed.id === feed.id" class="space-y-2">
+                                            <input
+                                                type="text"
+                                                x-model="editingFeed.title"
+                                                :placeholder="t('feeds.titlePlaceholder')"
+                                                class="w-full px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <div class="flex gap-2">
+                                                <select
+                                                    x-model="editingFeed.category_id"
+                                                    class="flex-1 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                                >
+                                                    <option :value="null" x-text="t('sidebar.noCategory')"></option>
+                                                    <template x-for="cat in categories" :key="cat.id">
+                                                        <option :value="cat.id" x-text="cat.name"></option>
+                                                    </template>
+                                                </select>
+                                                <button
+                                                    @click="saveFeed()"
+                                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+                                                    :disabled="savingFeed"
+                                                    x-text="t('feeds.save')"
+                                                ></button>
+                                                <button
+                                                    @click="cancelEditFeed()"
+                                                    class="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded text-sm"
+                                                    x-text="t('feeds.cancel')"
+                                                ></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="feeds.length === 0">
+                                    <div class="text-gray-500 text-center py-4" x-text="t('feeds.noFeeds')"></div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- OPML Tab -->
+                        <div x-show="settingsTab === 'opml'" class="space-y-6">
+                            <!-- Import -->
+                            <div>
+                                <h3 class="text-lg font-medium mb-3" x-text="t('opml.importTitle')"></h3>
+                                <p class="text-gray-400 text-sm mb-3" x-text="t('opml.importDesc')"></p>
+                                <div class="flex items-center gap-3">
+                                    <input
+                                        type="file"
+                                        id="opmlFile"
+                                        accept=".opml,.xml"
+                                        @change="handleOpmlFile($event)"
+                                        class="hidden"
+                                    >
+                                    <button
+                                        @click="document.getElementById('opmlFile').click()"
+                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
+                                        :disabled="importingOpml"
+                                    >
+                                        <span x-show="!importingOpml" x-text="t('opml.chooseFile')"></span>
+                                        <span x-show="importingOpml" x-text="t('opml.importing')"></span>
+                                    </button>
+                                    <span x-show="opmlResult" class="text-sm" :class="opmlResult?.errors?.length ? 'text-yellow-400' : 'text-green-400'" x-text="opmlResultText"></span>
+                                </div>
+                            </div>
+
+                            <!-- Export -->
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                                <h3 class="text-lg font-medium mb-3" x-text="t('opml.exportTitle')"></h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('opml.exportDesc')"></p>
+                                <a
+                                    :href="'/api/feeds/export-opml'"
+                                    class="inline-block px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
+                                    download="feeds.opml"
+                                    x-text="t('opml.download')"
+                                ></a>
+                            </div>
+                        </div>
+
+                        <!-- General Tab -->
+                        <div x-show="settingsTab === 'general'" class="space-y-6">
+                            <!-- Theme -->
+                            <div>
+                                <h3 class="text-lg font-medium mb-3" x-text="t('settings.theme')"></h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('settings.themeDesc')"></p>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="themeOption in availableThemes" :key="themeOption.value">
+                                        <button
+                                            @click="setTheme(themeOption.value)"
+                                            class="px-4 py-2 rounded font-medium transition-colors"
+                                            :class="theme === themeOption.value ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
+                                            x-text="t(themeOption.labelKey)"
+                                        ></button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Language -->
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                                <h3 class="text-lg font-medium mb-3" x-text="t('settings.language')"></h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('settings.languageDesc')"></p>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="loc in availableLocales" :key="loc.code">
+                                        <button
+                                            @click="setLocale(loc.code)"
+                                            class="px-4 py-2 rounded font-medium transition-colors"
+                                            :class="locale === loc.code ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
+                                            x-text="loc.name"
+                                        ></button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700 text-right">
+                        <button
+                            @click="closeSettings()"
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
+                            x-text="t('settings.close')"
+                        ></button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+    </div>
+
+    <script src="/static/js/app.js?v=20231223o"></script>
+</body>
+</html>

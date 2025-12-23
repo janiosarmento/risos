@@ -1,0 +1,125 @@
+{
+  "app": {
+    "title": "RSS Reader",
+    "loading": "Carregando...",
+    "loadingMore": "Carregando mais...",
+    "loadMore": "Carregar mais",
+    "endOfList": "Fim da lista",
+    "logout": "Sair"
+  },
+  "auth": {
+    "password": "Senha",
+    "login": "Entrar",
+    "loggingIn": "Entrando..."
+  },
+  "sidebar": {
+    "unread": "Não lidos",
+    "all": "Todos",
+    "noCategory": "Sem categoria",
+    "settings": "Configurações",
+    "refresh": "Atualizar"
+  },
+  "posts": {
+    "noPosts": "Nenhum post encontrado",
+    "markAllRead": "Marcar todos lidos",
+    "markAsRead": "Marcar como lidos",
+    "select": "Selecionar",
+    "selectAll": "Selecionar todos",
+    "clear": "Limpar",
+    "selected": "selecionado(s)"
+  },
+  "modal": {
+    "close": "Fechar",
+    "original": "Original",
+    "originalContent": "Conteúdo Original",
+    "aiSummary": "Resumo IA",
+    "generating": "Gerando...",
+    "regenerate": "Regenerar",
+    "tryGenerate": "Tentar gerar resumo",
+    "generateFailed": "Não foi possível gerar resumo para este post.",
+    "antiBot": "A página tem proteção anti-bot",
+    "antiBotReasons": "Isso pode acontecer quando:",
+    "antiBotReason1": "O site bloqueia acesso automatizado",
+    "antiBotReason2": "O conteúdo é um vídeo ou mídia",
+    "shortcuts": "ESC fechar | M lido/não lido",
+    "navShortcuts": "J/K navegar posts",
+    "read": "Lido",
+    "unread": "Não lido",
+    "noContent": "Sem conteúdo disponível"
+  },
+  "settings": {
+    "title": "Configurações",
+    "tabs": {
+      "categories": "Categorias",
+      "feeds": "Feeds",
+      "opml": "OPML",
+      "general": "Geral"
+    },
+    "close": "Fechar",
+    "theme": "Aparência",
+    "themeDesc": "Escolha como o app aparece",
+    "themeSystem": "Sistema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "language": "Idioma",
+    "languageDesc": "Selecione seu idioma preferido"
+  },
+  "categories": {
+    "newPlaceholder": "Nome da nova categoria",
+    "create": "Criar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "noCategories": "Nenhuma categoria criada"
+  },
+  "feeds": {
+    "urlPlaceholder": "URL do feed RSS/Atom",
+    "titlePlaceholder": "Título do feed",
+    "selectCategory": "Escolha uma categoria",
+    "add": "Adicionar",
+    "adding": "Buscando posts...",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "noFeeds": "Nenhum feed adicionado",
+    "unreadCount": "não lidos"
+  },
+  "opml": {
+    "importTitle": "Importar OPML",
+    "importDesc": "Importe feeds de outros leitores como Feedly, Inoreader, etc.",
+    "chooseFile": "Escolher arquivo...",
+    "importing": "Importando...",
+    "exportTitle": "Exportar OPML",
+    "exportDesc": "Exporte seus feeds para usar em outro leitor.",
+    "download": "Baixar OPML",
+    "imported": "importados",
+    "duplicates": "duplicados",
+    "errors": "erros"
+  },
+  "errors": {
+    "markPostsRead": "Erro ao marcar posts como lidos",
+    "regenerateSummary": "Erro ao regenerar resumo",
+    "createCategory": "Erro ao criar categoria",
+    "saveCategory": "Erro ao salvar categoria",
+    "deleteCategory": "Erro ao excluir categoria",
+    "createFeed": "Erro ao criar feed",
+    "saveFeed": "Erro ao salvar feed",
+    "deleteFeed": "Erro ao excluir feed",
+    "importOpml": "Erro ao importar OPML",
+    "generic": "Erro ao importar"
+  },
+  "confirm": {
+    "deleteCategory": "Excluir \"{name}\"?",
+    "deleteCategoryWithFeeds": "Excluir \"{name}\"? Os {count} feeds serão movidos para outra categoria.",
+    "deleteFeed": "Excluir feed \"{title}\"? Todos os posts serão removidos."
+  },
+  "success": {
+    "feedAdded": "Feed adicionado com {count} posts!"
+  },
+  "time": {
+    "now": "agora",
+    "unknown": "Desconhecido"
+  }
+}
