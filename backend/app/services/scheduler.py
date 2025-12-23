@@ -295,27 +295,33 @@ class Scheduler:
                     unread_removed = 0
 
                     # 1. Remover posts lidos há mais de MAX_POST_AGE_DAYS
+                    # (exceto favoritos que nunca são removidos)
                     cutoff_read = now - timedelta(days=settings.max_post_age_days)
                     result = db.query(Post).filter(
                         Post.is_read == True,
-                        Post.read_at < cutoff_read
+                        Post.read_at < cutoff_read,
+                        (Post.is_starred == False) | (Post.is_starred.is_(None))
                     ).delete(synchronize_session=False)
                     posts_removed += result
 
                     # 2. Remover posts não lidos há mais de MAX_UNREAD_DAYS
+                    # (exceto favoritos que nunca são removidos)
                     cutoff_unread = now - timedelta(days=settings.max_unread_days)
                     result = db.query(Post).filter(
                         Post.is_read == False,
-                        Post.fetched_at < cutoff_unread
+                        Post.fetched_at < cutoff_unread,
+                        (Post.is_starred == False) | (Post.is_starred.is_(None))
                     ).delete(synchronize_session=False)
                     unread_removed += result
 
                     # 3. Limpar full_content de posts lidos há mais de 30 dias
+                    # (exceto favoritos que mantêm conteúdo)
                     cutoff_full = now - timedelta(days=30)
                     result = db.query(Post).filter(
                         Post.is_read == True,
                         Post.read_at < cutoff_full,
-                        Post.full_content.isnot(None)
+                        Post.full_content.isnot(None),
+                        (Post.is_starred == False) | (Post.is_starred.is_(None))
                     ).update({"full_content": None}, synchronize_session=False)
                     full_content_cleared += result
 

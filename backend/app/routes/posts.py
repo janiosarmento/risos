@@ -63,6 +63,7 @@ def list_posts(
     feed_id: Optional[int] = Query(None, description="Filtrar por feed"),
     category_id: Optional[int] = Query(None, description="Filtrar por categoria"),
     unread_only: bool = Query(False, description="Apenas não lidos"),
+    starred_only: bool = Query(False, description="Apenas favoritos"),
     limit: int = Query(20, ge=1, le=100, description="Limite de posts"),
     offset: int = Query(0, ge=0, description="Offset para paginação"),
     db: Session = Depends(get_db),
@@ -74,16 +75,20 @@ def list_posts(
     """
     query = db.query(Post)
 
-    # Filtros
-    if feed_id is not None:
-        query = query.filter(Post.feed_id == feed_id)
-    elif category_id is not None:
-        # Buscar feeds da categoria
-        feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
-        query = query.filter(Post.feed_id.in_(feed_ids))
+    # Filtro de favoritos (ignora outros filtros se ativo)
+    if starred_only:
+        query = query.filter(Post.is_starred == True)
+    else:
+        # Filtros normais
+        if feed_id is not None:
+            query = query.filter(Post.feed_id == feed_id)
+        elif category_id is not None:
+            # Buscar feeds da categoria
+            feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
+            query = query.filter(Post.feed_id.in_(feed_ids))
 
-    if unread_only:
-        query = query.filter(Post.is_read == False)
+        if unread_only:
+            query = query.filter(Post.is_read == False)
 
     # Contar total
     total = query.count()
@@ -123,6 +128,8 @@ def list_posts(
             "sort_date": post.sort_date,
             "is_read": post.is_read,
             "read_at": post.read_at,
+            "is_starred": post.is_starred or False,
+            "starred_at": post.starred_at,
             "summary_status": "ready" if summary else get_summary_status(db, post),
             "one_line_summary": summary.one_line_summary if summary else None,
         }
@@ -227,6 +234,8 @@ async def get_post(
         sort_date=post.sort_date,
         is_read=post.is_read,
         read_at=post.read_at,
+        is_starred=post.is_starred or False,
+        starred_at=post.starred_at,
         summary_status=summary_status,
         summary_pt=summary_pt,
         one_line_summary=one_line_summary,
@@ -260,6 +269,35 @@ def toggle_read(
     db.commit()
 
     return {"id": post_id, "is_read": post.is_read, "read_at": post.read_at}
+
+
+@router.patch("/{post_id}/star")
+def toggle_star(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Alterna status de favorito de um post.
+    Se estrelado, remove estrela. Se não, adiciona.
+    """
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+
+    if post.is_starred:
+        post.is_starred = False
+        post.starred_at = None
+    else:
+        post.is_starred = True
+        post.starred_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"id": post_id, "is_starred": bool(post.is_starred), "starred_at": post.starred_at}
 
 
 @router.post("/mark-read")

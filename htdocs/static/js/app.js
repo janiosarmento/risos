@@ -76,6 +76,8 @@ function app() {
             return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0);
         },
 
+        starredCount: 0,
+
         get opmlResultText() {
             if (!this.opmlResult) return '';
             const { imported, skipped, errors } = this.opmlResult;
@@ -193,6 +195,8 @@ function app() {
                         this.closePost();
                     } else if (e.key === 'm' || e.key === 'M') {
                         this.toggleRead(this.currentPost);
+                    } else if (e.key === 's' || e.key === 'S') {
+                        this.toggleStar(this.currentPost);
                     } else if (e.key === 'j' || e.key === 'J') {
                         this.nextPost();
                     } else if (e.key === 'k' || e.key === 'K') {
@@ -216,6 +220,10 @@ function app() {
                 } else if (e.key === 'm' || e.key === 'M') {
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.toggleRead(this.posts[this.selectedIndex]);
+                    }
+                } else if (e.key === 's' || e.key === 'S') {
+                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                        this.toggleStar(this.posts[this.selectedIndex]);
                     }
                 } else if (e.key === 'r' || e.key === 'R') {
                     this.refreshFeeds();
@@ -307,9 +315,19 @@ function app() {
             await Promise.all([
                 this.loadFeeds(),
                 this.loadCategories(),
+                this.loadStarredCount(),
             ]);
             await this.loadPosts(true);
             this.checkHealth();
+        },
+
+        async loadStarredCount() {
+            try {
+                const data = await this.fetchApi('/posts?starred_only=true&limit=1');
+                this.starredCount = data.total || 0;
+            } catch (error) {
+                console.error('Failed to load starred count:', error);
+            }
         },
 
         async loadFeeds() {
@@ -347,16 +365,21 @@ function app() {
                     limit: this.pageSize,
                 });
 
-                // Apply unread filter unless showing all
-                if (!this.showReadPosts) {
-                    params.set('unread_only', 'true');
-                }
+                // Apply starred filter (ignores other filters)
+                if (this.filter === 'starred') {
+                    params.set('starred_only', 'true');
+                } else {
+                    // Apply unread filter unless showing all
+                    if (!this.showReadPosts) {
+                        params.set('unread_only', 'true');
+                    }
 
-                // Apply feed/category filter
-                if (this.filter === 'feed') {
-                    params.set('feed_id', this.filterId);
-                } else if (this.filter === 'category') {
-                    params.set('category_id', this.filterId);
+                    // Apply feed/category filter
+                    if (this.filter === 'feed') {
+                        params.set('feed_id', this.filterId);
+                    } else if (this.filter === 'category') {
+                        params.set('category_id', this.filterId);
+                    }
                 }
 
                 const data = await this.fetchApi(`/posts?${params}`);
@@ -397,6 +420,8 @@ function app() {
             let title = '';
             if (this.filter === 'unread') {
                 title = this.t('sidebar.unread');
+            } else if (this.filter === 'starred') {
+                title = this.t('sidebar.starred');
             } else if (this.filter === 'feed') {
                 const feed = this.feeds.find(f => f.id === this.filterId);
                 title = feed ? feed.title : 'Feed';
@@ -526,6 +551,36 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to mark post read:', error);
+            }
+        },
+
+        async toggleStar(post) {
+            try {
+                const data = await this.fetchApi(`/posts/${post.id}/star`, {
+                    method: 'PATCH',
+                });
+
+                // Update post in list
+                const listPost = this.posts.find(p => p.id === post.id);
+                if (listPost) {
+                    listPost.is_starred = data.is_starred;
+                    listPost.starred_at = data.starred_at;
+                }
+
+                // Update current post if open
+                if (this.currentPost && this.currentPost.id === post.id) {
+                    this.currentPost.is_starred = data.is_starred;
+                    this.currentPost.starred_at = data.starred_at;
+                }
+
+                // Update starred count
+                if (data.is_starred === true) {
+                    this.starredCount++;
+                } else {
+                    this.starredCount = Math.max(0, this.starredCount - 1);
+                }
+            } catch (error) {
+                console.error('Failed to toggle star:', error);
             }
         },
 

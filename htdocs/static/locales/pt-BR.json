@@ -15,6 +15,7 @@
   "sidebar": {
     "unread": "Não lidos",
     "all": "Todos",
+    "starred": "Favoritos",
     "noCategory": "Sem categoria",
     "settings": "Configurações",
     "refresh": "Atualizar"
@@ -42,6 +43,7 @@
     "antiBotReason1": "O site bloqueia acesso automatizado",
     "antiBotReason2": "O conteúdo é um vídeo ou mídia",
     "shortcuts": "ESC fechar | M lido/não lido",
+    "starShortcut": "S favoritar",
     "navShortcuts": "J/K navegar posts",
     "read": "Lido",
     "unread": "Não lido",

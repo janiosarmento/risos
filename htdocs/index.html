@@ -177,6 +177,25 @@
                         </button>
                     </div>
 
+                    <!-- Starred Section -->
+                    <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            @click="setFilter('starred')"
+                            class="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2"
+                            :class="filter === 'starred' ? 'bg-yellow-500 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                        >
+                            <svg class="w-4 h-4" :class="filter === 'starred' ? 'text-white' : 'text-yellow-500'" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                            </svg>
+                            <span x-text="t('sidebar.starred')"></span>
+                            <span
+                                class="ml-auto"
+                                :class="filter === 'starred' ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
+                                x-text="starredCount"
+                            ></span>
+                        </button>
+                    </div>
+
                     <!-- Filters -->
                     <div class="p-2 border-b border-gray-200 dark:border-gray-700">
                         <button
@@ -420,6 +439,17 @@
                                             x-text="post.title"
                                         ></h3>
                                         <div class="text-sm text-gray-500 flex items-center gap-2">
+                                            <!-- Star icon -->
+                                            <button
+                                                @click.stop="toggleStar(post)"
+                                                class="flex-shrink-0 hover:scale-110 transition-transform"
+                                                :title="post.is_starred ? t('sidebar.starred') : 'Star'"
+                                            >
+                                                <svg class="w-4 h-4" :class="post.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path x-show="post.is_starred" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                    <path x-show="!post.is_starred" fill="none" stroke="currentColor" stroke-width="1.5" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                            </button>
                                             <span x-text="getFeedTitle(post.feed_id)"></span>
                                             <span>-</span>
                                             <span x-text="formatDate(post.published_at || post.fetched_at)"></span>
@@ -509,6 +539,17 @@
                                 </svg>
                             </button>
                         </div>
+                        <!-- Star button -->
+                        <button
+                            @click="toggleStar(currentPost)"
+                            class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            :title="currentPost.is_starred ? t('sidebar.starred') : 'Star (S)'"
+                        >
+                            <svg class="w-5 h-5" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" fill="currentColor" viewBox="0 0 20 20">
+                                <path x-show="currentPost.is_starred" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                <path x-show="!currentPost.is_starred" fill="none" stroke="currentColor" stroke-width="1.5" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                            </svg>
+                        </button>
                         <button
                             @click="toggleRead(currentPost)"
                             class="text-sm px-3 py-1 rounded text-white"
@@ -616,6 +657,7 @@
                 <!-- Modal Footer -->
                 <div class="p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 flex justify-between bg-gray-50 dark:bg-gray-800 flex-shrink-0">
                     <span x-text="t('modal.shortcuts')"></span>
+                    <span x-text="t('modal.starShortcut')"></span>
                     <span x-text="t('modal.navShortcuts')"></span>
                 </div>
             </div>
@@ -942,6 +984,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20231223o"></script>
+    <script src="/static/js/app.js?v=20231223q"></script>
 </body>
 </html>

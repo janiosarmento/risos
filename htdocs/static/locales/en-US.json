@@ -15,6 +15,7 @@
   "sidebar": {
     "unread": "Unread",
     "all": "All",
+    "starred": "Starred",
     "noCategory": "Uncategorized",
     "settings": "Settings",
     "refresh": "Refresh"
@@ -42,6 +43,7 @@
     "antiBotReason1": "The site blocks automated access",
     "antiBotReason2": "The content is video or media",
     "shortcuts": "ESC close | M read/unread",
+    "starShortcut": "S star",
     "navShortcuts": "J/K navigate posts",
     "read": "Read",
     "unread": "Unread",

@@ -76,6 +76,8 @@ class Post(Base):
     sort_date = Column(DateTime)  # published_at ou fetched_at
     is_read = Column(Boolean, default=False)
     read_at = Column(DateTime)
+    is_starred = Column(Boolean, default=False)
+    starred_at = Column(DateTime)
     fetch_full_attempted_at = Column(DateTime)
 
     # Relacionamentos
@@ -93,6 +95,7 @@ Index("idx_posts_read", Post.is_read)
 Index("idx_posts_sort", Post.sort_date.desc())
 Index("idx_posts_hash", Post.content_hash)
 Index("idx_posts_read_at", Post.read_at, sqlite_where=Post.is_read == True)
+Index("idx_posts_starred", Post.is_starred, sqlite_where=Post.is_starred == True)
 
 
 class AISummary(Base):
