@@ -263,6 +263,8 @@ function app() {
                         this.toggleRead(this.currentPost);
                     } else if (e.key === 's' || e.key === 'S') {
                         this.toggleStar(this.currentPost);
+                    } else if (e.key === 'r' || e.key === 'R') {
+                        this.regenerateSummary();
                     } else if (e.key === 'j' || e.key === 'J') {
                         this.nextPost();
                     } else if (e.key === 'k' || e.key === 'K') {
