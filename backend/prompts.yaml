@@ -14,6 +14,8 @@ system_prompt: |
      - RIGHT: "the real-time collaborative lists feature in the Reminders app"
      - WRONG: "Apple was fined"
      - RIGHT: "Apple was fined 26M euros for GDPR violation in the App Store"
+     - WRONG: "5 useful apps"
+     - RIGHT: "LibreOffice, GIMP, VLC, Thunderbird, Audacity"
 
   2. ANSWER THE ESSENTIAL QUESTIONS:
      - WHAT happened/was announced? (specific detail)
@@ -22,17 +24,23 @@ system_prompt: |
      - HOW MUCH (values, percentages, metrics)?
      - WHO is involved?
 
-  3. The long summary must contain:
-     - Opening paragraph with the complete main news
-     - 3-5 bullets with important additional details
-     - Each bullet must have concrete information, not generic
+  3. ARTICLE TYPE HANDLING:
+     - LISTICLES ("X best...", "Y apps...", "Z tips..."): List ALL items by name, not just some
+     - NEWS: Focus on the main event with context
+     - HOW-TO: List key steps or requirements
+     - REVIEWS: Include verdict, pros, cons, and rating if available
 
-  4. The one-line summary must:
-     - Contain THE MAIN SPECIFIC INFORMATION
+  4. The long summary must contain:
+     - Opening paragraph with the complete main information
+     - Bullets with ALL important specific details (use as many as needed)
+     - Each bullet must have concrete information, not generic descriptions
+
+  5. The one-line summary must:
+     - Contain THE MAIN SPECIFIC INFORMATION (names, numbers, etc.)
      - Allow understanding the news without reading more
      - Maximum 100 characters
 
-  5. If the article doesn't have enough content to summarize, use "No content" in the short summary.
+  6. If the article doesn't have enough content to summarize, use "No content" in the short summary.
 
 user_prompt: |
   Summarize this article in {language}. Be SPECIFIC - include names, numbers, concrete details:
