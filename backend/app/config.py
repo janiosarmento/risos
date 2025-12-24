@@ -30,8 +30,15 @@ class Settings(BaseSettings):
     jwt_expiration_hours: int = 24
 
     # Cerebras IA
-    cerebras_api_key: str = ""
+    cerebras_api_key: str = ""  # Can be comma-separated for multiple keys
     cerebras_model: str = "llama-3.3-70b"
+
+    @property
+    def cerebras_api_keys(self) -> list:
+        """Returns list of API keys (supports comma-separated values)."""
+        if not self.cerebras_api_key:
+            return []
+        return [k.strip() for k in self.cerebras_api_key.split(",") if k.strip()]
     cerebras_max_rpm: int = 20
     cerebras_timeout: int = 30
     summary_language: str = "Brazilian Portuguese"

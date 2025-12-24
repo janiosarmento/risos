@@ -1,14 +1,15 @@
 """
 Cliente Cerebras para geração de resumos com IA.
-Inclui circuit breaker e rate limiting.
+Inclui circuit breaker, rate limiting e load balancing de API keys.
 """
 import json
 import logging
 import re
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 import httpx
 
@@ -20,6 +21,122 @@ logger = logging.getLogger(__name__)
 
 # Configurações
 CEREBRAS_API_URL = "https://api.cerebras.ai/v1/chat/completions"
+
+
+class ApiKeyRotator:
+    """
+    Rotador de API keys com round-robin e cooldown por key.
+    Persiste o índice atual no banco de dados.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._key_cooldowns: Dict[str, datetime] = {}  # key -> cooldown_until
+        self._current_index = 0
+        self._load_state()
+
+    def _load_state(self):
+        """Carrega índice atual do banco."""
+        db = SessionLocal()
+        try:
+            row = db.query(AppSettings).filter(AppSettings.key == 'api_key_index').first()
+            if row:
+                self._current_index = int(row.value)
+        finally:
+            db.close()
+
+    def _save_state(self):
+        """Salva índice atual no banco."""
+        db = SessionLocal()
+        try:
+            existing = db.query(AppSettings).filter(AppSettings.key == 'api_key_index').first()
+            if existing:
+                existing.value = str(self._current_index)
+            else:
+                db.add(AppSettings(key='api_key_index', value=str(self._current_index)))
+            db.commit()
+        except Exception as e:
+            logger.error(f"Erro ao salvar índice de API key: {e}")
+            db.rollback()
+        finally:
+            db.close()
+
+    def get_next_key(self) -> Tuple[Optional[str], Optional[int]]:
+        """
+        Retorna a próxima API key disponível (round-robin).
+        Pula keys em cooldown.
+
+        Returns:
+            Tuple de (api_key, key_index) ou (None, None) se nenhuma disponível
+        """
+        keys = settings.cerebras_api_keys
+        if not keys:
+            return None, None
+
+        now = datetime.utcnow()
+
+        with self._lock:
+            # Tentar encontrar uma key disponível
+            for _ in range(len(keys)):
+                key = keys[self._current_index % len(keys)]
+                key_index = self._current_index % len(keys)
+
+                # Avançar para próxima (round-robin)
+                self._current_index = (self._current_index + 1) % len(keys)
+
+                # Verificar cooldown
+                cooldown_until = self._key_cooldowns.get(key)
+                if cooldown_until and now < cooldown_until:
+                    remaining = (cooldown_until - now).total_seconds()
+                    logger.debug(f"Key {key_index + 1}/{len(keys)} em cooldown ({remaining:.0f}s)")
+                    continue
+
+                # Key disponível
+                self._save_state()
+                if len(keys) > 1:
+                    logger.debug(f"Usando API key {key_index + 1}/{len(keys)}")
+                return key, key_index
+
+            # Todas as keys em cooldown
+            return None, None
+
+    def set_key_cooldown(self, key: str, seconds: int = 60):
+        """Coloca uma key em cooldown após rate limit."""
+        with self._lock:
+            self._key_cooldowns[key] = datetime.utcnow() + timedelta(seconds=seconds)
+            keys = settings.cerebras_api_keys
+            if key in keys:
+                key_index = keys.index(key) + 1
+                logger.warning(f"API key {key_index}/{len(keys)} em cooldown por {seconds}s")
+
+    def clear_cooldown(self, key: str):
+        """Remove cooldown de uma key."""
+        with self._lock:
+            self._key_cooldowns.pop(key, None)
+
+    def get_status(self) -> dict:
+        """Retorna status de todas as keys."""
+        keys = settings.cerebras_api_keys
+        now = datetime.utcnow()
+        status = {
+            "total_keys": len(keys),
+            "current_index": self._current_index % len(keys) if keys else 0,
+            "keys": []
+        }
+        for i, key in enumerate(keys):
+            cooldown_until = self._key_cooldowns.get(key)
+            key_status = {
+                "index": i + 1,
+                "available": not (cooldown_until and now < cooldown_until),
+            }
+            if cooldown_until and now < cooldown_until:
+                key_status["cooldown_remaining"] = int((cooldown_until - now).total_seconds())
+            status["keys"].append(key_status)
+        return status
+
+
+# Instância global do rotador
+api_key_rotator = ApiKeyRotator()
 
 
 class CircuitState(Enum):
@@ -322,6 +439,11 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
     if not can_call:
         raise TemporaryError(f"Circuit breaker: {reason}")
 
+    # Obter próxima API key disponível (load balancing)
+    api_key, key_index = api_key_rotator.get_next_key()
+    if not api_key:
+        raise TemporaryError("Todas as API keys estão em cooldown")
+
     # Truncar conteúdo se muito grande (max ~4000 tokens ≈ 16000 chars)
     max_content_len = 12000
     if len(content) > max_content_len:
@@ -329,7 +451,7 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
 
     # Preparar request
     headers = {
-        "Authorization": f"Bearer {settings.cerebras_api_key}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
@@ -351,10 +473,11 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                 json=payload,
             )
 
-            # Tratar rate limit
+            # Tratar rate limit (cooldown específico para esta key)
             if response.status_code == 429:
+                api_key_rotator.set_key_cooldown(api_key, seconds=60)
                 circuit_breaker.record_failure(is_rate_limit=True)
-                raise TemporaryError("Rate limit atingido")
+                raise TemporaryError(f"Rate limit atingido na key {key_index + 1}")
 
             # Tratar erros de servidor
             if response.status_code >= 500:
