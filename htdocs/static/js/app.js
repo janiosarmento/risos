@@ -52,6 +52,15 @@ function app() {
         // Health
         healthWarning: null,
 
+        // Toast
+        toast: {
+            show: false,
+            message: '',
+            type: 'info', // 'success', 'error', 'info'
+            timeoutId: null,
+        },
+        toastTimeoutSeconds: 2, // Default, will be loaded from config
+
         // i18n
         locale: localStorage.getItem('rss_locale') || 'pt-BR',
         translations: {},
@@ -136,10 +145,66 @@ function app() {
             }
         },
 
+        // Toast notifications
+        showToast(message, type = 'info', autoClose = true) {
+            // Clear any existing timeout
+            if (this.toast.timeoutId) {
+                clearTimeout(this.toast.timeoutId);
+            }
+
+            this.toast.message = message;
+            this.toast.type = type;
+            this.toast.show = true;
+
+            if (autoClose && this.toastTimeoutSeconds > 0) {
+                this.toast.timeoutId = setTimeout(() => {
+                    this.hideToast();
+                }, this.toastTimeoutSeconds * 1000);
+            }
+        },
+
+        showSuccess(message) {
+            this.showToast(message, 'success');
+        },
+
+        showError(message) {
+            this.showToast(message, 'error');
+        },
+
+        showInfo(message) {
+            this.showToast(message, 'info');
+        },
+
+        hideToast() {
+            this.toast.show = false;
+            if (this.toast.timeoutId) {
+                clearTimeout(this.toast.timeoutId);
+                this.toast.timeoutId = null;
+            }
+        },
+
+        async loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/config`);
+                if (response.ok) {
+                    const config = await response.json();
+                    if (config.toast_timeout_seconds !== undefined) {
+                        this.toastTimeoutSeconds = config.toast_timeout_seconds;
+                    }
+                }
+            } catch (e) {
+                // Use default if config fails to load
+                console.warn('Failed to load config, using defaults');
+            }
+        },
+
         // Initialize
         async init() {
-            // Load translations
-            await this.loadLocale(this.locale);
+            // Load config and translations in parallel
+            await Promise.all([
+                this.loadConfig(),
+                this.loadLocale(this.locale),
+            ]);
 
             // Apply theme and listen for system theme changes
             this.applyTheme();
@@ -759,7 +824,7 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to mark posts as read:', error);
-                alert(this.t('errors.markPostsRead'));
+                this.showError(this.t('errors.markPostsRead'));
             }
         },
 
@@ -787,7 +852,7 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to regenerate summary:', error);
-                alert(this.t('errors.regenerateSummary') + ': ' + error.message);
+                this.showError(this.t('errors.regenerateSummary') + ': ' + error.message);
             } finally {
                 this.regeneratingSummary = false;
             }
@@ -850,7 +915,7 @@ function app() {
                 await this.loadCategories();
             } catch (error) {
                 console.error('Failed to create category:', error);
-                alert(this.t('errors.createCategory') + ': ' + error.message);
+                this.showError(this.t('errors.createCategory') + ': ' + error.message);
             } finally {
                 this.savingCategory = false;
             }
@@ -876,7 +941,7 @@ function app() {
                 await this.loadCategories();
             } catch (error) {
                 console.error('Failed to save category:', error);
-                alert(this.t('errors.saveCategory') + ': ' + error.message);
+                this.showError(this.t('errors.saveCategory') + ': ' + error.message);
             } finally {
                 this.savingCategory = false;
             }
@@ -894,7 +959,7 @@ function app() {
                 await Promise.all([this.loadCategories(), this.loadFeeds()]);
             } catch (error) {
                 console.error('Failed to delete category:', error);
-                alert(this.t('errors.deleteCategory') + ': ' + error.message);
+                this.showError(this.t('errors.deleteCategory') + ': ' + error.message);
             }
         },
 
@@ -916,11 +981,11 @@ function app() {
                 await this.loadPosts(true);
                 // Show success message
                 if (feed.unread_count > 0) {
-                    alert(this.t('success.feedAdded').replace('{count}', feed.unread_count));
+                    this.showSuccess(this.t('success.feedAdded').replace('{count}', feed.unread_count));
                 }
             } catch (error) {
                 console.error('Failed to create feed:', error);
-                alert(this.t('errors.createFeed') + ': ' + error.message);
+                this.showError(this.t('errors.createFeed') + ': ' + error.message);
             } finally {
                 this.savingFeed = false;
             }
@@ -950,7 +1015,7 @@ function app() {
                 await this.loadFeeds();
             } catch (error) {
                 console.error('Failed to save feed:', error);
-                alert(this.t('errors.saveFeed') + ': ' + error.message);
+                this.showError(this.t('errors.saveFeed') + ': ' + error.message);
             } finally {
                 this.savingFeed = false;
             }
@@ -966,10 +1031,10 @@ function app() {
                 const msg = this.t('feeds.refreshResult')
                     .replace('{new}', result.new_posts)
                     .replace('{skipped}', result.skipped_duplicates);
-                alert(msg);
+                this.showSuccess(msg);
             } catch (error) {
                 console.error('Failed to refresh feed:', error);
-                alert(this.t('errors.refreshFeed') + ': ' + error.message);
+                this.showError(this.t('errors.refreshFeed') + ': ' + error.message);
             } finally {
                 this.refreshingFeed = false;
             }
@@ -986,7 +1051,7 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to delete feed:', error);
-                alert(this.t('errors.deleteFeed') + ': ' + error.message);
+                this.showError(this.t('errors.deleteFeed') + ': ' + error.message);
             }
         },
 
@@ -1022,7 +1087,7 @@ function app() {
 
             } catch (error) {
                 console.error('Failed to import OPML:', error);
-                alert(this.t('errors.importOpml') + ': ' + error.message);
+                this.showError(this.t('errors.importOpml') + ': ' + error.message);
             } finally {
                 this.importingOpml = false;
                 // Reset file input

@@ -123,6 +123,17 @@ def vacuum_database(
     }
 
 
+@router.get("/config")
+def get_public_config():
+    """
+    Retorna configurações públicas para o frontend.
+    Não requer autenticação.
+    """
+    return {
+        "toast_timeout_seconds": settings.toast_timeout_seconds,
+    }
+
+
 @router.get("/status")
 def get_status(
     db: Session = Depends(get_db),

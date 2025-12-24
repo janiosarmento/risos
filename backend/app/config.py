@@ -68,6 +68,9 @@ class Settings(BaseSettings):
     # Segurança
     cors_origins: str = "https://rss.sarmento.org"
 
+    # UI
+    toast_timeout_seconds: int = 2
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
