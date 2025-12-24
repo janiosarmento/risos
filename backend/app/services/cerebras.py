@@ -521,8 +521,10 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                     if translated_title.lower() in ('null', 'none', ''):
                         translated_title = None
 
-                if not summary_pt or not one_line:
-                    raise ValueError("Campos obrigatórios vazios")
+                # Allow both empty (error pages) or both filled
+                # But not one empty and other filled
+                if bool(summary_pt) != bool(one_line):
+                    raise ValueError("Campos inconsistentes (um vazio, outro não)")
 
                 # Truncar one_line se necessário
                 if len(one_line) > 150:

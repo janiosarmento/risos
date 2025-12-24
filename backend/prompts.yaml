@@ -45,7 +45,14 @@ system_prompt: |
      - Keep proper nouns, brand names, and technical terms as-is
      - If title is already in target language, set translated_title to null
 
-  7. If the article doesn't have enough content to summarize, use "No content" in the short summary.
+  7. EMPTY/ERROR PAGES - Return empty strings for:
+     - Session/login error pages (GitHub "Reload to refresh your session", etc.)
+     - AJAX errors ("You can't perform that action at this time")
+     - Loading spinners, placeholder content
+     - Paywalls without article content
+     - Cookie consent pages without article
+     - Any page that doesn't contain actual article content
+     In these cases, return: {"summary_pt": "", "one_line_summary": "", "translated_title": null}
 
 user_prompt: |
   Summarize this article in {language}. Be SPECIFIC - include names, numbers, concrete details.
