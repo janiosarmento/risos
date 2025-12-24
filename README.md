@@ -17,7 +17,11 @@ A self-hosted RSS reader with AI-powered article summaries.
 
 ## Screenshots
 
-*Coming soon*
+![Main screen with post list and sidebar](screenshots/1-main_screen.png)
+
+![Settings panel with feeds and categories](screenshots/2-settings.png)
+
+![Post view with original content and AI summary](screenshots/3-post.png)
 
 ## Installation
 
@@ -229,6 +233,8 @@ Add or edit translations in `htdocs/static/locales/`:
 | `J` | Next post |
 | `K` | Previous post |
 | `M` | Toggle read/unread |
+| `S` | Toggle star/favorite |
+| `R` | Regenerate AI summary |
 | `Enter` | Open selected post |
 | `Escape` | Close modal |
 
