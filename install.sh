@@ -157,6 +157,24 @@ chown -R "$RUN_USER:$RUN_GROUP" "$BACKEND_DIR/data"
 echo_info "Data directory ready"
 
 # =============================================================================
+# Database Migrations
+# =============================================================================
+
+echo_info "Running database migrations..."
+
+source venv/bin/activate
+
+if ! alembic upgrade head 2>&1 | tee /tmp/alembic_migrate.log; then
+    echo_error "Failed to run migrations. Check /tmp/alembic_migrate.log"
+    deactivate
+    exit 1
+fi
+
+deactivate
+
+echo_info "Database migrations complete"
+
+# =============================================================================
 # Systemd Service
 # =============================================================================
 
