@@ -132,6 +132,7 @@ def list_posts(
             "starred_at": post.starred_at,
             "summary_status": "ready" if summary else get_summary_status(db, post),
             "one_line_summary": summary.one_line_summary if summary else None,
+            "translated_title": summary.translated_title if summary else None,
         }
         result.append(PostResponse(**post_dict))
 

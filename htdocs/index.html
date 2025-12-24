@@ -29,7 +29,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20251224e">
+    <link rel="stylesheet" href="/static/css/app.css?v=20251224f">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -395,11 +395,14 @@
                                     ></div>
                                     <div class="flex-1 min-w-0">
                                         <h3
-                                            class="font-medium mb-1 line-clamp-2"
+                                            class="font-medium line-clamp-2"
                                             :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
                                             x-text="post.title"
                                         ></h3>
-                                        <div class="text-sm text-gray-500 flex items-center gap-2">
+                                        <template x-if="post.translated_title">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-1 mb-1" x-text="post.translated_title"></p>
+                                        </template>
+                                        <div class="text-sm text-gray-500 flex items-center gap-2" :class="{'mt-1': !post.translated_title}">
                                             <!-- Star icon -->
                                             <button
                                                 @click.stop="toggleStar(post)"
@@ -1001,6 +1004,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20251224e"></script>
+    <script src="/static/js/app.js?v=20251224f"></script>
 </body>
 </html>

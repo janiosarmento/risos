@@ -110,6 +110,7 @@ class PostResponse(BaseModel):
     starred_at: Optional[datetime] = None
     summary_status: str = "not_configured"  # not_configured, pending, ready, failed
     one_line_summary: Optional[str] = None
+    translated_title: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
