@@ -124,6 +124,25 @@ function app() {
             }
         },
 
+        // Render markdown to HTML
+        renderMarkdown(text) {
+            if (!text) return '';
+            if (typeof marked !== 'undefined') {
+                // Configure marked for safe rendering
+                marked.setOptions({
+                    breaks: true,  // Convert \n to <br>
+                    gfm: true,     // GitHub Flavored Markdown
+                });
+                return marked.parse(text);
+            }
+            // Fallback: basic conversion if marked not loaded
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^• /gm, '<li>')
+                .replace(/\n/g, '<br>');
+        },
+
         async setLocale(locale) {
             await this.loadLocale(locale);
         },
