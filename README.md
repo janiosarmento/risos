@@ -146,6 +146,7 @@ CEREBRAS_API_KEY=your_api_key
 
 ```bash
 # Summary language (default: Brazilian Portuguese)
+# Examples: English, Spanish, French, German, Italian, Japanese
 SUMMARY_LANGUAGE=English
 
 # Feed update interval in minutes (default: 30)
