@@ -113,3 +113,39 @@
 .dark .post-content pre {
     background: #1a1a2e;
 }
+
+/* ============================================
+   Mobile Responsive Styles
+   ============================================ */
+
+/* Safe area for mobile devices with notches */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* Improve touch targets */
+@media (max-width: 768px) {
+    button, a {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Better touch scrolling */
+    .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Post content images */
+    .post-content img {
+        max-width: 100%;
+        height: auto;
+    }
+}

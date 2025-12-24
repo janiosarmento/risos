@@ -35,6 +35,7 @@ function app() {
         selectedPosts: new Set(),
         selectMode: false,
         collapsedCategories: new Set(JSON.parse(localStorage.getItem('rss_collapsed_categories') || '[]')),
+        sidebarOpen: false,
 
         // Settings
         showSettings: false,
@@ -413,6 +414,7 @@ function app() {
         setFilter(type, id = null) {
             this.filter = type;
             this.filterId = id;
+            this.sidebarOpen = false; // Close sidebar on mobile
             this.loadPosts(true);
         },
 

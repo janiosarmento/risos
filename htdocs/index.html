@@ -28,7 +28,7 @@
         }
     </script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20231223a">
+    <link rel="stylesheet" href="/static/css/app.css?v=20251223c">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -71,10 +71,26 @@
 
         <!-- Main App -->
         <template x-if="token">
-            <div class="flex-1 flex overflow-hidden">
+            <div class="flex-1 flex overflow-hidden relative">
+
+                <!-- Mobile Sidebar Overlay -->
+                <div
+                    x-show="sidebarOpen"
+                    x-transition:enter="transition-opacity ease-out duration-300"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition-opacity ease-in duration-200"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    @click="sidebarOpen = false"
+                    class="fixed inset-0 bg-black/50 z-40 md:hidden"
+                ></div>
 
                 <!-- Sidebar -->
-                <aside class="w-64 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-200 dark:border-gray-700">
+                <aside
+                    class="w-64 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-200 dark:border-gray-700 fixed md:relative inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0"
+                    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+                >
                     <!-- Header -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <h1 class="font-bold text-lg" x-text="t('app.title')"></h1>
@@ -85,7 +101,13 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
                             </button>
-                            <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm" x-text="t('app.logout')"></button>
+                            <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm hidden md:block" x-text="t('app.logout')"></button>
+                            <!-- Mobile close button -->
+                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
@@ -234,6 +256,15 @@
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
+                                <!-- Hamburger menu button (mobile only) -->
+                                <button
+                                    @click="sidebarOpen = true"
+                                    class="md:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                >
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                    </svg>
+                                </button>
                                 <h2 class="font-medium">
                                     <a
                                         x-show="filter === 'feed' && getFeedSiteUrl(filterId)"
@@ -261,23 +292,23 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div class="flex items-center gap-2 text-sm">
+                            <div class="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
                                 <button
                                     @click="toggleSelectMode()"
-                                    class="px-2 py-1 rounded"
+                                    class="px-1.5 md:px-2 py-1 rounded"
                                     :class="selectMode ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                                     x-text="t('posts.select')"
                                 ></button>
-                                <span class="text-gray-400 dark:text-gray-600">|</span>
+                                <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
                                 <button
                                     @click="showReadPosts = false; loadPosts(true)"
-                                    class="px-2 py-1 rounded"
+                                    class="px-1.5 md:px-2 py-1 rounded"
                                     :class="!showReadPosts ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                                     x-text="t('sidebar.unread')"
                                 ></button>
                                 <button
                                     @click="showReadPosts = true; loadPosts(true)"
-                                    class="px-2 py-1 rounded"
+                                    class="px-1.5 md:px-2 py-1 rounded"
                                     :class="showReadPosts ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                                     x-text="t('sidebar.all')"
                                 ></button>
@@ -422,10 +453,10 @@
                 @keydown.escape.window="closePost()"
             >
                 <!-- Modal Header -->
-                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0">
-                    <div class="flex-1 min-w-0 pr-4">
-                        <h2 class="text-lg font-bold truncate" x-text="currentPost.title"></h2>
-                        <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap">
+                <div class="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-start md:items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-base md:text-lg font-bold line-clamp-2 md:truncate" x-text="currentPost.title"></h2>
+                        <div class="text-xs md:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 md:gap-2 flex-wrap">
                             <a
                                 :href="getFeedSiteUrl(currentPost.feed_id) || '#'"
                                 x-text="getFeedTitle(currentPost.feed_id)"
@@ -444,12 +475,12 @@
                             </template>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
                         <!-- Navegacao anterior/proximo -->
-                        <div class="flex items-center gap-1 mr-2">
+                        <div class="flex items-center">
                             <button
                                 @click="prevPost()"
-                                class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 :disabled="!canGoPrev()"
                                 title="Post anterior (K)"
                             >
@@ -459,7 +490,7 @@
                             </button>
                             <button
                                 @click="nextPost()"
-                                class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 :disabled="!canGoNext()"
                                 title="Proximo post (J)"
                             >
@@ -471,7 +502,7 @@
                         <!-- Star button -->
                         <button
                             @click="toggleStar(currentPost)"
-                            class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                             :title="currentPost.is_starred ? t('sidebar.starred') : 'Star (S)'"
                         >
                             <svg class="w-5 h-5" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" fill="currentColor" viewBox="0 0 20 20">
@@ -479,31 +510,42 @@
                                 <path x-show="!currentPost.is_starred" fill="none" stroke="currentColor" stroke-width="1.5" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                             </svg>
                         </button>
+                        <!-- Read/Unread button - icon only on mobile -->
                         <button
                             @click="toggleRead(currentPost)"
-                            class="text-sm px-3 py-1 rounded text-white"
+                            class="p-1.5 md:px-3 md:py-1 rounded text-white"
                             :class="currentPost.is_read ? 'bg-gray-500 dark:bg-gray-700 hover:bg-gray-600 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'"
+                            :title="currentPost.is_read ? t('modal.unread') : t('modal.read')"
                         >
-                            <span x-text="currentPost.is_read ? t('modal.unread') : t('modal.read')"></span>
+                            <svg class="w-5 h-5 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="hidden md:inline text-sm" x-text="currentPost.is_read ? t('modal.unread') : t('modal.read')"></span>
                         </button>
+                        <!-- Original link - icon only on mobile -->
                         <a
                             :href="currentPost.url"
                             target="_blank"
-                            class="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
-                            x-text="t('modal.original')"
-                        ></a>
-                        <button @click="closePost()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl ml-2" :title="t('modal.close')">&times;</button>
+                            class="p-1.5 md:px-3 md:py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
+                            :title="t('modal.original')"
+                        >
+                            <svg class="w-5 h-5 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            <span class="hidden md:inline text-sm" x-text="t('modal.original')"></span>
+                        </a>
+                        <button @click="closePost()" class="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl" :title="t('modal.close')">&times;</button>
                     </div>
                 </div>
 
-                <!-- Two Column Content -->
-                <div class="flex-1 flex overflow-hidden">
+                <!-- Two Column Content - stacks on mobile -->
+                <div class="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
                     <!-- Left Column: Original Content -->
-                    <div class="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700">
+                    <div class="flex-1 flex flex-col md:border-r border-gray-200 dark:border-gray-700 min-h-0 md:min-h-full overflow-hidden">
                         <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center min-h-[42px]">
                             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400" x-text="t('modal.originalContent')"></h3>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin bg-white dark:bg-gray-900">
+                        <div class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin bg-white dark:bg-gray-900">
                             <template x-if="loadingContent">
                                 <div class="text-center text-gray-500 py-8" x-text="t('app.loading')"></div>
                             </template>
@@ -517,7 +559,7 @@
                     </div>
 
                     <!-- Right Column: AI Summary -->
-                    <div class="w-1/3 flex flex-col bg-blue-50 dark:bg-slate-800 min-w-[300px]">
+                    <div class="w-full md:w-1/3 flex flex-col bg-blue-50 dark:bg-slate-800 md:min-w-[300px] border-t md:border-t-0 border-gray-200 dark:border-gray-700 max-h-[40vh] md:max-h-full overflow-hidden flex-shrink-0 md:flex-shrink">
                         <div class="px-4 py-2 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between min-h-[42px]">
                             <h3 class="text-sm font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
                             <button
@@ -542,7 +584,7 @@
                                 </span>
                             </button>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin bg-blue-50 dark:bg-slate-800">
+                        <div class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin bg-blue-50 dark:bg-slate-800">
                             <!-- Resumo disponivel -->
                             <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
                                 <div class="text-gray-800 dark:text-gray-100 leading-relaxed summary-content" x-text="currentPost.summary_pt"></div>
@@ -583,8 +625,8 @@
                     </div>
                 </div>
 
-                <!-- Modal Footer -->
-                <div class="p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 flex justify-between bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                <!-- Modal Footer - hidden on mobile -->
+                <div class="hidden md:flex p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 justify-between bg-gray-50 dark:bg-gray-800 flex-shrink-0">
                     <span x-text="t('modal.shortcuts')"></span>
                     <span x-text="t('modal.starShortcut')"></span>
                     <span x-text="t('modal.navShortcuts')"></span>
@@ -595,11 +637,11 @@
         <!-- Settings Modal -->
         <template x-if="showSettings">
             <div
-                class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+                class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
                 @click.self="closeSettings()"
                 @keydown.escape.window="closeSettings()"
             >
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] md:max-h-[80vh] flex flex-col">
                     <!-- Header -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <h2 class="text-lg font-bold" x-text="t('settings.title')"></h2>
@@ -913,6 +955,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20231223u"></script>
+    <script src="/static/js/app.js?v=20251223c"></script>
 </body>
 </html>
