@@ -182,7 +182,7 @@ async def get_post(
 
     # Calcular/atualizar content_hash se necessário
     if content_for_summary and not post.content_hash:
-        post.content_hash = compute_content_hash(content_for_summary)
+        post.content_hash = compute_content_hash(content_for_summary, title=post.title, url=post.url)
         db.commit()
 
     if post.content_hash:
@@ -475,7 +475,7 @@ async def regenerate_summary(
         )
 
     # Calcular novo content_hash baseado no conteúdo atual
-    new_content_hash = compute_content_hash(content_for_summary)
+    new_content_hash = compute_content_hash(content_for_summary, title=post.title, url=post.url)
 
     # Atualizar content_hash do post se diferente
     if post.content_hash != new_content_hash:

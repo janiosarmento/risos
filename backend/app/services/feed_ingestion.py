@@ -133,8 +133,8 @@ def _process_entry(
     # Sanitizar conteúdo
     content = sanitize_html(entry.content, truncate=True)
 
-    # Calcular hash
-    content_hash = compute_content_hash(entry.content)
+    # Compute hash (includes title and URL to avoid collisions)
+    content_hash = compute_content_hash(entry.content, title=entry.title, url=entry.url)
 
     # Verificar duplicidade por GUID
     is_dup, collision = _check_duplicate_by_guid(
