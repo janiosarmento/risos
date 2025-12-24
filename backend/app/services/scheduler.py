@@ -499,6 +499,13 @@ class Scheduler:
                         db.commit()
                         continue
 
+                    # Pular posts já lidos (não vale gastar API com eles)
+                    if post.is_read:
+                        db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                        db.commit()
+                        logger.debug(f"Post {post.id} já lido, pulando resumo")
+                        continue
+
                     # Buscar full_content se não disponível
                     content = post.full_content
                     if not content and post.url:
@@ -510,6 +517,8 @@ class Scheduler:
                                 post.full_content = content
                                 db.commit()
                                 logger.info(f"Conteúdo completo salvo para post {post.id}")
+                            # Delay para evitar rate limit (429)
+                            await asyncio.sleep(2)
                         except Exception as e:
                             logger.warning(f"Falha ao extrair conteúdo do post {post.id}: {e}")
 
