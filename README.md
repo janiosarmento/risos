@@ -8,9 +8,14 @@ A self-hosted RSS reader with AI-powered article summaries.
 
 - **RSS/Atom Feed Support** - Subscribe to any RSS or Atom feed
 - **AI Summaries** - Automatic article summarization using Cerebras AI
+  - Full article content extraction for better summaries
+  - Markdown rendering with formatted lists and emphasis
+  - Automatic title translation for foreign-language articles
+  - Smart detection of error pages (skips paywalls, session errors, etc.)
+- **Starred Posts** - Save important articles for later
 - **Categories** - Organize feeds into categories
 - **OPML Import/Export** - Migrate from other readers
-- **Keyboard Shortcuts** - Navigate with J/K, mark read with M
+- **Keyboard Shortcuts** - Navigate with J/K, mark read with M, star with S
 - **Dark/Light Theme** - Follows system preference or manual selection
 - **Multi-language** - English and Portuguese (Brazilian)
 - **Mobile Friendly** - Responsive design
