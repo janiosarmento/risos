@@ -190,13 +190,12 @@ class CircuitBreaker:
             self.half_successes = 0
             self.last_failure = None
             self.last_call = None
-            self.rate_limited_until = None
 
             # Carregar do banco
             for row in db.query(AppSettings).filter(
                 AppSettings.key.in_([
                     'cerebras_state', 'cerebras_failures', 'cerebras_half_successes',
-                    'cerebras_last_failure', 'cerebras_last_call', 'rate_limited_until'
+                    'cerebras_last_failure', 'cerebras_last_call'
                 ])
             ).all():
                 if row.key == 'cerebras_state':
@@ -209,8 +208,6 @@ class CircuitBreaker:
                     self.last_failure = datetime.fromisoformat(row.value)
                 elif row.key == 'cerebras_last_call':
                     self.last_call = datetime.fromisoformat(row.value)
-                elif row.key == 'rate_limited_until':
-                    self.rate_limited_until = datetime.fromisoformat(row.value)
 
         finally:
             db.close()
@@ -229,8 +226,6 @@ class CircuitBreaker:
                 updates['cerebras_last_failure'] = self.last_failure.isoformat()
             if self.last_call:
                 updates['cerebras_last_call'] = self.last_call.isoformat()
-            if self.rate_limited_until:
-                updates['rate_limited_until'] = self.rate_limited_until.isoformat()
 
             for key, value in updates.items():
                 existing = db.query(AppSettings).filter(AppSettings.key == key).first()
@@ -256,9 +251,8 @@ class CircuitBreaker:
         """
         now = datetime.utcnow()
 
-        # Verificar rate limit
-        if self.rate_limited_until and now < self.rate_limited_until:
-            return False, f"Rate limited até {self.rate_limited_until}"
+        # Nota: Rate limit por key é gerenciado pelo ApiKeyRotator
+        # O circuit breaker só bloqueia em caso de falhas reais da API
 
         # Verificar intervalo mínimo
         min_interval = 60.0 / settings.cerebras_max_rpm
@@ -300,31 +294,24 @@ class CircuitBreaker:
 
         self._save_state()
 
-    def record_failure(self, is_rate_limit: bool = False):
+    def record_failure(self):
         """
-        Registra falha de chamada.
-
-        Args:
-            is_rate_limit: Se True, não conta para circuit breaker
+        Registra falha de chamada (erros de servidor, timeout, etc).
+        Nota: Rate limits (429) são gerenciados pelo ApiKeyRotator, não aqui.
         """
         now = datetime.utcnow()
         self.last_call = now
         self.last_failure = now
 
-        if is_rate_limit:
-            # Rate limit não conta para circuit breaker
-            self.rate_limited_until = now + timedelta(seconds=60)
-            logger.warning("Rate limit atingido, cooldown de 60s")
+        if self.state == CircuitState.HALF:
+            # Uma falha em HALF reabre o circuito
+            self.state = CircuitState.OPEN
+            logger.warning("Circuit breaker: HALF -> OPEN (falha)")
         else:
-            if self.state == CircuitState.HALF:
-                # Uma falha em HALF reabre o circuito
+            self.failures += 1
+            if self.failures >= settings.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.warning("Circuit breaker: HALF -> OPEN (falha)")
-            else:
-                self.failures += 1
-                if self.failures >= settings.failure_threshold:
-                    self.state = CircuitState.OPEN
-                    logger.warning(f"Circuit breaker: CLOSED -> OPEN ({self.failures} falhas)")
+                logger.warning(f"Circuit breaker: CLOSED -> OPEN ({self.failures} falhas)")
 
         self._save_state()
 
@@ -473,10 +460,9 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                 json=payload,
             )
 
-            # Tratar rate limit (cooldown específico para esta key)
+            # Tratar rate limit (cooldown específico para esta key, não afeta circuit breaker)
             if response.status_code == 429:
                 api_key_rotator.set_key_cooldown(api_key, seconds=60)
-                circuit_breaker.record_failure(is_rate_limit=True)
                 raise TemporaryError(f"Rate limit atingido na key {key_index + 1}")
 
             # Tratar erros de servidor
