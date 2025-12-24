@@ -25,7 +25,7 @@ A self-hosted RSS reader with AI-powered article summaries.
 
 ## Installation
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker (Recommended for beginners)
 
 1. Clone the repository:
    ```bash
@@ -48,10 +48,25 @@ A self-hosted RSS reader with AI-powered article summaries.
 
 ### Option 2: Native Installation (systemd)
 
-1. Clone the repository:
+The installer automatically:
+- Creates a Python virtual environment
+- Installs dependencies
+- Runs database migrations
+- Creates a systemd service
+- **On WordOps**: Configures nginx automatically
+- **On other setups**: Shows nginx configuration instructions
+
+#### Installation Steps
+
+1. Clone to your web directory:
    ```bash
-   git clone https://github.com/janiosarmento/risos.git
-   cd risos
+   # WordOps example
+   cd /var/www/rss.your-domain.com
+   git clone https://github.com/janiosarmento/risos.git .
+
+   # Standard nginx example
+   git clone https://github.com/janiosarmento/risos.git /var/www/risos
+   cd /var/www/risos
    ```
 
 2. Run the installer:
@@ -62,14 +77,21 @@ A self-hosted RSS reader with AI-powered article summaries.
 3. Edit the configuration:
    ```bash
    sudo nano backend/.env
+   # Set: APP_PASSWORD, JWT_SECRET, CEREBRAS_API_KEY
    ```
 
-4. Configure nginx (see below)
-
-5. Restart the service:
+4. Restart the service:
    ```bash
    sudo systemctl restart risos
    ```
+
+#### WordOps Users
+
+If WordOps is detected, the installer automatically creates `conf/nginx/custom.conf` with the correct configuration and reloads nginx. No manual nginx setup required.
+
+#### Standard Nginx Users
+
+For non-WordOps setups, configure nginx manually (see Web Server Configuration below).
 
 ### Multiple Instances
 
@@ -96,8 +118,7 @@ Each instance has its own:
 - Configuration (`backend/.env`)
 - Systemd service
 - Port
-
-Configure separate nginx vhosts for each, pointing to their respective ports.
+- Nginx configuration (auto-generated on WordOps)
 
 ## Configuration
 

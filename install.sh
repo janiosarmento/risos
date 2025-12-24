@@ -222,11 +222,13 @@ echo_info "Systemd service created and enabled"
 # Nginx Configuration
 # =============================================================================
 
-NGINX_CONF_DIR="$SCRIPT_DIR/conf/nginx"
-NGINX_CUSTOM_CONF="$NGINX_CONF_DIR/custom.conf"
+# Check if WordOps is installed
+if command -v wo &> /dev/null; then
+    echo_info "WordOps detected - configuring nginx automatically"
 
-# Check if this looks like a WordOps site structure
-if [ -d "$SCRIPT_DIR/conf" ]; then
+    NGINX_CONF_DIR="$SCRIPT_DIR/conf/nginx"
+    NGINX_CUSTOM_CONF="$NGINX_CONF_DIR/custom.conf"
+
     mkdir -p "$NGINX_CONF_DIR"
 
     echo_info "Creating nginx configuration: $NGINX_CUSTOM_CONF"
@@ -272,11 +274,13 @@ NGINXEOF
     if nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null; then
         echo_info "Nginx reloaded successfully"
     else
-        echo_warn "Could not reload nginx automatically. Run: nginx -t && systemctl reload nginx"
+        echo_warn "Could not reload nginx. Run: nginx -t && systemctl reload nginx"
     fi
+
+    WORDOPS_DETECTED=true
 else
-    echo_warn "No conf/ directory found. You'll need to configure nginx manually."
-    echo_warn "See the example configuration at the end of this script."
+    echo_info "WordOps not detected - manual nginx configuration required"
+    WORDOPS_DETECTED=false
 fi
 
 # =============================================================================
@@ -314,26 +318,53 @@ echo "  systemctl status $SERVICE_NAME    # Check status"
 echo "  systemctl restart $SERVICE_NAME   # Restart service"
 echo "  journalctl -u $SERVICE_NAME -f    # View logs"
 echo ""
-echo "Next steps:"
-echo "  1. Edit $BACKEND_DIR/.env with your settings"
-echo "  2. Configure nginx to proxy to http://127.0.0.1:$PORT"
-echo "  3. Point nginx to serve static files from: $HTDOCS_DIR"
-echo ""
-echo "Example nginx configuration:"
-echo ""
-echo "  server {"
-echo "      listen 80;"
-echo "      server_name your-domain.com;"
-echo ""
-echo "      location / {"
-echo "          root $HTDOCS_DIR;"
-echo "          try_files \$uri \$uri/ /index.html;"
-echo "      }"
-echo ""
-echo "      location /api {"
-echo "          proxy_pass http://127.0.0.1:$PORT;"
-echo "          proxy_set_header Host \$host;"
-echo "          proxy_set_header X-Real-IP \$remote_addr;"
-echo "      }"
-echo "  }"
-echo ""
+
+if [ "$WORDOPS_DETECTED" = true ]; then
+    echo "Next steps:"
+    echo "  1. Edit $BACKEND_DIR/.env with your settings"
+    echo "     - Set APP_PASSWORD, JWT_SECRET, and CEREBRAS_API_KEY"
+    echo "  2. Restart the service: systemctl restart $SERVICE_NAME"
+    echo ""
+    echo "Nginx has been configured automatically at:"
+    echo "  $NGINX_CUSTOM_CONF"
+    echo ""
+else
+    echo "Next steps:"
+    echo "  1. Edit $BACKEND_DIR/.env with your settings"
+    echo "     - Set APP_PASSWORD, JWT_SECRET, and CEREBRAS_API_KEY"
+    echo "  2. Configure nginx (see example below)"
+    echo "  3. Restart the service: systemctl restart $SERVICE_NAME"
+    echo ""
+    echo "Example nginx configuration:"
+    echo ""
+    echo "  server {"
+    echo "      listen 80;"
+    echo "      server_name your-domain.com;"
+    echo ""
+    echo "      root $HTDOCS_DIR;"
+    echo "      index index.html;"
+    echo ""
+    echo "      # Frontend - SPA routing"
+    echo "      location / {"
+    echo "          try_files \$uri \$uri/ /index.html;"
+    echo "          expires 1h;"
+    echo "      }"
+    echo ""
+    echo "      # Static assets caching"
+    echo "      location /static/ {"
+    echo "          expires 30d;"
+    echo "          add_header Cache-Control \"public, immutable\";"
+    echo "      }"
+    echo ""
+    echo "      # Backend API proxy"
+    echo "      location /api/ {"
+    echo "          proxy_pass http://127.0.0.1:$PORT;"
+    echo "          proxy_http_version 1.1;"
+    echo "          proxy_set_header Host \$host;"
+    echo "          proxy_set_header X-Real-IP \$remote_addr;"
+    echo "          proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;"
+    echo "          proxy_set_header X-Forwarded-Proto \$scheme;"
+    echo "      }"
+    echo "  }"
+    echo ""
+fi
