@@ -119,6 +119,7 @@ class PostDetail(PostResponse):
     full_content: Optional[str]
     summary_pt: Optional[str] = None
     one_line_summary: Optional[str] = None
+    translated_title: Optional[str] = None
 
 
 class PostListResponse(BaseModel):

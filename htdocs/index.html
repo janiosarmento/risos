@@ -29,7 +29,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20251224d">
+    <link rel="stylesheet" href="/static/css/app.css?v=20251224e">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -457,7 +457,10 @@
                 <div class="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-start md:items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
                     <div class="flex-1 min-w-0">
                         <h2 class="text-base md:text-lg font-bold line-clamp-2 md:truncate" x-text="currentPost.title"></h2>
-                        <div class="text-xs md:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 md:gap-2 flex-wrap">
+                        <template x-if="currentPost.translated_title">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 italic mt-0.5" x-text="currentPost.translated_title"></p>
+                        </template>
+                        <div class="text-xs md:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 md:gap-2 flex-wrap mt-1">
                             <a
                                 :href="getFeedSiteUrl(currentPost.feed_id) || '#'"
                                 x-text="getFeedTitle(currentPost.feed_id)"
@@ -998,6 +1001,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20251224d"></script>
+    <script src="/static/js/app.js?v=20251224e"></script>
 </body>
 </html>

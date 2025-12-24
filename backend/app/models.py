@@ -105,6 +105,7 @@ class AISummary(Base):
     content_hash = Column(Text, unique=True, nullable=False)
     summary_pt = Column(Text, nullable=False)
     one_line_summary = Column(Text, nullable=False)
+    translated_title = Column(Text, nullable=True)  # Título traduzido (se diferente do idioma-alvo)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

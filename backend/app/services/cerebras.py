@@ -48,6 +48,7 @@ class SummaryResult:
     """Resultado da geração de resumo."""
     summary_pt: str
     one_line_summary: str
+    translated_title: str = None  # Título traduzido (se não estiver no idioma-alvo)
 
 
 class CircuitBreaker:
@@ -220,12 +221,13 @@ def get_system_prompt() -> str:
     return prompts.get("system_prompt", "You are a helpful assistant that summarizes articles.")
 
 
-def get_user_prompt(content: str) -> str:
-    """Returns the user prompt with content and language interpolated."""
+def get_user_prompt(content: str, title: str = "") -> str:
+    """Returns the user prompt with content, title, and language interpolated."""
     template = prompts.get("user_prompt", "Summarize this article in {language}:\n\n{content}")
     return template.format(
         language=settings.summary_language,
-        content=content
+        content=content,
+        title=title or "Untitled"
     )
 
 
@@ -300,12 +302,13 @@ def _parse_json_response(content: str) -> dict:
     raise ValueError(f"Não foi possível parsear JSON: {json_str[:200]}...")
 
 
-async def generate_summary(content: str) -> SummaryResult:
+async def generate_summary(content: str, title: str = "") -> SummaryResult:
     """
     Gera resumo usando API Cerebras.
 
     Args:
         content: Conteúdo do artigo para resumir
+        title: Título do artigo (para tradução se necessário)
 
     Returns:
         SummaryResult com resumos
@@ -334,7 +337,7 @@ async def generate_summary(content: str) -> SummaryResult:
         "model": settings.cerebras_model,
         "messages": [
             {"role": "system", "content": get_system_prompt()},
-            {"role": "user", "content": get_user_prompt(content)},
+            {"role": "user", "content": get_user_prompt(content, title)},
         ],
         "temperature": 0.3,
         "max_tokens": 1000,
@@ -401,6 +404,13 @@ async def generate_summary(content: str) -> SummaryResult:
 
                 summary_pt = result.get('summary_pt', '').strip()
                 one_line = result.get('one_line_summary', '').strip()
+                translated_title = result.get('translated_title')
+
+                # Limpar translated_title se for "null" string ou vazio
+                if translated_title and isinstance(translated_title, str):
+                    translated_title = translated_title.strip()
+                    if translated_title.lower() in ('null', 'none', ''):
+                        translated_title = None
 
                 if not summary_pt or not one_line:
                     raise ValueError("Campos obrigatórios vazios")
@@ -414,6 +424,7 @@ async def generate_summary(content: str) -> SummaryResult:
                 return SummaryResult(
                     summary_pt=summary_pt,
                     one_line_summary=one_line,
+                    translated_title=translated_title,
                 )
 
             except (json.JSONDecodeError, ValueError) as e:

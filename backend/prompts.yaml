@@ -40,10 +40,17 @@ system_prompt: |
      - Allow understanding the news without reading more
      - Maximum 100 characters
 
-  6. If the article doesn't have enough content to summarize, use "No content" in the short summary.
+  6. TITLE TRANSLATION:
+     - If the article title is NOT in the target language, provide a translation
+     - Keep proper nouns, brand names, and technical terms as-is
+     - If title is already in target language, set translated_title to null
+
+  7. If the article doesn't have enough content to summarize, use "No content" in the short summary.
 
 user_prompt: |
-  Summarize this article in {language}. Be SPECIFIC - include names, numbers, concrete details:
+  Summarize this article in {language}. Be SPECIFIC - include names, numbers, concrete details.
+
+  Title: {title}
 
   ---
   {content}
@@ -52,5 +59,6 @@ user_prompt: |
   Respond EXACTLY in this JSON format:
   {{
     "summary_pt": "Paragraph with the main news and context.\n\n• Specific detail 1\n• Specific detail 2\n• Specific detail 3\n\nConclusion if relevant.",
-    "one_line_summary": "Specific summary with the main fact (max 100 chars)"
+    "one_line_summary": "Specific summary with the main fact (max 100 chars)",
+    "translated_title": "Title translated to {language}, or null if already in {language}"
   }}

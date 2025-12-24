@@ -535,13 +535,14 @@ class Scheduler:
                     # Chamar API
                     try:
                         logger.info(f"Gerando resumo para post {post.id}...")
-                        summary_result = await generate_summary(content)
+                        summary_result = await generate_summary(content, title=post.title)
 
                         # Salvar resumo
                         ai_summary = AISummary(
                             content_hash=candidate.content_hash,
                             summary_pt=summary_result.summary_pt,
                             one_line_summary=summary_result.one_line_summary,
+                            translated_title=summary_result.translated_title,
                         )
                         db.add(ai_summary)
 

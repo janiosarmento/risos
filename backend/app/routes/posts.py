@@ -173,6 +173,7 @@ async def get_post(
     # Buscar ou gerar resumo IA on-demand
     summary_pt = None
     one_line_summary = None
+    translated_title = None
     summary_status = "not_configured"
 
     # Usar full_content para o resumo, ou content como fallback
@@ -192,24 +193,27 @@ async def get_post(
         if summary:
             summary_pt = summary.summary_pt
             one_line_summary = summary.one_line_summary
+            translated_title = summary.translated_title
             summary_status = "ready"
         elif content_for_summary and len(content_for_summary.strip()) > 100:
             # Gerar resumo on-demand se há conteúdo suficiente
             try:
                 logger.info(f"Generating on-demand summary for post {post.id}")
-                result = await generate_summary(content_for_summary)
+                result = await generate_summary(content_for_summary, title=post.title)
 
                 # Salvar no banco
                 new_summary = AISummary(
                     content_hash=post.content_hash,
                     summary_pt=result.summary_pt,
                     one_line_summary=result.one_line_summary,
+                    translated_title=result.translated_title,
                 )
                 db.add(new_summary)
                 db.commit()
 
                 summary_pt = result.summary_pt
                 one_line_summary = result.one_line_summary
+                translated_title = result.translated_title
                 summary_status = "ready"
                 logger.info(f"Summary generated successfully for post {post.id}")
 
@@ -239,6 +243,7 @@ async def get_post(
         summary_status=summary_status,
         summary_pt=summary_pt,
         one_line_summary=one_line_summary,
+        translated_title=translated_title,
     )
 
 
@@ -478,7 +483,7 @@ async def regenerate_summary(
 
     try:
         logger.info(f"Regenerating summary for post {post_id}")
-        result = await generate_summary(content_for_summary)
+        result = await generate_summary(content_for_summary, title=post.title)
 
         # Verificar se já existe resumo com esse hash
         existing_summary = db.query(AISummary).filter(
@@ -489,6 +494,7 @@ async def regenerate_summary(
             # Atualizar resumo existente
             existing_summary.summary_pt = result.summary_pt
             existing_summary.one_line_summary = result.one_line_summary
+            existing_summary.translated_title = result.translated_title
             existing_summary.created_at = datetime.utcnow()
         else:
             # Criar novo resumo
@@ -496,6 +502,7 @@ async def regenerate_summary(
                 content_hash=new_content_hash,
                 summary_pt=result.summary_pt,
                 one_line_summary=result.one_line_summary,
+                translated_title=result.translated_title,
             )
             db.add(new_summary)
 
@@ -507,6 +514,7 @@ async def regenerate_summary(
             "post_id": post_id,
             "summary_pt": result.summary_pt,
             "one_line_summary": result.one_line_summary,
+            "translated_title": result.translated_title,
         }
 
     except CerebrasError as e:

@@ -590,6 +590,7 @@ function app() {
                     listPost.full_content = data.full_content;
                     listPost.summary_pt = data.summary_pt;
                     listPost.one_line_summary = data.one_line_summary;
+                    listPost.translated_title = data.translated_title;
                 }
             } catch (e) {
                 console.error('Failed to load post detail:', e);
@@ -883,12 +884,14 @@ function app() {
                 // Update current post with new summary (clean non-breaking spaces)
                 this.currentPost.summary_pt = this.cleanText(data.summary_pt);
                 this.currentPost.one_line_summary = this.cleanText(data.one_line_summary);
+                this.currentPost.translated_title = data.translated_title;
                 this.currentPost.summary_status = 'ready';
 
                 // Update in list too
                 const listPost = this.posts.find(p => p.id === this.currentPost.id);
                 if (listPost) {
                     listPost.one_line_summary = data.one_line_summary;
+                    listPost.translated_title = data.translated_title;
                     listPost.summary_status = 'ready';
                 }
             } catch (error) {
