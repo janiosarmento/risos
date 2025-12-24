@@ -685,22 +685,38 @@ function app() {
             this.refreshing = true;
 
             try {
-                // Refresh feeds that need updating
-                const feedsToRefresh = this.filter === 'feed'
-                    ? this.feeds.filter(f => f.id === this.filterId)
-                    : this.feeds.slice(0, 5); // Limit to 5 feeds at a time
+                const feedsToRefresh = [...this.feeds]; // All feeds
+                const total = feedsToRefresh.length;
+                let totalNew = 0;
+                let current = 0;
 
                 for (const feed of feedsToRefresh) {
+                    current++;
+                    this.showInfo(`Atualizando ${current}/${total}: ${feed.title.substring(0, 30)}...`);
+
                     try {
-                        await this.fetchApi(`/feeds/${feed.id}/refresh`, { method: 'POST' });
+                        const result = await this.fetchApi(`/feeds/${feed.id}/refresh`, { method: 'POST' });
+                        if (result && result.new_posts > 0) {
+                            totalNew += result.new_posts;
+                            // Update UI after each feed with new posts
+                            await this.loadFeeds();
+                            await this.loadPosts(true);
+                        }
                     } catch (e) {
                         console.error(`Failed to refresh feed ${feed.id}:`, e);
                     }
                 }
 
-                // Reload data
+                // Final reload and summary
                 await this.loadFeeds();
+                await this.loadStarredCount();
                 await this.loadPosts(true);
+
+                if (totalNew > 0) {
+                    this.showSuccess(`${totalNew} novos posts encontrados`);
+                } else {
+                    this.showInfo('Nenhum post novo');
+                }
             } finally {
                 this.refreshing = false;
             }
