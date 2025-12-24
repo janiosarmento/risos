@@ -406,6 +406,57 @@ def _parse_json_response(content: str) -> dict:
     raise ValueError(f"Não foi possível parsear JSON: {json_str[:200]}...")
 
 
+# Patterns that indicate error/garbage pages (no real content)
+GARBAGE_PATTERNS = [
+    # GitHub session errors
+    "reload to refresh your session",
+    "you signed in with another tab",
+    "you signed out in another tab",
+    "you switched accounts on another tab",
+    "you can't perform that action at this time",
+    "octocat-spinner",
+    # Common error pages
+    "access denied",
+    "403 forbidden",
+    "404 not found",
+    "500 internal server error",
+    "502 bad gateway",
+    "503 service unavailable",
+    "page not found",
+    # Paywalls/login walls
+    "subscribe to continue reading",
+    "create an account to continue",
+    "sign in to continue",
+    "this content is for subscribers only",
+    # Cookie/GDPR walls
+    "we use cookies",
+    "accept all cookies",
+    "manage cookie preferences",
+]
+
+
+def is_garbage_content(content: str) -> bool:
+    """
+    Detecta se o conteúdo é uma página de erro/sessão/paywall
+    que não deve ser enviada para a IA.
+    """
+    if not content or len(content.strip()) < 50:
+        return True
+
+    content_lower = content.lower()
+
+    # Check for garbage patterns
+    matches = sum(1 for pattern in GARBAGE_PATTERNS if pattern in content_lower)
+
+    # If multiple patterns match or content is very short with one match
+    if matches >= 2:
+        return True
+    if matches >= 1 and len(content.strip()) < 200:
+        return True
+
+    return False
+
+
 async def generate_summary(content: str, title: str = "") -> SummaryResult:
     """
     Gera resumo usando API Cerebras.
@@ -421,6 +472,11 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
         TemporaryError: Erro temporário (retry possível)
         PermanentError: Erro permanente (não tentar novamente)
     """
+    # Verificar se é conteúdo lixo (erro, sessão, paywall)
+    if is_garbage_content(content):
+        logger.info("Conteúdo detectado como página de erro/sessão, retornando vazio")
+        return SummaryResult(summary_pt="", one_line_summary="", translated_title=None)
+
     # Verificar circuit breaker
     can_call, reason = circuit_breaker.can_call()
     if not can_call:
