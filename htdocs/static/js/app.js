@@ -532,6 +532,9 @@ function app() {
 
         // Post operations
         async openPost(post) {
+            // Set loading state FIRST to prevent flash of old content
+            this.loadingContent = true;
+
             // Clear previous content to avoid showing stale data
             this.currentPost = {
                 ...post,
@@ -539,7 +542,6 @@ function app() {
                 summary_pt: null,
                 summary_status: 'pending',
             };
-            this.loadingContent = true;
 
             // Push state for back button support
             history.pushState({ modal: 'post', postId: post.id }, '');
@@ -727,6 +729,7 @@ function app() {
         },
 
         nextPost() {
+            if (this.loadingContent) return; // Prevent double navigation
             const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
             if (currentIndex < this.posts.length - 1) {
                 this.openPost(this.posts[currentIndex + 1]);
@@ -734,6 +737,7 @@ function app() {
         },
 
         prevPost() {
+            if (this.loadingContent) return; // Prevent double navigation
             const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
             if (currentIndex > 0) {
                 this.openPost(this.posts[currentIndex - 1]);
