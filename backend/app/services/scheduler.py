@@ -431,6 +431,7 @@ class Scheduler:
             TemporaryError,
             PermanentError,
         )
+        from app.services.content_extractor import extract_full_content
 
         # Intervalo baseado no rate limit (com margem de segurança)
         interval = max(5, 60 // settings.cerebras_max_rpm + 1)
@@ -498,8 +499,24 @@ class Scheduler:
                         db.commit()
                         continue
 
-                    # Usar full_content se disponível, senão content
-                    content = post.full_content or post.content
+                    # Buscar full_content se não disponível
+                    content = post.full_content
+                    if not content and post.url:
+                        try:
+                            logger.info(f"Buscando conteúdo completo para post {post.id}...")
+                            result = await extract_full_content(post.url)
+                            if result.success and result.content:
+                                content = result.content
+                                post.full_content = content
+                                db.commit()
+                                logger.info(f"Conteúdo completo salvo para post {post.id}")
+                        except Exception as e:
+                            logger.warning(f"Falha ao extrair conteúdo do post {post.id}: {e}")
+
+                    # Fallback para content do RSS
+                    if not content:
+                        content = post.content
+
                     if not content:
                         # Sem conteúdo, remover da fila
                         db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
