@@ -131,6 +131,7 @@ def get_public_config():
     """
     return {
         "toast_timeout_seconds": settings.toast_timeout_seconds,
+        "idle_refresh_seconds": settings.idle_refresh_seconds,
     }
 
 

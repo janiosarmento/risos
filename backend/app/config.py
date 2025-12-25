@@ -77,6 +77,7 @@ class Settings(BaseSettings):
 
     # UI
     toast_timeout_seconds: int = 2
+    idle_refresh_seconds: int = 180  # 3 minutes
 
     model_config = SettingsConfigDict(
         env_file=".env",

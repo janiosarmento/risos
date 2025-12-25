@@ -52,6 +52,10 @@ function app() {
         // Health
         healthWarning: null,
 
+        // Idle detection
+        idleTimeoutId: null,
+        idleRefreshSeconds: 180, // Default 3 minutes, loaded from config
+
         // Toast
         toast: {
             show: false,
@@ -210,6 +214,9 @@ function app() {
                     if (config.toast_timeout_seconds !== undefined) {
                         this.toastTimeoutSeconds = config.toast_timeout_seconds;
                     }
+                    if (config.idle_refresh_seconds !== undefined) {
+                        this.idleRefreshSeconds = config.idle_refresh_seconds;
+                    }
                 }
             } catch (e) {
                 // Use default if config fails to load
@@ -238,6 +245,7 @@ function app() {
             if (storedToken) {
                 this.token = storedToken;
                 await this.loadData();
+                this.setupIdleDetection();
             }
 
             // Setup keyboard shortcuts
@@ -342,6 +350,7 @@ function app() {
                 sessionStorage.setItem('rss_token', this.token);
                 this.password = '';
                 await this.loadData();
+                this.setupIdleDetection();
             } catch (error) {
                 this.loginError = error.message;
             } finally {
@@ -1156,6 +1165,50 @@ function app() {
             this.editingFeed = null;
             this.newCategoryName = '';
             this.newFeed = { url: '', category_id: '' };
+        },
+
+        // Idle detection - auto refresh unread counts after inactivity
+        setupIdleDetection() {
+            // Skip if idle refresh is disabled (0 seconds)
+            if (this.idleRefreshSeconds <= 0) return;
+
+            const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+            events.forEach(event => {
+                document.addEventListener(event, () => this.resetIdleTimer(), { passive: true });
+            });
+
+            // Start initial timer
+            this.resetIdleTimer();
+        },
+
+        resetIdleTimer() {
+            // Clear existing timer
+            if (this.idleTimeoutId) {
+                clearTimeout(this.idleTimeoutId);
+            }
+
+            // Set new timer
+            this.idleTimeoutId = setTimeout(() => this.onIdle(), this.idleRefreshSeconds * 1000);
+        },
+
+        async onIdle() {
+            // Don't refresh if modal is open or already refreshing
+            if (this.currentPost || this.showSettings || this.refreshing) {
+                // Restart timer to check again later
+                this.resetIdleTimer();
+                return;
+            }
+
+            // Refresh feed unread counts silently
+            try {
+                await this.loadFeeds();
+                await this.loadStarredCount();
+            } catch (e) {
+                // Ignore errors on idle refresh
+            }
+
+            // Restart timer for next idle check
+            this.resetIdleTimer();
         },
     };
 }
