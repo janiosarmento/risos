@@ -36,17 +36,24 @@ class ApiKeyRotator:
         self._load_state()
 
     def _load_state(self):
-        """Carrega índice atual do banco."""
+        """Load current index from database."""
         db = SessionLocal()
         try:
             row = db.query(AppSettings).filter(AppSettings.key == 'api_key_index').first()
             if row:
-                self._current_index = int(row.value)
+                saved_index = int(row.value)
+                # Apply modulo in case number of keys changed
+                num_keys = len(settings.cerebras_api_keys)
+                if num_keys > 0:
+                    self._current_index = saved_index % num_keys
+                else:
+                    self._current_index = 0
+                logger.info(f"API key rotator loaded: index={self._current_index}, total_keys={num_keys}")
         finally:
             db.close()
 
     def _save_state(self):
-        """Salva índice atual no banco."""
+        """Save current index to database."""
         db = SessionLocal()
         try:
             existing = db.query(AppSettings).filter(AppSettings.key == 'api_key_index').first()
@@ -56,18 +63,18 @@ class ApiKeyRotator:
                 db.add(AppSettings(key='api_key_index', value=str(self._current_index)))
             db.commit()
         except Exception as e:
-            logger.error(f"Erro ao salvar índice de API key: {e}")
+            logger.error(f"Error saving API key index: {e}")
             db.rollback()
         finally:
             db.close()
 
     def get_next_key(self) -> Tuple[Optional[str], Optional[int]]:
         """
-        Retorna a próxima API key disponível (round-robin).
-        Pula keys em cooldown.
+        Return the next available API key (round-robin).
+        Skips keys in cooldown.
 
         Returns:
-            Tuple de (api_key, key_index) ou (None, None) se nenhuma disponível
+            Tuple of (api_key, key_index) or (None, None) if none available
         """
         keys = settings.cerebras_api_keys
         if not keys:
@@ -76,46 +83,45 @@ class ApiKeyRotator:
         now = datetime.utcnow()
 
         with self._lock:
-            # Tentar encontrar uma key disponível
+            # Try to find an available key
             for _ in range(len(keys)):
-                key = keys[self._current_index % len(keys)]
-                key_index = self._current_index % len(keys)
+                key_index = self._current_index
+                key = keys[key_index]
 
-                # Avançar para próxima (round-robin)
+                # Advance to next (round-robin)
                 self._current_index = (self._current_index + 1) % len(keys)
 
-                # Verificar cooldown
+                # Check cooldown
                 cooldown_until = self._key_cooldowns.get(key)
                 if cooldown_until and now < cooldown_until:
                     remaining = (cooldown_until - now).total_seconds()
-                    logger.debug(f"Key {key_index + 1}/{len(keys)} em cooldown ({remaining:.0f}s)")
+                    logger.debug(f"Key {key_index + 1}/{len(keys)} in cooldown ({remaining:.0f}s)")
                     continue
 
-                # Key disponível
+                # Key available
                 self._save_state()
-                if len(keys) > 1:
-                    logger.debug(f"Usando API key {key_index + 1}/{len(keys)}")
+                logger.info(f"Using API key {key_index + 1}/{len(keys)}")
                 return key, key_index
 
-            # Todas as keys em cooldown
+            # All keys in cooldown
             return None, None
 
     def set_key_cooldown(self, key: str, seconds: int = 60):
-        """Coloca uma key em cooldown após rate limit."""
+        """Put a key in cooldown after rate limit."""
         with self._lock:
             self._key_cooldowns[key] = datetime.utcnow() + timedelta(seconds=seconds)
             keys = settings.cerebras_api_keys
             if key in keys:
                 key_index = keys.index(key) + 1
-                logger.warning(f"API key {key_index}/{len(keys)} em cooldown por {seconds}s")
+                logger.warning(f"API key {key_index}/{len(keys)} in cooldown for {seconds}s")
 
     def clear_cooldown(self, key: str):
-        """Remove cooldown de uma key."""
+        """Remove cooldown from a key."""
         with self._lock:
             self._key_cooldowns.pop(key, None)
 
     def get_status(self) -> dict:
-        """Retorna status de todas as keys."""
+        """Return status of all keys."""
         keys = settings.cerebras_api_keys
         now = datetime.utcnow()
         status = {
@@ -135,54 +141,54 @@ class ApiKeyRotator:
         return status
 
 
-# Instância global do rotador
+# Global rotator instance
 api_key_rotator = ApiKeyRotator()
 
 
 class CircuitState(Enum):
-    CLOSED = "closed"  # Normal, permitindo chamadas
-    OPEN = "open"      # Bloqueado após muitas falhas
-    HALF = "half"      # Testando se serviço voltou
+    CLOSED = "closed"  # Normal, allowing calls
+    OPEN = "open"      # Blocked after many failures
+    HALF = "half"      # Testing if service recovered
 
 
 class CerebrasError(Exception):
-    """Erro base do cliente Cerebras."""
+    """Base Cerebras client error."""
     pass
 
 
 class TemporaryError(CerebrasError):
-    """Erro temporário (timeout, 429, 5xx)."""
+    """Temporary error (timeout, 429, 5xx)."""
     pass
 
 
 class PermanentError(CerebrasError):
-    """Erro permanente (payload inválido, resposta vazia após retries)."""
+    """Permanent error (invalid payload, empty response after retries)."""
     pass
 
 
 @dataclass
 class SummaryResult:
-    """Resultado da geração de resumo."""
+    """Summary generation result."""
     summary_pt: str
     one_line_summary: str
-    translated_title: str = None  # Título traduzido (se não estiver no idioma-alvo)
+    translated_title: str = None  # Translated title (if not in target language)
 
 
 class CircuitBreaker:
     """
-    Circuit breaker para proteger contra falhas da API.
+    Circuit breaker to protect against API failures.
 
-    Estados:
-    - CLOSED: Normal, permitindo chamadas
-    - OPEN: Bloqueado após FAILURE_THRESHOLD falhas
-    - HALF: Testando após RECOVERY_TIMEOUT_SECONDS
+    States:
+    - CLOSED: Normal, allowing calls
+    - OPEN: Blocked after FAILURE_THRESHOLD failures
+    - HALF: Testing after RECOVERY_TIMEOUT_SECONDS
     """
 
     def __init__(self):
         self._load_state()
 
     def _load_state(self):
-        """Carrega estado do banco."""
+        """Load state from database."""
         db = SessionLocal()
         try:
             self.state = CircuitState.CLOSED
@@ -191,7 +197,7 @@ class CircuitBreaker:
             self.last_failure = None
             self.last_call = None
 
-            # Carregar do banco
+            # Load from database
             for row in db.query(AppSettings).filter(
                 AppSettings.key.in_([
                     'cerebras_state', 'cerebras_failures', 'cerebras_half_successes',
