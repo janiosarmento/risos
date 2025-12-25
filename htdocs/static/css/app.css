@@ -1,11 +1,26 @@
-/* Risos RSS Reader - Main Stylesheet */
+/* ===========================================
+   Risos RSS Reader - Main Stylesheet
+   =========================================== */
 
-/* Alpine.js cloak */
+/* -------------------------------------------
+   1. Base / Reset
+   ------------------------------------------- */
+
+/* Alpine.js cloak - hide until initialized */
 [x-cloak] {
     display: none !important;
 }
 
-/* Prose content */
+/* Fix flex children overflow */
+.flex-1 {
+    min-width: 0;
+}
+
+/* -------------------------------------------
+   2. Content Blocks (post, summary, prose)
+   ------------------------------------------- */
+
+/* Prose - inline content from feeds */
 .prose img {
     max-width: 100%;
     height: auto;
@@ -16,15 +31,14 @@
     text-decoration: underline;
 }
 
-/* Post content */
+/* Post content - original article */
 .post-content {
     line-height: 1.7;
     overflow-x: auto;
+    overflow-wrap: break-word;
+    word-break: break-word;
     min-width: 0;
-}
-
-.post-content p {
-    margin-bottom: 1rem;
+    max-width: 100%;
 }
 
 .post-content * {
@@ -37,11 +51,6 @@
     border-radius: 0.5rem;
     overflow-x: auto;
     margin: 1rem 0;
-    max-width: 100%;
-}
-
-.post-content code {
-    word-break: break-all;
 }
 
 .post-content pre code {
@@ -54,22 +63,20 @@
     display: block;
 }
 
+.post-content code {
+    word-break: break-all;
+}
+
 .post-content table {
     display: block;
     overflow-x: auto;
-    max-width: 100%;
 }
 
-/* Summary content (markdown rendered) */
+/* Summary content - AI-generated markdown */
 .summary-content {
     overflow-wrap: break-word;
-    word-wrap: break-word;
     word-break: break-word;
     max-width: 100%;
-}
-
-.summary-content p {
-    margin-bottom: 1rem;
 }
 
 .summary-content ul {
@@ -90,20 +97,17 @@
     font-style: italic;
 }
 
-/* Force word break on long text */
-.post-content {
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    max-width: 100%;
+/* Shared styles for content blocks */
+.post-content p,
+.summary-content p {
+    margin-bottom: 1rem;
 }
 
-/* Fix flex children overflow */
-.flex-1 {
-    min-width: 0;
-}
+/* -------------------------------------------
+   3. UI Components
+   ------------------------------------------- */
 
-/* Scrollbar - Light */
+/* Scrollbar - webkit browsers */
 .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
 }
@@ -117,11 +121,18 @@
     border-radius: 3px;
 }
 
-/* ============================================
-   Dark Mode Styles
-   ============================================ */
+/* -------------------------------------------
+   4. Dark Mode
+   ------------------------------------------- */
 
-/* Scrollbar - Dark */
+.dark .prose a {
+    color: #60a5fa;
+}
+
+.dark .post-content pre {
+    background: #1a1a2e;
+}
+
 .dark .scrollbar-thin::-webkit-scrollbar-track {
     background: #1f2937;
 }
@@ -130,16 +141,11 @@
     background: #4b5563;
 }
 
-/* Code blocks - Dark */
-.dark .post-content pre {
-    background: #1a1a2e;
-}
+/* -------------------------------------------
+   5. Mobile / Responsive
+   ------------------------------------------- */
 
-/* ============================================
-   Mobile Responsive Styles
-   ============================================ */
-
-/* Safe area for mobile devices with notches */
+/* Safe area for devices with notches */
 @supports (padding: max(0px)) {
     body {
         padding-left: env(safe-area-inset-left);
@@ -148,8 +154,8 @@
     }
 }
 
-/* Improve touch targets */
 @media (max-width: 768px) {
+    /* Disable tap highlight */
     button, a {
         -webkit-tap-highlight-color: transparent;
     }
@@ -159,12 +165,12 @@
         overflow-x: hidden;
     }
 
-    /* Better touch scrolling */
+    /* Momentum scrolling on iOS */
     .overflow-y-auto {
         -webkit-overflow-scrolling: touch;
     }
 
-    /* Post content images */
+    /* Responsive images */
     .post-content img {
         max-width: 100%;
         height: auto;
