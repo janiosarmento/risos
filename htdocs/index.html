@@ -247,7 +247,7 @@
                     <!-- Status -->
                     <div class="p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
                         <span x-text="feeds.length"></span> feeds |
-                        <span x-text="totalPosts"></span> posts
+                        <span x-text="totalPostsCount"></span> posts
                     </div>
                 </aside>
 
@@ -358,7 +358,7 @@
                                 tabindex="0"
                                 class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition"
                                 :class="{
-                                    'bg-gray-100 dark:bg-gray-800': selectedIndex === index,
+                                    'bg-blue-100 dark:bg-gray-800': selectedIndex === index,
                                     'hover:bg-gray-100 dark:hover:bg-gray-800': selectedIndex !== index,
                                     'opacity-60': post.is_read,
                                     'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id)

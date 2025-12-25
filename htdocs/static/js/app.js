@@ -82,10 +82,6 @@ function app() {
         ],
 
         // Computed
-        get totalPosts() {
-            return this.totalPostsCount;
-        },
-
         get totalUnread() {
             return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0);
         },
@@ -99,6 +95,33 @@ function app() {
             if (skipped > 0) text += `, ${skipped} ${this.t('opml.duplicates')}`;
             if (errors?.length > 0) text += `, ${errors.length} ${this.t('opml.errors')}`;
             return text;
+        },
+
+        // Post lookup helpers
+        getPostById(id) {
+            return this.posts.find(p => p.id === id);
+        },
+
+        getPostIndex(id) {
+            return this.posts.findIndex(p => p.id === id);
+        },
+
+        getCurrentPostIndex() {
+            return this.currentPost ? this.getPostIndex(this.currentPost.id) : -1;
+        },
+
+        updatePost(id, updates) {
+            const listPost = this.getPostById(id);
+            if (listPost) {
+                Object.assign(listPost, updates);
+            }
+            if (this.currentPost?.id === id) {
+                Object.assign(this.currentPost, updates);
+            }
+        },
+
+        isKey(e, key) {
+            return e.key.toLowerCase() === key.toLowerCase();
         },
 
         // Translation function
@@ -286,25 +309,25 @@ function app() {
                 if (this.currentPost) {
                     if (e.key === 'Escape') {
                         this.closePost();
-                    } else if (e.key === 'm' || e.key === 'M') {
+                    } else if (this.isKey(e, 'm')) {
                         this.toggleRead(this.currentPost);
-                    } else if (e.key === 's' || e.key === 'S') {
+                    } else if (this.isKey(e, 's')) {
                         this.toggleStar(this.currentPost);
-                    } else if (e.key === 'r' || e.key === 'R') {
+                    } else if (this.isKey(e, 'r')) {
                         this.regenerateSummary();
-                    } else if (e.key === 'j' || e.key === 'J') {
+                    } else if (this.isKey(e, 'j')) {
                         this.nextPost();
-                    } else if (e.key === 'k' || e.key === 'K') {
+                    } else if (this.isKey(e, 'k')) {
                         this.prevPost();
                     }
                     return;
                 }
 
                 // Main view shortcuts
-                if (e.key === 'j' || e.key === 'J') {
+                if (this.isKey(e, 'j')) {
                     e.preventDefault();
                     this.selectNext();
-                } else if (e.key === 'k' || e.key === 'K') {
+                } else if (this.isKey(e, 'k')) {
                     e.preventDefault();
                     this.selectPrev();
                 } else if (e.key === 'Enter') {
@@ -312,15 +335,15 @@ function app() {
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.openPost(this.posts[this.selectedIndex]);
                     }
-                } else if (e.key === 'm' || e.key === 'M') {
+                } else if (this.isKey(e, 'm')) {
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.toggleRead(this.posts[this.selectedIndex]);
                     }
-                } else if (e.key === 's' || e.key === 'S') {
+                } else if (this.isKey(e, 's')) {
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.toggleStar(this.posts[this.selectedIndex]);
                     }
-                } else if (e.key === 'r' || e.key === 'R') {
+                } else if (this.isKey(e, 'r')) {
                     this.refreshFeeds();
                 }
             });
@@ -575,7 +598,7 @@ function app() {
             history.pushState({ modal: 'post', postId: post.id }, '');
 
             // Find index
-            const index = this.posts.findIndex(p => p.id === post.id);
+            const index = this.getPostIndex(post.id);
             if (index >= 0) {
                 this.selectedIndex = index;
             }
@@ -592,18 +615,16 @@ function app() {
                 if (data.full_content) data.full_content = this.cleanText(data.full_content);
                 if (data.summary_pt) data.summary_pt = this.cleanText(data.summary_pt);
                 if (data.one_line_summary) data.one_line_summary = this.cleanText(data.one_line_summary);
+
                 this.currentPost = { ...this.currentPost, ...data };
-                // Update in list too
-                const listPost = this.posts.find(p => p.id === post.id);
-                if (listPost) {
-                    listPost.full_content = data.full_content;
-                    listPost.summary_pt = data.summary_pt;
-                    listPost.one_line_summary = data.one_line_summary;
-                    listPost.translated_title = data.translated_title;
-                }
+                this.updatePost(post.id, {
+                    full_content: data.full_content,
+                    summary_pt: data.summary_pt,
+                    one_line_summary: data.one_line_summary,
+                    translated_title: data.translated_title,
+                });
             } catch (e) {
                 console.error('Failed to load post detail:', e);
-                // Reset summary status on error
                 this.currentPost.summary_status = 'failed';
             } finally {
                 this.loadingContent = false;
@@ -633,16 +654,7 @@ function app() {
                     body: JSON.stringify({ is_read: isRead }),
                 });
 
-                // Update post in list
-                const listPost = this.posts.find(p => p.id === post.id);
-                if (listPost) {
-                    listPost.is_read = isRead;
-                }
-
-                // Update current post if open
-                if (this.currentPost && this.currentPost.id === post.id) {
-                    this.currentPost.is_read = isRead;
-                }
+                this.updatePost(post.id, { is_read: isRead });
 
                 // Update feed unread count
                 const feed = this.feeds.find(f => f.id === post.feed_id);
@@ -660,18 +672,10 @@ function app() {
                     method: 'PATCH',
                 });
 
-                // Update post in list
-                const listPost = this.posts.find(p => p.id === post.id);
-                if (listPost) {
-                    listPost.is_starred = data.is_starred;
-                    listPost.starred_at = data.starred_at;
-                }
-
-                // Update current post if open
-                if (this.currentPost && this.currentPost.id === post.id) {
-                    this.currentPost.is_starred = data.is_starred;
-                    this.currentPost.starred_at = data.starred_at;
-                }
+                this.updatePost(post.id, {
+                    is_starred: data.is_starred,
+                    starred_at: data.starred_at,
+                });
 
                 // Update starred count
                 if (data.is_starred === true) {
@@ -774,31 +778,28 @@ function app() {
         },
 
         nextPost() {
-            if (this.loadingContent) return; // Prevent double navigation
-            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
-            if (currentIndex < this.posts.length - 1) {
-                this.openPost(this.posts[currentIndex + 1]);
+            if (this.loadingContent) return;
+            const idx = this.getCurrentPostIndex();
+            if (idx >= 0 && idx < this.posts.length - 1) {
+                this.openPost(this.posts[idx + 1]);
             }
         },
 
         prevPost() {
-            if (this.loadingContent) return; // Prevent double navigation
-            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
-            if (currentIndex > 0) {
-                this.openPost(this.posts[currentIndex - 1]);
+            if (this.loadingContent) return;
+            const idx = this.getCurrentPostIndex();
+            if (idx > 0) {
+                this.openPost(this.posts[idx - 1]);
             }
         },
 
         canGoPrev() {
-            if (!this.currentPost) return false;
-            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
-            return currentIndex > 0;
+            return this.getCurrentPostIndex() > 0;
         },
 
         canGoNext() {
-            if (!this.currentPost) return false;
-            const currentIndex = this.posts.findIndex(p => p.id === this.currentPost.id);
-            return currentIndex < this.posts.length - 1;
+            const idx = this.getCurrentPostIndex();
+            return idx >= 0 && idx < this.posts.length - 1;
         },
 
         // Infinite scroll
@@ -890,19 +891,15 @@ function app() {
                     method: 'POST',
                 });
 
-                // Update current post with new summary (clean non-breaking spaces)
-                this.currentPost.summary_pt = this.cleanText(data.summary_pt);
-                this.currentPost.one_line_summary = this.cleanText(data.one_line_summary);
-                this.currentPost.translated_title = data.translated_title;
-                this.currentPost.summary_status = 'ready';
+                const updates = {
+                    summary_pt: this.cleanText(data.summary_pt),
+                    one_line_summary: this.cleanText(data.one_line_summary),
+                    translated_title: data.translated_title,
+                    summary_status: 'ready',
+                };
 
-                // Update in list too
-                const listPost = this.posts.find(p => p.id === this.currentPost.id);
-                if (listPost) {
-                    listPost.one_line_summary = data.one_line_summary;
-                    listPost.translated_title = data.translated_title;
-                    listPost.summary_status = 'ready';
-                }
+                this.currentPost = { ...this.currentPost, ...updates };
+                this.updatePost(this.currentPost.id, updates);
             } catch (error) {
                 console.error('Failed to regenerate summary:', error);
                 this.showError(this.t('errors.regenerateSummary') + ': ' + error.message);
@@ -926,29 +923,30 @@ function app() {
         formatDate(dateStr) {
             if (!dateStr) return '';
 
+            const MINUTE = 60000;
+            const HOUR = 3600000;
+            const DAY = 86400000;
+            const WEEK = 604800000;
+
             const date = new Date(dateStr);
             const now = new Date();
             const diff = now - date;
 
-            // Less than 1 hour
-            if (diff < 3600000) {
-                const mins = Math.floor(diff / 60000);
+            if (diff < HOUR) {
+                const mins = Math.floor(diff / MINUTE);
                 return mins <= 1 ? this.t('time.now') : `${mins}min`;
             }
 
-            // Less than 24 hours
-            if (diff < 86400000) {
-                const hours = Math.floor(diff / 3600000);
+            if (diff < DAY) {
+                const hours = Math.floor(diff / HOUR);
                 return `${hours}h`;
             }
 
-            // Less than 7 days
-            if (diff < 604800000) {
-                const days = Math.floor(diff / 86400000);
+            if (diff < WEEK) {
+                const days = Math.floor(diff / DAY);
                 return `${days}d`;
             }
 
-            // Format as date
             return date.toLocaleDateString('pt-BR', {
                 day: 'numeric',
                 month: 'short',
