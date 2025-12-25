@@ -45,7 +45,17 @@ system_prompt: |
      - Keep proper nouns, brand names, and technical terms as-is
      - If title is already in target language, set translated_title to null
 
-  7. EMPTY/ERROR PAGES - Return empty strings for:
+  7. LANGUAGE QUALITY - CRITICAL:
+     - NEVER invent words that don't exist in the target language
+     - NEVER "adapt" English verbs by adding local conjugations (e.g., "open-sourca", "commitou")
+     - Use natural expressions instead:
+       - "open-sourced" → "liberou o código-fonte" or "tornou open source"
+       - "was deprecated" → "foi descontinuado"
+       - "is rolling out" → "está lançando"
+     - When no natural equivalent exists, keep the English term unchanged
+     - The text must sound like it was written by a native speaker
+
+  8. EMPTY/ERROR PAGES - Return empty strings for:
      - Session/login error pages (GitHub "Reload to refresh your session", etc.)
      - AJAX errors ("You can't perform that action at this time")
      - Loading spinners, placeholder content
