@@ -2,6 +2,7 @@
 Rotas de posts.
 Leitura, marcação como lido, extração de conteúdo e redirecionamento.
 """
+import logging
 from datetime import datetime
 from typing import Optional
 
@@ -22,11 +23,21 @@ from app.schemas import (
 from app.services.content_extractor import extract_full_content
 from app.services.cerebras import generate_summary, CerebrasError
 from app.services.content_hasher import compute_content_hash
-import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+def get_post_or_404(db: Session, post_id: int) -> Post:
+    """Fetch post by ID or raise 404."""
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    return post
 
 
 def get_summary_status(db: Session, post: Post) -> str:
@@ -152,12 +163,7 @@ async def get_post(
     Inclui resumo IA se disponível.
     Extrai full_content sob demanda se não estiver em cache.
     """
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = get_post_or_404(db, post_id)
 
     # Extrair full_content sob demanda se não estiver em cache
     full_content = post.full_content
@@ -258,12 +264,7 @@ def toggle_read(
     Alterna status de leitura de um post.
     Se lido, marca como não lido. Se não lido, marca como lido.
     """
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = get_post_or_404(db, post_id)
 
     if post.is_read:
         post.is_read = False
@@ -287,12 +288,7 @@ def toggle_star(
     Alterna status de favorito de um post.
     Se estrelado, remove estrela. Se não, adiciona.
     """
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = get_post_or_404(db, post_id)
 
     if post.is_starred:
         post.is_starred = False
@@ -358,12 +354,7 @@ async def get_full_content(
     - Sanitiza HTML
     - Cache em posts.full_content
     """
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = get_post_or_404(db, post_id)
 
     if not post.url:
         raise HTTPException(
@@ -411,12 +402,7 @@ def redirect_to_post(
     - Marca post como lido
     - Retorna HTTP 302 para URL original
     """
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = get_post_or_404(db, post_id)
 
     if not post.url:
         raise HTTPException(
@@ -447,12 +433,7 @@ async def regenerate_summary(
     - Atualiza ou insere na tabela ai_summaries
     - Retorna o novo resumo
     """
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = get_post_or_404(db, post_id)
 
     # Obter conteúdo para resumir
     content_for_summary = post.full_content or post.content
