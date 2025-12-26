@@ -150,6 +150,19 @@ else
     echo_info ".env already exists"
 fi
 
+# Create prompts.yaml if it doesn't exist
+if [ ! -f "$BACKEND_DIR/prompts.yaml" ]; then
+    if [ -f "$BACKEND_DIR/prompts.yaml.example" ]; then
+        cp "$BACKEND_DIR/prompts.yaml.example" "$BACKEND_DIR/prompts.yaml"
+        echo_info "prompts.yaml created from prompts.yaml.example"
+    else
+        echo_error "prompts.yaml.example not found!"
+        exit 1
+    fi
+else
+    echo_info "prompts.yaml already exists (preserving customizations)"
+fi
+
 # Create data directory
 mkdir -p "$BACKEND_DIR/data"
 chown -R "$RUN_USER:$RUN_GROUP" "$BACKEND_DIR/data"

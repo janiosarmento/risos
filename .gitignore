@@ -32,6 +32,7 @@ pip-delete-this-directory.txt
 .env
 *.env.local
 backend/.env
+backend/prompts.yaml
 
 # Data and logs
 data/
