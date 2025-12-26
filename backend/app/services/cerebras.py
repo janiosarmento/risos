@@ -14,7 +14,7 @@ from typing import Optional, Tuple, Dict
 
 import httpx
 
-from app.config import settings, prompts
+from app.config import load_prompts, settings
 from app.database import SessionLocal
 from app.models import AppSettings
 
@@ -385,7 +385,8 @@ circuit_breaker = CircuitBreaker()
 
 
 def get_system_prompt() -> str:
-    """Returns the system prompt from prompts.yaml."""
+    """Returns the system prompt from prompts.yaml (loaded dynamically)."""
+    prompts = load_prompts()
     return prompts.get(
         "system_prompt",
         "You are a helpful assistant that summarizes articles.",
@@ -395,7 +396,9 @@ def get_system_prompt() -> str:
 def get_user_prompt(content: str, title: str = "") -> str:
     """
     Returns the user prompt with content, title, and language interpolated.
+    Prompts are loaded dynamically from prompts.yaml.
     """
+    prompts = load_prompts()
     template = prompts.get(
         "user_prompt", "Summarize this article in {language}:\n\n{content}"
     )

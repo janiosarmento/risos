@@ -104,6 +104,3 @@ class Settings(BaseSettings):
 
 # Global configuration instance
 settings = Settings()
-
-# Load prompts from YAML file
-prompts = load_prompts()
