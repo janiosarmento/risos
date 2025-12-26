@@ -1,7 +1,8 @@
 """
-Configuração da aplicação usando pydantic-settings.
-Carrega variáveis de ambiente do arquivo .env
+Application configuration using pydantic-settings.
+Loads environment variables from .env file.
 """
+
 import os
 from pathlib import Path
 
@@ -19,17 +20,17 @@ def load_prompts() -> dict:
 
 
 class Settings(BaseSettings):
-    """Configurações da aplicação carregadas do .env"""
+    """Application settings loaded from .env"""
 
-    # Banco de dados
+    # Database
     database_path: str = "./data/reader.db"
 
-    # Autenticação
+    # Authentication
     app_password: str
     jwt_secret: str
     jwt_expiration_hours: int = 24
 
-    # Cerebras IA
+    # Cerebras AI
     cerebras_api_key: str = ""  # Can be comma-separated for multiple keys
     cerebras_model: str = "llama-3.3-70b"
 
@@ -38,7 +39,10 @@ class Settings(BaseSettings):
         """Returns list of API keys (supports comma-separated values)."""
         if not self.cerebras_api_key:
             return []
-        return [k.strip() for k in self.cerebras_api_key.split(",") if k.strip()]
+        return [
+            k.strip() for k in self.cerebras_api_key.split(",") if k.strip()
+        ]
+
     cerebras_max_rpm: int = 20
     cerebras_timeout: int = 30
     summary_language: str = "Brazilian Portuguese"
@@ -53,7 +57,7 @@ class Settings(BaseSettings):
     api_rate_limit: int = 100
     feeds_refresh_rate_limit: int = 10
 
-    # Retenção
+    # Retention
     max_posts_per_feed: int = 500
     max_post_age_days: int = 365
     max_unread_days: int = 90
@@ -72,7 +76,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_file: str = "./data/app.log"
 
-    # Segurança
+    # Security
     cors_origins: str = "https://rss.sarmento.org"
 
     # UI
@@ -83,14 +87,14 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore"
+        extra="ignore",
     )
 
     def __init__(self, **kwargs):
-        """Valida JWT_SECRET no __init__"""
+        """Validate JWT_SECRET in __init__"""
         super().__init__(**kwargs)
 
-        # Validar JWT_SECRET >= 32 caracteres
+        # Validate JWT_SECRET >= 32 characters
         if len(self.jwt_secret) < 32:
             raise ValueError(
                 f"JWT_SECRET must be at least 32 characters long. "
@@ -98,8 +102,8 @@ class Settings(BaseSettings):
             )
 
 
-# Instância global de configuração
+# Global configuration instance
 settings = Settings()
 
-# Carregar prompts do arquivo YAML
+# Load prompts from YAML file
 prompts = load_prompts()

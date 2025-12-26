@@ -1,7 +1,8 @@
 """
-Scheduler para background jobs.
-Usa lock no banco para garantir apenas uma instância ativa.
+Scheduler for background jobs.
+Uses database lock to ensure only one active instance.
 """
+
 import asyncio
 import logging
 import uuid
@@ -17,13 +18,13 @@ from app.models import SchedulerLock
 
 logger = logging.getLogger(__name__)
 
-# Configurações
-HEARTBEAT_INTERVAL = 30  # segundos
-LOCK_TIMEOUT = 60  # segundos - lock expira se heartbeat parar
+# Configuration
+HEARTBEAT_INTERVAL = 30  # seconds
+LOCK_TIMEOUT = 60  # seconds - lock expires if heartbeat stops
 
 
 class Scheduler:
-    """Gerenciador de jobs em background com lock distribuído."""
+    """Background jobs manager with distributed lock."""
 
     def __init__(self):
         self.instance_id = str(uuid.uuid4())
@@ -32,52 +33,54 @@ class Scheduler:
         self._tasks = []
 
     async def start(self):
-        """Inicia o scheduler."""
+        """Start the scheduler."""
         self._running = True
-        logger.info(f"Scheduler iniciando (instance_id: {self.instance_id})")
+        logger.info(f"Scheduler starting (instance_id: {self.instance_id})")
 
-        # Tentar adquirir lock
+        # Try to acquire lock
         await self._try_acquire_lock()
 
-        # Iniciar heartbeat
+        # Start heartbeat
         asyncio.create_task(self._heartbeat_loop())
 
-        # Se for líder, iniciar jobs
+        # If leader, start jobs
         if self.is_leader:
             await self._start_jobs()
 
     async def stop(self):
-        """Para o scheduler e libera lock."""
+        """Stop the scheduler and release lock."""
         self._running = False
-        logger.info("Scheduler parando...")
+        logger.info("Scheduler stopping...")
 
-        # Cancelar tasks
+        # Cancel tasks
         for task in self._tasks:
             task.cancel()
 
-        # Liberar lock
+        # Release lock
         if self.is_leader:
             await self._release_lock()
 
     async def _try_acquire_lock(self) -> bool:
         """
-        Tenta adquirir lock de líder.
-        Usa INSERT OR REPLACE com verificação de heartbeat expirado.
+        Try to acquire leader lock.
+        Uses INSERT OR REPLACE with expired heartbeat check.
         """
         db = SessionLocal()
         try:
             now = datetime.utcnow()
             timeout = now - timedelta(seconds=LOCK_TIMEOUT)
 
-            # Verificar lock existente
-            existing = db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
+            # Check existing lock
+            existing = (
+                db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
+            )
 
             if existing:
-                # Verificar se expirou
+                # Check if expired
                 if existing.heartbeat_at < timeout:
                     logger.info(
-                        f"Lock expirado (último heartbeat: {existing.heartbeat_at}). "
-                        f"Adquirindo..."
+                        f"Lock expired (last heartbeat: {existing.heartbeat_at}). "
+                        f"Acquiring..."
                     )
                     existing.locked_by = self.instance_id
                     existing.locked_at = now
@@ -85,16 +88,16 @@ class Scheduler:
                     db.commit()
                     self.is_leader = True
                 elif existing.locked_by == self.instance_id:
-                    # Já somos o líder
+                    # Already the leader
                     self.is_leader = True
                 else:
-                    # Outro processo é líder
+                    # Another process is leader
                     logger.info(
-                        f"Outra instância é líder: {existing.locked_by}"
+                        f"Another instance is leader: {existing.locked_by}"
                     )
                     self.is_leader = False
             else:
-                # Criar lock
+                # Create lock
                 lock = SchedulerLock(
                     id=1,
                     locked_by=self.instance_id,
@@ -106,35 +109,35 @@ class Scheduler:
                 self.is_leader = True
 
             if self.is_leader:
-                logger.info(f"Lock adquirido. Esta instância é o líder.")
+                logger.info(f"Lock acquired. This instance is the leader.")
 
             return self.is_leader
 
         except Exception as e:
-            logger.error(f"Erro ao adquirir lock: {e}")
+            logger.error(f"Error acquiring lock: {e}")
             db.rollback()
             return False
         finally:
             db.close()
 
     async def _release_lock(self):
-        """Libera lock de líder."""
+        """Release leader lock."""
         db = SessionLocal()
         try:
             db.query(SchedulerLock).filter(
                 SchedulerLock.id == 1,
-                SchedulerLock.locked_by == self.instance_id
+                SchedulerLock.locked_by == self.instance_id,
             ).delete()
             db.commit()
-            logger.info("Lock liberado")
+            logger.info("Lock released")
         except Exception as e:
-            logger.error(f"Erro ao liberar lock: {e}")
+            logger.error(f"Error releasing lock: {e}")
             db.rollback()
         finally:
             db.close()
 
     async def _heartbeat_loop(self):
-        """Loop de heartbeat para manter lock ativo."""
+        """Heartbeat loop to keep lock active."""
         while self._running:
             try:
                 await asyncio.sleep(HEARTBEAT_INTERVAL)
@@ -145,7 +148,7 @@ class Scheduler:
                 if self.is_leader:
                     await self._update_heartbeat()
                 else:
-                    # Tentar adquirir lock se não for líder
+                    # Try to acquire lock if not leader
                     await self._try_acquire_lock()
                     if self.is_leader:
                         await self._start_jobs()
@@ -153,23 +156,27 @@ class Scheduler:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Erro no heartbeat: {e}")
+                logger.error(f"Heartbeat error: {e}")
 
     async def _update_heartbeat(self):
-        """Atualiza heartbeat do lock."""
+        """Update lock heartbeat."""
         db = SessionLocal()
         try:
             now = datetime.utcnow()
-            result = db.query(SchedulerLock).filter(
-                SchedulerLock.id == 1,
-                SchedulerLock.locked_by == self.instance_id
-            ).update({"heartbeat_at": now})
+            result = (
+                db.query(SchedulerLock)
+                .filter(
+                    SchedulerLock.id == 1,
+                    SchedulerLock.locked_by == self.instance_id,
+                )
+                .update({"heartbeat_at": now})
+            )
 
             if result == 0:
-                # Perdemos o lock
-                logger.warning("Lock perdido! Outra instância assumiu.")
+                # Lost the lock
+                logger.warning("Lock lost! Another instance took over.")
                 self.is_leader = False
-                # Cancelar jobs
+                # Cancel jobs
                 for task in self._tasks:
                     task.cancel()
                 self._tasks = []
@@ -177,37 +184,29 @@ class Scheduler:
                 db.commit()
 
         except Exception as e:
-            logger.error(f"Erro ao atualizar heartbeat: {e}")
+            logger.error(f"Error updating heartbeat: {e}")
             db.rollback()
         finally:
             db.close()
 
     async def _start_jobs(self):
-        """Inicia todos os jobs em background."""
-        logger.info("Iniciando jobs...")
+        """Start all background jobs."""
+        logger.info("Starting jobs...")
 
-        # Job: update_feeds (a cada 30 minutos)
-        self._tasks.append(
-            asyncio.create_task(self._job_update_feeds())
-        )
+        # Job: update_feeds (every 30 minutes)
+        self._tasks.append(asyncio.create_task(self._job_update_feeds()))
 
-        # Job: cleanup_retention (diário às 03:00)
-        self._tasks.append(
-            asyncio.create_task(self._job_cleanup_retention())
-        )
+        # Job: cleanup_retention (daily at 03:00)
+        self._tasks.append(asyncio.create_task(self._job_cleanup_retention()))
 
-        # Job: health_check (a cada 5 minutos)
-        self._tasks.append(
-            asyncio.create_task(self._job_health_check())
-        )
+        # Job: health_check (every 5 minutes)
+        self._tasks.append(asyncio.create_task(self._job_health_check()))
 
-        # Job: process_summaries (a cada 1 minuto)
-        self._tasks.append(
-            asyncio.create_task(self._job_process_summaries())
-        )
+        # Job: process_summaries (every 1 minute)
+        self._tasks.append(asyncio.create_task(self._job_process_summaries()))
 
     async def _job_update_feeds(self):
-        """Job para atualizar feeds periodicamente."""
+        """Job to update feeds periodically."""
         from app.services.feed_ingestion import ingest_feed
         from app.models import Feed
 
@@ -215,25 +214,30 @@ class Scheduler:
 
         while self._running and self.is_leader:
             try:
-                logger.info("Job update_feeds: iniciando...")
+                logger.info("Job update_feeds: starting...")
 
                 db = SessionLocal()
                 try:
                     now = datetime.utcnow()
 
-                    # Buscar feeds elegíveis
+                    # Find eligible feeds
                     feeds = (
                         db.query(Feed)
                         .filter(
                             Feed.disabled_at.is_(None),
-                            (Feed.next_retry_at.is_(None)) | (Feed.next_retry_at <= now)
+                            (Feed.next_retry_at.is_(None))
+                            | (Feed.next_retry_at <= now),
                         )
-                        .order_by(Feed.error_count.asc())  # Priorizar feeds sem erro
+                        .order_by(
+                            Feed.error_count.asc()
+                        )  # Prioritize feeds without errors
                         .limit(20)
                         .all()
                     )
 
-                    logger.info(f"Job update_feeds: {len(feeds)} feeds para atualizar")
+                    logger.info(
+                        f"Job update_feeds: {len(feeds)} feeds to update"
+                    )
 
                     for feed in feeds:
                         if not self._running or not self.is_leader:
@@ -242,49 +246,55 @@ class Scheduler:
                         try:
                             result = await ingest_feed(db, feed)
                             logger.info(
-                                f"Feed {feed.id} atualizado: "
-                                f"{result.new_posts} novos, "
-                                f"{result.skipped_duplicates} duplicados"
+                                f"Feed {feed.id} updated: "
+                                f"{result.new_posts} new, "
+                                f"{result.skipped_duplicates} duplicates"
                             )
                         except Exception as e:
-                            logger.error(f"Erro ao atualizar feed {feed.id}: {e}")
+                            logger.error(
+                                f"Error updating feed {feed.id}: {e}"
+                            )
 
-                        # Pequeno delay entre feeds
+                        # Small delay between feeds
                         await asyncio.sleep(1)
 
                 finally:
                     db.close()
 
-                logger.info("Job update_feeds: concluído")
+                logger.info("Job update_feeds: completed")
 
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Erro no job update_feeds: {e}")
+                logger.error(f"Error in job update_feeds: {e}")
 
-            # Aguardar próximo ciclo
+            # Wait for next cycle
             await asyncio.sleep(interval)
 
     async def _job_cleanup_retention(self):
-        """Job para limpeza de posts antigos."""
+        """Job to clean up old posts."""
         from app.models import Post, CleanupLog
 
         while self._running and self.is_leader:
             try:
                 now = datetime.utcnow()
 
-                # Verificar se é hora de rodar (03:00)
+                # Check if it's time to run (03:00)
                 target_hour = settings.cleanup_hour
                 if now.hour != target_hour:
-                    # Calcular tempo até próxima execução
-                    next_run = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
+                    # Calculate time until next execution
+                    next_run = now.replace(
+                        hour=target_hour, minute=0, second=0, microsecond=0
+                    )
                     if now.hour >= target_hour:
                         next_run += timedelta(days=1)
                     wait_seconds = (next_run - now).total_seconds()
-                    await asyncio.sleep(min(wait_seconds, 3600))  # Max 1h de espera
+                    await asyncio.sleep(
+                        min(wait_seconds, 3600)
+                    )  # Max 1h wait
                     continue
 
-                logger.info("Job cleanup_retention: iniciando...")
+                logger.info("Job cleanup_retention: starting...")
 
                 db = SessionLocal()
                 start_time = datetime.utcnow()
@@ -294,40 +304,61 @@ class Scheduler:
                     full_content_cleared = 0
                     unread_removed = 0
 
-                    # 1. Remover posts lidos há mais de MAX_POST_AGE_DAYS
-                    # (exceto favoritos que nunca são removidos)
-                    cutoff_read = now - timedelta(days=settings.max_post_age_days)
-                    result = db.query(Post).filter(
-                        Post.is_read == True,
-                        Post.read_at < cutoff_read,
-                        (Post.is_starred == False) | (Post.is_starred.is_(None))
-                    ).delete(synchronize_session=False)
+                    # 1. Remove posts read more than MAX_POST_AGE_DAYS ago
+                    # (except favorites which are never removed)
+                    cutoff_read = now - timedelta(
+                        days=settings.max_post_age_days
+                    )
+                    result = (
+                        db.query(Post)
+                        .filter(
+                            Post.is_read == True,
+                            Post.read_at < cutoff_read,
+                            (Post.is_starred == False)
+                            | (Post.is_starred.is_(None)),
+                        )
+                        .delete(synchronize_session=False)
+                    )
                     posts_removed += result
 
-                    # 2. Remover posts não lidos há mais de MAX_UNREAD_DAYS
-                    # (exceto favoritos que nunca são removidos)
-                    cutoff_unread = now - timedelta(days=settings.max_unread_days)
-                    result = db.query(Post).filter(
-                        Post.is_read == False,
-                        Post.fetched_at < cutoff_unread,
-                        (Post.is_starred == False) | (Post.is_starred.is_(None))
-                    ).delete(synchronize_session=False)
+                    # 2. Remove unread posts older than MAX_UNREAD_DAYS
+                    # (except favorites which are never removed)
+                    cutoff_unread = now - timedelta(
+                        days=settings.max_unread_days
+                    )
+                    result = (
+                        db.query(Post)
+                        .filter(
+                            Post.is_read == False,
+                            Post.fetched_at < cutoff_unread,
+                            (Post.is_starred == False)
+                            | (Post.is_starred.is_(None)),
+                        )
+                        .delete(synchronize_session=False)
+                    )
                     unread_removed += result
 
-                    # 3. Limpar full_content de posts lidos há mais de 30 dias
-                    # (exceto favoritos que mantêm conteúdo)
+                    # 3. Clear full_content from posts read more than 30 days ago
+                    # (except favorites which keep content)
                     cutoff_full = now - timedelta(days=30)
-                    result = db.query(Post).filter(
-                        Post.is_read == True,
-                        Post.read_at < cutoff_full,
-                        Post.full_content.isnot(None),
-                        (Post.is_starred == False) | (Post.is_starred.is_(None))
-                    ).update({"full_content": None}, synchronize_session=False)
+                    result = (
+                        db.query(Post)
+                        .filter(
+                            Post.is_read == True,
+                            Post.read_at < cutoff_full,
+                            Post.full_content.isnot(None),
+                            (Post.is_starred == False)
+                            | (Post.is_starred.is_(None)),
+                        )
+                        .update(
+                            {"full_content": None}, synchronize_session=False
+                        )
+                    )
                     full_content_cleared += result
 
                     db.commit()
 
-                    # Registrar em cleanup_logs
+                    # Log in cleanup_logs
                     duration = (datetime.utcnow() - start_time).total_seconds()
                     log = CleanupLog(
                         posts_removed=posts_removed,
@@ -339,10 +370,10 @@ class Scheduler:
                     db.commit()
 
                     logger.info(
-                        f"Job cleanup_retention: concluído em {duration:.1f}s - "
-                        f"posts removidos: {posts_removed}, "
-                        f"unread removidos: {unread_removed}, "
-                        f"full_content limpos: {full_content_cleared}"
+                        f"Job cleanup_retention: completed in {duration:.1f}s - "
+                        f"posts removed: {posts_removed}, "
+                        f"unread removed: {unread_removed}, "
+                        f"full_content cleared: {full_content_cleared}"
                     )
 
                 except Exception as e:
@@ -351,57 +382,71 @@ class Scheduler:
                 finally:
                     db.close()
 
-                # Aguardar próximo dia
+                # Wait for next day
                 await asyncio.sleep(3600)
 
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Erro no job cleanup_retention: {e}")
+                logger.error(f"Error in job cleanup_retention: {e}")
                 await asyncio.sleep(3600)
 
     async def _job_health_check(self):
-        """Job para verificar saúde do sistema."""
+        """Job to check system health."""
         from app.models import AppSettings
         import os
 
-        interval = 300  # 5 minutos
+        interval = 300  # 5 minutes
 
         while self._running and self.is_leader:
             try:
-                logger.debug("Job health_check: verificando...")
+                logger.debug("Job health_check: checking...")
 
                 db = SessionLocal()
                 warnings = []
 
                 try:
-                    # 1. Verificar SELECT 1
+                    # 1. Check SELECT 1
                     db.execute(text("SELECT 1"))
 
-                    # 2. Verificar espaço em disco
+                    # 2. Check disk space
                     statvfs = os.statvfs(".")
-                    free_mb = (statvfs.f_frsize * statvfs.f_bavail) / (1024 * 1024)
+                    free_mb = (statvfs.f_frsize * statvfs.f_bavail) / (
+                        1024 * 1024
+                    )
                     if free_mb < 100:
-                        warnings.append(f"Espaço em disco baixo: {free_mb:.0f}MB")
+                        warnings.append(
+                            f"Low disk space: {free_mb:.0f}MB"
+                        )
 
-                    # 3. Verificar tamanho do banco
+                    # 3. Check database size
                     db_path = settings.database_path
                     if os.path.exists(db_path):
                         db_size_mb = os.path.getsize(db_path) / (1024 * 1024)
                         if db_size_mb > settings.max_db_size_mb:
-                            warnings.append(f"Banco muito grande: {db_size_mb:.0f}MB")
+                            warnings.append(
+                                f"Database too large: {db_size_mb:.0f}MB"
+                            )
 
-                    # Atualizar app_settings
+                    # Update app_settings
                     if warnings:
                         warning_text = "; ".join(warnings)
-                        logger.warning(f"Health check warnings: {warning_text}")
-                        existing = db.query(AppSettings).filter(
-                            AppSettings.key == "health_warning"
-                        ).first()
+                        logger.warning(
+                            f"Health check warnings: {warning_text}"
+                        )
+                        existing = (
+                            db.query(AppSettings)
+                            .filter(AppSettings.key == "health_warning")
+                            .first()
+                        )
                         if existing:
                             existing.value = warning_text
                         else:
-                            db.add(AppSettings(key="health_warning", value=warning_text))
+                            db.add(
+                                AppSettings(
+                                    key="health_warning", value=warning_text
+                                )
+                            )
                     else:
                         db.query(AppSettings).filter(
                             AppSettings.key == "health_warning"
@@ -411,19 +456,19 @@ class Scheduler:
 
                 except Exception as e:
                     db.rollback()
-                    logger.error(f"Health check falhou: {e}")
+                    logger.error(f"Health check failed: {e}")
                 finally:
                     db.close()
 
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Erro no job health_check: {e}")
+                logger.error(f"Error in job health_check: {e}")
 
             await asyncio.sleep(interval)
 
     async def _job_process_summaries(self):
-        """Job para processar fila de resumos IA."""
+        """Job to process AI summary queue."""
         from app.models import SummaryQueue, AISummary, SummaryFailure, Post
         from app.services.cerebras import (
             generate_summary,
@@ -433,12 +478,12 @@ class Scheduler:
         )
         from app.services.content_extractor import extract_full_content
 
-        # Intervalo baseado no rate limit (com margem de segurança)
+        # Interval based on rate limit (with safety margin)
         interval = max(5, 60 // settings.cerebras_max_rpm + 1)
 
         while self._running and self.is_leader:
             try:
-                # Verificar se pode chamar API
+                # Check if API can be called
                 can_call, reason = circuit_breaker.can_call()
                 if not can_call:
                     logger.debug(f"Job process_summaries: {reason}")
@@ -448,96 +493,134 @@ class Scheduler:
                 db = SessionLocal()
                 try:
                     now = datetime.utcnow()
-                    lock_timeout = now - timedelta(seconds=settings.summary_lock_timeout_seconds)
+                    lock_timeout = now - timedelta(
+                        seconds=settings.summary_lock_timeout_seconds
+                    )
 
-                    # Buscar próximo item elegível
+                    # Find next eligible item
                     candidate = (
                         db.query(SummaryQueue)
                         .filter(
-                            (SummaryQueue.locked_at.is_(None)) | (SummaryQueue.locked_at < lock_timeout),
-                            (SummaryQueue.cooldown_until.is_(None)) | (SummaryQueue.cooldown_until < now),
+                            (SummaryQueue.locked_at.is_(None))
+                            | (SummaryQueue.locked_at < lock_timeout),
+                            (SummaryQueue.cooldown_until.is_(None))
+                            | (SummaryQueue.cooldown_until < now),
                         )
-                        .order_by(SummaryQueue.priority.desc(), SummaryQueue.created_at.asc())
+                        .order_by(
+                            SummaryQueue.priority.desc(),
+                            SummaryQueue.created_at.asc(),
+                        )
                         .first()
                     )
 
                     if not candidate:
-                        logger.debug("Job process_summaries: fila vazia")
+                        logger.debug("Job process_summaries: queue empty")
                         await asyncio.sleep(interval)
                         continue
 
-                    # Tentar adquirir lock atomicamente
-                    result = db.query(SummaryQueue).filter(
-                        SummaryQueue.id == candidate.id,
-                        (SummaryQueue.locked_at.is_(None)) | (SummaryQueue.locked_at < lock_timeout),
-                    ).update({"locked_at": now})
+                    # Try to acquire lock atomically
+                    result = (
+                        db.query(SummaryQueue)
+                        .filter(
+                            SummaryQueue.id == candidate.id,
+                            (SummaryQueue.locked_at.is_(None))
+                            | (SummaryQueue.locked_at < lock_timeout),
+                        )
+                        .update({"locked_at": now})
+                    )
 
                     if result == 0:
-                        # Outro worker pegou
+                        # Another worker got it
                         db.rollback()
                         continue
 
                     db.commit()
 
-                    # Verificar se resumo já existe para este hash
-                    existing_summary = db.query(AISummary).filter(
-                        AISummary.content_hash == candidate.content_hash
-                    ).first()
+                    # Check if summary already exists for this hash
+                    existing_summary = (
+                        db.query(AISummary)
+                        .filter(
+                            AISummary.content_hash == candidate.content_hash
+                        )
+                        .first()
+                    )
 
                     if existing_summary:
-                        # Resumo já existe, remover da fila
-                        db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                        # Summary already exists, remove from queue
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
                         db.commit()
-                        logger.debug(f"Resumo já existe para hash {candidate.content_hash[:16]}...")
+                        logger.debug(
+                            f"Summary already exists for hash {candidate.content_hash[:16]}..."
+                        )
                         continue
 
-                    # Buscar post para obter conteúdo
-                    post = db.query(Post).filter(Post.id == candidate.post_id).first()
+                    # Get post for content
+                    post = (
+                        db.query(Post)
+                        .filter(Post.id == candidate.post_id)
+                        .first()
+                    )
                     if not post:
-                        # Post foi deletado, remover da fila
-                        db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                        # Post was deleted, remove from queue
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
                         db.commit()
                         continue
 
-                    # Pular posts já lidos (não vale gastar API com eles)
+                    # Skip already read posts (not worth spending API on them)
                     if post.is_read:
-                        db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
                         db.commit()
-                        logger.debug(f"Post {post.id} já lido, pulando resumo")
+                        logger.debug(f"Post {post.id} already read, skipping summary")
                         continue
 
-                    # Buscar full_content se não disponível
+                    # Fetch full_content if not available
                     content = post.full_content
                     if not content and post.url:
                         try:
-                            logger.info(f"Buscando conteúdo completo para post {post.id}...")
+                            logger.info(
+                                f"Fetching full content for post {post.id}..."
+                            )
                             result = await extract_full_content(post.url)
                             if result.success and result.content:
                                 content = result.content
                                 post.full_content = content
                                 db.commit()
-                                logger.info(f"Conteúdo completo salvo para post {post.id}")
-                            # Delay para evitar rate limit (429)
+                                logger.info(
+                                    f"Full content saved for post {post.id}"
+                                )
+                            # Delay to avoid rate limit (429)
                             await asyncio.sleep(2)
                         except Exception as e:
-                            logger.warning(f"Falha ao extrair conteúdo do post {post.id}: {e}")
+                            logger.warning(
+                                f"Failed to extract content from post {post.id}: {e}"
+                            )
 
-                    # Fallback para content do RSS
+                    # Fallback to RSS content
                     if not content:
                         content = post.content
 
                     if not content:
-                        # Sem conteúdo, remover da fila
-                        db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                        # No content, remove from queue
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
                         db.commit()
                         continue
 
-                    # Chamar API
+                    # Call API
                     try:
-                        logger.info(f"Gerando resumo para post {post.id}...")
-                        summary_result = await generate_summary(content, title=post.title)
+                        logger.info(f"Generating summary for post {post.id}...")
+                        summary_result = await generate_summary(
+                            content, title=post.title
+                        )
 
-                        # Salvar resumo
+                        # Save summary
                         ai_summary = AISummary(
                             content_hash=candidate.content_hash,
                             summary_pt=summary_result.summary_pt,
@@ -546,62 +629,74 @@ class Scheduler:
                         )
                         db.add(ai_summary)
 
-                        # Remover da fila
-                        db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                        # Remove from queue
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
                         db.commit()
 
-                        logger.info(f"Resumo gerado com sucesso para post {post.id}")
+                        logger.info(
+                            f"Summary generated successfully for post {post.id}"
+                        )
 
                     except TemporaryError as e:
-                        # Erro temporário - incrementar attempts
+                        # Temporary error - increment attempts
                         candidate.attempts = (candidate.attempts or 0) + 1
                         candidate.last_error = str(e)
-                        candidate.error_type = 'temporary'
+                        candidate.error_type = "temporary"
 
                         if candidate.attempts >= 5:
-                            # Cooldown de 24h
-                            candidate.cooldown_until = now + timedelta(hours=24)
+                            # 24h cooldown
+                            candidate.cooldown_until = now + timedelta(
+                                hours=24
+                            )
                             candidate.attempts = 0
-                            logger.warning(f"Post {post.id}: 5 erros, cooldown 24h")
+                            logger.warning(
+                                f"Post {post.id}: 5 errors, 24h cooldown"
+                            )
 
                         candidate.locked_at = None
                         db.commit()
-                        logger.warning(f"Erro temporário post {post.id}: {e}")
+                        logger.warning(f"Temporary error post {post.id}: {e}")
 
                     except PermanentError as e:
-                        # Erro permanente
+                        # Permanent error
                         candidate.attempts = (candidate.attempts or 0) + 1
                         candidate.last_error = str(e)
-                        candidate.error_type = 'permanent'
+                        candidate.error_type = "permanent"
 
                         if candidate.attempts >= 5:
-                            # Mover para failures
+                            # Move to failures
                             failure = SummaryFailure(
                                 content_hash=candidate.content_hash,
                                 last_error=str(e),
                             )
                             db.add(failure)
-                            db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
-                            logger.error(f"Post {post.id}: falha permanente após 5 tentativas")
+                            db.query(SummaryQueue).filter(
+                                SummaryQueue.id == candidate.id
+                            ).delete()
+                            logger.error(
+                                f"Post {post.id}: permanent failure after 5 attempts"
+                            )
                         else:
                             candidate.locked_at = None
 
                         db.commit()
-                        logger.error(f"Erro permanente post {post.id}: {e}")
+                        logger.error(f"Permanent error post {post.id}: {e}")
 
                 except Exception as e:
                     db.rollback()
-                    logger.error(f"Erro no job process_summaries: {e}")
+                    logger.error(f"Error in job process_summaries: {e}")
                 finally:
                     db.close()
 
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Erro no job process_summaries: {e}")
+                logger.error(f"Error in job process_summaries: {e}")
 
             await asyncio.sleep(interval)
 
 
-# Instância global
+# Global instance
 scheduler = Scheduler()

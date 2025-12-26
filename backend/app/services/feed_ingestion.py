@@ -1,7 +1,8 @@
 """
-Serviço de ingestão de feeds.
-Integra parser, normalização, sanitização e deduplicação.
+Feed ingestion service.
+Integrates parser, normalization, sanitization and deduplication.
 """
+
 import logging
 from datetime import datetime
 from typing import Optional, Tuple
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class FeedIngestionResult:
-    """Resultado da ingestão de um feed."""
+    """Result of feed ingestion."""
 
     def __init__(self):
         self.new_posts = 0
@@ -35,56 +36,53 @@ class FeedIngestionResult:
 
 
 def _check_duplicate_by_guid(
-    db: Session,
-    feed: Feed,
-    guid: str,
-    normalized_url: Optional[str]
+    db: Session, feed: Feed, guid: str, normalized_url: Optional[str]
 ) -> Tuple[bool, bool]:
     """
-    Verifica duplicidade por GUID.
+    Check for duplicates by GUID.
 
     Returns:
-        Tuple de (é_duplicado, houve_colisão)
+        Tuple of (is_duplicate, had_collision)
     """
     if not guid:
         return False, False
 
-    existing = db.query(Post).filter(
-        Post.feed_id == feed.id,
-        Post.guid == guid
-    ).first()
+    existing = (
+        db.query(Post)
+        .filter(Post.feed_id == feed.id, Post.guid == guid)
+        .first()
+    )
 
     if not existing:
         return False, False
 
-    # Se guid_unreliable, ainda precisamos detectar duplicata para evitar
-    # violação de constraint, mas não fazemos detecção de colisão
+    # If guid_unreliable, we still need to detect duplicate to avoid
+    # constraint violation, but we don't do collision detection
     if feed.guid_unreliable:
         return True, False
 
-    # Verificar colisão (mesmo GUID, URL diferente)
+    # Check for collision (same GUID, different URL)
     collision = (
-        normalized_url and
-        existing.normalized_url and
-        existing.normalized_url != normalized_url
+        normalized_url
+        and existing.normalized_url
+        and existing.normalized_url != normalized_url
     )
 
     return True, collision
 
 
 def _check_duplicate_by_url(
-    db: Session,
-    feed: Feed,
-    normalized_url: Optional[str]
+    db: Session, feed: Feed, normalized_url: Optional[str]
 ) -> bool:
-    """Verifica duplicidade por URL normalizada."""
+    """Check for duplicates by normalized URL."""
     if not normalized_url or feed.allow_duplicate_urls:
         return False
 
-    existing = db.query(Post).filter(
-        Post.feed_id == feed.id,
-        Post.normalized_url == normalized_url
-    ).first()
+    existing = (
+        db.query(Post)
+        .filter(Post.feed_id == feed.id, Post.normalized_url == normalized_url)
+        .first()
+    )
 
     return existing is not None
 
@@ -94,49 +92,49 @@ def _check_duplicate_by_hash(
     feed: Feed,
     content_hash: Optional[str],
     has_guid: bool,
-    has_url: bool
+    has_url: bool,
 ) -> bool:
     """
-    Verifica duplicidade por content_hash.
-    Só usado como fallback quando GUID e URL são None.
+    Check for duplicates by content_hash.
+    Only used as fallback when GUID and URL are None.
     """
     if not content_hash:
         return False
 
-    # Só usar hash como fallback se não tem GUID nem URL
+    # Only use hash as fallback if no GUID or URL
     if has_guid or has_url:
         return False
 
-    existing = db.query(Post).filter(
-        Post.feed_id == feed.id,
-        Post.content_hash == content_hash
-    ).first()
+    existing = (
+        db.query(Post)
+        .filter(Post.feed_id == feed.id, Post.content_hash == content_hash)
+        .first()
+    )
 
     return existing is not None
 
 
 def _process_entry(
-    db: Session,
-    feed: Feed,
-    entry: ParsedEntry,
-    now: datetime
+    db: Session, feed: Feed, entry: ParsedEntry, now: datetime
 ) -> Tuple[Optional[Post], Optional[str]]:
     """
-    Processa uma entrada do feed.
+    Process a feed entry.
 
     Returns:
-        Tuple de (Post criado ou None, erro ou None)
+        Tuple of (created Post or None, error or None)
     """
-    # Normalizar URL
+    # Normalize URL
     normalized_url = normalize_url(entry.url)
 
-    # Sanitizar conteúdo
+    # Sanitize content
     content = sanitize_html(entry.content, truncate=True)
 
     # Compute hash (includes title and URL to avoid collisions)
-    content_hash = compute_content_hash(entry.content, title=entry.title, url=entry.url)
+    content_hash = compute_content_hash(
+        entry.content, title=entry.title, url=entry.url
+    )
 
-    # Verificar duplicidade por GUID
+    # Check for duplicates by GUID
     is_dup, collision = _check_duplicate_by_guid(
         db, feed, entry.guid, normalized_url
     )
@@ -146,26 +144,28 @@ def _process_entry(
         if feed.guid_collision_count >= 3:
             feed.guid_unreliable = True
             logger.warning(
-                f"Feed {feed.id} marcado como guid_unreliable "
-                f"(colisões: {feed.guid_collision_count})"
+                f"Feed {feed.id} marked as guid_unreliable "
+                f"(collisions: {feed.guid_collision_count})"
             )
 
     if is_dup:
         return None, None
 
-    # Verificar duplicidade por URL
+    # Check for duplicates by URL
     if _check_duplicate_by_url(db, feed, normalized_url):
         return None, None
 
-    # Verificar duplicidade por hash (fallback)
+    # Check for duplicates by hash (fallback)
     if _check_duplicate_by_hash(
-        db, feed, content_hash,
+        db,
+        feed,
+        content_hash,
         has_guid=bool(entry.guid),
-        has_url=bool(normalized_url)
+        has_url=bool(normalized_url),
     ):
         return None, None
 
-    # Criar post
+    # Create post
     sort_date = entry.published_at or now
 
     post = Post(
@@ -188,20 +188,20 @@ def _process_entry(
 
 async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
     """
-    Ingere um feed: busca, parseia, e insere novos posts.
+    Ingest a feed: fetch, parse, and insert new posts.
 
     Args:
-        db: Sessão do banco
-        feed: Feed a ser ingerido
+        db: Database session
+        feed: Feed to ingest
 
     Returns:
-        FeedIngestionResult com estatísticas
+        FeedIngestionResult with statistics
     """
     result = FeedIngestionResult()
     now = datetime.utcnow()
 
     try:
-        # Buscar e parsear
+        # Fetch and parse
         parsed_feed, final_url = await fetch_and_parse(feed.url)
 
     except (FeedFetchError, FeedParseError) as e:
@@ -212,10 +212,10 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
         db.commit()
         return result
 
-    # Atualizar metadados do feed
+    # Update feed metadata
     if parsed_feed.title and not feed.title.startswith(feed.url):
-        # Só atualizar se era placeholder (hostname)
-        if '.' in feed.title and '/' not in feed.title:
+        # Only update if it was a placeholder (hostname)
+        if "." in feed.title and "/" not in feed.title:
             feed.title = parsed_feed.title
             result.feed_title_updated = True
 
@@ -223,7 +223,7 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
         feed.site_url = parsed_feed.site_url
         result.site_url_updated = True
 
-    # Processar entries
+    # Process entries
     for entry in parsed_feed.entries:
         try:
             post, error = _process_entry(db, feed, entry, now)
@@ -234,9 +234,9 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
 
             if post:
                 db.add(post)
-                db.flush()  # Gerar ID do post
+                db.flush()  # Generate post ID
 
-                # Adicionar à fila de resumos (se tiver content_hash)
+                # Add to summary queue (if has content_hash)
                 if post.content_hash:
                     queue_entry = SummaryQueue(
                         post_id=post.id,
@@ -250,25 +250,25 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
                 result.skipped_duplicates += 1
 
         except Exception as e:
-            logger.error(f"Erro ao processar entry: {e}")
+            logger.error(f"Error processing entry: {e}")
             result.errors.append(str(e))
 
-    # Atualizar feed
+    # Update feed
     feed.last_fetched_at = now
-    feed.error_count = 0  # Reset em sucesso
+    feed.error_count = 0  # Reset on success
     feed.last_error = None
 
     try:
         db.commit()
     except Exception as e:
         db.rollback()
-        result.errors.append(f"Erro ao salvar: {e}")
-        logger.error(f"Erro ao salvar posts do feed {feed.id}: {e}")
+        result.errors.append(f"Error saving: {e}")
+        logger.error(f"Error saving posts for feed {feed.id}: {e}")
 
     logger.info(
-        f"Feed {feed.id} ingerido: "
-        f"{result.new_posts} novos, "
-        f"{result.skipped_duplicates} duplicados"
+        f"Feed {feed.id} ingested: "
+        f"{result.new_posts} new, "
+        f"{result.skipped_duplicates} duplicates"
     )
 
     return result

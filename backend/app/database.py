@@ -1,7 +1,8 @@
 """
-Configuração do banco de dados SQLite com SQLAlchemy.
-WAL mode habilitado para melhor concorrência.
+SQLite database configuration with SQLAlchemy.
+WAL mode enabled for better concurrency.
 """
+
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.engine import Engine
@@ -9,26 +10,26 @@ from sqlalchemy.engine import Engine
 from app.config import settings
 
 
-# Construir URL do banco
+# Build database URL
 DATABASE_URL = f"sqlite:///{settings.database_path}"
 
-# Engine com configurações para SQLite
+# Engine with SQLite settings
 engine = create_engine(
     DATABASE_URL,
     connect_args={
-        "check_same_thread": False,  # Permite uso em múltiplas threads
+        "check_same_thread": False,  # Allow use in multiple threads
     },
-    echo=False,  # Mude para True para debug de queries
+    echo=False,  # Change to True for query debug
 )
 
 
-# Configurar WAL mode e busy_timeout via PRAGMA
+# Configure WAL mode and busy_timeout via PRAGMA
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_conn, connection_record):
     """
-    Configura PRAGMAs do SQLite ao conectar:
-    - WAL mode para melhor concorrência
-    - busy_timeout para esperar locks
+    Configure SQLite PRAGMAs on connect:
+    - WAL mode for better concurrency
+    - busy_timeout to wait for locks
     """
     cursor = dbapi_conn.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
@@ -37,7 +38,7 @@ def set_sqlite_pragma(dbapi_conn, connection_record):
     cursor.close()
 
 
-# Base declarativa para modelos ORM
+# Declarative base for ORM models
 Base = declarative_base()
 
 # Session factory
@@ -46,8 +47,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
     """
-    Dependency injection para FastAPI.
-    Fornece uma sessão do banco e garante que seja fechada após uso.
+    Dependency injection for FastAPI.
+    Provides a database session and ensures it's closed after use.
     """
     db = SessionLocal()
     try:

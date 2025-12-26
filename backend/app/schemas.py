@@ -1,6 +1,7 @@
 """
 Schemas Pydantic para validação de requests/responses.
 """
+
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
@@ -8,26 +9,32 @@ from typing import Optional, List
 
 # === Autenticação ===
 
+
 class LoginRequest(BaseModel):
     """Request para login"""
+
     password: str
 
 
 class LoginResponse(BaseModel):
     """Response do login com token JWT"""
+
     token: str
     expires_at: datetime
 
 
 class UserInfo(BaseModel):
     """Informações do usuário autenticado"""
+
     authenticated: bool
 
 
 # === Categorias ===
 
+
 class CategoryCreate(BaseModel):
     """Request para criar categoria"""
+
     name: str
     parent_id: Optional[int] = None
     position: Optional[int] = 0
@@ -35,6 +42,7 @@ class CategoryCreate(BaseModel):
 
 class CategoryUpdate(BaseModel):
     """Request para atualizar categoria"""
+
     name: Optional[str] = None
     parent_id: Optional[int] = None
     position: Optional[int] = None
@@ -42,6 +50,7 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(BaseModel):
     """Response de categoria"""
+
     id: int
     name: str
     parent_id: Optional[int]
@@ -54,13 +63,16 @@ class CategoryResponse(BaseModel):
 
 class CategoryReorder(BaseModel):
     """Request para reordenar categorias"""
+
     order: List[int]  # Lista de IDs na nova ordem
 
 
 # === Feeds ===
 
+
 class FeedCreate(BaseModel):
     """Request para criar feed"""
+
     url: str
     title: Optional[str] = None
     category_id: Optional[int] = None
@@ -68,6 +80,7 @@ class FeedCreate(BaseModel):
 
 class FeedUpdate(BaseModel):
     """Request para atualizar feed"""
+
     title: Optional[str] = None
     url: Optional[str] = None
     category_id: Optional[int] = None
@@ -75,6 +88,7 @@ class FeedUpdate(BaseModel):
 
 class FeedResponse(BaseModel):
     """Response de feed"""
+
     id: int
     category_id: Optional[int]
     title: str
@@ -92,8 +106,10 @@ class FeedResponse(BaseModel):
 
 # === Posts ===
 
+
 class PostResponse(BaseModel):
     """Response de post"""
+
     id: int
     feed_id: int
     guid: Optional[str]
@@ -108,7 +124,9 @@ class PostResponse(BaseModel):
     read_at: Optional[datetime]
     is_starred: bool = False
     starred_at: Optional[datetime] = None
-    summary_status: str = "not_configured"  # not_configured, pending, ready, failed
+    summary_status: str = (
+        "not_configured"  # not_configured, pending, ready, failed
+    )
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
 
@@ -117,6 +135,7 @@ class PostResponse(BaseModel):
 
 class PostDetail(PostResponse):
     """Response de post com conteúdo completo"""
+
     full_content: Optional[str]
     summary_pt: Optional[str] = None
     one_line_summary: Optional[str] = None
@@ -125,6 +144,7 @@ class PostDetail(PostResponse):
 
 class PostListResponse(BaseModel):
     """Response de listagem de posts com paginação"""
+
     posts: List[PostResponse]
     total: int
     has_more: bool
@@ -132,6 +152,7 @@ class PostListResponse(BaseModel):
 
 class MarkReadRequest(BaseModel):
     """Request para marcar posts como lidos em lote"""
+
     feed_id: Optional[int] = None
     category_id: Optional[int] = None
     post_ids: Optional[List[int]] = None

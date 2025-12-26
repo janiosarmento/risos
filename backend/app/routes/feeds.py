@@ -1,14 +1,23 @@
 """
-Rotas de feeds.
+Feed routes.
 CRUD + refresh + OPML import/export.
 """
+
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -23,7 +32,7 @@ router = APIRouter(prefix="/feeds", tags=["feeds"])
 
 
 def get_hostname(url: str) -> str:
-    """Extrai hostname da URL para usar como título placeholder."""
+    """Extract hostname from URL to use as placeholder title."""
     try:
         parsed = urlparse(url)
         return parsed.netloc or url
@@ -33,12 +42,12 @@ def get_hostname(url: str) -> str:
 
 @router.get("", response_model=List[FeedResponse])
 def list_feeds(
-    category_id: Optional[int] = Query(None, description="Filtrar por categoria"),
+    category_id: Optional[int] = Query(None, description="Filter by category"),
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
-    """Lista todos os feeds, opcionalmente filtrados por categoria."""
-    # Subquery para contar posts não lidos por feed
+    """List all feeds, optionally filtered by category."""
+    # Subquery to count unread posts per feed
     unread_count_subq = (
         db.query(Post.feed_id, func.count(Post.id).label("unread_count"))
         .filter(Post.is_read == False)
@@ -46,10 +55,12 @@ def list_feeds(
         .subquery()
     )
 
-    query = (
-        db.query(Feed, func.coalesce(unread_count_subq.c.unread_count, 0).label("unread_count"))
-        .outerjoin(unread_count_subq, Feed.id == unread_count_subq.c.feed_id)
-    )
+    query = db.query(
+        Feed,
+        func.coalesce(unread_count_subq.c.unread_count, 0).label(
+            "unread_count"
+        ),
+    ).outerjoin(unread_count_subq, Feed.id == unread_count_subq.c.feed_id)
 
     if category_id is not None:
         query = query.filter(Feed.category_id == category_id)
@@ -76,35 +87,39 @@ def list_feeds(
     return result
 
 
-@router.post("", response_model=FeedResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=FeedResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_feed(
     feed: FeedCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Cria um novo feed.
-    Se título não fornecido, usa hostname da URL como placeholder.
-    Dispara busca inicial dos posts automaticamente.
+    Create a new feed.
+    If title not provided, uses hostname from URL as placeholder.
+    Triggers initial post fetch automatically.
     """
-    # Verificar se URL já existe
+    # Check if URL already exists
     existing = db.query(Feed).filter(Feed.url == feed.url).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Feed with this URL already exists"
+            detail="Feed with this URL already exists",
         )
 
-    # Verificar se category_id existe (se fornecido)
+    # Check if category_id exists (if provided)
     if feed.category_id:
-        category = db.query(Category).filter(Category.id == feed.category_id).first()
+        category = (
+            db.query(Category).filter(Category.id == feed.category_id).first()
+        )
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
+                detail="Category not found",
             )
 
-    # Usar hostname como título se não fornecido
+    # Use hostname as title if not provided
     title = feed.title if feed.title else get_hostname(feed.url)
 
     db_feed = Feed(
@@ -116,20 +131,25 @@ async def create_feed(
     db.commit()
     db.refresh(db_feed)
 
-    # Disparar busca inicial dos posts
+    # Trigger initial post fetch
     try:
         await ingest_feed(db, db_feed)
         db.refresh(db_feed)
     except Exception as e:
         # Log error but don't fail the feed creation
         import logging
-        logging.getLogger(__name__).error(f"Initial feed ingestion failed for {db_feed.url}: {e}")
 
-    # Contar posts não lidos após ingestão
-    unread_count = db.query(func.count(Post.id)).filter(
-        Post.feed_id == db_feed.id,
-        Post.is_read == False
-    ).scalar() or 0
+        logging.getLogger(__name__).error(
+            f"Initial feed ingestion failed for {db_feed.url}: {e}"
+        )
+
+    # Count unread posts after ingestion
+    unread_count = (
+        db.query(func.count(Post.id))
+        .filter(Post.feed_id == db_feed.id, Post.is_read == False)
+        .scalar()
+        or 0
+    )
 
     return FeedResponse(
         id=db_feed.id,
@@ -150,58 +170,57 @@ async def create_feed(
 async def import_opml(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Importa feeds de um arquivo OPML.
+    Import feeds from an OPML file.
 
-    - Cria categorias se não existirem
-    - Ignora feeds duplicados (por URL)
-    - Retorna contagem de importados e erros
+    - Creates categories if they don't exist
+    - Ignores duplicate feeds (by URL)
+    - Returns count of imported and errors
     """
-    # Verificar tipo de arquivo
-    if not file.filename.endswith(('.opml', '.xml')):
+    # Check file type
+    if not file.filename.endswith((".opml", ".xml")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be .opml or .xml"
+            detail="File must be .opml or .xml",
         )
 
-    # Ler conteúdo
+    # Read content
     content = await file.read()
     if len(content) > 1024 * 1024:  # 1MB limit
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File too large (max 1MB)"
+            detail="File too large (max 1MB)",
         )
 
     try:
         root = ET.fromstring(content)
     except ET.ParseError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid XML: {e}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid XML: {e}"
         )
 
     imported = 0
     skipped = 0
     errors = []
 
-    # Buscar body/outline
-    body = root.find('.//body')
+    # Find body/outline
+    body = root.find(".//body")
     if body is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OPML: no body element"
+            detail="Invalid OPML: no body element",
         )
 
     def process_outline(outline, category_id=None):
         nonlocal imported, skipped, errors
 
-        xml_url = outline.get('xmlUrl')
-        title = outline.get('title') or outline.get('text')
+        xml_url = outline.get("xmlUrl")
+        title = outline.get("title") or outline.get("text")
 
         if xml_url:
-            # É um feed
+            # It's a feed
             existing = db.query(Feed).filter(Feed.url == xml_url).first()
             if existing:
                 skipped += 1
@@ -211,7 +230,7 @@ async def import_opml(
                 feed = Feed(
                     url=xml_url,
                     title=title or get_hostname(xml_url),
-                    site_url=outline.get('htmlUrl'),
+                    site_url=outline.get("htmlUrl"),
                     category_id=category_id,
                 )
                 db.add(feed)
@@ -220,11 +239,15 @@ async def import_opml(
             except Exception as e:
                 errors.append(f"Error adding {xml_url}: {e}")
         else:
-            # É uma categoria (folder)
+            # It's a category (folder)
             cat_name = title
             if cat_name:
-                # Buscar ou criar categoria
-                category = db.query(Category).filter(Category.name == cat_name).first()
+                # Find or create category
+                category = (
+                    db.query(Category)
+                    .filter(Category.name == cat_name)
+                    .first()
+                )
                 if not category:
                     category = Category(name=cat_name)
                     db.add(category)
@@ -234,11 +257,11 @@ async def import_opml(
             else:
                 cat_id = category_id
 
-            # Processar filhos
+            # Process children
             for child in outline:
                 process_outline(child, cat_id)
 
-    # Processar outlines do body
+    # Process body outlines
     for outline in body:
         process_outline(outline)
 
@@ -253,69 +276,78 @@ async def import_opml(
 
 @router.get("/export-opml")
 def export_opml(
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
     """
-    Exporta todos os feeds no formato OPML.
+    Export all feeds in OPML format.
 
-    - Agrupa feeds por categoria
-    - Feeds sem categoria ficam no nível raiz
+    - Groups feeds by category
+    - Uncategorized feeds go at root level
     """
-    # Criar estrutura OPML
-    opml = ET.Element('opml', version='1.0')
+    # Create OPML structure
+    opml = ET.Element("opml", version="1.0")
 
-    head = ET.SubElement(opml, 'head')
-    title = ET.SubElement(head, 'title')
-    title.text = 'RSS Reader Export'
-    date_created = ET.SubElement(head, 'dateCreated')
-    date_created.text = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    head = ET.SubElement(opml, "head")
+    title = ET.SubElement(head, "title")
+    title.text = "RSS Reader Export"
+    date_created = ET.SubElement(head, "dateCreated")
+    date_created.text = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
 
-    body = ET.SubElement(opml, 'body')
+    body = ET.SubElement(opml, "body")
 
-    # Buscar categorias com feeds
+    # Fetch categories with feeds
     categories = db.query(Category).order_by(func.lower(Category.name)).all()
 
     for category in categories:
-        feeds = db.query(Feed).filter(Feed.category_id == category.id).order_by(func.lower(Feed.title)).all()
+        feeds = (
+            db.query(Feed)
+            .filter(Feed.category_id == category.id)
+            .order_by(func.lower(Feed.title))
+            .all()
+        )
         if not feeds:
             continue
 
-        cat_outline = ET.SubElement(body, 'outline', text=category.name, title=category.name)
+        cat_outline = ET.SubElement(
+            body, "outline", text=category.name, title=category.name
+        )
 
         for feed in feeds:
             attrs = {
-                'type': 'rss',
-                'text': feed.title,
-                'title': feed.title,
-                'xmlUrl': feed.url,
+                "type": "rss",
+                "text": feed.title,
+                "title": feed.title,
+                "xmlUrl": feed.url,
             }
             if feed.site_url:
-                attrs['htmlUrl'] = feed.site_url
-            ET.SubElement(cat_outline, 'outline', **attrs)
+                attrs["htmlUrl"] = feed.site_url
+            ET.SubElement(cat_outline, "outline", **attrs)
 
-    # Feeds sem categoria
-    uncategorized = db.query(Feed).filter(Feed.category_id.is_(None)).order_by(func.lower(Feed.title)).all()
+    # Uncategorized feeds
+    uncategorized = (
+        db.query(Feed)
+        .filter(Feed.category_id.is_(None))
+        .order_by(func.lower(Feed.title))
+        .all()
+    )
     for feed in uncategorized:
         attrs = {
-            'type': 'rss',
-            'text': feed.title,
-            'title': feed.title,
-            'xmlUrl': feed.url,
+            "type": "rss",
+            "text": feed.title,
+            "title": feed.title,
+            "xmlUrl": feed.url,
         }
         if feed.site_url:
-            attrs['htmlUrl'] = feed.site_url
-        ET.SubElement(body, 'outline', **attrs)
+            attrs["htmlUrl"] = feed.site_url
+        ET.SubElement(body, "outline", **attrs)
 
-    # Gerar XML
-    xml_str = ET.tostring(opml, encoding='unicode', xml_declaration=True)
+    # Generate XML
+    xml_str = ET.tostring(opml, encoding="unicode", xml_declaration=True)
 
     return Response(
         content=xml_str,
-        media_type='application/xml',
-        headers={
-            'Content-Disposition': 'attachment; filename="feeds.opml"'
-        }
+        media_type="application/xml",
+        headers={"Content-Disposition": 'attachment; filename="feeds.opml"'},
     )
 
 
@@ -323,20 +355,20 @@ def export_opml(
 def get_feed(
     feed_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
-    """Busca um feed por ID."""
+    """Fetch a feed by ID."""
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Feed not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
         )
 
-    unread_count = db.query(func.count(Post.id)).filter(
-        Post.feed_id == feed_id,
-        Post.is_read == False
-    ).scalar()
+    unread_count = (
+        db.query(func.count(Post.id))
+        .filter(Post.feed_id == feed_id, Post.is_read == False)
+        .scalar()
+    )
 
     return FeedResponse(
         id=feed.id,
@@ -358,50 +390,56 @@ def update_feed(
     feed_id: int,
     feed_update: FeedUpdate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
-    """Atualiza um feed."""
+    """Update a feed."""
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Feed not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
         )
 
-    # Verificar URL duplicada (se alterada)
+    # Check for duplicate URL (if changed)
     if feed_update.url and feed_update.url != feed.url:
         existing = db.query(Feed).filter(Feed.url == feed_update.url).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Feed with this URL already exists"
+                detail="Feed with this URL already exists",
             )
 
-    # Verificar category_id (se fornecido)
+    # Check category_id (if provided)
     if feed_update.category_id is not None:
-        if feed_update.category_id != 0:  # 0 significa remover categoria
-            category = db.query(Category).filter(Category.id == feed_update.category_id).first()
+        if feed_update.category_id != 0:  # 0 means remove category
+            category = (
+                db.query(Category)
+                .filter(Category.id == feed_update.category_id)
+                .first()
+            )
             if not category:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Category not found"
+                    detail="Category not found",
                 )
 
-    # Atualizar campos
+    # Update fields
     if feed_update.title is not None:
         feed.title = feed_update.title
     if feed_update.url is not None:
         feed.url = feed_update.url
     if feed_update.category_id is not None:
-        feed.category_id = feed_update.category_id if feed_update.category_id != 0 else None
+        feed.category_id = (
+            feed_update.category_id if feed_update.category_id != 0 else None
+        )
 
     db.commit()
     db.refresh(feed)
 
-    unread_count = db.query(func.count(Post.id)).filter(
-        Post.feed_id == feed_id,
-        Post.is_read == False
-    ).scalar()
+    unread_count = (
+        db.query(func.count(Post.id))
+        .filter(Post.feed_id == feed_id, Post.is_read == False)
+        .scalar()
+    )
 
     return FeedResponse(
         id=feed.id,
@@ -422,17 +460,16 @@ def update_feed(
 def delete_feed(
     feed_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Deleta um feed.
-    Posts do feed são removidos em cascata.
+    Delete a feed.
+    Feed posts are removed in cascade.
     """
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Feed not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
         )
 
     db.delete(feed)
@@ -445,27 +482,25 @@ def delete_feed(
 async def refresh_feed(
     feed_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Busca e ingere novos posts de um feed.
+    Fetch and ingest new posts from a feed.
 
-    Retorna estatísticas da ingestão:
-    - new_posts: Número de posts novos inseridos
-    - skipped_duplicates: Posts ignorados por duplicidade
-    - errors: Lista de erros (se houver)
+    Returns ingestion statistics:
+    - new_posts: Number of new posts inserted
+    - skipped_duplicates: Posts skipped due to duplicates
+    - errors: List of errors (if any)
     """
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Feed not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
         )
 
     if feed.disabled_at:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Feed is disabled"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Feed is disabled"
         )
 
     result = await ingest_feed(db, feed)
@@ -484,17 +519,16 @@ async def refresh_feed(
 def enable_feed(
     feed_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Reativa um feed desativado.
-    Reseta error_count, disabled_at e next_retry_at.
+    Re-enable a disabled feed.
+    Resets error_count, disabled_at and next_retry_at.
     """
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Feed not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
         )
 
     feed.error_count = 0

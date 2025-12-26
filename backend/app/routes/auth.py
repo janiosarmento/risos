@@ -1,7 +1,8 @@
 """
-Rotas de autenticação.
-Single-user com senha configurada via .env
+Authentication routes.
+Single-user with password configured via .env
 """
+
 import secrets
 import uuid
 from datetime import datetime, timedelta
@@ -22,13 +23,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, db: Session = Depends(get_db)):
     """
-    Autentica com senha e retorna token JWT.
-    Usa comparação em tempo constante para evitar timing attacks.
+    Authenticate with password and return JWT token.
+    Uses constant-time comparison to prevent timing attacks.
     """
-    # Comparação em tempo constante
+    # Constant-time comparison
     password_valid = secrets.compare_digest(
-        request.password.encode("utf-8"),
-        settings.app_password.encode("utf-8")
+        request.password.encode("utf-8"), settings.app_password.encode("utf-8")
     )
 
     if not password_valid:
@@ -38,9 +38,11 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Gerar token JWT
+    # Generate JWT token
     jti = str(uuid.uuid4())
-    expires_at = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
+    expires_at = datetime.utcnow() + timedelta(
+        hours=settings.jwt_expiration_hours
+    )
 
     payload = {
         "jti": jti,
@@ -55,20 +57,21 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/logout")
 def logout(
-    user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
-    Invalida token adicionando jti à blacklist.
+    Invalidate token by adding jti to blacklist.
     """
     jti = user["jti"]
 
-    # Decodificar token para pegar expiração
-    # (o token ainda é válido neste ponto, então podemos confiar no jti do user)
-    # Calcular expires_at baseado na configuração
-    expires_at = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
+    # Get token expiration
+    # (token is still valid at this point, so we can trust the user's jti)
+    # Calculate expires_at based on config
+    expires_at = datetime.utcnow() + timedelta(
+        hours=settings.jwt_expiration_hours
+    )
 
-    # Adicionar à blacklist
+    # Add to blacklist
     blacklist_entry = TokenBlacklist(jti=jti, expires_at=expires_at)
     db.add(blacklist_entry)
     db.commit()
@@ -79,6 +82,6 @@ def logout(
 @router.get("/me", response_model=UserInfo)
 def get_me(user: dict = Depends(get_current_user)):
     """
-    Retorna status de autenticação do usuário.
+    Return user authentication status.
     """
     return UserInfo(authenticated=user["authenticated"])

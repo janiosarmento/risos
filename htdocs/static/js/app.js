@@ -291,7 +291,14 @@ function app() {
         },
 
         setupKeyboardShortcuts() {
+            // Prevent duplicate registration
+            if (this._keyboardShortcutsRegistered) return;
+            this._keyboardShortcutsRegistered = true;
+
             document.addEventListener('keydown', (e) => {
+                // Ignore key repeat (holding key down)
+                if (e.repeat) return;
+
                 // Ignore if in input
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
                     return;

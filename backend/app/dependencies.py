@@ -1,7 +1,8 @@
 """
-Dependencies para injeção no FastAPI.
-Inclui autenticação JWT.
+Dependencies for FastAPI injection.
+Includes JWT authentication.
 """
+
 from datetime import datetime
 
 from fastapi import Depends, HTTPException, status
@@ -13,20 +14,20 @@ from app.config import settings
 from app.database import get_db
 from app.models import TokenBlacklist
 
-# Esquema de autenticação Bearer
+# Bearer authentication scheme
 security = HTTPBearer()
 
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> dict:
     """
-    Valida token JWT e retorna informações do usuário.
-    Verifica:
-    - Token válido
-    - Token não expirado
-    - Token não está na blacklist
+    Validate JWT token and return user info.
+    Checks:
+    - Valid token
+    - Token not expired
+    - Token not in blacklist
     """
     token = credentials.credentials
 
@@ -37,26 +38,22 @@ def get_current_user(
     )
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.jwt_secret,
-            algorithms=["HS256"]
-        )
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
         jti: str = payload.get("jti")
         exp: int = payload.get("exp")
 
         if jti is None:
             raise credentials_exception
 
-        # Verificar se token está na blacklist
-        blacklisted = db.query(TokenBlacklist).filter(
-            TokenBlacklist.jti == jti
-        ).first()
+        # Check if token is in blacklist
+        blacklisted = (
+            db.query(TokenBlacklist).filter(TokenBlacklist.jti == jti).first()
+        )
 
         if blacklisted:
             raise credentials_exception
 
-        # Verificar expiração (jose já faz isso, mas double-check)
+        # Check expiration (jose already does this, but double-check)
         if exp and datetime.utcnow().timestamp() > exp:
             raise credentials_exception
 

@@ -1,135 +1,164 @@
 """
-Sanitização de HTML para conteúdo de posts.
-Remove scripts, event handlers e URLs perigosas.
+HTML sanitization for post content.
+Removes scripts, event handlers and dangerous URLs.
 """
+
 import re
 from typing import Optional
 from urllib.parse import urlparse
 
 import bleach
 
-# Tags permitidas
+# Allowed tags
 ALLOWED_TAGS = [
-    'p', 'br', 'hr',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'ul', 'ol', 'li',
-    'blockquote', 'pre', 'code',
-    'a', 'img',
-    'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'ins',
-    'table', 'thead', 'tbody', 'tr', 'th', 'td',
-    'figure', 'figcaption',
-    'div', 'span',
-    'sub', 'sup',
+    "p",
+    "br",
+    "hr",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "pre",
+    "code",
+    "a",
+    "img",
+    "strong",
+    "b",
+    "em",
+    "i",
+    "u",
+    "s",
+    "strike",
+    "del",
+    "ins",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
+    "figure",
+    "figcaption",
+    "div",
+    "span",
+    "sub",
+    "sup",
 ]
 
-# Atributos permitidos por tag
+# Allowed attributes per tag
 ALLOWED_ATTRIBUTES = {
-    '*': ['class', 'id'],
-    'a': ['href', 'title', 'rel', 'target'],
-    'img': ['src', 'alt', 'title', 'width', 'height'],
-    'td': ['colspan', 'rowspan'],
-    'th': ['colspan', 'rowspan'],
+    "*": ["class", "id"],
+    "a": ["href", "title", "rel", "target"],
+    "img": ["src", "alt", "title", "width", "height"],
+    "td": ["colspan", "rowspan"],
+    "th": ["colspan", "rowspan"],
 }
 
-# Comprimento máximo para content (resumo)
+# Maximum length for content (summary)
 MAX_CONTENT_LENGTH = 500
 
 
 def _is_safe_href(url: str) -> bool:
     """
-    Verifica se href é seguro.
-    Apenas http:// e https:// são permitidos.
+    Check if href is safe.
+    Only http:// and https:// are allowed.
     """
     if not url:
         return False
 
     url_lower = url.lower().strip()
 
-    # Bloquear protocolos perigosos
+    # Block dangerous protocols
     dangerous_prefixes = [
-        'javascript:',
-        'data:',
-        'vbscript:',
-        'file:',
-        'about:',
+        "javascript:",
+        "data:",
+        "vbscript:",
+        "file:",
+        "about:",
     ]
 
     for prefix in dangerous_prefixes:
         if url_lower.startswith(prefix):
             return False
 
-    # Permitir URLs relativas
-    if url.startswith('/') or url.startswith('#'):
+    # Allow relative URLs
+    if url.startswith("/") or url.startswith("#"):
         return True
 
-    # Permitir apenas http e https
+    # Allow only http and https
     try:
         parsed = urlparse(url)
-        return parsed.scheme in ('http', 'https', '')
+        return parsed.scheme in ("http", "https", "")
     except Exception:
         return False
 
 
 def _is_safe_img_src(url: str) -> bool:
     """
-    Verifica se src de imagem é seguro.
-    Apenas https:// e data: (para imagens inline) são permitidos.
-    http:// é bloqueado para evitar mixed content.
+    Check if image src is safe.
+    Only https:// and data: (for inline images) are allowed.
+    http:// is blocked to avoid mixed content.
     """
     if not url:
         return False
 
     url_lower = url.lower().strip()
 
-    # Bloquear http (inseguro para imagens)
-    if url_lower.startswith('http://'):
+    # Block http (insecure for images)
+    if url_lower.startswith("http://"):
         return False
 
-    # Permitir data: apenas para imagens
-    if url_lower.startswith('data:image/'):
+    # Allow data: only for images
+    if url_lower.startswith("data:image/"):
         return True
 
-    # Bloquear outros data:
-    if url_lower.startswith('data:'):
+    # Block other data:
+    if url_lower.startswith("data:"):
         return False
 
-    # Bloquear protocolos perigosos
+    # Block dangerous protocols
     dangerous_prefixes = [
-        'javascript:',
-        'vbscript:',
-        'file:',
+        "javascript:",
+        "vbscript:",
+        "file:",
     ]
 
     for prefix in dangerous_prefixes:
         if url_lower.startswith(prefix):
             return False
 
-    # Permitir https e URLs relativas
+    # Allow https and relative URLs
     try:
         parsed = urlparse(url)
-        return parsed.scheme in ('https', '')
+        return parsed.scheme in ("https", "")
     except Exception:
         return False
 
 
 def _filter_attributes(tag: str, name: str, value: str) -> bool:
     """
-    Filtro customizado para atributos.
-    Valida URLs em href e src.
+    Custom filter for attributes.
+    Validates URLs in href and src.
     """
-    # Verificar se atributo é permitido
+    # Check if attribute is allowed
     allowed = ALLOWED_ATTRIBUTES.get(tag, [])
-    global_allowed = ALLOWED_ATTRIBUTES.get('*', [])
+    global_allowed = ALLOWED_ATTRIBUTES.get("*", [])
 
     if name not in allowed and name not in global_allowed:
         return False
 
-    # Validar href
-    if name == 'href':
+    # Validate href
+    if name == "href":
         return _is_safe_href(value)
 
-    # Validar src
-    if name == 'src':
+    # Validate src
+    if name == "src":
         return _is_safe_img_src(value)
 
     return True
@@ -137,44 +166,48 @@ def _filter_attributes(tag: str, name: str, value: str) -> bool:
 
 def _add_link_attributes(attrs, new=False):
     """
-    Callback para adicionar rel e target em links.
+    Callback to add rel and target to links.
     """
-    # Adicionar/sobrescrever rel e target
-    attrs[(None, 'rel')] = 'noopener noreferrer'
-    attrs[(None, 'target')] = '_blank'
+    # Add/overwrite rel and target
+    attrs[(None, "rel")] = "noopener noreferrer"
+    attrs[(None, "target")] = "_blank"
     return attrs
 
 
 def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
     """
-    Sanitiza HTML removendo conteúdo perigoso.
+    Sanitize HTML removing dangerous content.
 
-    Regras:
-    - Remove tags não permitidas
+    Rules:
+    - Remove disallowed tags
     - Remove event handlers (onclick, onerror, etc.)
-    - Remove javascript:, data: (exceto imagens), vbscript:
-    - Remove http:// em src de imagens (mixed content)
-    - Adiciona rel="noopener noreferrer" target="_blank" em links
-    - Trunca para MAX_CONTENT_LENGTH se truncate=True
+    - Remove javascript:, data: (except images), vbscript:
+    - Remove http:// in image src (mixed content)
+    - Add rel="noopener noreferrer" target="_blank" to links
+    - Truncate to MAX_CONTENT_LENGTH if truncate=True
 
     Args:
-        html: HTML para sanitizar
-        truncate: Se True, trunca para MAX_CONTENT_LENGTH
+        html: HTML to sanitize
+        truncate: If True, truncate to MAX_CONTENT_LENGTH
 
     Returns:
-        HTML sanitizado ou None se vazio
+        Sanitized HTML or None if empty
     """
     if not html:
         return None
 
-    # Primeira passada: remover scripts e styles
-    html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    # First pass: remove scripts and styles
+    html = re.sub(
+        r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE
+    )
+    html = re.sub(
+        r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE
+    )
 
-    # Remover comentários HTML
-    html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+    # Remove HTML comments
+    html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
 
-    # Sanitizar com bleach
+    # Sanitize with bleach
     cleaner = bleach.Cleaner(
         tags=ALLOWED_TAGS,
         attributes=_filter_attributes,
@@ -184,56 +217,58 @@ def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
 
     sanitized = cleaner.clean(html)
 
-    # Adicionar rel e target em links usando linkify com callback
-    # Primeiro, vamos processar os links existentes manualmente
+    # Add rel and target to links using linkify with callback
+    # First, process existing links manually
     def fix_links(match):
         tag = match.group(0)
-        # Remover rel e target existentes
-        tag = re.sub(r'\s+rel="[^"]*"', '', tag)
-        tag = re.sub(r'\s+target="[^"]*"', '', tag)
-        # Adicionar novos
-        tag = tag.replace('<a ', '<a rel="noopener noreferrer" target="_blank" ')
+        # Remove existing rel and target
+        tag = re.sub(r'\s+rel="[^"]*"', "", tag)
+        tag = re.sub(r'\s+target="[^"]*"', "", tag)
+        # Add new ones
+        tag = tag.replace(
+            "<a ", '<a rel="noopener noreferrer" target="_blank" '
+        )
         return tag
 
-    sanitized = re.sub(r'<a\s[^>]*>', fix_links, sanitized)
+    sanitized = re.sub(r"<a\s[^>]*>", fix_links, sanitized)
 
-    # Truncar se necessário
+    # Truncate if needed
     if truncate and len(sanitized) > MAX_CONTENT_LENGTH:
-        # Tentar truncar em um ponto seguro (não no meio de uma tag)
+        # Try to truncate at a safe point (not in the middle of a tag)
         truncated = sanitized[:MAX_CONTENT_LENGTH]
 
-        # Fechar tags abertas (simplificado)
-        # Remover última tag incompleta
-        last_lt = truncated.rfind('<')
-        last_gt = truncated.rfind('>')
+        # Close open tags (simplified)
+        # Remove last incomplete tag
+        last_lt = truncated.rfind("<")
+        last_gt = truncated.rfind(">")
         if last_lt > last_gt:
             truncated = truncated[:last_lt]
 
-        sanitized = truncated + '...'
+        sanitized = truncated + "..."
 
-    # Limpar whitespace excessivo
-    sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+    # Clean excessive whitespace
+    sanitized = re.sub(r"\s+", " ", sanitized).strip()
 
     return sanitized if sanitized else None
 
 
 def extract_text(html: Optional[str]) -> Optional[str]:
     """
-    Extrai texto puro do HTML (remove todas as tags).
+    Extract plain text from HTML (removes all tags).
 
     Args:
-        html: HTML para extrair texto
+        html: HTML to extract text from
 
     Returns:
-        Texto puro ou None se vazio
+        Plain text or None if empty
     """
     if not html:
         return None
 
-    # Remover todas as tags
+    # Remove all tags
     text = bleach.clean(html, tags=[], strip=True)
 
-    # Limpar whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
+    # Clean whitespace
+    text = re.sub(r"\s+", " ", text).strip()
 
     return text if text else None

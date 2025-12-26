@@ -1,7 +1,8 @@
 """
-Cliente Cerebras para geração de resumos com IA.
-Inclui circuit breaker, rate limiting e load balancing de API keys.
+Cerebras client for AI summary generation.
+Includes circuit breaker, rate limiting and API key load balancing.
 """
+
 import json
 import logging
 import re
@@ -19,14 +20,14 @@ from app.models import AppSettings
 
 logger = logging.getLogger(__name__)
 
-# Configurações
+# Configuration
 CEREBRAS_API_URL = "https://api.cerebras.ai/v1/chat/completions"
 
 
 class ApiKeyRotator:
     """
-    Rotador de API keys com round-robin e cooldown por key.
-    Persiste o índice atual no banco de dados.
+    API key rotator with round-robin and per-key cooldown.
+    Persists current index in the database.
     """
 
     def __init__(self):
@@ -39,7 +40,11 @@ class ApiKeyRotator:
         """Load current index from database."""
         db = SessionLocal()
         try:
-            row = db.query(AppSettings).filter(AppSettings.key == 'api_key_index').first()
+            row = (
+                db.query(AppSettings)
+                .filter(AppSettings.key == "api_key_index")
+                .first()
+            )
             if row:
                 saved_index = int(row.value)
                 # Apply modulo in case number of keys changed
@@ -48,7 +53,10 @@ class ApiKeyRotator:
                     self._current_index = saved_index % num_keys
                 else:
                     self._current_index = 0
-                logger.info(f"API key rotator loaded: index={self._current_index}, total_keys={num_keys}")
+                logger.info(
+                    f"API key rotator loaded: index={self._current_index}, "
+                    f"total_keys={num_keys}"
+                )
         finally:
             db.close()
 
@@ -56,11 +64,19 @@ class ApiKeyRotator:
         """Save current index to database."""
         db = SessionLocal()
         try:
-            existing = db.query(AppSettings).filter(AppSettings.key == 'api_key_index').first()
+            existing = (
+                db.query(AppSettings)
+                .filter(AppSettings.key == "api_key_index")
+                .first()
+            )
             if existing:
                 existing.value = str(self._current_index)
             else:
-                db.add(AppSettings(key='api_key_index', value=str(self._current_index)))
+                db.add(
+                    AppSettings(
+                        key="api_key_index", value=str(self._current_index)
+                    )
+                )
             db.commit()
         except Exception as e:
             logger.error(f"Error saving API key index: {e}")
@@ -95,7 +111,10 @@ class ApiKeyRotator:
                 cooldown_until = self._key_cooldowns.get(key)
                 if cooldown_until and now < cooldown_until:
                     remaining = (cooldown_until - now).total_seconds()
-                    logger.debug(f"Key {key_index + 1}/{len(keys)} in cooldown ({remaining:.0f}s)")
+                    logger.debug(
+                        f"Key {key_index + 1}/{len(keys)} in cooldown"
+                        f"({remaining:.0f}s)"
+                    )
                     continue
 
                 # Key available
@@ -109,11 +128,16 @@ class ApiKeyRotator:
     def set_key_cooldown(self, key: str, seconds: int = 60):
         """Put a key in cooldown after rate limit."""
         with self._lock:
-            self._key_cooldowns[key] = datetime.utcnow() + timedelta(seconds=seconds)
+            self._key_cooldowns[key] = datetime.utcnow() + timedelta(
+                seconds=seconds
+            )
             keys = settings.cerebras_api_keys
             if key in keys:
                 key_index = keys.index(key) + 1
-                logger.warning(f"API key {key_index}/{len(keys)} in cooldown for {seconds}s")
+                logger.warning(
+                    f"API key {key_index}/{len(keys)} in cooldown for "
+                    f"{seconds}s"
+                )
 
     def clear_cooldown(self, key: str):
         """Remove cooldown from a key."""
@@ -127,7 +151,7 @@ class ApiKeyRotator:
         status = {
             "total_keys": len(keys),
             "current_index": self._current_index % len(keys) if keys else 0,
-            "keys": []
+            "keys": [],
         }
         for i, key in enumerate(keys):
             cooldown_until = self._key_cooldowns.get(key)
@@ -136,7 +160,9 @@ class ApiKeyRotator:
                 "available": not (cooldown_until and now < cooldown_until),
             }
             if cooldown_until and now < cooldown_until:
-                key_status["cooldown_remaining"] = int((cooldown_until - now).total_seconds())
+                key_status["cooldown_remaining"] = int(
+                    (cooldown_until - now).total_seconds()
+                )
             status["keys"].append(key_status)
         return status
 
@@ -147,31 +173,37 @@ api_key_rotator = ApiKeyRotator()
 
 class CircuitState(Enum):
     CLOSED = "closed"  # Normal, allowing calls
-    OPEN = "open"      # Blocked after many failures
-    HALF = "half"      # Testing if service recovered
+    OPEN = "open"  # Blocked after many failures
+    HALF = "half"  # Testing if service recovered
 
 
 class CerebrasError(Exception):
     """Base Cerebras client error."""
+
     pass
 
 
 class TemporaryError(CerebrasError):
     """Temporary error (timeout, 429, 5xx)."""
+
     pass
 
 
 class PermanentError(CerebrasError):
     """Permanent error (invalid payload, empty response after retries)."""
+
     pass
 
 
 @dataclass
 class SummaryResult:
     """Summary generation result."""
+
     summary_pt: str
     one_line_summary: str
-    translated_title: str = None  # Translated title (if not in target language)
+    translated_title: str = (
+        None  # Translated title (if not in target language)
+    )
 
 
 class CircuitBreaker:
@@ -198,43 +230,58 @@ class CircuitBreaker:
             self.last_call = None
 
             # Load from database
-            for row in db.query(AppSettings).filter(
-                AppSettings.key.in_([
-                    'cerebras_state', 'cerebras_failures', 'cerebras_half_successes',
-                    'cerebras_last_failure', 'cerebras_last_call'
-                ])
-            ).all():
-                if row.key == 'cerebras_state':
+            for row in (
+                db.query(AppSettings)
+                .filter(
+                    AppSettings.key.in_(
+                        [
+                            "cerebras_state",
+                            "cerebras_failures",
+                            "cerebras_half_successes",
+                            "cerebras_last_failure",
+                            "cerebras_last_call",
+                        ]
+                    )
+                )
+                .all()
+            ):
+                if row.key == "cerebras_state":
                     self.state = CircuitState(row.value)
-                elif row.key == 'cerebras_failures':
+                elif row.key == "cerebras_failures":
                     self.failures = int(row.value)
-                elif row.key == 'cerebras_half_successes':
+                elif row.key == "cerebras_half_successes":
                     self.half_successes = int(row.value)
-                elif row.key == 'cerebras_last_failure':
+                elif row.key == "cerebras_last_failure":
                     self.last_failure = datetime.fromisoformat(row.value)
-                elif row.key == 'cerebras_last_call':
+                elif row.key == "cerebras_last_call":
                     self.last_call = datetime.fromisoformat(row.value)
 
         finally:
             db.close()
 
     def _save_state(self):
-        """Salva estado no banco."""
+        """Save state to database."""
         db = SessionLocal()
         try:
             updates = {
-                'cerebras_state': self.state.value,
-                'cerebras_failures': str(self.failures),
-                'cerebras_half_successes': str(self.half_successes),
+                "cerebras_state": self.state.value,
+                "cerebras_failures": str(self.failures),
+                "cerebras_half_successes": str(self.half_successes),
             }
 
             if self.last_failure:
-                updates['cerebras_last_failure'] = self.last_failure.isoformat()
+                updates["cerebras_last_failure"] = (
+                    self.last_failure.isoformat()
+                )
             if self.last_call:
-                updates['cerebras_last_call'] = self.last_call.isoformat()
+                updates["cerebras_last_call"] = self.last_call.isoformat()
 
             for key, value in updates.items():
-                existing = db.query(AppSettings).filter(AppSettings.key == key).first()
+                existing = (
+                    db.query(AppSettings)
+                    .filter(AppSettings.key == key)
+                    .first()
+                )
                 if existing:
                     existing.value = value
                 else:
@@ -243,55 +290,63 @@ class CircuitBreaker:
             db.commit()
 
         except Exception as e:
-            logger.error(f"Erro ao salvar estado do circuit breaker: {e}")
+            logger.error(f"Error saving circuit breaker state: {e}")
             db.rollback()
         finally:
             db.close()
 
     def can_call(self) -> Tuple[bool, Optional[str]]:
         """
-        Verifica se pode fazer chamada.
+        Check if API call can be made.
 
         Returns:
-            Tuple de (pode_chamar, motivo_se_não)
+            Tuple of (can_call, reason_if_not)
         """
         now = datetime.utcnow()
 
-        # Nota: Rate limit por key é gerenciado pelo ApiKeyRotator
-        # O circuit breaker só bloqueia em caso de falhas reais da API
+        # Note: Per-key rate limit is managed by ApiKeyRotator
+        # Circuit breaker only blocks on actual API failures
 
-        # Verificar intervalo mínimo
+        # Check minimum interval
         min_interval = 60.0 / settings.cerebras_max_rpm
         if self.last_call:
             elapsed = (now - self.last_call).total_seconds()
             if elapsed < min_interval:
-                return False, f"Aguardando intervalo mínimo ({min_interval - elapsed:.1f}s)"
+                return (
+                    False,
+                    "Waiting for minimum interval "
+                    f"({min_interval - elapsed:.1f}s)",
+                )
 
-        # Verificar circuit breaker
+        # Check circuit breaker
         if self.state == CircuitState.OPEN:
-            # Verificar se passou recovery timeout
+            # Check if recovery timeout has passed
             if self.last_failure:
                 elapsed = (now - self.last_failure).total_seconds()
                 if elapsed >= settings.recovery_timeout_seconds:
-                    # Transicionar para HALF
+                    # Transition to HALF
                     self.state = CircuitState.HALF
                     self.half_successes = 0
                     self._save_state()
                     logger.info("Circuit breaker: OPEN -> HALF")
                 else:
-                    return False, f"Circuit breaker OPEN (recovery em {settings.recovery_timeout_seconds - elapsed:.0f}s)"
+                    return (
+                        False,
+                        "Circuit breaker OPEN (recovery in "
+                        f"{settings.recovery_timeout_seconds - elapsed:.0f}s)",
+                    )
 
         return True, None
 
     def record_success(self):
-        """Registra sucesso de chamada."""
+        """Record successful call."""
         now = datetime.utcnow()
         self.last_call = now
 
         if self.state == CircuitState.HALF:
             self.half_successes += 1
             if self.half_successes >= settings.half_open_max_requests:
-                # Transicionar para CLOSED
+                # Transition to CLOSED
                 self.state = CircuitState.CLOSED
                 self.failures = 0
                 logger.info("Circuit breaker: HALF -> CLOSED")
@@ -302,91 +357,101 @@ class CircuitBreaker:
 
     def record_failure(self):
         """
-        Registra falha de chamada (erros de servidor, timeout, etc).
-        Nota: Rate limits (429) são gerenciados pelo ApiKeyRotator, não aqui.
+        Record call failure (server errors, timeout, etc).
+        Note: Rate limits (429) are managed by ApiKeyRotator, not here.
         """
         now = datetime.utcnow()
         self.last_call = now
         self.last_failure = now
 
         if self.state == CircuitState.HALF:
-            # Uma falha em HALF reabre o circuito
+            # One failure in HALF reopens the circuit
             self.state = CircuitState.OPEN
-            logger.warning("Circuit breaker: HALF -> OPEN (falha)")
+            logger.warning("Circuit breaker: HALF -> OPEN (failure)")
         else:
             self.failures += 1
             if self.failures >= settings.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit breaker: CLOSED -> OPEN ({self.failures} falhas)")
+                logger.warning(
+                    "Circuit breaker: CLOSED -> OPEN "
+                    f"({self.failures} failures)"
+                )
 
         self._save_state()
 
 
-# Instância global do circuit breaker
+# Global circuit breaker instance
 circuit_breaker = CircuitBreaker()
 
 
 def get_system_prompt() -> str:
     """Returns the system prompt from prompts.yaml."""
-    return prompts.get("system_prompt", "You are a helpful assistant that summarizes articles.")
+    return prompts.get(
+        "system_prompt",
+        "You are a helpful assistant that summarizes articles.",
+    )
 
 
 def get_user_prompt(content: str, title: str = "") -> str:
-    """Returns the user prompt with content, title, and language interpolated."""
-    template = prompts.get("user_prompt", "Summarize this article in {language}:\n\n{content}")
+    """
+    Returns the user prompt with content, title, and language interpolated.
+    """
+    template = prompts.get(
+        "user_prompt", "Summarize this article in {language}:\n\n{content}"
+    )
     return template.format(
         language=settings.summary_language,
         content=content,
-        title=title or "Untitled"
+        title=title or "Untitled",
     )
 
 
 def _parse_json_response(content: str) -> dict:
     """
-    Parseia resposta JSON de forma robusta.
-    Lida com markdown code blocks, escapes incorretos, etc.
+    Parse JSON response robustly.
+    Handles markdown code blocks, incorrect escapes, etc.
     """
 
-    # Remover markdown code blocks se presentes
-    # Padrão: ```json ... ``` ou ``` ... ```
-    code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+    # Remove markdown code blocks if present
+    # Pattern: ```json ... ``` or ``` ... ```
+    code_block_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
     if code_block_match:
         content = code_block_match.group(1)
 
-    # Tentar parse direto primeiro
+    # Try direct parse first
     try:
         return json.loads(content)
     except json.JSONDecodeError:
         pass
 
-    # Tentar extrair JSON de dentro do texto
-    json_start = content.find('{')
-    json_end = content.rfind('}') + 1
+    # Try to extract JSON from within text
+    json_start = content.find("{")
+    json_end = content.rfind("}") + 1
 
     if json_start < 0 or json_end <= json_start:
-        raise ValueError("JSON não encontrado na resposta")
+        raise ValueError("JSON not found in response")
 
     json_str = content[json_start:json_end]
 
-    # Tentar parse
+    # Try parse
     try:
         return json.loads(json_str)
     except json.JSONDecodeError:
         pass
 
-    # Tentar corrigir problemas comuns de escape
-    # Newlines literais dentro de strings
+    # Try to fix common escape issues
+    # Literal newlines inside strings
     json_str_fixed = json_str
 
-    # Substituir newlines reais dentro de strings por \n
-    # Isso é um hack mas ajuda com alguns modelos
+    # Replace real newlines inside strings with \n
+    # This is a hack but helps with some models
     def fix_string_newlines(match):
         s = match.group(0)
-        # Substituir newlines reais por escape
-        s = s.replace('\n', '\\n').replace('\r', '\\r')
+        # Replace real newlines with escape
+        s = s.replace("\n", "\\n").replace("\r", "\\r")
         return s
 
-    # Encontrar strings JSON e corrigir
+    # Find JSON strings and fix
     json_str_fixed = re.sub(r'"[^"]*"', fix_string_newlines, json_str)
 
     try:
@@ -394,22 +459,35 @@ def _parse_json_response(content: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Última tentativa: extrair campos manualmente com regex
-    summary_match = re.search(r'"summary_pt"\s*:\s*"((?:[^"\\]|\\.)*)"|"summary_pt"\s*:\s*"([^"]*)"', json_str, re.DOTALL)
-    one_line_match = re.search(r'"one_line_summary"\s*:\s*"((?:[^"\\]|\\.)*)"|"one_line_summary"\s*:\s*"([^"]*)"', json_str, re.DOTALL)
+    # Last attempt: extract fields manually with regex
+    summary_match = re.search(
+        r'"summary_pt"\s*:\s*"((?:[^"\\]|\\.)*)"|"summary_pt"\s*:\s*"([^"]*)"',
+        json_str,
+        re.DOTALL,
+    )
+    one_line_match = re.search(
+        r'"one_line_summary"\s*:\s*"((?:[^"\\]|\\.)*)"|"one_line_summary"\s*:\s*"([^"]*)"',
+        json_str,
+        re.DOTALL,
+    )
 
     if summary_match and one_line_match:
         summary = summary_match.group(1) or summary_match.group(2) or ""
         one_line = one_line_match.group(1) or one_line_match.group(2) or ""
-        # Decodificar escapes básicos
-        summary = summary.replace('\\n', '\n').replace('\\r', '\r').replace('\\"', '"')
-        one_line = one_line.replace('\\n', '\n').replace('\\r', '\r').replace('\\"', '"')
-        return {
-            "summary_pt": summary,
-            "one_line_summary": one_line
-        }
+        # Decode basic escapes
+        summary = (
+            summary.replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace('\\"', '"')
+        )
+        one_line = (
+            one_line.replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace('\\"', '"')
+        )
+        return {"summary_pt": summary, "one_line_summary": one_line}
 
-    raise ValueError(f"Não foi possível parsear JSON: {json_str[:200]}...")
+    raise ValueError(f"Could not parse JSON: {json_str[:200]}...")
 
 
 # Patterns that indicate error/garbage pages (no real content)
@@ -443,8 +521,8 @@ GARBAGE_PATTERNS = [
 
 def is_garbage_content(content: str) -> bool:
     """
-    Detecta se o conteúdo é uma página de erro/sessão/paywall
-    que não deve ser enviada para a IA.
+    Detect if content is an error/session/paywall page
+    that should not be sent to AI.
     """
     if not content or len(content.strip()) < 50:
         return True
@@ -452,7 +530,9 @@ def is_garbage_content(content: str) -> bool:
     content_lower = content.lower()
 
     # Check for garbage patterns
-    matches = sum(1 for pattern in GARBAGE_PATTERNS if pattern in content_lower)
+    matches = sum(
+        1 for pattern in GARBAGE_PATTERNS if pattern in content_lower
+    )
 
     # If multiple patterns match or content is very short with one match
     if matches >= 2:
@@ -465,40 +545,44 @@ def is_garbage_content(content: str) -> bool:
 
 async def generate_summary(content: str, title: str = "") -> SummaryResult:
     """
-    Gera resumo usando API Cerebras.
+    Generate summary using Cerebras API.
 
     Args:
-        content: Conteúdo do artigo para resumir
-        title: Título do artigo (para tradução se necessário)
+        content: Article content to summarize
+        title: Article title (for translation if needed)
 
     Returns:
-        SummaryResult com resumos
+        SummaryResult with summaries
 
     Raises:
-        TemporaryError: Erro temporário (retry possível)
-        PermanentError: Erro permanente (não tentar novamente)
+        TemporaryError: Temporary error (retry possible)
+        PermanentError: Permanent error (do not retry)
     """
-    # Verificar se é conteúdo lixo (erro, sessão, paywall)
+    # Check if content is garbage (error, session, paywall)
     if is_garbage_content(content):
-        logger.info("Conteúdo detectado como página de erro/sessão, retornando vazio")
-        return SummaryResult(summary_pt="", one_line_summary="", translated_title=None)
+        logger.info(
+            "Content detected as error/session page, returning empty"
+        )
+        return SummaryResult(
+            summary_pt="", one_line_summary="", translated_title=None
+        )
 
-    # Verificar circuit breaker
+    # Check circuit breaker
     can_call, reason = circuit_breaker.can_call()
     if not can_call:
         raise TemporaryError(f"Circuit breaker: {reason}")
 
-    # Obter próxima API key disponível (load balancing)
+    # Get next available API key (load balancing)
     api_key, key_index = api_key_rotator.get_next_key()
     if not api_key:
-        raise TemporaryError("Todas as API keys estão em cooldown")
+        raise TemporaryError("All API keys are in cooldown")
 
-    # Truncar conteúdo se muito grande (max ~4000 tokens ≈ 16000 chars)
+    # Truncate content if too large (max ~4000 tokens ≈ 16000 chars)
     max_content_len = 12000
     if len(content) > max_content_len:
         content = content[:max_content_len] + "..."
 
-    # Preparar request
+    # Prepare request
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -515,80 +599,94 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=settings.cerebras_timeout) as client:
+        async with httpx.AsyncClient(
+            timeout=settings.cerebras_timeout
+        ) as client:
             response = await client.post(
                 CEREBRAS_API_URL,
                 headers=headers,
                 json=payload,
             )
 
-            # Tratar rate limit (cooldown específico para esta key, não afeta circuit breaker)
+            # Handle rate limit (cooldown specific to this key, does not affect circuit breaker)
             if response.status_code == 429:
                 api_key_rotator.set_key_cooldown(api_key, seconds=60)
-                raise TemporaryError(f"Rate limit atingido na key {key_index + 1}")
+                raise TemporaryError(
+                    f"Rate limit reached on key {key_index + 1}"
+                )
 
-            # Tratar erros de servidor
+            # Handle server errors
             if response.status_code >= 500:
                 circuit_breaker.record_failure()
-                raise TemporaryError(f"Erro do servidor: HTTP {response.status_code}")
+                raise TemporaryError(
+                    f"Server error: HTTP {response.status_code}"
+                )
 
-            # Tratar erros de cliente
+            # Handle client errors
             if response.status_code >= 400:
                 circuit_breaker.record_failure()
-                raise PermanentError(f"Erro de requisição: HTTP {response.status_code}")
+                raise PermanentError(
+                    f"Request error: HTTP {response.status_code}"
+                )
 
             # Parse response
             data = response.json()
             logger.debug(f"API response keys: {data.keys()}")
 
-            if 'choices' not in data or not data['choices']:
+            if "choices" not in data or not data["choices"]:
                 circuit_breaker.record_failure()
-                logger.error(f"Resposta sem choices: {data}")
-                raise PermanentError("Resposta vazia da API")
+                logger.error(f"Response without choices: {data}")
+                raise PermanentError("Empty API response")
 
-            choice = data['choices'][0]
+            choice = data["choices"][0]
             logger.debug(f"Choice keys: {choice.keys()}")
 
-            # Verificar se resposta foi truncada
-            if choice.get('finish_reason') == 'length':
-                logger.warning("Resposta truncada pela API (finish_reason=length)")
+            # Check if response was truncated
+            if choice.get("finish_reason") == "length":
+                logger.warning(
+                    "Response truncated by API (finish_reason=length)"
+                )
 
-            # Tentar diferentes estruturas de resposta
-            message = choice.get('message', {})
-            if 'content' in message:
-                content_response = message['content']
-            elif 'reasoning' in message:
-                # Alguns modelos retornam 'reasoning' em vez de 'content'
-                content_response = message['reasoning']
-            elif 'text' in choice:
-                content_response = choice['text']
-            elif 'content' in choice:
-                content_response = choice['content']
+            # Try different response structures
+            message = choice.get("message", {})
+            if "content" in message:
+                content_response = message["content"]
+            elif "reasoning" in message:
+                # Some models return 'reasoning' instead of 'content'
+                content_response = message["reasoning"]
+            elif "text" in choice:
+                content_response = choice["text"]
+            elif "content" in choice:
+                content_response = choice["content"]
             else:
-                logger.error(f"Estrutura de resposta desconhecida: {choice}")
+                logger.error(f"Unknown response structure: {choice}")
                 circuit_breaker.record_failure()
-                raise PermanentError(f"Estrutura de resposta desconhecida: {list(choice.keys())}")
+                raise PermanentError(
+                    f"Unknown response structure: {list(choice.keys())}"
+                )
 
-            # Parse JSON do response
+            # Parse JSON from response
             try:
                 result = _parse_json_response(content_response)
 
-                summary_pt = result.get('summary_pt', '').strip()
-                one_line = result.get('one_line_summary', '').strip()
-                translated_title = result.get('translated_title')
+                summary_pt = result.get("summary_pt", "").strip()
+                one_line = result.get("one_line_summary", "").strip()
+                translated_title = result.get("translated_title")
 
-                # Limpar translated_title se for "null" string ou vazio
+                # Clean translated_title if "null" string or empty
                 if translated_title and isinstance(translated_title, str):
                     translated_title = translated_title.strip()
-                    if translated_title.lower() in ('null', 'none', ''):
+                    if translated_title.lower() in ("null", "none", ""):
                         translated_title = None
 
                 # Allow both empty (error pages) or both filled
                 # But not one empty and other filled
                 if bool(summary_pt) != bool(one_line):
-                    raise ValueError("Campos inconsistentes (um vazio, outro não)")
+                    raise ValueError(
+                        "Inconsistent fields (one empty, other not)"
+                    )
 
-                # Truncar one_line se necessário
+                # Truncate one_line if needed
                 if len(one_line) > 150:
                     one_line = one_line[:147] + "..."
 
@@ -601,15 +699,15 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                 )
 
             except (json.JSONDecodeError, ValueError) as e:
-                logger.error(f"Erro ao parsear resposta: {e}")
-                logger.error(f"Resposta raw: {content_response[:500]}")
+                logger.error(f"Error parsing response: {e}")
+                logger.error(f"Raw response: {content_response[:500]}")
                 circuit_breaker.record_failure()
-                raise PermanentError(f"Resposta inválida: {e}")
+                raise PermanentError(f"Invalid response: {e}")
 
     except httpx.TimeoutException:
         circuit_breaker.record_failure()
-        raise TemporaryError(f"Timeout após {settings.cerebras_timeout}s")
+        raise TemporaryError(f"Timeout after {settings.cerebras_timeout}s")
 
     except httpx.RequestError as e:
         circuit_breaker.record_failure()
-        raise TemporaryError(f"Erro de conexão: {e}")
+        raise TemporaryError(f"Connection error: {e}")

@@ -1,7 +1,8 @@
 """
-Aplicação FastAPI principal.
-Backend do RSS Reader com IA.
+Main FastAPI application.
+RSS Reader backend with AI.
 """
+
 import logging
 import os
 import sys
@@ -17,14 +18,11 @@ from sqlalchemy import text
 from app.config import settings
 from app.database import engine
 
-# Configurar logging
+# Configure logging
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper()),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(settings.log_file),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler(settings.log_file), logging.StreamHandler()],
 )
 
 logger = logging.getLogger(__name__)
@@ -32,14 +30,16 @@ logger = logging.getLogger(__name__)
 
 def run_migrations():
     """
-    Executa migrations do Alembic automaticamente.
-    Falha crítica se não conseguir aplicar.
+    Run Alembic migrations automatically.
+    Critical failure if unable to apply.
     """
     try:
-        # Encontrar alembic.ini relativo ao diretório do projeto
+        # Find alembic.ini relative to project directory
         base_dir = Path(__file__).resolve().parent.parent
         alembic_cfg = Config(str(base_dir / "alembic.ini"))
-        alembic_cfg.set_main_option("script_location", str(base_dir / "alembic"))
+        alembic_cfg.set_main_option(
+            "script_location", str(base_dir / "alembic")
+        )
 
         logger.info("Running database migrations...")
         command.upgrade(alembic_cfg, "head")
@@ -52,30 +52,40 @@ def run_migrations():
 
 def check_database_integrity():
     """
-    Verifica integridade do banco SQLite.
-    - DB > 100MB: PRAGMA quick_check (mais rápido)
-    - DB <= 100MB: PRAGMA integrity_check (completo)
-    Falha crítica se detectar corrupção.
+    Check SQLite database integrity.
+    - DB > 100MB: PRAGMA quick_check (faster)
+    - DB <= 100MB: PRAGMA integrity_check (complete)
+    Critical failure if corruption detected.
     """
     try:
         db_path = Path(settings.database_path)
 
         if not db_path.exists():
-            logger.info("Database does not exist yet, skipping integrity check")
+            logger.info(
+                "Database does not exist yet, skipping integrity check"
+            )
             return
 
         db_size_mb = db_path.stat().st_size / (1024 * 1024)
 
         with engine.connect() as conn:
             if db_size_mb > 100:
-                logger.info(f"Database size: {db_size_mb:.1f}MB - running quick_check")
+                logger.info(
+                    f"Database size: {db_size_mb:.1f}MB - running quick_check"
+                )
                 result = conn.execute(text("PRAGMA quick_check;")).fetchone()
             else:
-                logger.info(f"Database size: {db_size_mb:.1f}MB - running integrity_check")
-                result = conn.execute(text("PRAGMA integrity_check;")).fetchone()
+                logger.info(
+                    f"Database size: {db_size_mb:.1f}MB - running integrity_check"
+                )
+                result = conn.execute(
+                    text("PRAGMA integrity_check;")
+                ).fetchone()
 
             if result[0] != "ok":
-                logger.critical(f"Database integrity check failed: {result[0]}")
+                logger.critical(
+                    f"Database integrity check failed: {result[0]}"
+                )
                 sys.exit(1)
 
             logger.info("Database integrity check passed")
@@ -88,8 +98,8 @@ def check_database_integrity():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Lifespan context manager para startup e shutdown.
-    Executa verificações críticas no startup.
+    Lifespan context manager for startup and shutdown.
+    Runs critical checks on startup.
     """
     from app.services.scheduler import scheduler
 
@@ -98,16 +108,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"Database: {settings.database_path}")
     logger.info(f"Log level: {settings.log_level}")
 
-    # Garantir que o diretório data existe
+    # Ensure data directory exists
     Path(settings.database_path).parent.mkdir(parents=True, exist_ok=True)
 
-    # Verificar integridade do banco (se existir)
+    # Check database integrity (if exists)
     check_database_integrity()
 
-    # Executar migrations
+    # Run migrations
     run_migrations()
 
-    # Iniciar scheduler de background jobs
+    # Start background jobs scheduler
     await scheduler.start()
 
     yield
@@ -117,12 +127,12 @@ async def lifespan(app: FastAPI):
     await scheduler.stop()
 
 
-# Criar app FastAPI
+# Create FastAPI app
 app = FastAPI(
     title="RSS Reader API",
-    description="RSS Reader com resumos em IA",
+    description="RSS Reader with AI summaries",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS
@@ -135,15 +145,16 @@ app.add_middleware(
 )
 
 
-# Health check endpoint (sem autenticação)
+# Health check endpoint (no authentication)
 @app.get("/health")
 async def health_check():
-    """Health check básico"""
+    """Basic health check"""
     return {"status": "ok"}
 
 
-# Incluir routers
+# Include routers
 from app.routes import auth, categories, feeds, posts, proxy, admin
+
 app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(feeds.router, prefix="/api")

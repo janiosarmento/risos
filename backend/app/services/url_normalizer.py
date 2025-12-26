@@ -1,7 +1,8 @@
 """
-Normalização de URLs para deduplicação.
-Aplica regras consistentes para comparar URLs.
+URL normalization for deduplication.
+Applies consistent rules to compare URLs.
 """
+
 import logging
 import re
 from typing import Optional
@@ -9,59 +10,84 @@ from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 
 logger = logging.getLogger(__name__)
 
-# Parâmetros de tracking a remover
+# Tracking parameters to remove
 TRACKING_PARAMS = {
     # UTM
-    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-    'utm_id', 'utm_source_platform', 'utm_creative_format',
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "utm_id",
+    "utm_source_platform",
+    "utm_creative_format",
     # Facebook
-    'fbclid', 'fb_action_ids', 'fb_action_types', 'fb_source', 'fb_ref',
+    "fbclid",
+    "fb_action_ids",
+    "fb_action_types",
+    "fb_source",
+    "fb_ref",
     # Google
-    'gclid', 'gclsrc', 'dclid',
+    "gclid",
+    "gclsrc",
+    "dclid",
     # Twitter
-    'twclid',
+    "twclid",
     # Microsoft/Bing
-    'msclkid',
+    "msclkid",
     # Mailchimp
-    'mc_cid', 'mc_eid',
+    "mc_cid",
+    "mc_eid",
     # HubSpot
-    'hsa_acc', 'hsa_cam', 'hsa_grp', 'hsa_ad', 'hsa_src', 'hsa_tgt',
-    'hsa_kw', 'hsa_mt', 'hsa_net', 'hsa_ver',
-    # Outros comuns
-    '_ga', '_gl', 'ref', 'source', 'via',
+    "hsa_acc",
+    "hsa_cam",
+    "hsa_grp",
+    "hsa_ad",
+    "hsa_src",
+    "hsa_tgt",
+    "hsa_kw",
+    "hsa_mt",
+    "hsa_net",
+    "hsa_ver",
+    # Other common
+    "_ga",
+    "_gl",
+    "ref",
+    "source",
+    "via",
 }
 
-# Portas padrão por scheme
+# Default ports by scheme
 DEFAULT_PORTS = {
-    'http': 80,
-    'https': 443,
+    "http": 80,
+    "https": 443,
 }
 
 
 def normalize_url(url: Optional[str]) -> Optional[str]:
     """
-    Normaliza URL para comparação consistente.
+    Normalize URL for consistent comparison.
 
-    Regras aplicadas:
-    - Hostname para lowercase
-    - Remove fragmento (#...)
-    - Remove porta padrão (80 para http, 443 para https)
-    - Remove parâmetros de tracking (utm_*, fbclid, gclid, etc.)
-    - Remove trailing slash (exceto para root "/")
-    - Rejeita URLs com userinfo (usuário:senha@)
+    Rules applied:
+    - Hostname to lowercase
+    - Remove fragment (#...)
+    - Remove default port (80 for http, 443 for https)
+    - Remove tracking parameters (utm_*, fbclid, gclid, etc.)
+    - Remove trailing slash (except for root "/")
+    - Reject URLs with userinfo (user:password@)
 
     Args:
-        url: URL para normalizar
+        url: URL to normalize
 
     Returns:
-        URL normalizada ou None se inválida
+        Normalized URL or None if invalid
 
     Examples:
         >>> normalize_url("https://Site.com:443/Article?utm_source=rss&id=123#comments")
         "https://site.com/Article?id=123"
 
         >>> normalize_url("http://user:pass@example.com/page")
-        None  # URLs com userinfo são rejeitadas
+        None  # URLs with userinfo are rejected
     """
     if not url:
         return None
@@ -69,90 +95,93 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
     try:
         parsed = urlparse(url)
     except Exception as e:
-        logger.warning(f"URL inválida: {url} - {e}")
+        logger.warning(f"Invalid URL: {url} - {e}")
         return None
 
-    # Rejeitar URLs com userinfo (segurança)
+    # Reject URLs with userinfo (security)
     if parsed.username or parsed.password:
-        logger.warning(f"URL com userinfo rejeitada: {url}")
+        logger.warning(f"URL with userinfo rejected: {url}")
         return None
 
-    # Verificar scheme válido
-    if parsed.scheme not in ('http', 'https'):
-        logger.warning(f"URL com scheme inválido: {url}")
+    # Check valid scheme
+    if parsed.scheme not in ("http", "https"):
+        logger.warning(f"URL with invalid scheme: {url}")
         return None
 
-    # Hostname para lowercase
+    # Hostname to lowercase
     hostname = parsed.hostname
     if not hostname:
         return None
     hostname = hostname.lower()
 
-    # Remover porta padrão
+    # Remove default port
     port = parsed.port
     default_port = DEFAULT_PORTS.get(parsed.scheme)
     if port == default_port:
         port = None
 
-    # Reconstruir netloc
+    # Rebuild netloc
     if port:
         netloc = f"{hostname}:{port}"
     else:
         netloc = hostname
 
-    # Processar path
+    # Process path
     path = parsed.path
 
-    # Remover trailing slash (exceto para root)
-    if path and path != '/' and path.endswith('/'):
-        path = path.rstrip('/')
+    # Remove trailing slash (except for root)
+    if path and path != "/" and path.endswith("/"):
+        path = path.rstrip("/")
 
-    # Se path vazio, usar /
+    # If path empty, use /
     if not path:
-        path = '/'
+        path = "/"
 
-    # Processar query string - remover parâmetros de tracking
+    # Process query string - remove tracking parameters
     query_params = parse_qs(parsed.query, keep_blank_values=True)
 
-    # Filtrar parâmetros de tracking
+    # Filter tracking parameters
     filtered_params = {
-        k: v for k, v in query_params.items()
+        k: v
+        for k, v in query_params.items()
         if k.lower() not in TRACKING_PARAMS
     }
 
-    # Reconstruir query string ordenada (para consistência)
+    # Rebuild sorted query string (for consistency)
     if filtered_params:
-        # Flatten: parse_qs retorna listas, precisamos de valores únicos
+        # Flatten: parse_qs returns lists, we need single values
         flat_params = []
         for k, v in sorted(filtered_params.items()):
             for val in v:
                 flat_params.append((k, val))
         query = urlencode(flat_params)
     else:
-        query = ''
+        query = ""
 
-    # Reconstruir URL sem fragmento
-    normalized = urlunparse((
-        parsed.scheme,
-        netloc,
-        path,
-        '',  # params (raramente usado)
-        query,
-        '',  # fragment removido
-    ))
+    # Rebuild URL without fragment
+    normalized = urlunparse(
+        (
+            parsed.scheme,
+            netloc,
+            path,
+            "",  # params (rarely used)
+            query,
+            "",  # fragment removed
+        )
+    )
 
     return normalized
 
 
 def extract_domain(url: str) -> Optional[str]:
     """
-    Extrai domínio de uma URL.
+    Extract domain from a URL.
 
     Args:
-        url: URL para extrair domínio
+        url: URL to extract domain from
 
     Returns:
-        Domínio em lowercase ou None se inválido
+        Domain in lowercase or None if invalid
     """
     try:
         parsed = urlparse(url)

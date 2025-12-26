@@ -2,6 +2,7 @@
 Content hashing for deduplication.
 Normalizes content before computing hash.
 """
+
 import hashlib
 import re
 from typing import Optional
@@ -11,15 +12,15 @@ from app.services.html_sanitizer import extract_text
 # Boilerplate patterns to remove
 BOILERPLATE_PATTERNS = [
     # Timestamps and dates
-    r'\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b',
-    r'\b\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM|am|pm)?\b',
+    r"\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b",
+    r"\b\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM|am|pm)?\b",
     # "Read more", "Continue reading", etc.
-    r'\b(leia|read|continue|ver|see)\s+(mais|more|reading|lendo)\b',
-    r'\b(clique|click)\s+(aqui|here)\b',
+    r"\b(leia|read|continue|ver|see)\s+(mais|more|reading|lendo)\b",
+    r"\b(clique|click)\s+(aqui|here)\b",
     # Sharing
-    r'\b(share|compartilh[ae]|tweet|retweet)\b',
+    r"\b(share|compartilh[ae]|tweet|retweet)\b",
     # Cookie/newsletter notices
-    r'\b(newsletter|subscribe|inscreva-se|cadastre-se)\b',
+    r"\b(newsletter|subscribe|inscreva-se|cadastre-se)\b",
 ]
 
 # Maximum size for hash (bytes)
@@ -42,10 +43,10 @@ def normalize_for_hash(text: str) -> str:
 
     # Remove boilerplate
     for pattern in BOILERPLATE_PATTERNS:
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
 
     # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r"\s+", " ", text).strip()
 
     return text
 
@@ -53,7 +54,7 @@ def normalize_for_hash(text: str) -> str:
 def compute_content_hash(
     content: Optional[str],
     title: Optional[str] = None,
-    url: Optional[str] = None
+    url: Optional[str] = None,
 ) -> Optional[str]:
     """
     Compute SHA-256 hash of content + title + URL.
@@ -91,6 +92,6 @@ def compute_content_hash(
         normalized = normalized[:half] + normalized[-half:]
 
     # Compute hash
-    hash_bytes = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+    hash_bytes = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
     return hash_bytes

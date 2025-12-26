@@ -1,7 +1,8 @@
 """
-Rotas de posts.
-Leitura, marcação como lido, extração de conteúdo e redirecionamento.
+Post routes.
+Read, mark as read, content extraction and redirect.
 """
+
 import logging
 from datetime import datetime
 from typing import Optional
@@ -34,33 +35,31 @@ def get_post_or_404(db: Session, post_id: int) -> Post:
     post = db.query(Post).filter(Post.id == post_id).first()
     if not post:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
     return post
 
 
 def get_summary_status(db: Session, post: Post) -> str:
     """
-    Retorna status do resumo IA para um post.
-    Antes da Fase 5, retorna sempre 'not_configured'.
+    Return AI summary status for a post.
     """
-    # TODO: Fase 5 - verificar se IA está configurada
-    # Por enquanto, retornar not_configured
     if not post.content_hash:
         return "not_configured"
 
-    # Verificar se já existe resumo
-    summary = db.query(AISummary).filter(
-        AISummary.content_hash == post.content_hash
-    ).first()
+    # Check if summary already exists
+    summary = (
+        db.query(AISummary)
+        .filter(AISummary.content_hash == post.content_hash)
+        .first()
+    )
     if summary:
         return "ready"
 
-    # Verificar se está na fila
-    queue_entry = db.query(SummaryQueue).filter(
-        SummaryQueue.post_id == post.id
-    ).first()
+    # Check if in queue
+    queue_entry = (
+        db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
+    )
     if queue_entry:
         if queue_entry.error_type == "permanent":
             return "failed"
@@ -71,61 +70,65 @@ def get_summary_status(db: Session, post: Post) -> str:
 
 @router.get("", response_model=PostListResponse)
 def list_posts(
-    feed_id: Optional[int] = Query(None, description="Filtrar por feed"),
-    category_id: Optional[int] = Query(None, description="Filtrar por categoria"),
-    unread_only: bool = Query(False, description="Apenas não lidos"),
-    starred_only: bool = Query(False, description="Apenas favoritos"),
-    limit: int = Query(20, ge=1, le=100, description="Limite de posts"),
-    offset: int = Query(0, ge=0, description="Offset para paginação"),
+    feed_id: Optional[int] = Query(None, description="Filter by feed"),
+    category_id: Optional[int] = Query(None, description="Filter by category"),
+    unread_only: bool = Query(False, description="Only unread"),
+    starred_only: bool = Query(False, description="Only starred"),
+    limit: int = Query(20, ge=1, le=100, description="Post limit"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Lista posts com paginação.
-    Ordenados por sort_date DESC (mais recentes primeiro).
+    List posts with pagination.
+    Ordered by sort_date DESC (newest first).
     """
     query = db.query(Post)
 
-    # Filtro de favoritos (ignora outros filtros se ativo)
+    # Starred filter (ignores other filters if active)
     if starred_only:
         query = query.filter(Post.is_starred == True)
     else:
-        # Filtros normais
+        # Normal filters
         if feed_id is not None:
             query = query.filter(Post.feed_id == feed_id)
         elif category_id is not None:
-            # Buscar feeds da categoria
-            feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
+            # Get feeds from the category
+            feed_ids = (
+                db.query(Feed.id)
+                .filter(Feed.category_id == category_id)
+                .subquery()
+            )
             query = query.filter(Post.feed_id.in_(feed_ids))
 
         if unread_only:
             query = query.filter(Post.is_read == False)
 
-    # Contar total
+    # Count total
     total = query.count()
 
-    # Buscar posts ordenados
+    # Fetch sorted posts
     posts = (
-        query
-        .order_by(Post.sort_date.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
+        query.order_by(Post.sort_date.desc()).offset(offset).limit(limit).all()
     )
 
-    # Buscar resumos para os posts (por content_hash)
+    # Fetch summaries for posts (by content_hash)
     content_hashes = [p.content_hash for p in posts if p.content_hash]
     summaries_map = {}
     if content_hashes:
-        summaries = db.query(AISummary).filter(
-            AISummary.content_hash.in_(content_hashes)
-        ).all()
+        summaries = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash.in_(content_hashes))
+            .all()
+        )
         summaries_map = {s.content_hash: s for s in summaries}
 
-    # Converter para response
+    # Convert to response
     result = []
     for post in posts:
-        summary = summaries_map.get(post.content_hash) if post.content_hash else None
+        summary = (
+            summaries_map.get(post.content_hash) if post.content_hash else None
+        )
         post_dict = {
             "id": post.id,
             "feed_id": post.feed_id,
@@ -141,7 +144,9 @@ def list_posts(
             "read_at": post.read_at,
             "is_starred": post.is_starred or False,
             "starred_at": post.starred_at,
-            "summary_status": "ready" if summary else get_summary_status(db, post),
+            "summary_status": "ready"
+            if summary
+            else get_summary_status(db, post),
             "one_line_summary": summary.one_line_summary if summary else None,
             "translated_title": summary.translated_title if summary else None,
         }
@@ -156,16 +161,16 @@ def list_posts(
 async def get_post(
     post_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Busca um post por ID com conteúdo completo.
-    Inclui resumo IA se disponível.
-    Extrai full_content sob demanda se não estiver em cache.
+    Fetch a post by ID with full content.
+    Includes AI summary if available.
+    Extracts full_content on-demand if not cached.
     """
     post = get_post_or_404(db, post_id)
 
-    # Extrair full_content sob demanda se não estiver em cache
+    # Extract full_content on-demand if not cached
     full_content = post.full_content
     if not full_content and post.url:
         try:
@@ -175,27 +180,31 @@ async def get_post(
                 post.full_content = full_content
                 db.commit()
         except Exception:
-            pass  # Usar content original se falhar
+            pass  # Use original content if extraction fails
 
-    # Buscar ou gerar resumo IA on-demand
+    # Fetch or generate AI summary on-demand
     summary_pt = None
     one_line_summary = None
     translated_title = None
     summary_status = "not_configured"
 
-    # Usar full_content para o resumo, ou content como fallback
+    # Use full_content for summary, or content as fallback
     content_for_summary = full_content or post.content
 
-    # Calcular/atualizar content_hash se necessário
+    # Calculate/update content_hash if needed
     if content_for_summary and not post.content_hash:
-        post.content_hash = compute_content_hash(content_for_summary, title=post.title, url=post.url)
+        post.content_hash = compute_content_hash(
+            content_for_summary, title=post.title, url=post.url
+        )
         db.commit()
 
     if post.content_hash:
-        # Verificar se já existe resumo
-        summary = db.query(AISummary).filter(
-            AISummary.content_hash == post.content_hash
-        ).first()
+        # Check if summary already exists
+        summary = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash == post.content_hash)
+            .first()
+        )
 
         if summary:
             summary_pt = summary.summary_pt
@@ -203,12 +212,14 @@ async def get_post(
             translated_title = summary.translated_title
             summary_status = "ready"
         elif content_for_summary and len(content_for_summary.strip()) > 100:
-            # Gerar resumo on-demand se há conteúdo suficiente
+            # Generate on-demand summary if there's enough content
             try:
                 logger.info(f"Generating on-demand summary for post {post.id}")
-                result = await generate_summary(content_for_summary, title=post.title)
+                result = await generate_summary(
+                    content_for_summary, title=post.title
+                )
 
-                # Salvar no banco
+                # Save to database
                 new_summary = AISummary(
                     content_hash=post.content_hash,
                     summary_pt=result.summary_pt,
@@ -222,13 +233,19 @@ async def get_post(
                 one_line_summary = result.one_line_summary
                 translated_title = result.translated_title
                 summary_status = "ready"
-                logger.info(f"Summary generated successfully for post {post.id}")
+                logger.info(
+                    f"Summary generated successfully for post {post.id}"
+                )
 
             except CerebrasError as e:
-                logger.warning(f"Failed to generate summary for post {post.id}: {e}")
-                summary_status = "pending"  # Temporário, pode tentar novamente
+                logger.warning(
+                    f"Failed to generate summary for post {post.id}: {e}"
+                )
+                summary_status = "pending"  # Temporary, can retry later
             except Exception as e:
-                logger.error(f"Unexpected error generating summary for post {post.id}: {e}")
+                logger.error(
+                    f"Unexpected error generating summary for post {post.id}: {e}"
+                )
                 summary_status = "failed"
 
     return PostDetail(
@@ -258,11 +275,11 @@ async def get_post(
 def toggle_read(
     post_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Alterna status de leitura de um post.
-    Se lido, marca como não lido. Se não lido, marca como lido.
+    Toggle read status of a post.
+    If read, marks as unread. If unread, marks as read.
     """
     post = get_post_or_404(db, post_id)
 
@@ -282,11 +299,11 @@ def toggle_read(
 def toggle_star(
     post_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Alterna status de favorito de um post.
-    Se estrelado, remove estrela. Se não, adiciona.
+    Toggle starred status of a post.
+    If starred, removes star. If not, adds star.
     """
     post = get_post_or_404(db, post_id)
 
@@ -299,43 +316,53 @@ def toggle_star(
 
     db.commit()
 
-    return {"id": post_id, "is_starred": bool(post.is_starred), "starred_at": post.starred_at}
+    return {
+        "id": post_id,
+        "is_starred": bool(post.is_starred),
+        "starred_at": post.starred_at,
+    }
 
 
 @router.post("/mark-read")
 def mark_read_batch(
     request: MarkReadRequest,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Marca múltiplos posts como lidos.
-    - post_ids: lista de IDs de posts específicos
-    - feed_id: marca todos os posts de um feed
-    - category_id: marca todos os posts de feeds de uma categoria
-    - all: marca todos os posts
+    Mark multiple posts as read.
+    - post_ids: list of specific post IDs
+    - feed_id: marks all posts from a feed
+    - category_id: marks all posts from feeds in a category
+    - all: marks all posts
     """
     now = datetime.utcnow()
     query = db.query(Post).filter(Post.is_read == False)
 
     if request.post_ids:
-        # Marcar posts específicos por ID
+        # Mark specific posts by ID
         query = query.filter(Post.id.in_(request.post_ids))
     elif request.all:
-        # Marcar todos
+        # Mark all
         pass
     elif request.feed_id:
         query = query.filter(Post.feed_id == request.feed_id)
     elif request.category_id:
-        feed_ids = db.query(Feed.id).filter(Feed.category_id == request.category_id).subquery()
+        feed_ids = (
+            db.query(Feed.id)
+            .filter(Feed.category_id == request.category_id)
+            .subquery()
+        )
         query = query.filter(Post.feed_id.in_(feed_ids))
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Must specify post_ids, feed_id, category_id, or all=true"
+            detail="Must specify post_ids, feed_id, category_id, or all=true",
         )
 
-    count = query.update({"is_read": True, "read_at": now}, synchronize_session=False)
+    count = query.update(
+        {"is_read": True, "read_at": now}, synchronize_session=False
+    )
     db.commit()
 
     return {"marked_read": count}
@@ -345,24 +372,23 @@ def mark_read_batch(
 async def get_full_content(
     post_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Extrai conteúdo completo do artigo original.
+    Extract full content from the original article.
 
-    - Usa readability-lxml para extrair
-    - Sanitiza HTML
-    - Cache em posts.full_content
+    - Uses readability-lxml for extraction
+    - Sanitizes HTML
+    - Caches in posts.full_content
     """
     post = get_post_or_404(db, post_id)
 
     if not post.url:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Post has no URL"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Post has no URL"
         )
 
-    # Verificar cache
+    # Check cache
     if post.full_content:
         return {
             "id": post_id,
@@ -370,16 +396,16 @@ async def get_full_content(
             "cached": True,
         }
 
-    # Extrair conteúdo
+    # Extract content
     result = await extract_full_content(post.url)
 
     if not result.success:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to extract content: {result.error}"
+            detail=f"Failed to extract content: {result.error}",
         )
 
-    # Salvar no cache
+    # Save to cache
     post.full_content = result.content
     db.commit()
 
@@ -394,23 +420,22 @@ async def get_full_content(
 def redirect_to_post(
     post_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Redireciona para URL original do post.
+    Redirect to the original post URL.
 
-    - Marca post como lido
-    - Retorna HTTP 302 para URL original
+    - Marks post as read
+    - Returns HTTP 302 to original URL
     """
     post = get_post_or_404(db, post_id)
 
     if not post.url:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Post has no URL"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Post has no URL"
         )
 
-    # Marcar como lido
+    # Mark as read
     if not post.is_read:
         post.is_read = True
         post.read_at = datetime.utcnow()
@@ -423,22 +448,22 @@ def redirect_to_post(
 async def regenerate_summary(
     post_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Regenera o resumo IA de um post.
+    Regenerate the AI summary for a post.
 
-    - Extrai conteúdo completo se necessário
-    - Gera novo resumo via Cerebras
-    - Atualiza ou insere na tabela ai_summaries
-    - Retorna o novo resumo
+    - Extracts full content if needed
+    - Generates new summary via Cerebras
+    - Updates or inserts into ai_summaries table
+    - Returns the new summary
     """
     post = get_post_or_404(db, post_id)
 
-    # Obter conteúdo para resumir
+    # Get content for summary
     content_for_summary = post.full_content or post.content
 
-    # Se não tem conteúdo, tentar extrair
+    # If no content, try to extract
     if not content_for_summary and post.url:
         try:
             result = await extract_full_content(post.url)
@@ -452,13 +477,15 @@ async def regenerate_summary(
     if not content_for_summary or len(content_for_summary.strip()) < 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Post has insufficient content for summary"
+            detail="Post has insufficient content for summary",
         )
 
-    # Calcular novo content_hash baseado no conteúdo atual
-    new_content_hash = compute_content_hash(content_for_summary, title=post.title, url=post.url)
+    # Calculate new content_hash based on current content
+    new_content_hash = compute_content_hash(
+        content_for_summary, title=post.title, url=post.url
+    )
 
-    # Atualizar content_hash do post se diferente
+    # Update post content_hash if different
     if post.content_hash != new_content_hash:
         post.content_hash = new_content_hash
         db.commit()
@@ -467,19 +494,21 @@ async def regenerate_summary(
         logger.info(f"Regenerating summary for post {post_id}")
         result = await generate_summary(content_for_summary, title=post.title)
 
-        # Verificar se já existe resumo com esse hash
-        existing_summary = db.query(AISummary).filter(
-            AISummary.content_hash == new_content_hash
-        ).first()
+        # Check if summary already exists with this hash
+        existing_summary = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash == new_content_hash)
+            .first()
+        )
 
         if existing_summary:
-            # Atualizar resumo existente
+            # Update existing summary
             existing_summary.summary_pt = result.summary_pt
             existing_summary.one_line_summary = result.one_line_summary
             existing_summary.translated_title = result.translated_title
             existing_summary.created_at = datetime.utcnow()
         else:
-            # Criar novo resumo
+            # Create new summary
             new_summary = AISummary(
                 content_hash=new_content_hash,
                 summary_pt=result.summary_pt,
@@ -500,14 +529,18 @@ async def regenerate_summary(
         }
 
     except CerebrasError as e:
-        logger.error(f"Cerebras error regenerating summary for post {post_id}: {e}")
+        logger.error(
+            f"Cerebras error regenerating summary for post {post_id}: {e}"
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"AI service error: {str(e)}"
+            detail=f"AI service error: {str(e)}",
         )
     except Exception as e:
-        logger.error(f"Unexpected error regenerating summary for post {post_id}: {e}")
+        logger.error(
+            f"Unexpected error regenerating summary for post {post_id}: {e}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to regenerate summary: {str(e)}"
+            detail=f"Failed to regenerate summary: {str(e)}",
         )

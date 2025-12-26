@@ -1,7 +1,8 @@
 """
-Rotas administrativas.
-Reprocessamento de resumos e manutenção do banco.
+Admin routes.
+Summary reprocessing and database maintenance.
 """
+
 import os
 from datetime import datetime
 
@@ -26,56 +27,56 @@ class ReprocessRequest(BaseModel):
 def reprocess_summary(
     request: ReprocessRequest,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(get_current_user),
 ):
     """
-    Reinsere um resumo na fila de processamento.
+    Requeue a summary for processing.
 
-    - Busca post pelo content_hash
-    - Remove de summary_failures se existir
-    - Remove resumo existente de ai_summaries
-    - Cria entrada na summary_queue
+    - Find post by content_hash
+    - Remove from summary_failures if exists
+    - Remove existing summary from ai_summaries
+    - Create entry in summary_queue
     """
     content_hash = request.content_hash
 
-    # Buscar post com este hash
+    # Find post with this hash
     post = db.query(Post).filter(Post.content_hash == content_hash).first()
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No post found with this content_hash"
+            detail="No post found with this content_hash",
         )
 
-    # Verificar se já está na fila
-    existing_queue = db.query(SummaryQueue).filter(
-        SummaryQueue.content_hash == content_hash
-    ).first()
+    # Check if already in queue
+    existing_queue = (
+        db.query(SummaryQueue)
+        .filter(SummaryQueue.content_hash == content_hash)
+        .first()
+    )
     if existing_queue:
-        # Reset da entrada existente
+        # Reset existing entry
         existing_queue.attempts = 0
         existing_queue.last_error = None
         existing_queue.error_type = None
         existing_queue.locked_at = None
         existing_queue.cooldown_until = None
-        existing_queue.priority = 10  # Alta prioridade
+        existing_queue.priority = 10  # High priority
         db.commit()
         return {"ok": True, "queued": True, "action": "reset_existing"}
 
-    # Remover de failures se existir
+    # Remove from failures if exists
     db.query(SummaryFailure).filter(
         SummaryFailure.content_hash == content_hash
     ).delete()
 
-    # Remover resumo existente (forçar reprocessamento)
-    db.query(AISummary).filter(
-        AISummary.content_hash == content_hash
-    ).delete()
+    # Remove existing summary (force reprocessing)
+    db.query(AISummary).filter(AISummary.content_hash == content_hash).delete()
 
-    # Criar entrada na fila
+    # Create queue entry
     queue_entry = SummaryQueue(
         post_id=post.id,
         content_hash=content_hash,
-        priority=10,  # Alta prioridade
+        priority=10,  # High priority
     )
     db.add(queue_entry)
     db.commit()
@@ -85,32 +86,31 @@ def reprocess_summary(
 
 @router.post("/vacuum")
 def vacuum_database(
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
     """
-    Executa VACUUM no banco SQLite.
+    Execute VACUUM on SQLite database.
 
-    - Libera espaço de páginas não utilizadas
-    - Retorna bytes liberados
+    - Frees space from unused pages
+    - Returns bytes freed
     """
     db_path = settings.database_path
 
-    # Obter tamanho antes
+    # Get size before
     size_before = os.path.getsize(db_path) if os.path.exists(db_path) else 0
 
-    # Executar VACUUM (precisa estar fora de transação)
-    # SQLAlchemy 2.x requer commit antes
+    # Execute VACUUM (must be outside transaction)
+    # SQLAlchemy 2.x requires commit first
     db.commit()
 
-    # VACUUM não pode ser executado dentro de transação
+    # VACUUM cannot run inside a transaction
     connection = db.get_bind().raw_connection()
     try:
         connection.execute("VACUUM")
     finally:
         connection.close()
 
-    # Obter tamanho depois
+    # Get size after
     size_after = os.path.getsize(db_path) if os.path.exists(db_path) else 0
     freed_bytes = size_before - size_after
 
@@ -126,8 +126,8 @@ def vacuum_database(
 @router.get("/config")
 def get_public_config():
     """
-    Retorna configurações públicas para o frontend.
-    Não requer autenticação.
+    Return public config for the frontend.
+    Does not require authentication.
     """
     return {
         "toast_timeout_seconds": settings.toast_timeout_seconds,
@@ -137,17 +137,16 @@ def get_public_config():
 
 @router.get("/status")
 def get_status(
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
     """
-    Retorna status detalhado do sistema.
+    Return detailed system status.
 
-    Inclui contadores, tamanho do banco, estado do circuit breaker, etc.
+    Includes counters, database size, circuit breaker state, etc.
     """
     from app.models import Feed, Post, AppSettings
 
-    # Contadores
+    # Counters
     feeds_count = db.query(Feed).count()
     posts_count = db.query(Post).count()
     unread_count = db.query(Post).filter(Post.is_read == False).count()
@@ -155,20 +154,26 @@ def get_status(
     summaries_count = db.query(AISummary).count()
     failures_count = db.query(SummaryFailure).count()
 
-    # Tamanho do banco
+    # Database size
     db_path = settings.database_path
-    db_size_mb = round(os.path.getsize(db_path) / (1024 * 1024), 2) if os.path.exists(db_path) else 0
+    db_size_mb = (
+        round(os.path.getsize(db_path) / (1024 * 1024), 2)
+        if os.path.exists(db_path)
+        else 0
+    )
 
     # Circuit breaker
     circuit_state = "unknown"
     health_warning = None
 
-    for row in db.query(AppSettings).filter(
-        AppSettings.key.in_(['cerebras_state', 'health_warning'])
-    ).all():
-        if row.key == 'cerebras_state':
+    for row in (
+        db.query(AppSettings)
+        .filter(AppSettings.key.in_(["cerebras_state", "health_warning"]))
+        .all()
+    ):
+        if row.key == "cerebras_state":
             circuit_state = row.value
-        elif row.key == 'health_warning':
+        elif row.key == "health_warning":
             health_warning = row.value
 
     return {

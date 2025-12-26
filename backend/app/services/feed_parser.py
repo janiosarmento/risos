@@ -1,7 +1,8 @@
 """
-Parser de feeds RSS/Atom.
-Usa feedparser + httpx para fetch e parse.
+RSS/Atom feed parser.
+Uses feedparser + httpx for fetch and parse.
 """
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -13,7 +14,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-# Configurações
+# Configuration
 USER_AGENT = "RSSReader/1.0"
 TIMEOUT_SECONDS = 10
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
@@ -22,7 +23,8 @@ MAX_REDIRECTS = 3
 
 @dataclass
 class ParsedEntry:
-    """Entrada parseada de um feed."""
+    """Parsed entry from a feed."""
+
     guid: Optional[str]
     url: Optional[str]
     title: Optional[str]
@@ -33,26 +35,29 @@ class ParsedEntry:
 
 @dataclass
 class ParsedFeed:
-    """Feed parseado."""
+    """Parsed feed."""
+
     title: Optional[str]
     site_url: Optional[str]
     entries: List[ParsedEntry]
 
 
 class FeedParseError(Exception):
-    """Erro ao parsear feed."""
+    """Error parsing feed."""
+
     pass
 
 
 class FeedFetchError(Exception):
-    """Erro ao buscar feed."""
+    """Error fetching feed."""
+
     pass
 
 
 def _parse_date(entry: dict) -> Optional[datetime]:
-    """Extrai data de publicação de uma entrada."""
-    # feedparser converte para struct_time em published_parsed ou updated_parsed
-    for field in ['published_parsed', 'updated_parsed', 'created_parsed']:
+    """Extract publication date from an entry."""
+    # feedparser converts to struct_time in published_parsed or updated_parsed
+    for field in ["published_parsed", "updated_parsed", "created_parsed"]:
         parsed = entry.get(field)
         if parsed:
             try:
@@ -63,31 +68,31 @@ def _parse_date(entry: dict) -> Optional[datetime]:
 
 
 def _extract_content(entry: dict) -> Optional[str]:
-    """Extrai conteúdo de uma entrada (content ou summary)."""
-    # Tentar content primeiro (geralmente mais completo)
-    if 'content' in entry and entry['content']:
-        contents = entry['content']
+    """Extract content from an entry (content or summary)."""
+    # Try content first (usually more complete)
+    if "content" in entry and entry["content"]:
+        contents = entry["content"]
         if isinstance(contents, list) and contents:
-            # Preferir text/html
+            # Prefer text/html
             for c in contents:
-                if c.get('type') == 'text/html':
-                    return c.get('value', '')
-            # Fallback para primeiro content
-            return contents[0].get('value', '')
+                if c.get("type") == "text/html":
+                    return c.get("value", "")
+            # Fallback to first content
+            return contents[0].get("value", "")
 
-    # Fallback para summary
-    if 'summary' in entry:
-        return entry['summary']
+    # Fallback to summary
+    if "summary" in entry:
+        return entry["summary"]
 
-    # Fallback para description
-    if 'description' in entry:
-        return entry['description']
+    # Fallback to description
+    if "description" in entry:
+        return entry["description"]
 
     return None
 
 
 def _is_same_domain(url1: str, url2: str) -> bool:
-    """Verifica se duas URLs são do mesmo domínio."""
+    """Check if two URLs are from the same domain."""
     try:
         parsed1 = urlparse(url1)
         parsed2 = urlparse(url2)
@@ -97,14 +102,14 @@ def _is_same_domain(url1: str, url2: str) -> bool:
 
 
 def _is_http_to_https(original: str, redirect: str) -> bool:
-    """Verifica se é um redirect de http para https."""
+    """Check if it's a redirect from http to https."""
     try:
         parsed_orig = urlparse(original)
         parsed_redir = urlparse(redirect)
         return (
-            parsed_orig.scheme == 'http' and
-            parsed_redir.scheme == 'https' and
-            parsed_orig.netloc.lower() == parsed_redir.netloc.lower()
+            parsed_orig.scheme == "http"
+            and parsed_redir.scheme == "https"
+            and parsed_orig.netloc.lower() == parsed_redir.netloc.lower()
         )
     except Exception:
         return False
@@ -112,20 +117,20 @@ def _is_http_to_https(original: str, redirect: str) -> bool:
 
 async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
     """
-    Busca conteúdo do feed via HTTP.
+    Fetch feed content via HTTP.
 
     Returns:
-        Tuple de (conteúdo em bytes, URL final após redirects)
+        Tuple of (content in bytes, final URL after redirects)
 
     Raises:
-        FeedFetchError: Se não conseguir buscar o feed
+        FeedFetchError: If unable to fetch the feed
     """
     final_url = url
     redirects_followed = 0
 
     async with httpx.AsyncClient(
         timeout=TIMEOUT_SECONDS,
-        follow_redirects=False,  # Controle manual de redirects
+        follow_redirects=False,  # Manual redirect control
     ) as client:
         current_url = url
 
@@ -136,27 +141,26 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
                     headers={"User-Agent": USER_AGENT},
                 )
 
-                # Verificar redirect
+                # Check redirect
                 if response.status_code in (301, 302, 303, 307, 308):
-                    redirect_url = response.headers.get('location')
+                    redirect_url = response.headers.get("location")
                     if not redirect_url:
-                        raise FeedFetchError("Redirect sem header Location")
+                        raise FeedFetchError("Redirect without Location header")
 
-                    # Validar redirect
-                    is_safe = (
-                        _is_http_to_https(current_url, redirect_url) or
-                        _is_same_domain(current_url, redirect_url)
-                    )
+                    # Validate redirect
+                    is_safe = _is_http_to_https(
+                        current_url, redirect_url
+                    ) or _is_same_domain(current_url, redirect_url)
 
                     if not is_safe:
                         logger.warning(
-                            f"Redirect para domínio diferente: {current_url} -> {redirect_url}"
+                            f"Redirect to different domain: {current_url} -> {redirect_url}"
                         )
 
                     if response.status_code == 301:
                         logger.info(
-                            f"Redirect permanente (301): {current_url} -> {redirect_url}. "
-                            "Considere atualizar a URL do feed manualmente."
+                            f"Permanent redirect (301): {current_url} -> {redirect_url}. "
+                            "Consider updating the feed URL manually."
                         )
 
                     current_url = redirect_url
@@ -164,73 +168,73 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
                     redirects_followed += 1
                     continue
 
-                # Verificar status
+                # Check status
                 if response.status_code >= 400:
                     raise FeedFetchError(
                         f"HTTP {response.status_code}: {response.reason_phrase}"
                     )
 
-                # Verificar tamanho via streaming
-                content_length = response.headers.get('content-length')
+                # Check size via streaming
+                content_length = response.headers.get("content-length")
                 if content_length and int(content_length) > MAX_SIZE_BYTES:
                     raise FeedFetchError(
-                        f"Feed muito grande: {int(content_length)} bytes (max: {MAX_SIZE_BYTES})"
+                        f"Feed too large: {int(content_length)} bytes (max: {MAX_SIZE_BYTES})"
                     )
 
-                # Ler conteúdo com limite
+                # Read content with limit
                 content = b""
                 async for chunk in response.aiter_bytes():
                     content += chunk
                     if len(content) > MAX_SIZE_BYTES:
                         raise FeedFetchError(
-                            f"Feed muito grande: > {MAX_SIZE_BYTES} bytes"
+                            f"Feed too large: > {MAX_SIZE_BYTES} bytes"
                         )
 
                 return content, final_url if final_url != url else None
 
             except httpx.TimeoutException:
-                raise FeedFetchError(f"Timeout após {TIMEOUT_SECONDS}s")
+                raise FeedFetchError(f"Timeout after {TIMEOUT_SECONDS}s")
             except httpx.RequestError as e:
-                raise FeedFetchError(f"Erro de conexão: {e}")
+                raise FeedFetchError(f"Connection error: {e}")
 
-        raise FeedFetchError(f"Muitos redirects (> {MAX_REDIRECTS})")
+        raise FeedFetchError(f"Too many redirects (> {MAX_REDIRECTS})")
 
 
 def parse_feed_content(content: bytes) -> ParsedFeed:
     """
-    Parseia conteúdo de feed RSS/Atom.
+    Parse RSS/Atom feed content.
 
     Args:
-        content: Bytes do feed XML
+        content: Feed XML bytes
 
     Returns:
-        ParsedFeed com entries
+        ParsedFeed with entries
 
     Raises:
-        FeedParseError: Se não conseguir parsear
+        FeedParseError: If unable to parse
     """
     try:
         feed = feedparser.parse(content)
     except Exception as e:
-        raise FeedParseError(f"Erro ao parsear XML: {e}")
+        raise FeedParseError(f"Error parsing XML: {e}")
 
-    # Verificar se teve erro de parse
+    # Check if there was a parse error
     if feed.bozo and not feed.entries:
-        bozo_exception = getattr(feed, 'bozo_exception', None)
-        raise FeedParseError(f"Feed XML inválido: {bozo_exception}")
+        bozo_exception = getattr(feed, "bozo_exception", None)
+        raise FeedParseError(f"Invalid feed XML: {bozo_exception}")
 
-    # Extrair metadados do feed
-    feed_title = feed.feed.get('title')
-    site_url = feed.feed.get('link')
+    # Extract feed metadata
+    feed_title = feed.feed.get("title")
+    site_url = feed.feed.get("link")
 
-    # Parsear entries
+    # Parse entries
     entries = []
     for entry in feed.entries:
         parsed_entry = ParsedEntry(
-            guid=entry.get('id') or entry.get('guid'),
-            url=entry.get('link'),
-            title=entry.get('title'),
-            author=entry.get('author'),
+            guid=entry.get("id") or entry.get("guid"),
+            url=entry.get("link"),
+            title=entry.get("title"),
+            author=entry.get("author"),
             content=_extract_content(entry),
             published_at=_parse_date(entry),
         )
@@ -245,17 +249,17 @@ def parse_feed_content(content: bytes) -> ParsedFeed:
 
 async def fetch_and_parse(url: str) -> Tuple[ParsedFeed, Optional[str]]:
     """
-    Busca e parseia um feed.
+    Fetch and parse a feed.
 
     Args:
-        url: URL do feed
+        url: Feed URL
 
     Returns:
-        Tuple de (ParsedFeed, URL final se houve redirect)
+        Tuple of (ParsedFeed, final URL if there was redirect)
 
     Raises:
-        FeedFetchError: Se não conseguir buscar
-        FeedParseError: Se não conseguir parsear
+        FeedFetchError: If unable to fetch
+        FeedParseError: If unable to parse
     """
     content, final_url = await fetch_feed_content(url)
     parsed = parse_feed_content(content)
