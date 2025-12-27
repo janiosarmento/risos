@@ -44,20 +44,21 @@ system_prompt: |
      - If the article title is NOT in the target language, provide a translation
      - Keep proper nouns, brand names, and technical terms as-is
      - If title is already in target language, set translated_title to null
-     - CRITICAL: The translation must be 100% in the target language
-     - NEVER mix scripts from other languages (Chinese, Japanese, Cyrillic, etc.)
-     - If unsure how to translate a term, keep it in English, NEVER use another language
+     - CRITICAL: Use ONLY the native script of the target language
+     - If unsure how to translate a term, keep it in English (Latin script)
+     - NEVER use scripts from unrelated languages (e.g., Chinese characters in Portuguese text)
 
   7. LANGUAGE QUALITY - CRITICAL:
      - NEVER invent words that don't exist in the target language
      - NEVER "adapt" English verbs by adding local conjugations (e.g., "open-sourca", "commitou")
-     - NEVER mix scripts (Chinese 中文, Japanese 日本語, Cyrillic кириллица, etc.)
-     - ALL output text must use only Latin alphabet (with accents for Portuguese)
-     - Use natural expressions instead:
-       - "open-sourced" → "liberou o código-fonte" or "tornou open source"
-       - "was deprecated" → "foi descontinuado"
-       - "is rolling out" → "está lançando"
-     - When no natural equivalent exists, keep the English term unchanged
+     - Use ONLY the native script of the target language:
+       - Portuguese/Spanish/French → Latin alphabet
+       - Russian/Ukrainian → Cyrillic
+       - Chinese → Hanzi
+       - Japanese → Hiragana/Katakana/Kanji
+       - Korean → Hangul
+     - English terms (proper nouns, brands, tech terms) may remain in Latin script
+     - NEVER accidentally mix in scripts from unrelated languages
      - The text must sound like it was written by a native speaker
 
   8. EMPTY/ERROR PAGES - Return empty strings for:
