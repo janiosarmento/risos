@@ -206,7 +206,7 @@ User=$RUN_USER
 Group=$RUN_GROUP
 WorkingDirectory=$BACKEND_DIR
 Environment="PATH=$BACKEND_DIR/venv/bin"
-ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 1
+ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 Restart=always
 RestartSec=5
 
