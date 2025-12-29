@@ -263,6 +263,9 @@ class Scheduler:
 
                 logger.info("Job update_feeds: completed")
 
+                # Backfill missing summaries after feed update
+                await self._backfill_missing_summaries()
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -270,6 +273,74 @@ class Scheduler:
 
             # Wait for next cycle
             await asyncio.sleep(interval)
+
+    async def _backfill_missing_summaries(self, limit: int = 50):
+        """
+        Find posts that have content_hash but no AI summary and add them
+        to the summary queue. This catches orphaned posts that were never
+        queued or whose queue entries were lost.
+        """
+        from app.models import Post, SummaryQueue, AISummary
+
+        db = SessionLocal()
+        try:
+            # Find orphaned posts:
+            # - Has content_hash
+            # - Not in summary_queue
+            # - No entry in ai_summaries
+            # - Not read (don't waste tokens on read posts)
+            orphaned_posts = (
+                db.query(Post)
+                .filter(
+                    Post.content_hash.isnot(None),
+                    Post.is_read == False,  # noqa: E712
+                    ~Post.content_hash.in_(
+                        db.query(SummaryQueue.content_hash)
+                    ),
+                    ~Post.content_hash.in_(
+                        db.query(AISummary.content_hash)
+                    ),
+                )
+                .order_by(Post.published_at.desc())  # Newer posts first
+                .limit(limit)
+                .all()
+            )
+
+            if not orphaned_posts:
+                return
+
+            logger.info(
+                f"Backfill: found {len(orphaned_posts)} orphaned posts"
+            )
+
+            added = 0
+            for post in orphaned_posts:
+                # Double-check not already in queue (race condition)
+                exists = (
+                    db.query(SummaryQueue)
+                    .filter(SummaryQueue.content_hash == post.content_hash)
+                    .first()
+                )
+                if exists:
+                    continue
+
+                queue_entry = SummaryQueue(
+                    post_id=post.id,
+                    content_hash=post.content_hash,
+                    priority=-1,  # Low priority (below normal 0)
+                )
+                db.add(queue_entry)
+                added += 1
+
+            if added > 0:
+                db.commit()
+                logger.info(f"Backfill: added {added} posts to summary queue")
+
+        except Exception as e:
+            logger.error(f"Error in backfill_missing_summaries: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
     async def _job_cleanup_retention(self):
         """Job to clean up old posts."""

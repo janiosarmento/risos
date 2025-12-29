@@ -31,6 +31,7 @@ function app() {
         offset: 0,
         pageSize: 50,
         totalPostsCount: 0,
+        unreadPostsCount: 0,
         showReadPosts: false,
         selectedPosts: new Set(),
         selectMode: false,
@@ -530,6 +531,13 @@ function app() {
             try {
                 const data = await this.fetchApi('/admin/status');
                 this.healthWarning = data.health_warning;
+                // Also update post counts from status endpoint
+                if (data.posts_count !== undefined) {
+                    this.totalPostsCount = data.posts_count;
+                }
+                if (data.unread_count !== undefined) {
+                    this.unreadPostsCount = data.unread_count;
+                }
             } catch (e) {
                 // Ignore health check errors
             }
@@ -668,6 +676,9 @@ function app() {
                 if (feed) {
                     feed.unread_count = Math.max(0, (feed.unread_count || 0) + (isRead ? -1 : 1));
                 }
+
+                // Update global unread count
+                this.unreadPostsCount = Math.max(0, this.unreadPostsCount + (isRead ? -1 : 1));
             } catch (error) {
                 console.error('Failed to mark post read:', error);
             }
@@ -714,6 +725,7 @@ function app() {
                 // Reload data
                 await this.loadFeeds();
                 await this.loadPosts(true);
+                await this.checkHealth(); // Update post counts
             } catch (error) {
                 console.error('Failed to mark all read:', error);
             }
@@ -749,6 +761,7 @@ function app() {
                     await this.loadFeeds();
                     await this.loadStarredCount();
                     await this.loadPosts(true);
+                    await this.checkHealth(); // Update post counts
                     this.showSuccess(`${totalNew} novos posts encontrados`);
                 } else {
                     this.showInfo('Nenhum post novo');
@@ -867,6 +880,9 @@ function app() {
 
                 // Update feed unread counts
                 await this.loadFeeds();
+
+                // Update global unread count
+                this.unreadPostsCount = Math.max(0, this.unreadPostsCount - postIds.length);
 
                 // Clear selection
                 this.selectedPosts.clear();
