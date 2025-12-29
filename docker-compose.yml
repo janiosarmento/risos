@@ -9,12 +9,13 @@ services:
     volumes:
       - ./data:/app/data
       - ./backend/.env:/app/.env:ro
-      - ./backend/prompts.yaml:/app/prompts.yaml:ro
+      # Optional: mount custom prompts.yaml to override default
+      # - ./backend/prompts.yaml:/app/prompts.yaml:ro
     environment:
       - DATABASE_PATH=/app/data/reader.db
       - LOG_FILE=/app/data/app.log
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

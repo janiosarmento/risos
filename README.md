@@ -236,8 +236,19 @@ server {
 
 ### AI Prompts
 
-Edit `backend/prompts.yaml` to customize how summaries are generated:
+The default prompts are in `backend/prompts.yaml.example`. To customize:
 
+```bash
+# Copy the example to create your own prompts file
+cp backend/prompts.yaml.example backend/prompts.yaml
+
+# Edit your custom prompts
+nano backend/prompts.yaml
+```
+
+Your `prompts.yaml` is gitignored, so your customizations won't be overwritten by updates. Changes are applied immediately (no restart needed).
+
+Example structure:
 ```yaml
 system_prompt: |
   Your custom system prompt here...
@@ -246,6 +257,8 @@ user_prompt: |
   Summarize in {language}:
   {content}
 ```
+
+**Docker users:** Uncomment the volume mount in `docker-compose.yml` to use custom prompts.
 
 ### Translations
 
