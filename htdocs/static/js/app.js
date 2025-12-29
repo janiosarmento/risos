@@ -738,21 +738,17 @@ function app() {
                         const result = await this.fetchApi(`/feeds/${feed.id}/refresh`, { method: 'POST' });
                         if (result && result.new_posts > 0) {
                             totalNew += result.new_posts;
-                            // Update UI after each feed with new posts
-                            await this.loadFeeds();
-                            await this.loadPosts(true);
                         }
                     } catch (e) {
                         console.error(`Failed to refresh feed ${feed.id}:`, e);
                     }
                 }
 
-                // Final reload and summary
-                await this.loadFeeds();
-                await this.loadStarredCount();
-                await this.loadPosts(true);
-
+                // Only reload UI if there are new posts
                 if (totalNew > 0) {
+                    await this.loadFeeds();
+                    await this.loadStarredCount();
+                    await this.loadPosts(true);
                     this.showSuccess(`${totalNew} novos posts encontrados`);
                 } else {
                     this.showInfo('Nenhum post novo');
