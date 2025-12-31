@@ -35,9 +35,11 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Ícone SVG do GitHub + texto "Github"
 - Suporte a dark mode
 
-### ✅ Fase 13.2: Atalho de Teclado para Seleção
-- Tecla `X` ativa/desativa modo de seleção de posts
-- Permite operações em lote (marcar como lido, etc.)
+### ✅ Fase 13.2: Atalhos de Teclado para Seleção em Lote
+- `X` ativa/desativa modo de seleção de posts
+- `Espaço` marca/desmarca checkbox do post selecionado
+- `M` marca posts selecionados como lidos
+- Navegação com `J`/`K` funciona normalmente no modo de seleção
 
 ### ✅ Fase 13.3: Descoberta Automática de Feeds
 - Novo endpoint `POST /feeds/discover?url=`
@@ -56,6 +58,8 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 | `20eb97a` | Add disclaimer about Docker setup |
 | `c66e139` | Add keyboard shortcut 'x' to toggle select mode |
 | `24ba73e` | Add automatic feed discovery from site URL |
+| `55e4966` | Add Space key to toggle post selection in select mode |
+| `7831dac` | Make M key mark selected posts as read in select mode |
 
 ---
 
