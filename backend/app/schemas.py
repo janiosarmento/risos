@@ -2,9 +2,12 @@
 Schemas Pydantic para validação de requests/responses.
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Optional, List
+
+# Constants
+MAX_CATEGORY_NAME_LENGTH = 255
 
 
 # === Autenticação ===
@@ -35,7 +38,7 @@ class UserInfo(BaseModel):
 class CategoryCreate(BaseModel):
     """Request para criar categoria"""
 
-    name: str
+    name: str = Field(..., min_length=1, max_length=MAX_CATEGORY_NAME_LENGTH)
     parent_id: Optional[int] = None
     position: Optional[int] = 0
 
@@ -43,7 +46,7 @@ class CategoryCreate(BaseModel):
 class CategoryUpdate(BaseModel):
     """Request para atualizar categoria"""
 
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=MAX_CATEGORY_NAME_LENGTH)
     parent_id: Optional[int] = None
     position: Optional[int] = None
 

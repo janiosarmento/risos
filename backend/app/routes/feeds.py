@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Feed, Post, Category
-from app.schemas import FeedCreate, FeedUpdate, FeedResponse
+from app.schemas import FeedCreate, FeedUpdate, FeedResponse, MAX_CATEGORY_NAME_LENGTH
 from app.services.feed_ingestion import ingest_feed
 
 router = APIRouter(prefix="/feeds", tags=["feeds"])
@@ -242,6 +242,9 @@ async def import_opml(
             # It's a category (folder)
             cat_name = title
             if cat_name:
+                # Truncate category name if too long
+                cat_name = cat_name[:MAX_CATEGORY_NAME_LENGTH].strip()
+
                 # Find or create category
                 category = (
                     db.query(Category)
