@@ -30,7 +30,9 @@ A self-hosted RSS reader with AI-powered article summaries.
 
 ## Installation
 
-### Option 1: Docker (Recommended for beginners)
+### Option 1: Docker
+
+> **Note:** The Docker setup is provided for convenience but has not been thoroughly tested. If you encounter issues, please use the native installation method or submit a bug report.
 
 1. Clone the repository:
    ```bash
