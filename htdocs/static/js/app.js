@@ -351,6 +351,8 @@ function app() {
                     }
                 } else if (this.isKey(e, 'r')) {
                     this.refreshFeeds();
+                } else if (this.isKey(e, 'x')) {
+                    this.toggleSelectMode();
                 }
             });
         },
