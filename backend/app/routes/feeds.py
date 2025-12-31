@@ -7,7 +7,9 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+import re
+import httpx
 
 from fastapi import (
     APIRouter,
@@ -85,6 +87,92 @@ def list_feeds(
         result.append(FeedResponse(**feed_dict))
 
     return result
+
+
+@router.post("/discover")
+async def discover_feed(
+    url: str = Query(..., description="Site URL to discover feed from"),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Discover RSS/Atom feed from a website URL.
+
+    Tries:
+    1. Check if URL is already a feed
+    2. Look for <link rel="alternate"> tags in HTML
+    3. Try common feed paths (/feed, /rss, etc.)
+
+    Returns the feed URL if found, or error if not.
+    """
+    # Normalize URL
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)'
+    }
+
+    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+        # First, check if the URL itself is a feed
+        try:
+            resp = await client.get(url, headers=headers)
+            content_type = resp.headers.get('content-type', '').lower()
+
+            if any(t in content_type for t in ['xml', 'rss', 'atom']):
+                return {"feed_url": str(resp.url), "method": "direct"}
+
+            # Check if content looks like a feed
+            text = resp.text[:1000]
+            if '<rss' in text or '<feed' in text or '<rdf:RDF' in text:
+                return {"feed_url": str(resp.url), "method": "direct"}
+
+        except httpx.RequestError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not fetch URL"
+            )
+
+        # Parse HTML and look for feed links
+        html = resp.text
+        feed_pattern = re.compile(
+            r'<link[^>]+rel=["\']alternate["\'][^>]+>',
+            re.IGNORECASE
+        )
+
+        for match in feed_pattern.findall(html):
+            if 'application/rss+xml' in match or 'application/atom+xml' in match:
+                href_match = re.search(r'href=["\']([^"\']+)["\']', match)
+                if href_match:
+                    feed_url = urljoin(str(resp.url), href_match.group(1))
+                    return {"feed_url": feed_url, "method": "link_tag"}
+
+        # Try common feed paths
+        common_paths = [
+            '/feed', '/feeds', '/rss', '/rss.xml', '/feed.xml',
+            '/atom.xml', '/index.xml', '/feed/rss', '/blog/feed',
+            '/.rss', '/rss/index.xml'
+        ]
+
+        base_url = f"{urlparse(str(resp.url)).scheme}://{urlparse(str(resp.url)).netloc}"
+
+        for path in common_paths:
+            try:
+                test_url = base_url + path
+                test_resp = await client.get(test_url, headers=headers)
+                if test_resp.status_code == 200:
+                    ct = test_resp.headers.get('content-type', '').lower()
+                    text = test_resp.text[:1000]
+                    if any(t in ct for t in ['xml', 'rss', 'atom']) or \
+                       '<rss' in text or '<feed' in text or '<rdf:RDF' in text:
+                        return {"feed_url": str(test_resp.url), "method": "common_path"}
+            except httpx.RequestError:
+                continue
+
+        # No feed found
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No RSS/Atom feed found for this site"
+        )
 
 
 @router.post(

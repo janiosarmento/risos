@@ -1020,11 +1020,31 @@ function app() {
         async createFeed() {
             if (!this.newFeed.url.trim()) return;
             this.savingFeed = true;
+
+            let feedUrl = this.newFeed.url.trim();
+
             try {
+                // Try to discover feed if URL doesn't look like a feed
+                if (!feedUrl.match(/\.(xml|rss|atom)$/i) && !feedUrl.includes('/feed')) {
+                    try {
+                        const discovered = await this.fetchApi(`/feeds/discover?url=${encodeURIComponent(feedUrl)}`, {
+                            method: 'POST',
+                        });
+                        feedUrl = discovered.feed_url;
+                    } catch (discoverError) {
+                        // If discovery fails with 404, show specific message
+                        if (discoverError.message.includes('No RSS/Atom feed found')) {
+                            this.showError(this.t('errors.noFeedFound'));
+                            return;
+                        }
+                        // For other errors, try the original URL anyway
+                    }
+                }
+
                 const feed = await this.fetchApi('/feeds', {
                     method: 'POST',
                     body: JSON.stringify({
-                        url: this.newFeed.url.trim(),
+                        url: feedUrl,
                         category_id: this.newFeed.category_id || null,
                     }),
                 });

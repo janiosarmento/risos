@@ -109,6 +109,7 @@
     "saveCategory": "Erro ao salvar categoria",
     "deleteCategory": "Erro ao excluir categoria",
     "createFeed": "Erro ao criar feed",
+    "noFeedFound": "Nenhum feed RSS/Atom encontrado neste site",
     "saveFeed": "Erro ao salvar feed",
     "deleteFeed": "Erro ao excluir feed",
     "refreshFeed": "Erro ao atualizar feed",
