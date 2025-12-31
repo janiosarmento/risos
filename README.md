@@ -275,7 +275,7 @@ Add or edit translations in `htdocs/static/locales/`:
 |-----|--------|
 | `J` | Next post |
 | `K` | Previous post |
-| `M` | Toggle read/unread |
+| `M` | Toggle read/unread (or mark selected as read in select mode) |
 | `S` | Toggle star/favorite |
 | `X` | Toggle select mode (batch operations) |
 | `Space` | Toggle checkbox on selected post (in select mode) |

@@ -342,7 +342,9 @@ function app() {
                         this.openPost(this.posts[this.selectedIndex]);
                     }
                 } else if (this.isKey(e, 'm')) {
-                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                    if (this.selectMode && this.selectedPosts.size > 0) {
+                        this.markSelectedAsRead();
+                    } else if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.toggleRead(this.posts[this.selectedIndex]);
                     }
                 } else if (this.isKey(e, 's')) {
