@@ -278,6 +278,7 @@ Add or edit translations in `htdocs/static/locales/`:
 | `M` | Toggle read/unread |
 | `S` | Toggle star/favorite |
 | `X` | Toggle select mode (batch operations) |
+| `Space` | Toggle checkbox on selected post (in select mode) |
 | `R` | Refresh feeds / Regenerate summary (in post view) |
 | `Enter` | Open selected post |
 | `Escape` | Close modal |

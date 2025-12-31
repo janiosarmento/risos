@@ -353,6 +353,11 @@ function app() {
                     this.refreshFeeds();
                 } else if (this.isKey(e, 'x')) {
                     this.toggleSelectMode();
+                } else if (e.key === ' ' && this.selectMode) {
+                    e.preventDefault();
+                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                        this.togglePostSelection(this.posts[this.selectedIndex].id);
+                    }
                 }
             });
         },
