@@ -7,6 +7,7 @@ A self-hosted RSS reader with AI-powered article summaries.
 ## Features
 
 - **RSS/Atom Feed Support** - Subscribe to any RSS or Atom feed
+  - **Auto-discovery**: Just paste a website URL and the app finds the feed automatically
 - **AI Summaries** - Automatic article summarization using Cerebras AI
   - Full article content extraction for better summaries
   - Markdown rendering with formatted lists and emphasis
@@ -276,7 +277,8 @@ Add or edit translations in `htdocs/static/locales/`:
 | `K` | Previous post |
 | `M` | Toggle read/unread |
 | `S` | Toggle star/favorite |
-| `R` | Regenerate AI summary |
+| `X` | Toggle select mode (batch operations) |
+| `R` | Refresh feeds / Regenerate summary (in post view) |
 | `Enter` | Open selected post |
 | `Escape` | Close modal |
 
@@ -343,6 +345,7 @@ The frontend uses CDN-hosted Alpine.js and Tailwind CSS, so no build step is req
 | POST | `/api/auth/login` | Login |
 | GET | `/api/feeds` | List feeds |
 | POST | `/api/feeds` | Add feed |
+| POST | `/api/feeds/discover?url=` | Auto-discover feed from site URL |
 | GET | `/api/posts` | List posts |
 | POST | `/api/posts/{id}/read` | Mark as read |
 | GET | `/api/categories` | List categories |
