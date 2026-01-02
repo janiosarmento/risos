@@ -222,10 +222,14 @@ function app() {
 
         hideToast() {
             this.toast.show = false;
-            if (this.toast.timeoutId) {
-                clearTimeout(this.toast.timeoutId);
-                this.toast.timeoutId = null;
-            }
+        },
+
+        // Translate backend error messages
+        translateError(message) {
+            const key = `backendErrors.${message.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            const translated = this.t(key);
+            // If translation exists (not the key itself), return it
+            return translated !== key ? translated : message;
         },
 
         async loadConfig() {
@@ -932,7 +936,7 @@ function app() {
                 this.updatePost(this.currentPost.id, updates);
             } catch (error) {
                 console.error('Failed to regenerate summary:', error);
-                this.showError(this.t('errors.regenerateSummary') + ': ' + error.message);
+                this.showError(this.t('errors.regenerateSummary') + ': ' + this.translateError(error.message));
             } finally {
                 this.regeneratingSummary = false;
             }
@@ -996,7 +1000,7 @@ function app() {
                 await this.loadCategories();
             } catch (error) {
                 console.error('Failed to create category:', error);
-                this.showError(this.t('errors.createCategory') + ': ' + error.message);
+                this.showError(this.t('errors.createCategory') + ': ' + this.translateError(error.message));
             } finally {
                 this.savingCategory = false;
             }
@@ -1022,7 +1026,7 @@ function app() {
                 await this.loadCategories();
             } catch (error) {
                 console.error('Failed to save category:', error);
-                this.showError(this.t('errors.saveCategory') + ': ' + error.message);
+                this.showError(this.t('errors.saveCategory') + ': ' + this.translateError(error.message));
             } finally {
                 this.savingCategory = false;
             }
@@ -1040,7 +1044,7 @@ function app() {
                 await Promise.all([this.loadCategories(), this.loadFeeds()]);
             } catch (error) {
                 console.error('Failed to delete category:', error);
-                this.showError(this.t('errors.deleteCategory') + ': ' + error.message);
+                this.showError(this.t('errors.deleteCategory') + ': ' + this.translateError(error.message));
             }
         },
 
@@ -1086,7 +1090,7 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to create feed:', error);
-                this.showError(this.t('errors.createFeed') + ': ' + error.message);
+                this.showError(this.t('errors.createFeed') + ': ' + this.translateError(error.message));
             } finally {
                 this.savingFeed = false;
             }
@@ -1116,7 +1120,7 @@ function app() {
                 await this.loadFeeds();
             } catch (error) {
                 console.error('Failed to save feed:', error);
-                this.showError(this.t('errors.saveFeed') + ': ' + error.message);
+                this.showError(this.t('errors.saveFeed') + ': ' + this.translateError(error.message));
             } finally {
                 this.savingFeed = false;
             }
@@ -1135,7 +1139,7 @@ function app() {
                 this.showSuccess(msg);
             } catch (error) {
                 console.error('Failed to refresh feed:', error);
-                this.showError(this.t('errors.refreshFeed') + ': ' + error.message);
+                this.showError(this.t('errors.refreshFeed') + ': ' + this.translateError(error.message));
             } finally {
                 this.refreshingFeed = false;
             }
@@ -1152,7 +1156,7 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to delete feed:', error);
-                this.showError(this.t('errors.deleteFeed') + ': ' + error.message);
+                this.showError(this.t('errors.deleteFeed') + ': ' + this.translateError(error.message));
             }
         },
 
@@ -1188,7 +1192,7 @@ function app() {
 
             } catch (error) {
                 console.error('Failed to import OPML:', error);
-                this.showError(this.t('errors.importOpml') + ': ' + error.message);
+                this.showError(this.t('errors.importOpml') + ': ' + this.translateError(error.message));
             } finally {
                 this.importingOpml = false;
                 // Reset file input

@@ -137,5 +137,26 @@
     "updating": "Atualizando {current}/{total}: {title}...",
     "newPosts": "{count} novos posts encontrados",
     "noNewPosts": "Nenhum post novo"
+  },
+  "backendErrors": {
+    "Feed_not_found": "Feed não encontrado",
+    "Category_not_found": "Categoria não encontrada",
+    "Post_not_found": "Post não encontrado",
+    "Post_has_no_URL": "Post não tem URL",
+    "Parent_category_not_found": "Categoria pai não encontrada",
+    "Feed_with_this_URL_already_exists": "Já existe um feed com esta URL",
+    "Invalid_password": "Senha inválida",
+    "Invalid_or_unsafe_URL": "URL inválida ou insegura",
+    "Invalid_or_disallowed_URL": "URL inválida ou não permitida",
+    "Invalid_OPML__no_body_element": "OPML inválido: elemento body ausente",
+    "File_must_be__opml_or__xml": "Arquivo deve ser .opml ou .xml",
+    "File_too_large__max_1MB_": "Arquivo muito grande (máx 1MB)",
+    "Feed_is_disabled": "Feed está desabilitado",
+    "Could_not_fetch_URL": "Não foi possível acessar a URL",
+    "Category_cannot_be_its_own_parent": "Categoria não pode ser pai de si mesma",
+    "Image_too_large": "Imagem muito grande",
+    "Timeout_fetching_image": "Tempo esgotado ao buscar imagem",
+    "Error_fetching_image": "Erro ao buscar imagem",
+    "Post_has_insufficient_content_for_summary": "Post não tem conteúdo suficiente para resumo"
   }
 }

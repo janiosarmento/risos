@@ -137,5 +137,26 @@
     "updating": "Updating {current}/{total}: {title}...",
     "newPosts": "{count} new posts found",
     "noNewPosts": "No new posts"
+  },
+  "backendErrors": {
+    "Feed_not_found": "Feed not found",
+    "Category_not_found": "Category not found",
+    "Post_not_found": "Post not found",
+    "Post_has_no_URL": "Post has no URL",
+    "Parent_category_not_found": "Parent category not found",
+    "Feed_with_this_URL_already_exists": "Feed with this URL already exists",
+    "Invalid_password": "Invalid password",
+    "Invalid_or_unsafe_URL": "Invalid or unsafe URL",
+    "Invalid_or_disallowed_URL": "Invalid or disallowed URL",
+    "Invalid_OPML__no_body_element": "Invalid OPML: no body element",
+    "File_must_be__opml_or__xml": "File must be .opml or .xml",
+    "File_too_large__max_1MB_": "File too large (max 1MB)",
+    "Feed_is_disabled": "Feed is disabled",
+    "Could_not_fetch_URL": "Could not fetch URL",
+    "Category_cannot_be_its_own_parent": "Category cannot be its own parent",
+    "Image_too_large": "Image too large",
+    "Timeout_fetching_image": "Timeout fetching image",
+    "Error_fetching_image": "Error fetching image",
+    "Post_has_insufficient_content_for_summary": "Post has insufficient content for summary"
   }
 }
