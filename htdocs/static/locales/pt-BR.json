@@ -138,6 +138,11 @@
     "newPosts": "{count} novos posts encontrados",
     "noNewPosts": "Nenhum post novo"
   },
+  "shortcuts": {
+    "navigate": "navegar",
+    "open": "abrir",
+    "toggle": "marcar"
+  },
   "backendErrors": {
     "Feed_not_found": "Feed não encontrado",
     "Category_not_found": "Categoria não encontrada",

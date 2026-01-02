@@ -138,6 +138,11 @@
     "newPosts": "{count} new posts found",
     "noNewPosts": "No new posts"
   },
+  "shortcuts": {
+    "navigate": "navigate",
+    "open": "open",
+    "toggle": "toggle"
+  },
   "backendErrors": {
     "Feed_not_found": "Feed not found",
     "Category_not_found": "Category not found",

@@ -124,7 +124,7 @@
                             class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
                             :disabled="refreshing"
                         >
-                            <span x-show="!refreshing" x-text="t('sidebar.refresh')"></span>
+                            <span x-show="!refreshing"><span x-text="t('sidebar.refresh')"></span><span class="hidden md:inline opacity-60"> (R)</span></span>
                             <span x-show="refreshing">...</span>
                         </button>
                     </div>
@@ -307,8 +307,7 @@
                                     @click="toggleSelectMode()"
                                     class="px-1.5 md:px-2 py-1 rounded"
                                     :class="selectMode ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                    x-text="t('posts.select')"
-                                ></button>
+                                ><span x-text="t('posts.select')"></span><span class="hidden md:inline opacity-60"> (X)</span></button>
                                 <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
                                 <button
                                     @click="showReadPosts = false; loadPosts(true)"
@@ -342,8 +341,7 @@
                                 class="ml-auto px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white"
                                 :disabled="selectedPosts.size === 0"
                                 :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
-                                x-text="t('posts.markAsRead')"
-                            ></button>
+                            ><span x-text="t('posts.markAsRead')"></span><span class="hidden md:inline opacity-60"> (M)</span></button>
                         </div>
                     </div>
 
@@ -454,6 +452,14 @@
                         <template x-if="!hasMore && posts.length > 0">
                             <div class="p-4 text-center text-gray-600 text-sm" x-text="t('app.endOfList')"></div>
                         </template>
+                    </div>
+
+                    <!-- Keyboard hints footer (desktop only) -->
+                    <div class="hidden md:flex p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 justify-center gap-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+                        <span x-show="!selectMode">J/K <span x-text="t('shortcuts.navigate')"></span></span>
+                        <span x-show="!selectMode">Enter <span x-text="t('shortcuts.open')"></span></span>
+                        <span x-show="selectMode">Space <span x-text="t('shortcuts.toggle')"></span></span>
+                        <span x-show="selectMode">J/K <span x-text="t('shortcuts.navigate')"></span></span>
                     </div>
                 </main>
             </div>
