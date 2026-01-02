@@ -52,6 +52,12 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Suporte a Escape para cancelar
 - Visual consistente com dark/light mode
 
+### ✅ Fase 14.5: Atalhos de Teclado Visíveis
+- Botões mostram tecla de atalho: Refresh (R), Select (X), Mark as read (M)
+- Barra de dicas no rodapé da lista: J/K navegar, Enter abrir, Space marcar
+- Dicas visíveis apenas em desktop (ocultas no mobile)
+- Traduções adicionadas para atalhos
+
 ### Commits da Sessão 2026-01-02
 
 | Hash | Descrição |
@@ -61,6 +67,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 | `0f087b2` | Fix remaining hardcoded English strings in error messages |
 | `301ca64` | Add translation for backend error messages |
 | `d0343e0` | Add custom confirm modal with backdrop blur |
+| `2fc773b` | Add keyboard shortcut hints to UI (desktop only) |
 
 ---
 
