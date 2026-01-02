@@ -60,7 +60,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 | `3879462` | Fix hardcoded Portuguese strings in feed refresh toasts |
 | `0f087b2` | Fix remaining hardcoded English strings in error messages |
 | `301ca64` | Add translation for backend error messages |
-| (pending) | Add custom confirm modal with backdrop blur |
+| `d0343e0` | Add custom confirm modal with backdrop blur |
 
 ---
 
