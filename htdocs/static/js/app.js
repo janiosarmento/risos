@@ -380,7 +380,7 @@ function app() {
 
                 if (!response.ok) {
                     const data = await response.json();
-                    throw new Error(data.detail || 'Login failed');
+                    throw new Error(data.detail || this.t('errors.loginFailed'));
                 }
 
                 const data = await response.json();
@@ -428,12 +428,12 @@ function app() {
 
             if (response.status === 401) {
                 this.logout();
-                throw new Error('Session expired');
+                throw new Error(this.t('errors.sessionExpired'));
             }
 
             if (!response.ok) {
                 const data = await response.json().catch(() => ({}));
-                throw new Error(data.detail || 'Request failed');
+                throw new Error(data.detail || this.t('errors.requestFailed'));
             }
 
             // Handle 204 No Content

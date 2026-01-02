@@ -114,7 +114,10 @@
     "deleteFeed": "Erro ao excluir feed",
     "refreshFeed": "Erro ao atualizar feed",
     "importOpml": "Erro ao importar OPML",
-    "generic": "Erro ao importar"
+    "generic": "Erro ao importar",
+    "loginFailed": "Falha no login",
+    "sessionExpired": "Sessão expirada",
+    "requestFailed": "Falha na requisição"
   },
   "confirm": {
     "deleteCategory": "Excluir \"{name}\"?",

@@ -114,7 +114,10 @@
     "deleteFeed": "Error deleting feed",
     "refreshFeed": "Error refreshing feed",
     "importOpml": "Error importing OPML",
-    "generic": "Error importing"
+    "generic": "Error importing",
+    "loginFailed": "Login failed",
+    "sessionExpired": "Session expired",
+    "requestFailed": "Request failed"
   },
   "confirm": {
     "deleteCategory": "Delete \"{name}\"?",
