@@ -1,7 +1,7 @@
 # Progresso da Implementação — Risos (RSS Reader com IA)
 
-**Última atualização:** 2025-12-31
-**Fase atual:** Fase 13 concluída — Melhorias de UX
+**Última atualização:** 2026-01-02
+**Fase atual:** Fase 14 concluída — Melhorias de i18n e UX
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -25,6 +25,42 @@ Todos os serviços usam gunicorn com proteção contra travamento:
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-01-02 — Melhorias de i18n e UX
+
+### ✅ Fase 14.1: Confirmação para "Marcar Todos como Lidos"
+- Diálogo de confirmação antes de marcar posts como lidos
+- Mensagem contextual: mostra quantidade e contexto (feed/categoria/todos)
+- Previne cliques acidentais
+
+### ✅ Fase 14.2: Correção de Strings Hardcoded
+- Removidas strings em português hardcoded em `refreshFeeds()`
+- Todas as mensagens de toast agora usam sistema de i18n
+- Adicionadas chaves `refresh.updating`, `refresh.newPosts`, `refresh.noNewPosts`
+
+### ✅ Fase 14.3: Tradução de Erros do Backend
+- Função `translateError()` mapeia mensagens do backend para i18n
+- Seção `backendErrors` nos arquivos de locale (18 mensagens)
+- Erros como "Feed not found" aparecem traduzidos no idioma do usuário
+
+### ✅ Fase 14.4: Modal de Confirmação Customizado
+- Substituição do `confirm()` nativo por modal estilizado
+- Backdrop com blur (`backdrop-blur-sm`)
+- Botão OK focado automaticamente (usuário pode apertar Enter)
+- Suporte a Escape para cancelar
+- Visual consistente com dark/light mode
+
+### Commits da Sessão 2026-01-02
+
+| Hash | Descrição |
+|------|-----------|
+| `109059c` | Add confirmation dialog before marking all posts as read |
+| `3879462` | Fix hardcoded Portuguese strings in feed refresh toasts |
+| `0f087b2` | Fix remaining hardcoded English strings in error messages |
+| `301ca64` | Add translation for backend error messages |
+| (pending) | Add custom confirm modal with backdrop blur |
 
 ---
 

@@ -64,6 +64,13 @@ function app() {
         },
         toastTimeoutSeconds: 2, // Default, will be loaded from config
 
+        // Confirm modal
+        confirmModal: {
+            show: false,
+            message: '',
+            resolve: null,
+        },
+
         // i18n
         locale: localStorage.getItem('rss_locale') || 'pt-BR',
         translations: {},
@@ -230,6 +237,36 @@ function app() {
             const translated = this.t(key);
             // If translation exists (not the key itself), return it
             return translated !== key ? translated : message;
+        },
+
+        // Custom confirm modal
+        showConfirm(message) {
+            return new Promise((resolve) => {
+                this.confirmModal.message = message;
+                this.confirmModal.resolve = resolve;
+                this.confirmModal.show = true;
+                // Focus OK button after modal renders
+                this.$nextTick(() => {
+                    const btn = document.getElementById('confirm-ok-btn');
+                    if (btn) btn.focus();
+                });
+            });
+        },
+
+        confirmOk() {
+            this.confirmModal.show = false;
+            if (this.confirmModal.resolve) {
+                this.confirmModal.resolve(true);
+                this.confirmModal.resolve = null;
+            }
+        },
+
+        confirmCancel() {
+            this.confirmModal.show = false;
+            if (this.confirmModal.resolve) {
+                this.confirmModal.resolve(false);
+                this.confirmModal.resolve = null;
+            }
         },
 
         async loadConfig() {
@@ -734,7 +771,7 @@ function app() {
                 .replace('{count}', unreadCount)
                 .replace('{context}', contextName);
 
-            if (!confirm(msg)) return;
+            if (!await this.showConfirm(msg)) return;
 
             try {
                 await this.fetchApi('/posts/mark-read', {
@@ -1037,7 +1074,7 @@ function app() {
             const msg = feedCount > 0
                 ? this.t('confirm.deleteCategoryWithFeeds').replace('{name}', category.name).replace('{count}', feedCount)
                 : this.t('confirm.deleteCategory').replace('{name}', category.name);
-            if (!confirm(msg)) return;
+            if (!await this.showConfirm(msg)) return;
 
             try {
                 await this.fetchApi(`/categories/${category.id}`, { method: 'DELETE' });
@@ -1146,7 +1183,7 @@ function app() {
         },
 
         async deleteFeed(feed) {
-            if (!confirm(this.t('confirm.deleteFeed').replace('{title}', feed.title))) return;
+            if (!await this.showConfirm(this.t('confirm.deleteFeed').replace('{title}', feed.title))) return;
 
             try {
                 await this.fetchApi(`/feeds/${feed.id}`, { method: 'DELETE' });
