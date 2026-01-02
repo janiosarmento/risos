@@ -53,10 +53,15 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Visual consistente com dark/light mode
 
 ### ✅ Fase 14.5: Atalhos de Teclado Visíveis
-- Botões mostram tecla de atalho: Refresh (R), Select (X), Mark as read (M)
+- Botões mostram tecla de atalho: Mark all (A), Refresh (R), Select (X), Mark as read (M)
 - Barra de dicas no rodapé da lista: J/K navegar, Enter abrir, Space marcar
 - Dicas visíveis apenas em desktop (ocultas no mobile)
 - Traduções adicionadas para atalhos
+- Novo atalho `A` para marcar todos como lidos
+
+### ✅ Fase 14.6: Modal de Confirmação Instantâneo
+- Removidas animações de fade/blur do modal de confirmação
+- Aparece instantaneamente para sensação de app mais rápido
 
 ### Commits da Sessão 2026-01-02
 
@@ -68,6 +73,8 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 | `301ca64` | Add translation for backend error messages |
 | `d0343e0` | Add custom confirm modal with backdrop blur |
 | `2fc773b` | Add keyboard shortcut hints to UI (desktop only) |
+| `d8d6a0d` | Add keyboard shortcut 'A' for Mark All Read |
+| `4b425b5` | Remove animation from confirm modal for snappier feel |
 
 ---
 
