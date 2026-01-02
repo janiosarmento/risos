@@ -344,6 +344,11 @@ function app() {
                     return;
                 }
 
+                // If confirm modal is open, let it handle its own keys
+                if (this.confirmModal.show) {
+                    return;
+                }
+
                 // If settings is open
                 if (this.showSettings) {
                     if (e.key === 'Escape') {
