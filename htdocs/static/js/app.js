@@ -759,7 +759,7 @@ function app() {
 
                 for (const feed of feedsToRefresh) {
                     current++;
-                    this.showInfo(`Atualizando ${current}/${total}: ${feed.title.substring(0, 30)}...`);
+                    this.showInfo(this.t('refresh.updating').replace('{current}', current).replace('{total}', total).replace('{title}', feed.title.substring(0, 30)));
 
                     try {
                         const result = await this.fetchApi(`/feeds/${feed.id}/refresh`, { method: 'POST' });
@@ -776,9 +776,9 @@ function app() {
                     await this.loadFeeds();
                     await this.loadStarredCount();
                     await this.loadPosts(true);
-                    this.showSuccess(`${totalNew} novos posts encontrados`);
+                    this.showSuccess(this.t('refresh.newPosts').replace('{count}', totalNew));
                 } else {
-                    this.showInfo('Nenhum post novo');
+                    this.showInfo(this.t('refresh.noNewPosts'));
                 }
             } finally {
                 this.refreshing = false;

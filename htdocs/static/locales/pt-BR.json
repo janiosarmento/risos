@@ -129,5 +129,10 @@
   "time": {
     "now": "agora",
     "unknown": "Desconhecido"
+  },
+  "refresh": {
+    "updating": "Atualizando {current}/{total}: {title}...",
+    "newPosts": "{count} novos posts encontrados",
+    "noNewPosts": "Nenhum post novo"
   }
 }
