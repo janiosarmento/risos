@@ -119,7 +119,9 @@
   "confirm": {
     "deleteCategory": "Excluir \"{name}\"?",
     "deleteCategoryWithFeeds": "Excluir \"{name}\"? Os {count} feeds serão movidos para outra categoria.",
-    "deleteFeed": "Excluir feed \"{title}\"? Todos os posts serão removidos."
+    "deleteFeed": "Excluir feed \"{title}\"? Todos os posts serão removidos.",
+    "markAllRead": "Marcar {count} posts como lidos em \"{context}\"?",
+    "allPosts": "todos os feeds"
   },
   "success": {
     "feedAdded": "Feed adicionado com {count} posts!"

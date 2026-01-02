@@ -702,16 +702,37 @@ function app() {
         },
 
         async markAllRead() {
+            // Determine context and count
+            let unreadCount = 0;
+            let contextName = '';
+            const body = {};
+
+            if (this.filter === 'feed') {
+                body.feed_id = this.filterId;
+                const feed = this.feeds.find(f => f.id === this.filterId);
+                unreadCount = feed?.unread_count || 0;
+                contextName = feed?.title || 'feed';
+            } else if (this.filter === 'category') {
+                body.category_id = this.filterId;
+                const category = this.categories.find(c => c.id === this.filterId);
+                unreadCount = this.getCategoryUnread(this.filterId);
+                contextName = category?.name || this.t('settings.tabs.categories');
+            } else {
+                // All posts
+                unreadCount = this.totalUnread;
+                contextName = this.t('confirm.allPosts');
+            }
+
+            if (unreadCount === 0) return;
+
+            // Ask for confirmation
+            const msg = this.t('confirm.markAllRead')
+                .replace('{count}', unreadCount)
+                .replace('{context}', contextName);
+
+            if (!confirm(msg)) return;
+
             try {
-                const body = {};
-
-                if (this.filter === 'feed') {
-                    body.feed_id = this.filterId;
-                } else if (this.filter === 'category') {
-                    body.category_id = this.filterId;
-                }
-                // else marks all
-
                 await this.fetchApi('/posts/mark-read', {
                     method: 'POST',
                     body: JSON.stringify(body),
