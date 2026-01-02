@@ -396,6 +396,8 @@ function app() {
                     this.refreshFeeds();
                 } else if (this.isKey(e, 'x')) {
                     this.toggleSelectMode();
+                } else if (this.isKey(e, 'a')) {
+                    this.markAllRead();
                 } else if (e.key === ' ' && this.selectMode) {
                     e.preventDefault();
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
