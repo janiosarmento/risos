@@ -275,13 +275,16 @@ Add or edit translations in `htdocs/static/locales/`:
 |-----|--------|
 | `J` | Next post |
 | `K` | Previous post |
+| `Enter` | Open selected post |
 | `M` | Toggle read/unread (or mark selected as read in select mode) |
+| `A` | Mark all as read (with confirmation) |
 | `S` | Toggle star/favorite |
 | `X` | Toggle select mode (batch operations) |
 | `Space` | Toggle checkbox on selected post (in select mode) |
 | `R` | Refresh feeds / Regenerate summary (in post view) |
-| `Enter` | Open selected post |
 | `Escape` | Close modal |
+
+> **Tip:** On desktop, keyboard shortcuts are displayed next to buttons (e.g., "Refresh (R)").
 
 ## Tech Stack
 
