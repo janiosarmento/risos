@@ -2,6 +2,7 @@
  * Risos - Alpine.js Application
  */
 
+const APP_VERSION = '20260103a';
 const API_BASE = '/api';
 
 function app() {
@@ -146,7 +147,7 @@ function app() {
 
         async loadLocale(locale) {
             try {
-                const response = await fetch(`/static/locales/${locale}.json`);
+                const response = await fetch(`/static/locales/${locale}.json?v=${APP_VERSION}`);
                 if (response.ok) {
                     this.translations = await response.json();
                     this.locale = locale;
