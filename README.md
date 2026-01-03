@@ -188,11 +188,37 @@ Frontend needs no build — just edit files in `htdocs/`.
 
 ---
 
-## About This Project
+## About This Project: 100% Vibe Coded
 
-This project was built entirely with [Claude Code](https://claude.ai/claude-code) — no code was written manually. It demonstrates that AI coding tools can build production software, but also that **expertise still matters**: knowing what to ask for, recognizing good patterns, and debugging when things break.
+This entire project was developed through **Vibe Coding** using [Claude Code](https://claude.ai/claude-code) — not a single line of code was written or edited manually. Every file, every function, every CSS rule was generated through AI-assisted development.
 
-AI amplifies developer productivity; it doesn't replace the need to understand software.
+This is both a testament to how far AI coding tools have come, and a reminder of what it actually takes to use them effectively.
+
+### The Tools Are Impressive, But...
+
+Modern LLMs can write excellent code. They understand patterns, follow best practices, and can implement complex features in seconds. But here's what this project taught us:
+
+**AI doesn't replace expertise — it amplifies it.**
+
+The quality of AI-generated code is directly proportional to the quality of the guidance it receives. Knowing *what* to ask for, *how* to structure a system, *when* to push back on a suggestion, and *which* patterns to follow — these still require deep technical knowledge.
+
+Without understanding software architecture, you can't evaluate if the AI's suggestion is sound. Without knowing security principles, you won't catch vulnerabilities. Without experience debugging production systems, you won't ask the right questions when things break.
+
+### What Vibe Coding Actually Requires
+
+- **Clear architectural vision** — The AI can build what you describe, but you need to know what to describe
+- **Pattern recognition** — Spotting when generated code is heading in the wrong direction
+- **Technical vocabulary** — Communicating precisely what you need
+- **Quality judgment** — Knowing good code from bad, even if you didn't write it
+- **Debugging skills** — When it doesn't work, you still need to understand why
+
+### The Bottom Line
+
+AI coding assistants are extraordinary tools that can 10x productivity for experienced developers. But they're not magic wands that let anyone build production software.
+
+The future isn't "AI replaces programmers" — it's "programmers who master AI tools outperform those who don't."
+
+This project exists because of excellent AI tools *and* years of accumulated knowledge about how software should be built.
 
 ---
 
