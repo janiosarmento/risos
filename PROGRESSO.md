@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-01-02
+**Última atualização:** 2026-01-03
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -26,7 +26,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-01-02 — i18n e UX
+## Sessão 2026-01-02/03 — i18n e UX
 
 - Confirmação antes de "Marcar todos como lidos" (com contagem e contexto)
 - Todas as strings traduzidas (toasts, erros do backend)
@@ -34,6 +34,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Atalhos visíveis nos botões: (A) Mark all, (R) Refresh, (X) Select, (M) Mark read
 - Barra de atalhos no rodapé: J/K navegar, Enter abrir, Space marcar
 - Novo atalho `A` para marcar todos como lidos
+- Cache busting: `APP_VERSION` em app.js, usado em CSS/JS/locales
 
 ---
 
