@@ -62,6 +62,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 ### ✅ Fase 14.6: Modal de Confirmação Instantâneo
 - Removidas animações de fade/blur do modal de confirmação
 - Aparece instantaneamente para sensação de app mais rápido
+- Corrigido conflito: Enter no modal não abre post da lista
 
 ### Commits da Sessão 2026-01-02
 
@@ -75,6 +76,8 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 | `2fc773b` | Add keyboard shortcut hints to UI (desktop only) |
 | `d8d6a0d` | Add keyboard shortcut 'A' for Mark All Read |
 | `4b425b5` | Remove animation from confirm modal for snappier feel |
+| `8e8ba9c` | Update README keyboard shortcuts section |
+| `50b8fc6` | Fix keyboard conflict when confirm modal is open |
 
 ---
 
