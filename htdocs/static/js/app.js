@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103b';
+const APP_VERSION = '20260103c';
 const API_BASE = '/api';
 
 function app() {
@@ -256,7 +256,7 @@ function app() {
         },
 
         confirmOk() {
-            this.confirmModal.show = false;
+            // Don't close modal here - caller manages it via confirmDone()
             if (this.confirmModal.resolve) {
                 this.confirmModal.resolve(true);
                 this.confirmModal.resolve = null;
@@ -1100,12 +1100,15 @@ function app() {
                 : this.t('confirm.deleteCategory').replace('{name}', category.name);
             if (!await this.showConfirm(msg)) return;
 
+            this.confirmLoading(this.t('confirm.deleting'));
             try {
                 await this.fetchApi(`/categories/${category.id}`, { method: 'DELETE' });
                 await Promise.all([this.loadCategories(), this.loadFeeds()]);
             } catch (error) {
                 console.error('Failed to delete category:', error);
                 this.showError(this.t('errors.deleteCategory') + ': ' + this.translateError(error.message));
+            } finally {
+                this.confirmDone();
             }
         },
 
@@ -1209,6 +1212,7 @@ function app() {
         async deleteFeed(feed) {
             if (!await this.showConfirm(this.t('confirm.deleteFeed').replace('{title}', feed.title))) return;
 
+            this.confirmLoading(this.t('confirm.deleting'));
             try {
                 await this.fetchApi(`/feeds/${feed.id}`, { method: 'DELETE' });
                 await this.loadFeeds();
@@ -1218,6 +1222,8 @@ function app() {
             } catch (error) {
                 console.error('Failed to delete feed:', error);
                 this.showError(this.t('errors.deleteFeed') + ': ' + this.translateError(error.message));
+            } finally {
+                this.confirmDone();
             }
         },
 

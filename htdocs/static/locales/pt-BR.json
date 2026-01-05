@@ -125,7 +125,8 @@
     "deleteFeed": "Excluir feed \"{title}\"? Todos os posts serão removidos.",
     "markAllRead": "Marcar {count} posts como lidos em \"{context}\"?",
     "allPosts": "todos os feeds",
-    "markingAsRead": "Marcando como lidos..."
+    "markingAsRead": "Marcando como lidos...",
+    "deleting": "Excluindo..."
   },
   "success": {
     "feedAdded": "Feed adicionado com {count} posts!"

@@ -125,7 +125,8 @@
     "deleteFeed": "Delete feed \"{title}\"? All posts will be removed.",
     "markAllRead": "Mark {count} posts as read in \"{context}\"?",
     "allPosts": "all feeds",
-    "markingAsRead": "Marking as read..."
+    "markingAsRead": "Marking as read...",
+    "deleting": "Deleting..."
   },
   "success": {
     "feedAdded": "Feed added with {count} posts!"
