@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103a';
+const APP_VERSION = '20260103b';
 const API_BASE = '/api';
 
 function app() {
@@ -70,6 +70,7 @@ function app() {
             show: false,
             message: '',
             resolve: null,
+            loading: false,
         },
 
         // i18n
@@ -268,6 +269,16 @@ function app() {
                 this.confirmModal.resolve(false);
                 this.confirmModal.resolve = null;
             }
+        },
+
+        confirmLoading(message) {
+            this.confirmModal.loading = true;
+            this.confirmModal.message = message;
+        },
+
+        confirmDone() {
+            this.confirmModal.show = false;
+            this.confirmModal.loading = false;
         },
 
         async loadConfig() {
@@ -781,6 +792,9 @@ function app() {
 
             if (!await this.showConfirm(msg)) return;
 
+            // Show loading state in modal
+            this.confirmLoading(this.t('confirm.markingAsRead'));
+
             try {
                 await this.fetchApi('/posts/mark-read', {
                     method: 'POST',
@@ -792,6 +806,8 @@ function app() {
                 await this.loadPosts(true);
             } catch (error) {
                 console.error('Failed to mark all read:', error);
+            } finally {
+                this.confirmDone();
             }
         },
 

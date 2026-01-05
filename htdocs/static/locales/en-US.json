@@ -124,7 +124,8 @@
     "deleteCategoryWithFeeds": "Delete \"{name}\"? The {count} feeds will be moved to another category.",
     "deleteFeed": "Delete feed \"{title}\"? All posts will be removed.",
     "markAllRead": "Mark {count} posts as read in \"{context}\"?",
-    "allPosts": "all feeds"
+    "allPosts": "all feeds",
+    "markingAsRead": "Marking as read..."
   },
   "success": {
     "feedAdded": "Feed added with {count} posts!"
