@@ -15,6 +15,108 @@ This document provides everything an AI assistant (or human developer) needs to 
 
 ---
 
+## How to Work with Claude Code on This Project
+
+### Starting a Session
+
+Begin your session by telling Claude to read this file:
+
+```
+Read AI.md to understand the project structure.
+```
+
+For complex features that touch internal systems (circuit breaker, rate limiting, queue processing), also read the detailed spec:
+
+```
+Read PROJETO.md for technical details on [topic].
+```
+
+### Writing Effective Prompts
+
+**Be specific about what you want:**
+
+| Bad | Good |
+|-----|------|
+| "Add search" | "Add search for posts by title. Add a search input in the post list header. Filter posts client-side as user types." |
+| "Fix the bug" | "When I press J in split view, two posts are marked as read. Debug the keyboard handler." |
+| "Make it faster" | "The post list is slow with 500+ posts. Add virtual scrolling or pagination." |
+
+**Ask Claude to read existing code first:**
+
+```
+I want to add a "mark all as unread" feature.
+First, read how "mark all as read" is implemented in posts.py and app.js.
+Then implement "mark all as unread" following the same pattern.
+```
+
+**Reference specific locations:**
+
+```
+In handleKeyboard() in app.js, the J key handler has a bug.
+When isSplitMode is true and currentPost exists, it calls both
+nextPost() and selectNext(). Fix this.
+```
+
+### Patterns That Work Well
+
+1. **One feature at a time** — Don't ask for multiple unrelated changes in one prompt.
+
+2. **Describe the user experience** — "When the user clicks X, Y should happen" is clearer than implementation details.
+
+3. **Mention affected files** — "This will need changes in preferences.py, app.js, and the locale files."
+
+4. **Ask for testing** — "After implementing, show me curl commands to test the new endpoint."
+
+5. **Request cache busting** — "Update APP_VERSION after frontend changes."
+
+### Common Requests and How to Phrase Them
+
+**Adding a new preference:**
+```
+Add a new user preference called "compact_mode" (boolean, default false).
+Follow the pattern used for "reading_mode" in preferences.py and app.js.
+Add a toggle in Settings > Appearance with translations in both locales.
+```
+
+**Adding a new keyboard shortcut:**
+```
+Add keyboard shortcut "N" to create a new feed.
+Add it to handleKeyboard() following the existing pattern.
+Show the shortcut hint on the "Add Feed" button like other shortcuts.
+```
+
+**Fixing a bug:**
+```
+Bug: When I delete a category, feeds in that category disappear from the UI.
+Expected: Feeds should move to "Uncategorized".
+Check the DELETE /api/categories/:id endpoint and the frontend refresh logic.
+```
+
+**Adding a new API endpoint:**
+```
+Add GET /api/stats endpoint that returns:
+- total_posts, unread_posts, total_feeds, feeds_with_errors
+Follow the pattern in admin.py. Add frontend call to display in Settings.
+```
+
+### What Claude Will Do Automatically
+
+- Read relevant files before making changes
+- Follow existing code patterns
+- Update APP_VERSION when changing frontend
+- Add translations to both locale files
+- Test API endpoints with curl
+- Commit with descriptive messages
+
+### What You Should Verify
+
+- Test the feature in the browser (Claude can't see the UI)
+- Check mobile responsiveness if UI changed
+- Verify translations make sense in context
+- Test edge cases Claude might miss
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -487,3 +589,12 @@ git push
 ---
 
 *Last updated: 2026-01-06*
+
+---
+
+## Reference Documents
+
+- **AI.md** (this file) — Quick start guide for AI-assisted development
+- **PROJETO.md** — Detailed technical specification (circuit breaker, rate limiting, security, etc.)
+- **README.md** — Public documentation for end users
+- **PROGRESSO.md** — Development session notes (Portuguese)
