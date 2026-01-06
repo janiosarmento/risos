@@ -15,6 +15,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Keyboard-first** — Full navigation with J/K/Enter, batch operations with X
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
+- **Configurable Settings** — AI model, data retention, interface behavior
 - **OPML Import/Export** — Migrate from other readers
 - **Mobile Friendly** — Responsive design
 
@@ -59,10 +60,18 @@ APP_PASSWORD=your_password
 JWT_SECRET=your_secret_key_minimum_32_chars  # openssl rand -hex 32
 CEREBRAS_API_KEY=your_key                    # from https://cloud.cerebras.ai/
 
-# Optional
-SUMMARY_LANGUAGE=English                     # default: Brazilian Portuguese
-FEED_UPDATE_INTERVAL_MINUTES=30              # default: 30
+# Optional - defaults shown
+SUMMARY_LANGUAGE=Brazilian Portuguese        # language for AI summaries
+CEREBRAS_MODEL=llama-3.3-70b                 # AI model for summaries
+FEED_UPDATE_INTERVAL_MINUTES=30              # how often to check feeds
+MAX_POSTS_PER_FEED=500                       # posts kept per feed
+MAX_POST_AGE_DAYS=365                        # delete posts older than this
+MAX_UNREAD_DAYS=90                           # auto-mark old unread as read
+TOAST_TIMEOUT_SECONDS=2                      # notification duration (0=manual)
+IDLE_REFRESH_SECONDS=180                     # auto-refresh after idle (0=off)
 ```
+
+Most settings can also be changed in the UI (Settings > General tab) and are saved per-instance.
 
 ### Multiple API Keys
 
