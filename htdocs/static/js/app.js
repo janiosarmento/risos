@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103g';
+const APP_VERSION = '20260103h';
 const API_BASE = '/api';
 
 function app() {
@@ -36,6 +36,7 @@ function app() {
         selectMode: false,
         collapsedCategories: new Set(JSON.parse(localStorage.getItem('rss_collapsed_categories') || '[]')),
         sidebarOpen: false,
+        lastNavMode: 'posts', // 'posts' (J/K) or 'sidebar' ([/])
 
         // Settings
         showSettings: false,
@@ -390,13 +391,15 @@ function app() {
                 // Main view shortcuts
                 if (this.isKey(e, 'j')) {
                     e.preventDefault();
+                    this.lastNavMode = 'posts';
                     this.selectNext();
                 } else if (this.isKey(e, 'k')) {
                     e.preventDefault();
+                    this.lastNavMode = 'posts';
                     this.selectPrev();
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (this.filter === 'category' && this.filterId) {
+                    if (this.lastNavMode === 'sidebar' && this.filter === 'category' && this.filterId) {
                         this.toggleCategoryCollapse(this.filterId);
                     } else if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.openPost(this.posts[this.selectedIndex]);
@@ -423,8 +426,10 @@ function app() {
                         this.togglePostSelection(this.posts[this.selectedIndex].id);
                     }
                 } else if (e.key === '[') {
+                    this.lastNavMode = 'sidebar';
                     this.prevFeed();
                 } else if (e.key === ']') {
+                    this.lastNavMode = 'sidebar';
                     this.nextFeed();
                 }
             });
