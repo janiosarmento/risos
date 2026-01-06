@@ -53,6 +53,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ### Seção Dados e Acordeões
 - Aba General refatorada com acordeões colapsáveis (Alpine.js Collapse)
+- Acordeões exclusivos: apenas um aberto por vez
 - Nova seção "Dados" com configurações:
   - Intervalo de atualização dos feeds (minutos)
   - Máximo de posts por feed
@@ -60,6 +61,13 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
   - Expiração de não lidos (dias)
 - Preferências expandidas com `feed_update_interval`, `max_posts_per_feed`, `max_post_age_days`, `max_unread_days`
 - Helpers no backend para outros módulos lerem configurações efetivas
+
+### Seção Interface
+- Nova seção "Interface" com configurações:
+  - Duração das notificações (segundos, 0 para desativar)
+  - Atualização automática (segundos de inatividade, 0 para desativar)
+- Preferências expandidas com `toast_timeout_seconds`, `idle_refresh_seconds`
+- Helpers `get_effective_toast_timeout` e `get_effective_idle_refresh` no backend
 
 ---
 

@@ -1097,6 +1097,53 @@
                                 </div>
                             </div>
 
+                            <!-- Accordion: Interface -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                <button
+                                    @click="toggleAccordion('interface')"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+                                >
+                                    <span class="font-medium" x-text="t('settings.interface')"></span>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.interface ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div x-show="settingsAccordion.interface" x-collapse class="p-4 space-y-4">
+                                    <!-- Toast Timeout -->
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.toastTimeout')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.toastTimeoutDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="30"
+                                                :value="toastTimeoutSeconds"
+                                                @change="setToastTimeout($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.seconds')"></span>
+                                        </div>
+                                    </div>
+                                    <!-- Idle Refresh -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.idleRefresh')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.idleRefreshDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="3600"
+                                                :value="idleRefreshSeconds"
+                                                @change="setIdleRefresh($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.seconds')"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 

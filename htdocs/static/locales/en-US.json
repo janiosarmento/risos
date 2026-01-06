@@ -85,7 +85,13 @@
     "maxPostAgeDaysDesc": "Posts older than this are deleted",
     "days": "days",
     "maxUnreadDays": "Unread Expiration",
-    "maxUnreadDaysDesc": "Unread posts older than this are marked as read"
+    "maxUnreadDaysDesc": "Unread posts older than this are marked as read",
+    "interface": "Interface",
+    "toastTimeout": "Notification Duration",
+    "toastTimeoutDesc": "How long toast notifications stay visible",
+    "seconds": "seconds",
+    "idleRefresh": "Auto-refresh Interval",
+    "idleRefreshDesc": "Refresh feeds after this idle time (0 to disable)"
   },
   "categories": {
     "newPlaceholder": "New category name",

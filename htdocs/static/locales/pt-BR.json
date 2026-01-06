@@ -85,7 +85,13 @@
     "maxPostAgeDaysDesc": "Posts mais antigos que isso são deletados",
     "days": "dias",
     "maxUnreadDays": "Expiração de Não Lidos",
-    "maxUnreadDaysDesc": "Não lidos mais antigos que isso são marcados como lidos"
+    "maxUnreadDaysDesc": "Não lidos mais antigos que isso são marcados como lidos",
+    "interface": "Interface",
+    "toastTimeout": "Duração das Notificações",
+    "toastTimeoutDesc": "Tempo que as notificações ficam visíveis",
+    "seconds": "segundos",
+    "idleRefresh": "Atualização Automática",
+    "idleRefreshDesc": "Atualizar feeds após este tempo inativo (0 para desativar)"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

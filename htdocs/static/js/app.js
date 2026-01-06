@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106d';
+const APP_VERSION = '20260106e';
 const API_BASE = '/api';
 
 function app() {
@@ -42,7 +42,7 @@ function app() {
         // Settings
         showSettings: false,
         settingsTab: 'categories',
-        settingsAccordion: { appearance: true, ai: false, data: false }, // Accordion open state
+        settingsAccordion: { appearance: true, ai: false, data: false, interface: false }, // Accordion open state
         newCategoryName: '',
         newFeed: { url: '', category_id: '' },
         editingCategory: null,
@@ -275,9 +275,17 @@ function app() {
             }
         },
 
-        // Toggle accordion section
+        // Toggle accordion section (exclusive - only one open at a time)
         toggleAccordion(section) {
-            this.settingsAccordion[section] = !this.settingsAccordion[section];
+            const wasOpen = this.settingsAccordion[section];
+            // Close all
+            Object.keys(this.settingsAccordion).forEach(k => {
+                this.settingsAccordion[k] = false;
+            });
+            // Open clicked one if it was closed
+            if (!wasOpen) {
+                this.settingsAccordion[section] = true;
+            }
         },
 
         // Data settings setters
@@ -301,6 +309,19 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        // Interface settings setters
+        setToastTimeout(value) {
+            this.toastTimeoutSeconds = parseInt(value) || 2;
+            if (this.token) this.savePreferencesToServer();
+        },
+
+        setIdleRefresh(value) {
+            this.idleRefreshSeconds = parseInt(value) || 180;
+            // Update idle timer with new value
+            this.resetIdleTimer();
+            if (this.token) this.savePreferencesToServer();
+        },
+
         // Save preferences to server (fire and forget)
         async savePreferencesToServer() {
             try {
@@ -315,6 +336,8 @@ function app() {
                         max_posts_per_feed: this.maxPostsPerFeed,
                         max_post_age_days: this.maxPostAgeDays,
                         max_unread_days: this.maxUnreadDays,
+                        toast_timeout_seconds: this.toastTimeoutSeconds,
+                        idle_refresh_seconds: this.idleRefreshSeconds,
                     }),
                 });
             } catch (e) {
@@ -362,6 +385,15 @@ function app() {
                 }
                 if (serverPrefs.max_unread_days) {
                     this.maxUnreadDays = serverPrefs.max_unread_days;
+                }
+
+                // Apply interface settings (always from server, with defaults)
+                if (serverPrefs.toast_timeout_seconds !== null && serverPrefs.toast_timeout_seconds !== undefined) {
+                    this.toastTimeoutSeconds = serverPrefs.toast_timeout_seconds;
+                }
+                if (serverPrefs.idle_refresh_seconds !== null && serverPrefs.idle_refresh_seconds !== undefined) {
+                    this.idleRefreshSeconds = serverPrefs.idle_refresh_seconds;
+                    this.resetIdleTimer();
                 }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);

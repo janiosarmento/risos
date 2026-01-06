@@ -25,6 +25,9 @@ PREF_FEED_UPDATE_INTERVAL = "pref_feed_update_interval"
 PREF_MAX_POSTS_PER_FEED = "pref_max_posts_per_feed"
 PREF_MAX_POST_AGE_DAYS = "pref_max_post_age_days"
 PREF_MAX_UNREAD_DAYS = "pref_max_unread_days"
+# Interface settings
+PREF_TOAST_TIMEOUT = "pref_toast_timeout"
+PREF_IDLE_REFRESH = "pref_idle_refresh"
 
 
 class PreferencesResponse(BaseModel):
@@ -37,6 +40,9 @@ class PreferencesResponse(BaseModel):
     max_posts_per_feed: Optional[int] = None
     max_post_age_days: Optional[int] = None
     max_unread_days: Optional[int] = None
+    # Interface settings
+    toast_timeout_seconds: Optional[int] = None
+    idle_refresh_seconds: Optional[int] = None
 
 
 class PreferencesUpdate(BaseModel):
@@ -49,6 +55,9 @@ class PreferencesUpdate(BaseModel):
     max_posts_per_feed: Optional[int] = None
     max_post_age_days: Optional[int] = None
     max_unread_days: Optional[int] = None
+    # Interface settings
+    toast_timeout_seconds: Optional[int] = None
+    idle_refresh_seconds: Optional[int] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -84,6 +93,8 @@ def get_preferences(
         PREF_MAX_POSTS_PER_FEED,
         PREF_MAX_POST_AGE_DAYS,
         PREF_MAX_UNREAD_DAYS,
+        PREF_TOAST_TIMEOUT,
+        PREF_IDLE_REFRESH,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -125,6 +136,13 @@ def get_preferences(
         max_unread_days=int_or_default(
             prefs[PREF_MAX_UNREAD_DAYS], env_settings.max_unread_days
         ),
+        # Interface settings
+        toast_timeout_seconds=int_or_default(
+            prefs[PREF_TOAST_TIMEOUT], env_settings.toast_timeout_seconds
+        ),
+        idle_refresh_seconds=int_or_default(
+            prefs[PREF_IDLE_REFRESH], env_settings.idle_refresh_seconds
+        ),
     )
 
 
@@ -162,6 +180,13 @@ def update_preferences(
 
     if prefs.max_unread_days is not None:
         _set_setting(db, PREF_MAX_UNREAD_DAYS, str(prefs.max_unread_days))
+
+    # Interface settings (store as string)
+    if prefs.toast_timeout_seconds is not None:
+        _set_setting(db, PREF_TOAST_TIMEOUT, str(prefs.toast_timeout_seconds))
+
+    if prefs.idle_refresh_seconds is not None:
+        _set_setting(db, PREF_IDLE_REFRESH, str(prefs.idle_refresh_seconds))
 
     db.commit()
 
@@ -227,3 +252,25 @@ def get_effective_max_unread_days(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return env_settings.max_unread_days
+
+
+def get_effective_toast_timeout(db: Session) -> int:
+    """Get toast timeout from app_settings or env default."""
+    saved = _get_setting(db, PREF_TOAST_TIMEOUT)
+    if saved:
+        try:
+            return int(saved)
+        except (ValueError, TypeError):
+            pass
+    return env_settings.toast_timeout_seconds
+
+
+def get_effective_idle_refresh(db: Session) -> int:
+    """Get idle refresh from app_settings or env default."""
+    saved = _get_setting(db, PREF_IDLE_REFRESH)
+    if saved:
+        try:
+            return int(saved)
+        except (ValueError, TypeError):
+            pass
+    return env_settings.idle_refresh_seconds
