@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106i';
+const APP_VERSION = '20260106j';
 const API_BASE = '/api';
 
 function app() {
@@ -664,22 +664,27 @@ function app() {
                         } else {
                             this.closePost();
                         }
+                        return;
                     } else if (this.isKey(e, 'm')) {
                         this.toggleRead(this.currentPost);
+                        return;
                     } else if (this.isKey(e, 's')) {
                         this.toggleStar(this.currentPost);
+                        return;
                     } else if (this.isKey(e, 'r')) {
                         this.regenerateSummary();
-                    } else if (this.isKey(e, 'j')) {
-                        this.nextPost();
-                    } else if (this.isKey(e, 'k')) {
-                        this.prevPost();
-                    }
-                    // In fullscreen mode, return to block other shortcuts
-                    // In split mode, allow J/K to also work for list navigation
-                    if (!this.isSplitMode) {
                         return;
                     }
+                    // In fullscreen mode, J/K navigate posts within modal
+                    if (!this.isSplitMode) {
+                        if (this.isKey(e, 'j')) {
+                            this.nextPost();
+                        } else if (this.isKey(e, 'k')) {
+                            this.prevPost();
+                        }
+                        return;
+                    }
+                    // In split mode, J/K fall through to selectNext/selectPrev below
                 }
 
                 // Main view shortcuts
