@@ -143,6 +143,7 @@ Each has its own database, config, and service.
 | Key | Action |
 |-----|--------|
 | `J` / `K` | Navigate posts |
+| `[` / `]` | Previous / next feed (with unread) |
 | `Enter` | Open post |
 | `M` | Toggle read/unread |
 | `A` | Mark all as read |

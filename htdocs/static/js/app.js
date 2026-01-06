@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103c';
+const APP_VERSION = '20260103d';
 const API_BASE = '/api';
 
 function app() {
@@ -420,8 +420,51 @@ function app() {
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.togglePostSelection(this.posts[this.selectedIndex].id);
                     }
+                } else if (e.key === '[') {
+                    this.prevFeed();
+                } else if (e.key === ']') {
+                    this.nextFeed();
                 }
             });
+        },
+
+        // Feed navigation
+        prevFeed() {
+            const feedsWithUnread = this.feeds.filter(f => f.unread_count > 0);
+            if (feedsWithUnread.length === 0) return;
+
+            if (this.filter !== 'feed') {
+                // Go to last feed with unread
+                this.setFilter('feed', feedsWithUnread[feedsWithUnread.length - 1].id);
+                return;
+            }
+
+            const currentIndex = feedsWithUnread.findIndex(f => f.id === this.filterId);
+            if (currentIndex > 0) {
+                this.setFilter('feed', feedsWithUnread[currentIndex - 1].id);
+            } else {
+                // Wrap to last
+                this.setFilter('feed', feedsWithUnread[feedsWithUnread.length - 1].id);
+            }
+        },
+
+        nextFeed() {
+            const feedsWithUnread = this.feeds.filter(f => f.unread_count > 0);
+            if (feedsWithUnread.length === 0) return;
+
+            if (this.filter !== 'feed') {
+                // Go to first feed with unread
+                this.setFilter('feed', feedsWithUnread[0].id);
+                return;
+            }
+
+            const currentIndex = feedsWithUnread.findIndex(f => f.id === this.filterId);
+            if (currentIndex < feedsWithUnread.length - 1) {
+                this.setFilter('feed', feedsWithUnread[currentIndex + 1].id);
+            } else {
+                // Wrap to first
+                this.setFilter('feed', feedsWithUnread[0].id);
+            }
         },
 
         // Auth methods
