@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260105b';
+const APP_VERSION = '20260105c';
 const API_BASE = '/api';
 
 function app() {
@@ -700,6 +700,16 @@ function app() {
 
                 this.hasMore = data.has_more || false;
                 this.offset += data.posts.length;
+
+                // Update feed unread counts if provided by the API
+                if (data.feed_unread_counts) {
+                    for (const [feedId, count] of Object.entries(data.feed_unread_counts)) {
+                        const feed = this.feeds.find(f => f.id === parseInt(feedId));
+                        if (feed) {
+                            feed.unread_count = count;
+                        }
+                    }
+                }
             } catch (error) {
                 console.error('Failed to load posts:', error);
             } finally {
@@ -721,6 +731,14 @@ function app() {
             this.filter = type;
             this.filterId = id;
             this.sidebarOpen = false; // Close sidebar on mobile
+
+            // Update lastFeedNavIndex for navigable filters (so [/] works after clicking)
+            const items = this.getNavigableItems();
+            const idx = this.getCurrentItemIndex(items);
+            if (idx !== -1) {
+                this.lastFeedNavIndex = idx;
+            }
+
             this.loadPosts(true);
         },
 

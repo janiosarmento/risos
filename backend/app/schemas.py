@@ -4,7 +4,7 @@ Schemas Pydantic para validação de requests/responses.
 
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 # Constants
 MAX_CATEGORY_NAME_LENGTH = 255
@@ -151,6 +151,7 @@ class PostListResponse(BaseModel):
     posts: List[PostResponse]
     total: int
     has_more: bool
+    feed_unread_counts: Optional[Dict[int, int]] = None  # {feed_id: unread_count}
 
 
 class MarkReadRequest(BaseModel):

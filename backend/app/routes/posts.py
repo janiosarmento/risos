@@ -114,8 +114,12 @@ def list_posts(
     """
     List posts with pagination.
     Ordered by sort_date DESC (newest first).
+    Also returns updated unread counts for relevant feeds.
     """
     query = db.query(Post)
+
+    # Track which feeds to return unread counts for
+    relevant_feed_ids = set()
 
     # Starred filter (ignores other filters if active)
     if starred_only:
@@ -124,8 +128,16 @@ def list_posts(
         # Normal filters
         if feed_id is not None:
             query = query.filter(Post.feed_id == feed_id)
+            relevant_feed_ids.add(feed_id)
         elif category_id is not None:
             # Get feeds from the category
+            category_feeds = (
+                db.query(Feed.id)
+                .filter(Feed.category_id == category_id)
+                .all()
+            )
+            feed_ids_list = [f.id for f in category_feeds]
+            relevant_feed_ids.update(feed_ids_list)
             feed_ids = (
                 db.query(Feed.id)
                 .filter(Feed.category_id == category_id)
@@ -154,6 +166,21 @@ def list_posts(
             .all()
         )
         summaries_map = {s.content_hash: s for s in summaries}
+
+    # Get updated unread counts for relevant feeds
+    feed_unread_counts = {}
+    if relevant_feed_ids:
+        unread_counts = (
+            db.query(Post.feed_id, func.count(Post.id))
+            .filter(Post.feed_id.in_(relevant_feed_ids), Post.is_read == False)
+            .group_by(Post.feed_id)
+            .all()
+        )
+        feed_unread_counts = {fid: count for fid, count in unread_counts}
+        # Include feeds with 0 unread
+        for fid in relevant_feed_ids:
+            if fid not in feed_unread_counts:
+                feed_unread_counts[fid] = 0
 
     # Convert to response
     result = []
@@ -186,7 +213,12 @@ def list_posts(
 
     has_more = (offset + limit) < total
 
-    return PostListResponse(posts=result, total=total, has_more=has_more)
+    return PostListResponse(
+        posts=result,
+        total=total,
+        has_more=has_more,
+        feed_unread_counts=feed_unread_counts if feed_unread_counts else None,
+    )
 
 
 @router.get("/{post_id}", response_model=PostDetail)
