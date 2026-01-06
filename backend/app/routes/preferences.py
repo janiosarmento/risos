@@ -28,6 +28,7 @@ PREF_MAX_UNREAD_DAYS = "pref_max_unread_days"
 # Interface settings
 PREF_TOAST_TIMEOUT = "pref_toast_timeout"
 PREF_IDLE_REFRESH = "pref_idle_refresh"
+PREF_READING_MODE = "pref_reading_mode"
 
 
 class PreferencesResponse(BaseModel):
@@ -43,6 +44,7 @@ class PreferencesResponse(BaseModel):
     # Interface settings
     toast_timeout_seconds: Optional[int] = None
     idle_refresh_seconds: Optional[int] = None
+    reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
 
 
 class PreferencesUpdate(BaseModel):
@@ -58,6 +60,7 @@ class PreferencesUpdate(BaseModel):
     # Interface settings
     toast_timeout_seconds: Optional[int] = None
     idle_refresh_seconds: Optional[int] = None
+    reading_mode: Optional[str] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -95,6 +98,7 @@ def get_preferences(
         PREF_MAX_UNREAD_DAYS,
         PREF_TOAST_TIMEOUT,
         PREF_IDLE_REFRESH,
+        PREF_READING_MODE,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -143,6 +147,7 @@ def get_preferences(
         idle_refresh_seconds=int_or_default(
             prefs[PREF_IDLE_REFRESH], env_settings.idle_refresh_seconds
         ),
+        reading_mode=prefs[PREF_READING_MODE] or "fullscreen",
     )
 
 
@@ -187,6 +192,9 @@ def update_preferences(
 
     if prefs.idle_refresh_seconds is not None:
         _set_setting(db, PREF_IDLE_REFRESH, str(prefs.idle_refresh_seconds))
+
+    if prefs.reading_mode is not None:
+        _set_setting(db, PREF_READING_MODE, prefs.reading_mode)
 
     db.commit()
 

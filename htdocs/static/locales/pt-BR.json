@@ -91,7 +91,16 @@
     "toastTimeoutDesc": "Tempo que as notificações ficam visíveis",
     "seconds": "segundos",
     "idleRefresh": "Atualização Automática",
-    "idleRefreshDesc": "Atualizar feeds após este tempo inativo (0 para desativar)"
+    "idleRefreshDesc": "Atualizar feeds após este tempo inativo (0 para desativar)",
+    "readingMode": "Modo de Leitura",
+    "readingModeDesc": "Escolha como os posts são exibidos ao abrir",
+    "readingModeFullscreen": "Tela Cheia",
+    "readingModeSplit": "Dividido",
+    "readingModeSplitNote": "Modo dividido só disponível em telas de 1024px ou mais"
+  },
+  "splitView": {
+    "selectPost": "Selecione um post para ler",
+    "hint": "Pressione J/K para navegar, Enter para abrir"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

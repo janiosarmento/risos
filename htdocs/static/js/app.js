@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106e';
+const APP_VERSION = '20260106f';
 const API_BASE = '/api';
 
 function app() {
@@ -58,6 +58,9 @@ function app() {
         // Idle detection
         idleTimeoutId: null,
         idleRefreshSeconds: 180, // Default 3 minutes, loaded from config
+
+        // Reading mode
+        readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
 
         // Toast
         toast: {
@@ -135,6 +138,11 @@ function app() {
         // Computed
         get totalUnread() {
             return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0);
+        },
+
+        get isSplitMode() {
+            // Split mode only on desktop (>=1024px)
+            return this.readingMode === 'split' && window.innerWidth >= 1024;
         },
 
         starredCount: 0,
@@ -322,6 +330,15 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        setReadingMode(mode) {
+            this.readingMode = mode;
+            // Close post when switching modes
+            if (this.currentPost) {
+                this.currentPost = null;
+            }
+            if (this.token) this.savePreferencesToServer();
+        },
+
         // Save preferences to server (fire and forget)
         async savePreferencesToServer() {
             try {
@@ -338,6 +355,7 @@ function app() {
                         max_unread_days: this.maxUnreadDays,
                         toast_timeout_seconds: this.toastTimeoutSeconds,
                         idle_refresh_seconds: this.idleRefreshSeconds,
+                        reading_mode: this.readingMode,
                     }),
                 });
             } catch (e) {
@@ -394,6 +412,9 @@ function app() {
                 if (serverPrefs.idle_refresh_seconds !== null && serverPrefs.idle_refresh_seconds !== undefined) {
                     this.idleRefreshSeconds = serverPrefs.idle_refresh_seconds;
                     this.resetIdleTimer();
+                }
+                if (serverPrefs.reading_mode) {
+                    this.readingMode = serverPrefs.reading_mode;
                 }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);
@@ -595,10 +616,15 @@ function app() {
                     return;
                 }
 
-                // If post modal is open
+                // If post is open (modal or split pane)
                 if (this.currentPost) {
                     if (e.key === 'Escape') {
-                        this.closePost();
+                        if (this.isSplitMode) {
+                            // In split mode, just clear the reading pane
+                            this.currentPost = null;
+                        } else {
+                            this.closePost();
+                        }
                     } else if (this.isKey(e, 'm')) {
                         this.toggleRead(this.currentPost);
                     } else if (this.isKey(e, 's')) {
@@ -610,7 +636,11 @@ function app() {
                     } else if (this.isKey(e, 'k')) {
                         this.prevPost();
                     }
-                    return;
+                    // In fullscreen mode, return to block other shortcuts
+                    // In split mode, allow J/K to also work for list navigation
+                    if (!this.isSplitMode) {
+                        return;
+                    }
                 }
 
                 // Main view shortcuts
@@ -1027,8 +1057,10 @@ function app() {
                 summary_status: 'pending',
             };
 
-            // Push state for back button support
-            history.pushState({ modal: 'post', postId: post.id }, '');
+            // Push state for back button support (only in fullscreen mode)
+            if (!this.isSplitMode) {
+                history.pushState({ modal: 'post', postId: post.id }, '');
+            }
 
             // Find index
             const index = this.getPostIndex(post.id);
@@ -1068,8 +1100,8 @@ function app() {
             if (this.currentPost) {
                 // Close modal directly
                 this.currentPost = null;
-                // Also go back in history if we have a state for this modal
-                if (history.state && history.state.modal === 'post') {
+                // Go back in history only in fullscreen mode
+                if (!this.isSplitMode && history.state && history.state.modal === 'post') {
                     history.back();
                 }
             }

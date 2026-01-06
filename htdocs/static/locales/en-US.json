@@ -91,7 +91,16 @@
     "toastTimeoutDesc": "How long toast notifications stay visible",
     "seconds": "seconds",
     "idleRefresh": "Auto-refresh Interval",
-    "idleRefreshDesc": "Refresh feeds after this idle time (0 to disable)"
+    "idleRefreshDesc": "Refresh feeds after this idle time (0 to disable)",
+    "readingMode": "Reading Mode",
+    "readingModeDesc": "Choose how posts are displayed when opened",
+    "readingModeFullscreen": "Fullscreen",
+    "readingModeSplit": "Split View",
+    "readingModeSplitNote": "Split view only available on screens 1024px or wider"
+  },
+  "splitView": {
+    "selectPost": "Select a post to read",
+    "hint": "Press J/K to navigate, Enter to open"
   },
   "categories": {
     "newPlaceholder": "New category name",

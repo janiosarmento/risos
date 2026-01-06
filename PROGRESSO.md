@@ -69,6 +69,15 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Preferências expandidas com `toast_timeout_seconds`, `idle_refresh_seconds`
 - Helpers `get_effective_toast_timeout` e `get_effective_idle_refresh` no backend
 
+### Modo de Leitura Split View
+- Novo modo de leitura estilo Gmail com tela dividida
+- Opções: "Tela Cheia" (modal, padrão) ou "Dividido" (split view)
+- Split view: lista de posts em cima (50%), painel de leitura embaixo (50%)
+- Apenas em desktop (≥1024px), mobile continua com modal
+- Mesma funcionalidade: duas colunas (original + resumo IA), atalhos, etc.
+- Toggle no Settings > Interface > Modo de Leitura
+- Preferência `reading_mode` salva no servidor
+
 ---
 
 ## Sessão 2026-01-05 — Sync e Navegação
