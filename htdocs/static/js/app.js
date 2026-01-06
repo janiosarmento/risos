@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106c';
+const APP_VERSION = '20260106d';
 const API_BASE = '/api';
 
 function app() {
@@ -42,6 +42,7 @@ function app() {
         // Settings
         showSettings: false,
         settingsTab: 'categories',
+        settingsAccordion: { appearance: true, ai: false, data: false }, // Accordion open state
         newCategoryName: '',
         newFeed: { url: '', category_id: '' },
         editingCategory: null,
@@ -124,6 +125,12 @@ function app() {
         cerebrasModel: null,   // Loaded from server preferences
         availableSummaryLanguages: [], // Loaded from server
         availableModels: [], // Loaded from server (requires auth)
+
+        // Data Settings
+        feedUpdateInterval: 30,  // Loaded from server preferences
+        maxPostsPerFeed: 500,
+        maxPostAgeDays: 365,
+        maxUnreadDays: 90,
 
         // Computed
         get totalUnread() {
@@ -268,6 +275,32 @@ function app() {
             }
         },
 
+        // Toggle accordion section
+        toggleAccordion(section) {
+            this.settingsAccordion[section] = !this.settingsAccordion[section];
+        },
+
+        // Data settings setters
+        setFeedUpdateInterval(value) {
+            this.feedUpdateInterval = parseInt(value) || 30;
+            if (this.token) this.savePreferencesToServer();
+        },
+
+        setMaxPostsPerFeed(value) {
+            this.maxPostsPerFeed = parseInt(value) || 500;
+            if (this.token) this.savePreferencesToServer();
+        },
+
+        setMaxPostAgeDays(value) {
+            this.maxPostAgeDays = parseInt(value) || 365;
+            if (this.token) this.savePreferencesToServer();
+        },
+
+        setMaxUnreadDays(value) {
+            this.maxUnreadDays = parseInt(value) || 90;
+            if (this.token) this.savePreferencesToServer();
+        },
+
         // Save preferences to server (fire and forget)
         async savePreferencesToServer() {
             try {
@@ -278,6 +311,10 @@ function app() {
                         theme: this.theme,
                         summary_language: this.summaryLanguage,
                         cerebras_model: this.cerebrasModel,
+                        feed_update_interval: this.feedUpdateInterval,
+                        max_posts_per_feed: this.maxPostsPerFeed,
+                        max_post_age_days: this.maxPostAgeDays,
+                        max_unread_days: this.maxUnreadDays,
                     }),
                 });
             } catch (e) {
@@ -311,6 +348,20 @@ function app() {
                 }
                 if (serverPrefs.cerebras_model) {
                     this.cerebrasModel = serverPrefs.cerebras_model;
+                }
+
+                // Apply data settings (always from server, with defaults)
+                if (serverPrefs.feed_update_interval) {
+                    this.feedUpdateInterval = serverPrefs.feed_update_interval;
+                }
+                if (serverPrefs.max_posts_per_feed) {
+                    this.maxPostsPerFeed = serverPrefs.max_posts_per_feed;
+                }
+                if (serverPrefs.max_post_age_days) {
+                    this.maxPostAgeDays = serverPrefs.max_post_age_days;
+                }
+                if (serverPrefs.max_unread_days) {
+                    this.maxUnreadDays = serverPrefs.max_unread_days;
                 }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);

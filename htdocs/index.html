@@ -28,8 +28,9 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260106c">
+    <link rel="stylesheet" href="/static/css/app.css?v=20260106d">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -928,73 +929,174 @@
                         </div>
 
                         <!-- General Tab -->
-                        <div x-show="settingsTab === 'general'" class="space-y-6">
-                            <!-- Theme -->
-                            <div>
-                                <h3 class="text-lg font-medium mb-3" x-text="t('settings.theme')"></h3>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('settings.themeDesc')"></p>
-                                <div class="flex flex-wrap gap-2">
-                                    <template x-for="themeOption in availableThemes" :key="themeOption.value">
-                                        <button
-                                            @click="setTheme(themeOption.value)"
-                                            class="px-4 py-2 rounded font-medium transition-colors"
-                                            :class="theme === themeOption.value ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
-                                            x-text="t(themeOption.labelKey)"
-                                        ></button>
-                                    </template>
-                                </div>
-                            </div>
+                        <div x-show="settingsTab === 'general'" class="space-y-2">
 
-                            <!-- Language -->
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 class="text-lg font-medium mb-3" x-text="t('settings.language')"></h3>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('settings.languageDesc')"></p>
-                                <select
-                                    @change="setLocale($event.target.value)"
-                                    class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                            <!-- Accordion: Appearance -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                <button
+                                    @click="toggleAccordion('appearance')"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
                                 >
-                                    <template x-for="loc in availableLocales" :key="loc.code">
-                                        <option :value="loc.code" :selected="locale === loc.code" x-text="loc.name"></option>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <!-- AI Summaries -->
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 class="text-lg font-medium mb-4" x-text="t('settings.aiSummaries')"></h3>
-
-                                <!-- Summary Language -->
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
-                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
-                                    <select
-                                        @change="setSummaryLanguage($event.target.value)"
-                                        class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                    >
-                                        <template x-for="lang in availableSummaryLanguages" :key="lang.code">
-                                            <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
-                                        </template>
-                                    </select>
-                                </div>
-
-                                <!-- AI Model -->
-                                <div>
-                                    <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
-                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
-                                    <select
-                                        @change="setCerebrasModel($event.target.value)"
-                                        class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                        :disabled="availableModels.length === 0"
-                                    >
-                                        <template x-if="availableModels.length === 0">
-                                            <option x-text="t('settings.loadingModels')"></option>
-                                        </template>
-                                        <template x-for="model in availableModels" :key="model.id">
-                                            <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
-                                        </template>
-                                    </select>
+                                    <span class="font-medium" x-text="t('settings.theme')"></span>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.appearance ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div x-show="settingsAccordion.appearance" x-collapse class="p-4 space-y-4">
+                                    <!-- Theme -->
+                                    <div>
+                                        <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('settings.themeDesc')"></p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="themeOption in availableThemes" :key="themeOption.value">
+                                                <button
+                                                    @click="setTheme(themeOption.value)"
+                                                    class="px-4 py-2 rounded font-medium transition-colors"
+                                                    :class="theme === themeOption.value ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
+                                                    x-text="t(themeOption.labelKey)"
+                                                ></button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <!-- Language -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.language')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.languageDesc')"></p>
+                                        <select
+                                            @change="setLocale($event.target.value)"
+                                            class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        >
+                                            <template x-for="loc in availableLocales" :key="loc.code">
+                                                <option :value="loc.code" :selected="locale === loc.code" x-text="loc.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Accordion: AI Summaries -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                <button
+                                    @click="toggleAccordion('ai')"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+                                >
+                                    <span class="font-medium" x-text="t('settings.aiSummaries')"></span>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.ai ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div x-show="settingsAccordion.ai" x-collapse class="p-4 space-y-4">
+                                    <!-- Summary Language -->
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
+                                        <select
+                                            @change="setSummaryLanguage($event.target.value)"
+                                            class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        >
+                                            <template x-for="lang in availableSummaryLanguages" :key="lang.code">
+                                                <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <!-- AI Model -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
+                                        <select
+                                            @change="setCerebrasModel($event.target.value)"
+                                            class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            :disabled="availableModels.length === 0"
+                                        >
+                                            <template x-if="availableModels.length === 0">
+                                                <option x-text="t('settings.loadingModels')"></option>
+                                            </template>
+                                            <template x-for="model in availableModels" :key="model.id">
+                                                <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Accordion: Data -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                <button
+                                    @click="toggleAccordion('data')"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+                                >
+                                    <span class="font-medium" x-text="t('settings.data')"></span>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.data ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div x-show="settingsAccordion.data" x-collapse class="p-4 space-y-4">
+                                    <!-- Feed Update Interval -->
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.feedUpdateInterval')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.feedUpdateIntervalDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="5"
+                                                max="1440"
+                                                :value="feedUpdateInterval"
+                                                @change="setFeedUpdateInterval($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.minutes')"></span>
+                                        </div>
+                                    </div>
+                                    <!-- Max Posts per Feed -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.maxPostsPerFeed')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxPostsPerFeedDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="10"
+                                                max="10000"
+                                                :value="maxPostsPerFeed"
+                                                @change="setMaxPostsPerFeed($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.posts')"></span>
+                                        </div>
+                                    </div>
+                                    <!-- Max Post Age -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.maxPostAgeDays')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxPostAgeDaysDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="7"
+                                                max="3650"
+                                                :value="maxPostAgeDays"
+                                                @change="setMaxPostAgeDays($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.days')"></span>
+                                        </div>
+                                    </div>
+                                    <!-- Max Unread Days -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.maxUnreadDays')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxUnreadDaysDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="365"
+                                                :value="maxUnreadDays"
+                                                @change="setMaxUnreadDays($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.days')"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -1095,6 +1197,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260106c"></script>
+    <script src="/static/js/app.js?v=20260106d"></script>
 </body>
 </html>

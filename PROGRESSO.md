@@ -51,6 +51,16 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Idiomas: 21 opções com nome nativo (inglês para prompt)
 - Modelos: carregados da API Cerebras após login
 
+### Seção Dados e Acordeões
+- Aba General refatorada com acordeões colapsáveis (Alpine.js Collapse)
+- Nova seção "Dados" com configurações:
+  - Intervalo de atualização dos feeds (minutos)
+  - Máximo de posts por feed
+  - Retenção de posts (dias)
+  - Expiração de não lidos (dias)
+- Preferências expandidas com `feed_update_interval`, `max_posts_per_feed`, `max_post_age_days`, `max_unread_days`
+- Helpers no backend para outros módulos lerem configurações efetivas
+
 ---
 
 ## Sessão 2026-01-05 — Sync e Navegação

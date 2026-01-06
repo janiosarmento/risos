@@ -73,7 +73,19 @@
     "summaryLanguageDesc": "Language for AI-generated summaries",
     "aiModel": "AI Model",
     "aiModelDesc": "Model used for generating summaries",
-    "loadingModels": "Loading models..."
+    "loadingModels": "Loading models...",
+    "data": "Data",
+    "feedUpdateInterval": "Feed Update Interval",
+    "feedUpdateIntervalDesc": "How often feeds are checked for new posts",
+    "minutes": "minutes",
+    "maxPostsPerFeed": "Max Posts per Feed",
+    "maxPostsPerFeedDesc": "Older posts are deleted when limit is reached",
+    "posts": "posts",
+    "maxPostAgeDays": "Post Retention",
+    "maxPostAgeDaysDesc": "Posts older than this are deleted",
+    "days": "days",
+    "maxUnreadDays": "Unread Expiration",
+    "maxUnreadDaysDesc": "Unread posts older than this are marked as read"
   },
   "categories": {
     "newPlaceholder": "New category name",
