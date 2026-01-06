@@ -86,7 +86,7 @@
     "days": "days",
     "maxUnreadDays": "Unread Expiration",
     "maxUnreadDaysDesc": "Unread posts older than this are marked as read",
-    "interface": "Interface",
+    "interface": "Others",
     "toastTimeout": "Notification Duration",
     "toastTimeoutDesc": "How long toast notifications stay visible",
     "seconds": "seconds",

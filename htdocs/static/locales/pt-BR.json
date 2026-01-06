@@ -86,7 +86,7 @@
     "days": "dias",
     "maxUnreadDays": "Expiração de Não Lidos",
     "maxUnreadDaysDesc": "Não lidos mais antigos que isso são marcados como lidos",
-    "interface": "Interface",
+    "interface": "Outros",
     "toastTimeout": "Duração das Notificações",
     "toastTimeoutDesc": "Tempo que as notificações ficam visíveis",
     "seconds": "segundos",
