@@ -142,6 +142,7 @@
   },
   "shortcuts": {
     "navigate": "navegar",
+    "feeds": "feeds",
     "open": "abrir",
     "toggle": "marcar"
   },

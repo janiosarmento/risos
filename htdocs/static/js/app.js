@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103d';
+const APP_VERSION = '20260103e';
 const API_BASE = '/api';
 
 function app() {
@@ -428,13 +428,30 @@ function app() {
             });
         },
 
-        // Feed navigation
+        // Feed navigation - builds ordered list matching sidebar visual order
+        getOrderedFeedsWithUnread() {
+            const ordered = [];
+            // Iterate categories in display order
+            for (const category of this.categories) {
+                // Get feeds in this category with unread posts
+                const categoryFeeds = this.feeds.filter(
+                    f => f.category_id === category.id && f.unread_count > 0
+                );
+                ordered.push(...categoryFeeds);
+            }
+            // Also include uncategorized feeds (if any)
+            const uncategorized = this.feeds.filter(
+                f => !f.category_id && f.unread_count > 0
+            );
+            ordered.push(...uncategorized);
+            return ordered;
+        },
+
         prevFeed() {
-            const feedsWithUnread = this.feeds.filter(f => f.unread_count > 0);
+            const feedsWithUnread = this.getOrderedFeedsWithUnread();
             if (feedsWithUnread.length === 0) return;
 
             if (this.filter !== 'feed') {
-                // Go to last feed with unread
                 this.setFilter('feed', feedsWithUnread[feedsWithUnread.length - 1].id);
                 return;
             }
@@ -443,17 +460,15 @@ function app() {
             if (currentIndex > 0) {
                 this.setFilter('feed', feedsWithUnread[currentIndex - 1].id);
             } else {
-                // Wrap to last
                 this.setFilter('feed', feedsWithUnread[feedsWithUnread.length - 1].id);
             }
         },
 
         nextFeed() {
-            const feedsWithUnread = this.feeds.filter(f => f.unread_count > 0);
+            const feedsWithUnread = this.getOrderedFeedsWithUnread();
             if (feedsWithUnread.length === 0) return;
 
             if (this.filter !== 'feed') {
-                // Go to first feed with unread
                 this.setFilter('feed', feedsWithUnread[0].id);
                 return;
             }
@@ -462,7 +477,6 @@ function app() {
             if (currentIndex < feedsWithUnread.length - 1) {
                 this.setFilter('feed', feedsWithUnread[currentIndex + 1].id);
             } else {
-                // Wrap to first
                 this.setFilter('feed', feedsWithUnread[0].id);
             }
         },

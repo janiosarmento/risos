@@ -142,6 +142,7 @@
   },
   "shortcuts": {
     "navigate": "navigate",
+    "feeds": "feeds",
     "open": "open",
     "toggle": "toggle"
   },

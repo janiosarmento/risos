@@ -29,7 +29,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260103d">
+    <link rel="stylesheet" href="/static/css/app.css?v=20260103e">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -456,6 +456,7 @@
                     <!-- Keyboard hints footer (desktop only) -->
                     <div class="hidden md:flex p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 justify-center gap-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
                         <span x-show="!selectMode">J/K <span x-text="t('shortcuts.navigate')"></span></span>
+                        <span x-show="!selectMode">[/] <span x-text="t('shortcuts.feeds')"></span></span>
                         <span x-show="!selectMode">Enter <span x-text="t('shortcuts.open')"></span></span>
                         <span x-show="selectMode">Space <span x-text="t('shortcuts.toggle')"></span></span>
                         <span x-show="selectMode">J/K <span x-text="t('shortcuts.navigate')"></span></span>
@@ -1059,6 +1060,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260103d"></script>
+    <script src="/static/js/app.js?v=20260103e"></script>
 </body>
 </html>
