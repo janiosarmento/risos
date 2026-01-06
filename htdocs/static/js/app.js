@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260105a';
+const APP_VERSION = '20260105b';
 const API_BASE = '/api';
 
 function app() {
@@ -503,42 +503,40 @@ function app() {
             const items = this.getNavigableItems();
             if (items.length === 0) return;
 
-            let currentIndex = this.getCurrentItemIndex(items);
+            const currentIndex = this.getCurrentItemIndex(items);
 
             if (currentIndex !== -1) {
-                // Found current position - update last known
-                this.lastFeedNavIndex = currentIndex;
+                // Found current position - navigate to previous
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                this.lastFeedNavIndex = prevIndex;
+                this.navigateToItem(items[prevIndex]);
             } else {
                 // Current filter not in list (e.g., after mark all read)
-                // Use last known position, clamped to valid range
-                currentIndex = Math.min(this.lastFeedNavIndex, items.length - 1);
+                // Item at lastFeedNavIndex was removed, previous item is at lastFeedNavIndex - 1
+                const targetIndex = Math.max(this.lastFeedNavIndex - 1, 0);
+                this.lastFeedNavIndex = targetIndex;
+                this.navigateToItem(items[targetIndex]);
             }
-
-            // Calculate prev index (wrap around)
-            const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-            this.lastFeedNavIndex = prevIndex;
-            this.navigateToItem(items[prevIndex]);
         },
 
         nextFeed() {
             const items = this.getNavigableItems();
             if (items.length === 0) return;
 
-            let currentIndex = this.getCurrentItemIndex(items);
+            const currentIndex = this.getCurrentItemIndex(items);
 
             if (currentIndex !== -1) {
-                // Found current position - update last known
-                this.lastFeedNavIndex = currentIndex;
+                // Found current position - navigate to next
+                const nextIndex = (currentIndex + 1) % items.length;
+                this.lastFeedNavIndex = nextIndex;
+                this.navigateToItem(items[nextIndex]);
             } else {
                 // Current filter not in list (e.g., after mark all read)
-                // Use last known position, clamped to valid range
-                currentIndex = Math.min(this.lastFeedNavIndex, items.length - 1);
+                // Item at lastFeedNavIndex was removed, next item shifted down to lastFeedNavIndex
+                const targetIndex = Math.min(this.lastFeedNavIndex, items.length - 1);
+                this.lastFeedNavIndex = targetIndex;
+                this.navigateToItem(items[targetIndex]);
             }
-
-            // Calculate next index (wrap around)
-            const nextIndex = (currentIndex + 1) % items.length;
-            this.lastFeedNavIndex = nextIndex;
-            this.navigateToItem(items[nextIndex]);
         },
 
         // Auth methods
