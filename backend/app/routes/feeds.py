@@ -57,12 +57,23 @@ def list_feeds(
         .subquery()
     )
 
-    query = db.query(
-        Feed,
-        func.coalesce(unread_count_subq.c.unread_count, 0).label(
-            "unread_count"
-        ),
-    ).outerjoin(unread_count_subq, Feed.id == unread_count_subq.c.feed_id)
+    # Subquery to count starred posts per feed
+    starred_count_subq = (
+        db.query(Post.feed_id, func.count(Post.id).label("starred_count"))
+        .filter(Post.is_starred == True)
+        .group_by(Post.feed_id)
+        .subquery()
+    )
+
+    query = (
+        db.query(
+            Feed,
+            func.coalesce(unread_count_subq.c.unread_count, 0).label("unread_count"),
+            func.coalesce(starred_count_subq.c.starred_count, 0).label("starred_count"),
+        )
+        .outerjoin(unread_count_subq, Feed.id == unread_count_subq.c.feed_id)
+        .outerjoin(starred_count_subq, Feed.id == starred_count_subq.c.feed_id)
+    )
 
     if category_id is not None:
         query = query.filter(Feed.category_id == category_id)
@@ -70,7 +81,7 @@ def list_feeds(
     feeds = query.order_by(func.lower(Feed.title)).all()
 
     result = []
-    for feed, unread_count in feeds:
+    for feed, unread_count, starred_count in feeds:
         feed_dict = {
             "id": feed.id,
             "category_id": feed.category_id,
@@ -83,6 +94,7 @@ def list_feeds(
             "disabled_at": feed.disabled_at,
             "created_at": feed.created_at,
             "unread_count": unread_count,
+            "starred_count": starred_count,
         }
         result.append(FeedResponse(**feed_dict))
 
@@ -556,11 +568,24 @@ def delete_feed(
     """
     Delete a feed.
     Feed posts are removed in cascade.
+    Cannot delete feeds with starred posts.
     """
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
+        )
+
+    # Check for starred posts
+    starred_count = (
+        db.query(func.count(Post.id))
+        .filter(Post.feed_id == feed_id, Post.is_starred == True)
+        .scalar()
+    )
+    if starred_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete feed with starred posts",
         )
 
     db.delete(feed)

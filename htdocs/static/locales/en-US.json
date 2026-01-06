@@ -124,7 +124,8 @@
     "noFeeds": "No feeds added",
     "unreadCount": "unread",
     "refresh": "Refresh feed now",
-    "refreshResult": "{new} new posts, {skipped} skipped"
+    "refreshResult": "{new} new posts, {skipped} skipped",
+    "hasStarredPosts": "Has starred posts - unstar to delete"
   },
   "opml": {
     "importTitle": "Import OPML",
@@ -201,6 +202,7 @@
     "Image_too_large": "Image too large",
     "Timeout_fetching_image": "Timeout fetching image",
     "Error_fetching_image": "Error fetching image",
-    "Post_has_insufficient_content_for_summary": "Post has insufficient content for summary"
+    "Post_has_insufficient_content_for_summary": "Post has insufficient content for summary",
+    "Cannot_delete_feed_with_starred_posts": "Cannot delete feed with starred posts"
   }
 }

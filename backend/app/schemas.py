@@ -103,6 +103,7 @@ class FeedResponse(BaseModel):
     disabled_at: Optional[datetime]
     created_at: datetime
     unread_count: Optional[int] = 0
+    starred_count: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
 

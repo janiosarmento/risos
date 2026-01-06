@@ -124,7 +124,8 @@
     "noFeeds": "Nenhum feed adicionado",
     "unreadCount": "não lidos",
     "refresh": "Atualizar feed agora",
-    "refreshResult": "{new} posts novos, {skipped} ignorados"
+    "refreshResult": "{new} posts novos, {skipped} ignorados",
+    "hasStarredPosts": "Tem posts favoritos - desfavorite para excluir"
   },
   "opml": {
     "importTitle": "Importar OPML",
@@ -201,6 +202,7 @@
     "Image_too_large": "Imagem muito grande",
     "Timeout_fetching_image": "Tempo esgotado ao buscar imagem",
     "Error_fetching_image": "Erro ao buscar imagem",
-    "Post_has_insufficient_content_for_summary": "Post não tem conteúdo suficiente para resumo"
+    "Post_has_insufficient_content_for_summary": "Post não tem conteúdo suficiente para resumo",
+    "Cannot_delete_feed_with_starred_posts": "Não é possível excluir feed com posts favoritos"
   }
 }

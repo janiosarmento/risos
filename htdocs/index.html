@@ -962,10 +962,16 @@
                                                         x-text="t('feeds.edit')"
                                                     ></button>
                                                     <button
+                                                        x-show="!feed.starred_count"
                                                         @click="deleteFeed(feed)"
                                                         class="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm"
                                                         x-text="t('feeds.delete')"
                                                     ></button>
+                                                    <span
+                                                        x-show="feed.starred_count > 0"
+                                                        class="text-amber-500 dark:text-amber-400"
+                                                        :title="t('feeds.hasStarredPosts')"
+                                                    >&#9733;</span>
                                                 </div>
                                             </div>
                                         </div>
