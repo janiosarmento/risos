@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-01-03
+**Última atualização:** 2026-01-05
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -23,6 +23,13 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, e m
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-01-05 — Bug fix
+
+- Fix: Após "marcar todos como lidos", navegação `]` agora vai para próximo item (não volta ao início)
+- Novo estado `lastFeedNavIndex` para rastrear posição durante navegação `[`/`]`
 
 ---
 
