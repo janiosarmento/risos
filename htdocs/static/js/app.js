@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260105c';
+const APP_VERSION = '20260106a';
 const API_BASE = '/api';
 
 function app() {
@@ -76,12 +76,26 @@ function app() {
         },
 
         // i18n
-        locale: localStorage.getItem('rss_locale') || 'pt-BR',
+        locale: localStorage.getItem('rss_locale') || null, // Will be detected in init()
         translations: {},
         availableLocales: [
             { code: 'pt-BR', name: 'Português (Brasil)' },
             { code: 'en-US', name: 'English (US)' }
         ],
+
+        // Detect browser language and return matching locale or fallback
+        detectBrowserLocale() {
+            const browserLang = navigator.language || navigator.userLanguage || 'en-US';
+            // Check if we have an exact match
+            const exact = this.availableLocales.find(l => l.code === browserLang);
+            if (exact) return exact.code;
+            // Check for partial match (e.g., 'pt' matches 'pt-BR')
+            const lang = browserLang.split('-')[0];
+            const partial = this.availableLocales.find(l => l.code.startsWith(lang));
+            if (partial) return partial.code;
+            // Fallback to English
+            return 'en-US';
+        },
 
         // Theme
         theme: localStorage.getItem('rss_theme') || 'system',
@@ -182,12 +196,59 @@ function app() {
 
         async setLocale(locale) {
             await this.loadLocale(locale);
+            // Save to server if logged in
+            if (this.token) {
+                this.savePreferencesToServer();
+            }
         },
 
         setTheme(theme) {
             this.theme = theme;
             localStorage.setItem('rss_theme', theme);
             this.applyTheme();
+            // Save to server if logged in
+            if (this.token) {
+                this.savePreferencesToServer();
+            }
+        },
+
+        // Save preferences to server (fire and forget)
+        async savePreferencesToServer() {
+            try {
+                await this.fetchApi('/preferences', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        locale: this.locale,
+                        theme: this.theme,
+                    }),
+                });
+            } catch (e) {
+                console.warn('Failed to save preferences to server:', e);
+            }
+        },
+
+        // Sync preferences after login
+        async syncPreferences() {
+            try {
+                const serverPrefs = await this.fetchApi('/preferences');
+
+                if (serverPrefs.locale || serverPrefs.theme) {
+                    // Server has preferences - apply them
+                    if (serverPrefs.locale && serverPrefs.locale !== this.locale) {
+                        await this.loadLocale(serverPrefs.locale);
+                    }
+                    if (serverPrefs.theme && serverPrefs.theme !== this.theme) {
+                        this.theme = serverPrefs.theme;
+                        localStorage.setItem('rss_theme', serverPrefs.theme);
+                        this.applyTheme();
+                    }
+                } else {
+                    // Server has no preferences - save current localStorage values
+                    await this.savePreferencesToServer();
+                }
+            } catch (e) {
+                console.warn('Failed to sync preferences:', e);
+            }
         },
 
         applyTheme() {
@@ -303,6 +364,11 @@ function app() {
 
         // Initialize
         async init() {
+            // Detect locale if not in localStorage
+            if (!this.locale) {
+                this.locale = this.detectBrowserLocale();
+            }
+
             // Load config and translations in parallel
             await Promise.all([
                 this.loadConfig(),
@@ -322,6 +388,7 @@ function app() {
             if (storedToken) {
                 this.token = storedToken;
                 await this.loadData();
+                await this.syncPreferences();
                 this.setupIdleDetection();
             }
 
@@ -563,6 +630,7 @@ function app() {
                 sessionStorage.setItem('rss_token', this.token);
                 this.password = '';
                 await this.loadData();
+                await this.syncPreferences();
                 this.setupIdleDetection();
             } catch (error) {
                 this.loginError = error.message;
