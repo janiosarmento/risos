@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103f';
+const APP_VERSION = '20260103g';
 const API_BASE = '/api';
 
 function app() {
@@ -396,7 +396,9 @@ function app() {
                     this.selectPrev();
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                    if (this.filter === 'category' && this.filterId) {
+                        this.toggleCategoryCollapse(this.filterId);
+                    } else if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.openPost(this.posts[this.selectedIndex]);
                     }
                 } else if (this.isKey(e, 'm')) {
