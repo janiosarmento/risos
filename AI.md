@@ -28,7 +28,7 @@ Read AI.md to understand the project structure.
 For complex features that touch internal systems (circuit breaker, rate limiting, queue processing), also read the detailed spec:
 
 ```
-Read PROJETO.md for technical details on [topic].
+Read PROJECT.md for technical details on [topic].
 ```
 
 ### Writing Effective Prompts
@@ -595,6 +595,6 @@ git push
 ## Reference Documents
 
 - **AI.md** (this file) — Quick start guide for AI-assisted development
-- **PROJETO.md** — Detailed technical specification (circuit breaker, rate limiting, security, etc.)
+- **PROJECT.md** — Detailed technical specification (circuit breaker, rate limiting, security, etc.)
 - **README.md** — Public documentation for end users
 - **PROGRESSO.md** — Development session notes (Portuguese)
