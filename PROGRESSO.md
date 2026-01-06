@@ -26,10 +26,13 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-01-05 — Bug fix
+## Sessão 2026-01-05 — Sync e Navegação
 
-- Fix: Após "marcar todos como lidos", navegação `]` agora vai para próximo item (não volta ao início)
-- Novo estado `lastFeedNavIndex` para rastrear posição durante navegação `[`/`]`
+- API `/posts` agora retorna `feed_unread_counts` com counts atualizados dos feeds
+- Frontend atualiza sidebar quando recebe posts (sincroniza counts)
+- `setFilter()` agora rastreia posição para navegação `[`/`]` após cliques
+- Fix: Navegação `]` após "marcar todos como lidos" agora funciona corretamente
+- Novo estado `lastFeedNavIndex` para rastrear posição na navegação por feeds
 
 ---
 
