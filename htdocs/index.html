@@ -345,12 +345,15 @@
                         </div>
                     </div>
 
-                    <!-- Post List -->
-                    <div
-                        class="overflow-y-auto scrollbar-thin"
-                        :class="isSplitMode ? 'h-1/2 flex-shrink-0 border-b border-gray-300 dark:border-gray-600' : 'flex-1'"
-                        @scroll="handleScroll($event)"
-                    >
+                    <!-- Split container (posts list + reading pane) -->
+                    <div id="split-container" class="flex-1 flex flex-col overflow-hidden min-h-0">
+                        <!-- Post List -->
+                        <div
+                            class="overflow-y-auto scrollbar-thin"
+                            :class="isSplitMode ? 'flex-shrink-0 border-b border-gray-300 dark:border-gray-600' : 'flex-1'"
+                            :style="isSplitMode ? 'height: ' + splitRatio + '%' : ''"
+                            @scroll="handleScroll($event)"
+                        >
                         <template x-if="loading && posts.length === 0">
                             <div class="p-8 text-center text-gray-500" x-text="t('app.loading')"></div>
                         </template>
@@ -453,10 +456,18 @@
                         <template x-if="!hasMore && posts.length > 0">
                             <div class="p-4 text-center text-gray-600 text-sm" x-text="t('app.endOfList')"></div>
                         </template>
-                    </div>
+                        </div>
 
-                    <!-- Split View Reading Pane (only on desktop in split mode) -->
-                    <template x-if="isSplitMode">
+                        <!-- Resize Handle (only in split mode) -->
+                        <div
+                            x-show="isSplitMode"
+                            @mousedown="startResize($event)"
+                            class="h-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 cursor-row-resize flex-shrink-0 transition-colors"
+                            :class="resizing ? 'bg-blue-500 dark:bg-blue-400' : ''"
+                        ></div>
+
+                        <!-- Split View Reading Pane (only on desktop in split mode) -->
+                        <template x-if="isSplitMode">
                         <div class="flex-1 flex flex-col overflow-hidden min-h-0 bg-white dark:bg-gray-900">
                             <!-- Empty state when no post selected -->
                             <template x-if="!currentPost">
@@ -565,7 +576,8 @@
                                 </div>
                             </template>
                         </div>
-                    </template>
+                        </template>
+                    </div>
 
                     <!-- Keyboard hints footer (desktop only) -->
                     <div class="hidden md:flex p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 justify-center gap-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">

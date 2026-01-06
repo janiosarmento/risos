@@ -72,7 +72,9 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 ### Modo de Leitura Split View
 - Novo modo de leitura estilo Gmail com tela dividida
 - Opções: "Tela Cheia" (modal, padrão) ou "Dividido" (split view)
-- Split view: lista de posts em cima (50%), painel de leitura embaixo (50%)
+- Split view: lista de posts em cima, painel de leitura embaixo
+- Proporção redimensionável: arrastar divisória para ajustar (20%-80%)
+- Preferência `split_ratio` salva no servidor
 - Apenas em desktop (≥1024px), mobile continua com modal
 - Mesma funcionalidade: duas colunas (original + resumo IA), atalhos, etc.
 - Toggle no Settings > Interface > Modo de Leitura

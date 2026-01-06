@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106f';
+const APP_VERSION = '20260106g';
 const API_BASE = '/api';
 
 function app() {
@@ -61,6 +61,8 @@ function app() {
 
         // Reading mode
         readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
+        splitRatio: 40, // percentage for posts panel (20-80), loaded from server
+        resizing: false, // true while dragging the resize handle
 
         // Toast
         toast: {
@@ -339,6 +341,39 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        // Split view resize methods
+        startResize(e) {
+            e.preventDefault();
+            this.resizing = true;
+            // Bind methods to preserve context
+            this._doResize = this.doResize.bind(this);
+            this._stopResize = this.stopResize.bind(this);
+            document.addEventListener('mousemove', this._doResize);
+            document.addEventListener('mouseup', this._stopResize);
+            // Prevent text selection during drag
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'row-resize';
+        },
+
+        doResize(e) {
+            const container = document.getElementById('split-container');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            let ratio = ((e.clientY - rect.top) / rect.height) * 100;
+            // Clamp between 20% and 80%
+            this.splitRatio = Math.min(80, Math.max(20, Math.round(ratio)));
+        },
+
+        stopResize() {
+            this.resizing = false;
+            document.removeEventListener('mousemove', this._doResize);
+            document.removeEventListener('mouseup', this._stopResize);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            // Save to server
+            if (this.token) this.savePreferencesToServer();
+        },
+
         // Save preferences to server (fire and forget)
         async savePreferencesToServer() {
             try {
@@ -356,6 +391,7 @@ function app() {
                         toast_timeout_seconds: this.toastTimeoutSeconds,
                         idle_refresh_seconds: this.idleRefreshSeconds,
                         reading_mode: this.readingMode,
+                        split_ratio: this.splitRatio,
                     }),
                 });
             } catch (e) {
@@ -415,6 +451,9 @@ function app() {
                 }
                 if (serverPrefs.reading_mode) {
                     this.readingMode = serverPrefs.reading_mode;
+                }
+                if (serverPrefs.split_ratio !== null && serverPrefs.split_ratio !== undefined) {
+                    this.splitRatio = serverPrefs.split_ratio;
                 }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);

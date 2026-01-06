@@ -29,6 +29,7 @@ PREF_MAX_UNREAD_DAYS = "pref_max_unread_days"
 PREF_TOAST_TIMEOUT = "pref_toast_timeout"
 PREF_IDLE_REFRESH = "pref_idle_refresh"
 PREF_READING_MODE = "pref_reading_mode"
+PREF_SPLIT_RATIO = "pref_split_ratio"
 
 
 class PreferencesResponse(BaseModel):
@@ -45,6 +46,7 @@ class PreferencesResponse(BaseModel):
     toast_timeout_seconds: Optional[int] = None
     idle_refresh_seconds: Optional[int] = None
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
+    split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
 
 
 class PreferencesUpdate(BaseModel):
@@ -61,6 +63,7 @@ class PreferencesUpdate(BaseModel):
     toast_timeout_seconds: Optional[int] = None
     idle_refresh_seconds: Optional[int] = None
     reading_mode: Optional[str] = None
+    split_ratio: Optional[int] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -99,6 +102,7 @@ def get_preferences(
         PREF_TOAST_TIMEOUT,
         PREF_IDLE_REFRESH,
         PREF_READING_MODE,
+        PREF_SPLIT_RATIO,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -148,6 +152,7 @@ def get_preferences(
             prefs[PREF_IDLE_REFRESH], env_settings.idle_refresh_seconds
         ),
         reading_mode=prefs[PREF_READING_MODE] or "fullscreen",
+        split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
     )
 
 
@@ -195,6 +200,11 @@ def update_preferences(
 
     if prefs.reading_mode is not None:
         _set_setting(db, PREF_READING_MODE, prefs.reading_mode)
+
+    if prefs.split_ratio is not None:
+        # Clamp to valid range
+        ratio = max(20, min(80, prefs.split_ratio))
+        _set_setting(db, PREF_SPLIT_RATIO, str(ratio))
 
     db.commit()
 
