@@ -13,6 +13,7 @@ A self-hosted RSS reader with AI-powered summaries.
   - Smart skip of paywalls and error pages
 - **Organization** — Categories, starred posts, read/unread tracking
 - **Keyboard-first** — Full navigation with J/K/Enter, batch operations with X
+- **Split View Mode** — Gmail-style reading pane with resizable divider (desktop)
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
 - **Configurable Settings** — AI model, data retention, interface behavior

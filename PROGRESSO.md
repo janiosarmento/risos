@@ -77,8 +77,12 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Preferência `split_ratio` salva no servidor
 - Apenas em desktop (≥1024px), mobile continua com modal
 - Mesma funcionalidade: duas colunas (original + resumo IA), atalhos, etc.
-- Toggle no Settings > Interface > Modo de Leitura
+- Toggle no Settings > Appearance > Modo de Leitura
 - Preferência `reading_mode` salva no servidor
+
+### Reorganização das Configurações
+- "Modo de Leitura" movido de Interface para Appearance
+- Seção "Interface" renomeada para "Outros"
 
 ---
 
