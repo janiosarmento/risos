@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "languageName": "English (US)"
+  },
   "app": {
     "title": "Risos",
     "loading": "Loading...",

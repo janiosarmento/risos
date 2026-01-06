@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106a';
+const APP_VERSION = '20260106b';
 const API_BASE = '/api';
 
 function app() {
@@ -78,10 +78,24 @@ function app() {
         // i18n
         locale: localStorage.getItem('rss_locale') || null, // Will be detected in init()
         translations: {},
-        availableLocales: [
-            { code: 'pt-BR', name: 'Português (Brasil)' },
-            { code: 'en-US', name: 'English (US)' }
-        ],
+        availableLocales: [], // Loaded from server
+
+        // Load available locales from server
+        async loadAvailableLocales() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/locales`);
+                if (response.ok) {
+                    this.availableLocales = await response.json();
+                }
+            } catch (e) {
+                console.warn('Failed to load available locales:', e);
+                // Fallback to hardcoded list
+                this.availableLocales = [
+                    { code: 'en-US', name: 'English (US)' },
+                    { code: 'pt-BR', name: 'Português (Brasil)' }
+                ];
+            }
+        },
 
         // Detect browser language and return matching locale or fallback
         detectBrowserLocale() {
@@ -93,8 +107,8 @@ function app() {
             const lang = browserLang.split('-')[0];
             const partial = this.availableLocales.find(l => l.code.startsWith(lang));
             if (partial) return partial.code;
-            // Fallback to English
-            return 'en-US';
+            // Fallback to first available or English
+            return this.availableLocales[0]?.code || 'en-US';
         },
 
         // Theme
@@ -364,6 +378,9 @@ function app() {
 
         // Initialize
         async init() {
+            // Load available locales from server first
+            await this.loadAvailableLocales();
+
             // Detect locale if not in localStorage
             if (!this.locale) {
                 this.locale = this.detectBrowserLocale();

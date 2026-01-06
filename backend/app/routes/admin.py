@@ -3,8 +3,11 @@ Admin routes.
 Summary reprocessing and database maintenance.
 """
 
+import json
 import os
 from datetime import datetime
+from pathlib import Path
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -17,6 +20,9 @@ from app.dependencies import get_current_user
 from app.models import SummaryQueue, SummaryFailure, AISummary, Post
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Path to locales directory (relative to backend)
+LOCALES_DIR = Path(__file__).parent.parent.parent.parent / "htdocs" / "static" / "locales"
 
 
 class ReprocessRequest(BaseModel):
@@ -133,6 +139,37 @@ def get_public_config():
         "toast_timeout_seconds": settings.toast_timeout_seconds,
         "idle_refresh_seconds": settings.idle_refresh_seconds,
     }
+
+
+class LocaleInfo(BaseModel):
+    code: str
+    name: str
+
+
+@router.get("/locales", response_model=List[LocaleInfo])
+def get_available_locales():
+    """
+    Return list of available locales.
+    Scans the locales directory and reads meta.languageName from each file.
+    Does not require authentication.
+    """
+    locales = []
+
+    if not LOCALES_DIR.exists():
+        return locales
+
+    for file_path in sorted(LOCALES_DIR.glob("*.json")):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                code = file_path.stem  # e.g., "pt-BR" from "pt-BR.json"
+                name = data.get("meta", {}).get("languageName", code)
+                locales.append(LocaleInfo(code=code, name=name))
+        except (json.JSONDecodeError, IOError):
+            # Skip invalid files
+            continue
+
+    return locales
 
 
 @router.get("/status")
