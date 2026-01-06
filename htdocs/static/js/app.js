@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260103e';
+const APP_VERSION = '20260103f';
 const API_BASE = '/api';
 
 function app() {
@@ -428,56 +428,90 @@ function app() {
             });
         },
 
-        // Feed navigation - builds ordered list matching sidebar visual order
-        getOrderedFeedsWithUnread() {
-            const ordered = [];
-            // Iterate categories in display order
-            for (const category of this.categories) {
-                // Get feeds in this category with unread posts
-                const categoryFeeds = this.feeds.filter(
-                    f => f.category_id === category.id && f.unread_count > 0
-                );
-                ordered.push(...categoryFeeds);
+        // Sidebar navigation - builds ordered list matching sidebar visual order
+        getNavigableItems() {
+            const items = [];
+
+            // Starred (if has items)
+            if (this.starredCount > 0) {
+                items.push({ type: 'starred' });
             }
-            // Also include uncategorized feeds (if any)
+
+            // Unread
+            items.push({ type: 'unread' });
+
+            // Categories and their feeds
+            for (const category of this.categories) {
+                const categoryUnread = this.getCategoryUnread(category.id);
+                if (categoryUnread > 0) {
+                    items.push({ type: 'category', id: category.id });
+                }
+
+                // Only include feeds if category is not collapsed
+                if (!this.isCategoryCollapsed(category.id)) {
+                    const categoryFeeds = this.feeds.filter(
+                        f => f.category_id === category.id && f.unread_count > 0
+                    );
+                    for (const feed of categoryFeeds) {
+                        items.push({ type: 'feed', id: feed.id });
+                    }
+                }
+            }
+
+            // Uncategorized feeds
             const uncategorized = this.feeds.filter(
                 f => !f.category_id && f.unread_count > 0
             );
-            ordered.push(...uncategorized);
-            return ordered;
+            for (const feed of uncategorized) {
+                items.push({ type: 'feed', id: feed.id });
+            }
+
+            return items;
+        },
+
+        getCurrentItemIndex(items) {
+            return items.findIndex(item => {
+                if (item.type === 'starred' && this.filter === 'starred') return true;
+                if (item.type === 'unread' && this.filter === 'unread') return true;
+                if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
+                if (item.type === 'feed' && this.filter === 'feed' && this.filterId === item.id) return true;
+                return false;
+            });
+        },
+
+        navigateToItem(item) {
+            if (item.type === 'starred') {
+                this.setFilter('starred');
+            } else if (item.type === 'unread') {
+                this.setFilter('unread');
+            } else if (item.type === 'category') {
+                this.setFilter('category', item.id);
+            } else if (item.type === 'feed') {
+                this.setFilter('feed', item.id);
+            }
         },
 
         prevFeed() {
-            const feedsWithUnread = this.getOrderedFeedsWithUnread();
-            if (feedsWithUnread.length === 0) return;
+            const items = this.getNavigableItems();
+            if (items.length === 0) return;
 
-            if (this.filter !== 'feed') {
-                this.setFilter('feed', feedsWithUnread[feedsWithUnread.length - 1].id);
-                return;
-            }
-
-            const currentIndex = feedsWithUnread.findIndex(f => f.id === this.filterId);
+            const currentIndex = this.getCurrentItemIndex(items);
             if (currentIndex > 0) {
-                this.setFilter('feed', feedsWithUnread[currentIndex - 1].id);
+                this.navigateToItem(items[currentIndex - 1]);
             } else {
-                this.setFilter('feed', feedsWithUnread[feedsWithUnread.length - 1].id);
+                this.navigateToItem(items[items.length - 1]);
             }
         },
 
         nextFeed() {
-            const feedsWithUnread = this.getOrderedFeedsWithUnread();
-            if (feedsWithUnread.length === 0) return;
+            const items = this.getNavigableItems();
+            if (items.length === 0) return;
 
-            if (this.filter !== 'feed') {
-                this.setFilter('feed', feedsWithUnread[0].id);
-                return;
-            }
-
-            const currentIndex = feedsWithUnread.findIndex(f => f.id === this.filterId);
-            if (currentIndex < feedsWithUnread.length - 1) {
-                this.setFilter('feed', feedsWithUnread[currentIndex + 1].id);
+            const currentIndex = this.getCurrentItemIndex(items);
+            if (currentIndex < items.length - 1) {
+                this.navigateToItem(items[currentIndex + 1]);
             } else {
-                this.setFilter('feed', feedsWithUnread[0].id);
+                this.navigateToItem(items[0]);
             }
         },
 
