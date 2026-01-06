@@ -29,7 +29,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260106b">
+    <link rel="stylesheet" href="/static/css/app.css?v=20260106c">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
@@ -958,6 +958,43 @@
                                     </template>
                                 </select>
                             </div>
+
+                            <!-- AI Summaries -->
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                                <h3 class="text-lg font-medium mb-4" x-text="t('settings.aiSummaries')"></h3>
+
+                                <!-- Summary Language -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
+                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
+                                    <select
+                                        @change="setSummaryLanguage($event.target.value)"
+                                        class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    >
+                                        <template x-for="lang in availableSummaryLanguages" :key="lang.code">
+                                            <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <!-- AI Model -->
+                                <div>
+                                    <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
+                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
+                                    <select
+                                        @change="setCerebrasModel($event.target.value)"
+                                        class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        :disabled="availableModels.length === 0"
+                                    >
+                                        <template x-if="availableModels.length === 0">
+                                            <option x-text="t('settings.loadingModels')"></option>
+                                        </template>
+                                        <template x-for="model in availableModels" :key="model.id">
+                                            <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1058,6 +1095,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260106b"></script>
+    <script src="/static/js/app.js?v=20260106c"></script>
 </body>
 </html>

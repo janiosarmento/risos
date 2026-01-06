@@ -26,13 +26,30 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-01-06 — Preferências Persistentes
+## Sessão 2026-01-06 — Preferências e Configurações
 
+### Preferências Persistentes
 - Nova API `/api/preferences` (GET/PUT) para locale e theme
 - Preferências salvas em `app_settings` no banco
 - Frontend detecta idioma do navegador se não houver localStorage
 - Sync de preferências do servidor após login
 - Se servidor não tem preferências, salva as locais como padrão
+
+### Dropdown Dinâmico de Idiomas
+- Novo endpoint `GET /api/admin/locales` escaneia arquivos de locale
+- Arquivos de locale agora têm `meta.languageName` com nome nativo
+- Frontend carrega idiomas do servidor e exibe em `<select>`
+- Substitui botões hardcoded por dropdown dinâmico
+
+### Configurações de Resumos IA
+- Novo endpoint `GET /api/admin/languages` retorna lista de idiomas para resumos
+- Novo endpoint `GET /api/admin/models` busca modelos da API Cerebras (com cache 30min)
+- Preferências expandidas com `summary_language` e `cerebras_model`
+- `cerebras.py` agora lê configurações do `app_settings` com fallback para `.env`
+- Nova seção "Resumos IA" no modal de configurações (General tab)
+- Dropdowns dinâmicos para idioma e modelo de IA
+- Idiomas: 21 opções com nome nativo (inglês para prompt)
+- Modelos: carregados da API Cerebras após login
 
 ---
 

@@ -67,7 +67,13 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "language": "Language",
-    "languageDesc": "Select your preferred language"
+    "languageDesc": "Select your preferred language",
+    "aiSummaries": "AI Summaries",
+    "summaryLanguage": "Summary Language",
+    "summaryLanguageDesc": "Language for AI-generated summaries",
+    "aiModel": "AI Model",
+    "aiModelDesc": "Model used for generating summaries",
+    "loadingModels": "Loading models..."
   },
   "categories": {
     "newPlaceholder": "New category name",

@@ -4,11 +4,13 @@ Summary reprocessing and database maintenance.
 """
 
 import json
+import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -18,6 +20,8 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import SummaryQueue, SummaryFailure, AISummary, Post
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -224,3 +228,124 @@ def get_status(
         "health_warning": health_warning,
         "db_size_mb": db_size_mb,
     }
+
+
+# =============================================================================
+# AI Models and Languages
+# =============================================================================
+
+# Cache for Cerebras models (avoid hitting API on every request)
+_models_cache: Optional[List[dict]] = None
+_models_cache_time: Optional[datetime] = None
+MODELS_CACHE_TTL = timedelta(minutes=30)
+
+
+class ModelInfo(BaseModel):
+    id: str
+    owned_by: str
+
+
+@router.get("/models", response_model=List[ModelInfo])
+async def get_available_models(user: dict = Depends(get_current_user)):
+    """
+    Fetch available models from Cerebras API.
+    Results are cached for 30 minutes.
+    Requires authentication.
+    """
+    global _models_cache, _models_cache_time
+
+    # Check cache
+    now = datetime.utcnow()
+    if _models_cache and _models_cache_time:
+        if now - _models_cache_time < MODELS_CACHE_TTL:
+            return _models_cache
+
+    # Get API key
+    api_keys = settings.cerebras_api_keys
+    if not api_keys:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No Cerebras API key configured",
+        )
+
+    api_key = api_keys[0]  # Use first key for metadata requests
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(
+                "https://api.cerebras.ai/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Cerebras models API error: {response.status_code}")
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Failed to fetch models from Cerebras",
+                )
+
+            data = response.json()
+            models = [
+                ModelInfo(id=m["id"], owned_by=m.get("owned_by", "unknown"))
+                for m in data.get("data", [])
+            ]
+
+            # Sort by id
+            models.sort(key=lambda m: m.id)
+
+            # Cache results
+            _models_cache = models
+            _models_cache_time = now
+
+            return models
+
+    except httpx.RequestError as e:
+        logger.error(f"Error fetching Cerebras models: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to connect to Cerebras API",
+        )
+
+
+# Static list of target languages for AI summaries
+# Key: English name (used in prompts), Value: Native name (for display)
+SUMMARY_LANGUAGES = {
+    "Arabic": "العربية",
+    "Brazilian Portuguese": "Português (Brasil)",
+    "Chinese (Simplified)": "简体中文",
+    "Chinese (Traditional)": "繁體中文",
+    "Dutch": "Nederlands",
+    "English": "English",
+    "French": "Français",
+    "German": "Deutsch",
+    "Hebrew": "עברית",
+    "Hindi": "हिन्दी",
+    "Italian": "Italiano",
+    "Japanese": "日本語",
+    "Korean": "한국어",
+    "Polish": "Polski",
+    "Portuguese": "Português",
+    "Russian": "Русский",
+    "Spanish": "Español",
+    "Thai": "ไทย",
+    "Turkish": "Türkçe",
+    "Ukrainian": "Українська",
+    "Vietnamese": "Tiếng Việt",
+}
+
+
+class LanguageInfo(BaseModel):
+    code: str  # English name (used in prompts)
+    name: str  # Native name (for display)
+
+
+@router.get("/languages", response_model=List[LanguageInfo])
+def get_summary_languages():
+    """
+    Return list of available target languages for AI summaries.
+    Does not require authentication.
+    """
+    return [
+        LanguageInfo(code=code, name=name)
+        for code, name in sorted(SUMMARY_LANGUAGES.items(), key=lambda x: x[1])
+    ]

@@ -67,7 +67,13 @@
     "themeLight": "Claro",
     "themeDark": "Escuro",
     "language": "Idioma",
-    "languageDesc": "Selecione seu idioma preferido"
+    "languageDesc": "Selecione seu idioma preferido",
+    "aiSummaries": "Resumos IA",
+    "summaryLanguage": "Idioma dos Resumos",
+    "summaryLanguageDesc": "Idioma para resumos gerados por IA",
+    "aiModel": "Modelo IA",
+    "aiModelDesc": "Modelo usado para gerar resumos",
+    "loadingModels": "Carregando modelos..."
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

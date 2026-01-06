@@ -393,17 +393,18 @@ def get_system_prompt() -> str:
     )
 
 
-def get_user_prompt(content: str, title: str = "") -> str:
+def get_user_prompt(content: str, title: str = "", language: str = None) -> str:
     """
     Returns the user prompt with content, title, and language interpolated.
     Prompts are loaded dynamically from prompts.yaml.
+    If language is not provided, uses settings.summary_language as fallback.
     """
     prompts = load_prompts()
     template = prompts.get(
         "user_prompt", "Summarize this article in {language}:\n\n{content}"
     )
     return template.format(
-        language=settings.summary_language,
+        language=language or settings.summary_language,
         content=content,
         title=title or "Untitled",
     )
@@ -585,6 +586,19 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
     if len(content) > max_content_len:
         content = content[:max_content_len] + "..."
 
+    # Get effective settings from app_settings (with env fallback)
+    from app.routes.preferences import (
+        get_effective_summary_language,
+        get_effective_cerebras_model,
+    )
+
+    db = SessionLocal()
+    try:
+        effective_model = get_effective_cerebras_model(db)
+        effective_language = get_effective_summary_language(db)
+    finally:
+        db.close()
+
     # Prepare request
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -592,10 +606,10 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
     }
 
     payload = {
-        "model": settings.cerebras_model,
+        "model": effective_model,
         "messages": [
             {"role": "system", "content": get_system_prompt()},
-            {"role": "user", "content": get_user_prompt(content, title)},
+            {"role": "user", "content": get_user_prompt(content, title, effective_language)},
         ],
         "temperature": 0.3,
         "max_tokens": 1000,

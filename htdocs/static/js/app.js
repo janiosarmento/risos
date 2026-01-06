@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106b';
+const APP_VERSION = '20260106c';
 const API_BASE = '/api';
 
 function app() {
@@ -119,6 +119,12 @@ function app() {
             { value: 'dark', labelKey: 'settings.themeDark' }
         ],
 
+        // AI Settings
+        summaryLanguage: null, // Loaded from server preferences
+        cerebrasModel: null,   // Loaded from server preferences
+        availableSummaryLanguages: [], // Loaded from server
+        availableModels: [], // Loaded from server (requires auth)
+
         // Computed
         get totalUnread() {
             return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0);
@@ -226,6 +232,42 @@ function app() {
             }
         },
 
+        // AI Settings
+        async loadSummaryLanguages() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/languages`);
+                if (response.ok) {
+                    this.availableSummaryLanguages = await response.json();
+                }
+            } catch (e) {
+                console.warn('Failed to load summary languages:', e);
+            }
+        },
+
+        async loadAvailableModels() {
+            try {
+                const models = await this.fetchApi('/admin/models');
+                this.availableModels = models || [];
+            } catch (e) {
+                console.warn('Failed to load AI models:', e);
+                this.availableModels = [];
+            }
+        },
+
+        setSummaryLanguage(language) {
+            this.summaryLanguage = language;
+            if (this.token) {
+                this.savePreferencesToServer();
+            }
+        },
+
+        setCerebrasModel(model) {
+            this.cerebrasModel = model;
+            if (this.token) {
+                this.savePreferencesToServer();
+            }
+        },
+
         // Save preferences to server (fire and forget)
         async savePreferencesToServer() {
             try {
@@ -234,6 +276,8 @@ function app() {
                     body: JSON.stringify({
                         locale: this.locale,
                         theme: this.theme,
+                        summary_language: this.summaryLanguage,
+                        cerebras_model: this.cerebrasModel,
                     }),
                 });
             } catch (e) {
@@ -246,8 +290,8 @@ function app() {
             try {
                 const serverPrefs = await this.fetchApi('/preferences');
 
+                // Apply locale/theme preferences
                 if (serverPrefs.locale || serverPrefs.theme) {
-                    // Server has preferences - apply them
                     if (serverPrefs.locale && serverPrefs.locale !== this.locale) {
                         await this.loadLocale(serverPrefs.locale);
                     }
@@ -257,8 +301,16 @@ function app() {
                         this.applyTheme();
                     }
                 } else {
-                    // Server has no preferences - save current localStorage values
+                    // Server has no locale/theme - save current localStorage values
                     await this.savePreferencesToServer();
+                }
+
+                // Apply AI settings (always from server, with defaults)
+                if (serverPrefs.summary_language) {
+                    this.summaryLanguage = serverPrefs.summary_language;
+                }
+                if (serverPrefs.cerebras_model) {
+                    this.cerebrasModel = serverPrefs.cerebras_model;
                 }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);
@@ -378,8 +430,11 @@ function app() {
 
         // Initialize
         async init() {
-            // Load available locales from server first
-            await this.loadAvailableLocales();
+            // Load available locales and summary languages from server first (no auth)
+            await Promise.all([
+                this.loadAvailableLocales(),
+                this.loadSummaryLanguages(),
+            ]);
 
             // Detect locale if not in localStorage
             if (!this.locale) {
@@ -406,6 +461,8 @@ function app() {
                 this.token = storedToken;
                 await this.loadData();
                 await this.syncPreferences();
+                // Load AI models (requires auth)
+                this.loadAvailableModels();
                 this.setupIdleDetection();
             }
 
@@ -648,6 +705,8 @@ function app() {
                 this.password = '';
                 await this.loadData();
                 await this.syncPreferences();
+                // Load AI models (requires auth)
+                this.loadAvailableModels();
                 this.setupIdleDetection();
             } catch (error) {
                 this.loginError = error.message;
