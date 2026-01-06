@@ -31,9 +31,13 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Confirmação antes de "Marcar todos como lidos" (com contagem e contexto)
 - Todas as strings traduzidas (toasts, erros do backend)
 - Modal de confirmação customizado (blur, instantâneo, Enter/Escape)
+- Spinner no modal durante operações longas (mark all, delete)
 - Atalhos visíveis nos botões: (A) Mark all, (R) Refresh, (X) Select, (M) Mark read
-- Barra de atalhos no rodapé: J/K navegar, Enter abrir, Space marcar
+- Barra de atalhos no rodapé: J/K navegar, [/] feeds, Enter abrir
 - Novo atalho `A` para marcar todos como lidos
+- Navegação `[`/`]` por Favoritos, Não lidos, Categorias e Feeds
+- Enter em categoria colapsa/expande
+- Itens colapsados não são navegáveis
 - Cache busting: `APP_VERSION` em app.js, usado em CSS/JS/locales
 
 ---
