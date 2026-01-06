@@ -26,7 +26,21 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-01-06 — Preferências e Configurações
+## Sessão 2026-01-06 — Preferências, Configurações e Documentação
+
+### Proteção de Exclusão de Feeds
+- Feeds com posts favoritos não podem ser excluídos
+- Backend retorna erro 400 se tentativa de deletar feed com starred posts
+- Frontend esconde botão de deletar e mostra ícone de estrela com tooltip
+- Campo `starred_count` adicionado ao schema `FeedResponse`
+- Subquery para contagem de posts favoritos em `list_feeds`
+
+### Documentação para IA
+- Novo `AI.md` com guia completo para desenvolvimento assistido por IA
+- Seção sobre como usar Claude Code neste projeto
+- Exemplos de prompts e padrões que funcionam bem
+- `PROJETO.md` renomeado para `PROJECT.md` e traduzido para inglês
+- Removido `PROJETO.md` do `.gitignore`
 
 ### Preferências Persistentes
 - Nova API `/api/preferences` (GET/PUT) para locale e theme
@@ -188,5 +202,6 @@ Round-robin automático. Keys com 429 entram em cooldown de 60s.
 ## Referências
 
 - `README.md` — Documentação pública e features
-- `PROJETO.md` — Especificação técnica
+- `PROJECT.md` — Especificação técnica (inglês)
+- `AI.md` — Guia para desenvolvimento assistido por IA
 - `PLANO.md` — Plano original de implementação
