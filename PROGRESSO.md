@@ -28,6 +28,19 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ## Sessão 2026-01-06 — Preferências, Configurações e Documentação
 
+### Correção do "Marcar todos como lidos"
+- Agora envia apenas os IDs dos posts visíveis na interface
+- Posts que chegaram via background refresh são preservados
+- Antes: enviava `feed_id`/`category_id` → marcava TODOS os não lidos
+- Agora: envia `post_ids` → marca apenas o que o usuário viu
+
+### Correção de Newlines Literais nos Resumos
+- LLM às vezes retorna `\\n` (duplo escape) ao invés de `\n`
+- Após `json.loads()`, isso vira a string literal `\n`
+- Correção no `generate_summary()` após parse do JSON
+- Validadores Pydantic em `PostResponse`/`PostDetail` para corrigir ao servir
+- Funciona para dados existentes sem modificar o banco
+
 ### Melhorias no Rate Limiting da API Cerebras
 - Reset automático de estado no startup (circuit breaker, cooldowns da fila)
 - Verificação prévia de chaves disponíveis antes de processar item da fila

@@ -64,15 +64,16 @@ CEREBRAS_API_KEY=your_key                    # from https://cloud.cerebras.ai/
 
 All other settings (AI model, summary language, data retention, interface behavior) are configured in the UI via **Settings > General**.
 
-### Multiple API Keys
+### Rate Limiting & Reliability
 
-For high-volume usage, add multiple Cerebras keys (comma-separated):
+The app includes built-in protections to handle API rate limits gracefully:
 
-```bash
-CEREBRAS_API_KEY=key1,key2,key3
-```
+- **Circuit Breaker** — Temporarily stops API calls after repeated failures, preventing cascade errors. Automatically recovers after a cooldown period.
+- **Rate Limit Handling** — When the API returns 429 (rate limited), the app backs off for 5 minutes before retrying.
+- **Queue Management** — Summary requests are queued and processed at a controlled rate. Failed requests are retried with exponential backoff.
+- **State Reset on Restart** — All cooldowns and circuit breaker state are cleared when the service restarts, ensuring a fresh start.
 
-Keys rotate automatically. Rate-limited keys (429) enter a 60-second cooldown.
+You can monitor the queue status via `GET /api/admin/queue-status` and clear stuck items with `POST /api/admin/clear-queue-cooldowns`.
 
 ## Web Server
 
