@@ -715,6 +715,11 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                 one_line = result.get("one_line_summary", "").strip()
                 translated_title = result.get("translated_title")
 
+                # Fix double-escaped newlines (LLM sometimes outputs \\n instead of \n)
+                # After json.loads(), \\n becomes literal \n string
+                summary_pt = summary_pt.replace("\\n", "\n")
+                one_line = one_line.replace("\\n", "\n")
+
                 # Clean translated_title if "null" string or empty
                 if translated_title and isinstance(translated_title, str):
                     translated_title = translated_title.strip()
