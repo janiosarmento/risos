@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260106k';
+const APP_VERSION = '20260107a';
 const API_BASE = '/api';
 
 function app() {
@@ -1198,32 +1198,30 @@ function app() {
         },
 
         async markAllRead() {
-            // Determine context and count
-            let unreadCount = 0;
-            let contextName = '';
-            const body = {};
+            // Get unread posts currently visible in the interface
+            // This ensures we only mark posts the user has seen, not new ones
+            // that may have arrived via background refresh
+            const visibleUnreadIds = this.posts
+                .filter(p => !p.is_read)
+                .map(p => p.id);
 
+            if (visibleUnreadIds.length === 0) return;
+
+            // Determine context name for confirmation
+            let contextName = '';
             if (this.filter === 'feed') {
-                body.feed_id = this.filterId;
                 const feed = this.feeds.find(f => f.id === this.filterId);
-                unreadCount = feed?.unread_count || 0;
                 contextName = feed?.title || 'feed';
             } else if (this.filter === 'category') {
-                body.category_id = this.filterId;
                 const category = this.categories.find(c => c.id === this.filterId);
-                unreadCount = this.getCategoryUnread(this.filterId);
                 contextName = category?.name || this.t('settings.tabs.categories');
             } else {
-                // All posts
-                unreadCount = this.totalUnread;
                 contextName = this.t('confirm.allPosts');
             }
 
-            if (unreadCount === 0) return;
-
             // Ask for confirmation
             const msg = this.t('confirm.markAllRead')
-                .replace('{count}', unreadCount)
+                .replace('{count}', visibleUnreadIds.length)
                 .replace('{context}', contextName);
 
             if (!await this.showConfirm(msg)) return;
@@ -1234,7 +1232,7 @@ function app() {
             try {
                 await this.fetchApi('/posts/mark-read', {
                     method: 'POST',
-                    body: JSON.stringify(body),
+                    body: JSON.stringify({ post_ids: visibleUnreadIds }),
                 });
 
                 // Reload data
