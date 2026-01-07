@@ -2,9 +2,16 @@
 Schemas Pydantic para validação de requests/responses.
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 from typing import Optional, List, Dict
+
+
+def fix_literal_newlines(text: Optional[str]) -> Optional[str]:
+    """Fix double-escaped newlines from LLM responses."""
+    if text:
+        return text.replace("\\n", "\n")
+    return text
 
 # Constants
 MAX_CATEGORY_NAME_LENGTH = 255
@@ -136,6 +143,11 @@ class PostResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator("one_line_summary", mode="after")
+    @classmethod
+    def fix_one_line_newlines(cls, v):
+        return fix_literal_newlines(v)
+
 
 class PostDetail(PostResponse):
     """Response de post com conteúdo completo"""
@@ -144,6 +156,11 @@ class PostDetail(PostResponse):
     summary_pt: Optional[str] = None
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
+
+    @field_validator("summary_pt", "one_line_summary", mode="after")
+    @classmethod
+    def fix_summary_newlines(cls, v):
+        return fix_literal_newlines(v)
 
 
 class PostListResponse(BaseModel):
