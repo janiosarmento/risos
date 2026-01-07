@@ -230,6 +230,95 @@ def get_status(
     }
 
 
+@router.get("/queue-status")
+def get_queue_status(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Return detailed queue status including items with cooldowns.
+    Also shows API key rotator status.
+    """
+    from app.services.cerebras import api_key_rotator
+
+    now = datetime.utcnow()
+
+    # Queue stats
+    total = db.query(SummaryQueue).count()
+    in_cooldown = (
+        db.query(SummaryQueue)
+        .filter(SummaryQueue.cooldown_until > now)
+        .count()
+    )
+    locked = (
+        db.query(SummaryQueue)
+        .filter(SummaryQueue.locked_at.isnot(None))
+        .count()
+    )
+    ready = total - in_cooldown - locked
+
+    # Get items in cooldown (first 10)
+    cooldown_items = (
+        db.query(SummaryQueue)
+        .filter(SummaryQueue.cooldown_until > now)
+        .order_by(SummaryQueue.cooldown_until.asc())
+        .limit(10)
+        .all()
+    )
+
+    cooldown_list = [
+        {
+            "id": item.id,
+            "post_id": item.post_id,
+            "attempts": item.attempts,
+            "last_error": item.last_error,
+            "cooldown_remaining_hours": round(
+                (item.cooldown_until - now).total_seconds() / 3600, 1
+            ),
+        }
+        for item in cooldown_items
+    ]
+
+    # API key status
+    api_key_status = api_key_rotator.get_status()
+
+    return {
+        "queue": {
+            "total": total,
+            "ready": ready,
+            "in_cooldown": in_cooldown,
+            "locked": locked,
+            "cooldown_items": cooldown_list,
+        },
+        "api_keys": api_key_status,
+    }
+
+
+@router.post("/clear-queue-cooldowns")
+def clear_queue_cooldowns(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Clear all cooldowns from queue items.
+    This allows stuck items to be retried immediately.
+    """
+    now = datetime.utcnow()
+
+    # Count items in cooldown
+    in_cooldown = (
+        db.query(SummaryQueue)
+        .filter(SummaryQueue.cooldown_until > now)
+        .count()
+    )
+
+    # Clear cooldowns
+    db.query(SummaryQueue).filter(SummaryQueue.cooldown_until > now).update(
+        {"cooldown_until": None, "attempts": 0}
+    )
+    db.commit()
+
+    return {"ok": True, "cleared": in_cooldown}
+
+
 # =============================================================================
 # AI Models and Languages
 # =============================================================================

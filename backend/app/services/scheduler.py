@@ -544,6 +544,7 @@ class Scheduler:
         from app.services.cerebras import (
             generate_summary,
             circuit_breaker,
+            api_key_rotator,
             TemporaryError,
             PermanentError,
         )
@@ -559,6 +560,13 @@ class Scheduler:
                 if not can_call:
                     logger.debug(f"Job process_summaries: {reason}")
                     await asyncio.sleep(interval)
+                    continue
+
+                # Check if any API key is available BEFORE grabbing a queue item
+                # This prevents wasting attempts when all keys are rate-limited
+                if not api_key_rotator.has_available_key():
+                    logger.debug("Job process_summaries: all API keys in cooldown, waiting...")
+                    await asyncio.sleep(30)  # Wait longer when all keys are blocked
                     continue
 
                 db = SessionLocal()
@@ -711,9 +719,20 @@ class Scheduler:
                         )
 
                     except TemporaryError as e:
-                        # Temporary error - increment attempts
+                        error_msg = str(e)
+
+                        # Special case: "All API keys are in cooldown" is NOT the item's fault
+                        # Don't count it as an attempt - just release the lock
+                        if "API keys" in error_msg and "cooldown" in error_msg:
+                            candidate.locked_at = None
+                            candidate.last_error = error_msg
+                            db.commit()
+                            logger.debug(f"Post {post.id}: API keys unavailable, will retry")
+                            continue
+
+                        # Normal temporary error - increment attempts
                         candidate.attempts = (candidate.attempts or 0) + 1
-                        candidate.last_error = str(e)
+                        candidate.last_error = error_msg
                         candidate.error_type = "temporary"
 
                         if candidate.attempts >= 5:

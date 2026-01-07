@@ -144,6 +144,23 @@ class ApiKeyRotator:
         with self._lock:
             self._key_cooldowns.pop(key, None)
 
+    def has_available_key(self) -> bool:
+        """
+        Check if any API key is available (not in cooldown).
+        Does NOT advance the index - use for pre-checks.
+        """
+        keys = settings.cerebras_api_keys
+        if not keys:
+            return False
+
+        now = datetime.utcnow()
+        with self._lock:
+            for key in keys:
+                cooldown_until = self._key_cooldowns.get(key)
+                if not cooldown_until or now >= cooldown_until:
+                    return True
+            return False
+
     def get_status(self) -> dict:
         """Return status of all keys."""
         keys = settings.cerebras_api_keys
@@ -627,7 +644,9 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
 
             # Handle rate limit (cooldown specific to this key, does not affect circuit breaker)
             if response.status_code == 429:
-                api_key_rotator.set_key_cooldown(api_key, seconds=60)
+                # Use 5-minute cooldown to avoid hitting rate limits repeatedly
+                # Cerebras rate limits may last longer than 60 seconds
+                api_key_rotator.set_key_cooldown(api_key, seconds=300)
                 raise TemporaryError(
                     f"Rate limit reached on key {key_index + 1}"
                 )
