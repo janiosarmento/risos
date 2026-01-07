@@ -98,6 +98,45 @@ def check_database_integrity():
         sys.exit(1)
 
 
+def reset_ai_state():
+    """
+    Reset all AI-related state on startup.
+    Clears circuit breaker, API key cooldowns, and queue cooldowns.
+    This ensures a fresh start after service restart.
+    """
+    from app.database import SessionLocal
+    from app.models import AppSettings, SummaryQueue
+
+    db = SessionLocal()
+    try:
+        # Reset circuit breaker state
+        db.query(AppSettings).filter(
+            AppSettings.key.in_([
+                "cerebras_state",
+                "cerebras_failures",
+                "cerebras_half_successes",
+                "cerebras_last_failure",
+                "cerebras_last_call",
+            ])
+        ).delete()
+
+        # Reset queue cooldowns and attempts
+        db.query(SummaryQueue).update({
+            "cooldown_until": None,
+            "attempts": 0,
+            "locked_at": None,
+        })
+
+        db.commit()
+        logger.info("AI state reset: circuit breaker, queue cooldowns cleared")
+
+    except Exception as e:
+        logger.error(f"Error resetting AI state: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -119,6 +158,9 @@ async def lifespan(app: FastAPI):
 
     # Run migrations
     run_migrations()
+
+    # Reset AI state (circuit breaker, cooldowns) for fresh start
+    reset_ai_state()
 
     # Start background jobs scheduler
     await scheduler.start()

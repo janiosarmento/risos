@@ -644,8 +644,14 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
 
             # Handle rate limit (cooldown specific to this key, does not affect circuit breaker)
             if response.status_code == 429:
+                # Log rate limit details for debugging
+                retry_after = response.headers.get("retry-after", "unknown")
+                logger.warning(
+                    f"Rate limit 429 on key {key_index + 1}: "
+                    f"retry-after={retry_after}, "
+                    f"headers={dict(response.headers)}"
+                )
                 # Use 5-minute cooldown to avoid hitting rate limits repeatedly
-                # Cerebras rate limits may last longer than 60 seconds
                 api_key_rotator.set_key_cooldown(api_key, seconds=300)
                 raise TemporaryError(
                     f"Rate limit reached on key {key_index + 1}"

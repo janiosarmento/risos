@@ -28,6 +28,16 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ## Sessão 2026-01-06 — Preferências, Configurações e Documentação
 
+### Melhorias no Rate Limiting da API Cerebras
+- Reset automático de estado no startup (circuit breaker, cooldowns da fila)
+- Verificação prévia de chaves disponíveis antes de processar item da fila
+- Erro "All API keys in cooldown" não conta mais como tentativa do item
+- Cooldown de chave aumentado de 60s para 5 minutos após 429
+- Novo endpoint `GET /api/admin/queue-status` para monitorar fila e chaves
+- Novo endpoint `POST /api/admin/clear-queue-cooldowns` para resetar fila
+- Log detalhado de erros 429 com headers de retry-after
+- `CEREBRAS_MAX_RPM` reduzido de 20 para 6 (mais conservador)
+
 ### Proteção de Exclusão de Feeds
 - Feeds com posts favoritos não podem ser excluídos
 - Backend retorna erro 400 se tentativa de deletar feed com starred posts
