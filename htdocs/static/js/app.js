@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260107a';
+const APP_VERSION = '20260107b';
 const API_BASE = '/api';
 
 function app() {
@@ -831,7 +831,10 @@ function app() {
             } else {
                 // Current filter not in list (e.g., after mark all read)
                 // Item at lastFeedNavIndex was removed, next item shifted down to lastFeedNavIndex
-                const targetIndex = Math.min(this.lastFeedNavIndex, items.length - 1);
+                // If lastFeedNavIndex is past the end, wrap around to beginning
+                const targetIndex = this.lastFeedNavIndex < items.length
+                    ? this.lastFeedNavIndex
+                    : 0;
                 this.lastFeedNavIndex = targetIndex;
                 this.navigateToItem(items[targetIndex]);
             }
