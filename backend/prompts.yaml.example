@@ -1,7 +1,10 @@
 # Risos - AI Summary Prompts
 # Customize these prompts to change how summaries are generated.
-# Use {language} placeholder in user_prompt - it will be replaced by SUMMARY_LANGUAGE from .env
-# Use {content} placeholder in user_prompt - it will be replaced by the article content
+# Available placeholders in user_prompt:
+#   {language} - target language for the summary
+#   {content}  - the article content
+#   {title}    - the article title
+#   {date}     - current date (YYYY-MM-DD)
 
 system_prompt: |
   You are an experienced journalist summarizing articles for busy readers.
@@ -70,7 +73,15 @@ system_prompt: |
      - Any page that doesn't contain actual article content
      In these cases, return: {"summary_pt": "", "one_line_summary": "", "translated_title": null}
 
+  9. RELATIVE DATES - The current date is provided in the prompt:
+     - Convert relative dates ("next year", "last month", "tomorrow") to absolute dates
+     - If the article says "next year" and today is 2026-01-07, write "2027" not "next year"
+     - If the article says "this week", calculate the actual dates
+     - This prevents outdated references in summaries
+
 user_prompt: |
+  Today's date: {date}
+
   Summarize this article in {language}. Be SPECIFIC - include names, numbers, concrete details.
 
   Title: {title}

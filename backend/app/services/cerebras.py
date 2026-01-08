@@ -412,10 +412,12 @@ def get_system_prompt() -> str:
 
 def get_user_prompt(content: str, title: str = "", language: str = None) -> str:
     """
-    Returns the user prompt with content, title, and language interpolated.
+    Returns the user prompt with content, title, language, and date interpolated.
     Prompts are loaded dynamically from prompts.yaml.
     If language is not provided, uses settings.summary_language as fallback.
     """
+    from datetime import datetime
+
     prompts = load_prompts()
     template = prompts.get(
         "user_prompt", "Summarize this article in {language}:\n\n{content}"
@@ -424,6 +426,7 @@ def get_user_prompt(content: str, title: str = "", language: str = None) -> str:
         language=language or settings.summary_language,
         content=content,
         title=title or "Untitled",
+        date=datetime.now().strftime("%Y-%m-%d"),
     )
 
 
