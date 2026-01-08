@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260107b';
+const APP_VERSION = '20260107c';
 const API_BASE = '/api';
 
 function app() {
@@ -671,8 +671,11 @@ function app() {
                     } else if (this.isKey(e, 's')) {
                         this.toggleStar(this.currentPost);
                         return;
-                    } else if (this.isKey(e, 'r')) {
+                    } else if (this.isKey(e, 'r') && e.shiftKey) {
                         this.regenerateSummary();
+                        return;
+                    } else if (this.isKey(e, 'r') && !e.shiftKey) {
+                        this.refreshFeeds();
                         return;
                     }
                     // In fullscreen mode, J/K navigate posts within modal

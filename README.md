@@ -151,7 +151,8 @@ Each has its own database, config, and service.
 | `S` | Toggle star |
 | `X` | Toggle select mode |
 | `Space` | Toggle checkbox (in select mode) |
-| `R` | Refresh feeds / Regenerate summary |
+| `R` | Refresh feeds |
+| `Shift+R` | Regenerate AI summary (when post is open) |
 | `Escape` | Close modal |
 
 Shortcuts are shown on buttons in desktop view.

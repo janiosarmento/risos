@@ -46,7 +46,7 @@
     "antiBotReason1": "The site blocks automated access",
     "antiBotReason2": "The content is video or media",
     "shortcuts": "ESC close | M read/unread",
-    "starShortcut": "S star | R regenerate",
+    "starShortcut": "S star | Shift+R regenerate",
     "navShortcuts": "J/K navigate posts",
     "read": "Read",
     "unread": "Unread",

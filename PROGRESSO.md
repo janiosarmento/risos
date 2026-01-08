@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-01-06
+**Última atualização:** 2026-01-07
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -23,6 +23,17 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, e m
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-01-07 — Atalhos de Teclado
+
+### Desambiguação da Tecla R
+- Antes: `R` = refresh feeds (main view) OU regenerar resumo (post aberto)
+- Em split view, era impossível dar refresh com teclado enquanto via um post
+- Agora: `R` = refresh feeds (sempre), `Shift+R` = regenerar resumo IA
+- Comportamento consistente em modal e split view
+- Button hints e traduções atualizados
 
 ---
 
