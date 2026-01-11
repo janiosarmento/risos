@@ -24,7 +24,7 @@
     "refresh": "Atualizar"
   },
   "posts": {
-    "noPosts": "Nenhum post encontrado",
+    "noPosts": "Nenhum post não lido",
     "markAllRead": "Marcar todos lidos",
     "markAsRead": "Marcar como lidos",
     "select": "Selecionar",

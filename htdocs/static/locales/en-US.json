@@ -24,7 +24,7 @@
     "refresh": "Refresh"
   },
   "posts": {
-    "noPosts": "No posts found",
+    "noPosts": "No unread posts",
     "markAllRead": "Mark all as read",
     "markAsRead": "Mark as read",
     "select": "Select",
