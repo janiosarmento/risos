@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260107d';
+const APP_VERSION = '20260108a';
 const API_BASE = '/api';
 
 function app() {
@@ -143,8 +143,8 @@ function app() {
         },
 
         get isSplitMode() {
-            // Split mode only on desktop (>=1024px)
-            return this.readingMode === 'split' && window.innerWidth >= 1024;
+            // Split mode when sidebar is visible (md: >=768px)
+            return this.readingMode === 'split' && window.innerWidth >= 768;
         },
 
         starredCount: 0,
