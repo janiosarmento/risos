@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260108g';
+const APP_VERSION = '20260112a';
 const API_BASE = '/api';
 
 function app() {
@@ -1317,24 +1317,8 @@ function app() {
             // Use setTimeout to ensure DOM is fully updated (more reliable on mobile)
             setTimeout(() => {
                 const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
-                const container = document.getElementById('post-list');
-
-                const debug = {
-                    idx: this.selectedIndex,
-                    el: !!el,
-                    cont: !!container,
-                    sH: container?.scrollHeight,
-                    cH: container?.clientHeight,
-                    sT: container?.scrollTop,
-                    elTop: el?.offsetTop
-                };
-
-                // Visual debug - show toast with info
-                this.showError('DEBUG: ' + JSON.stringify(debug));
-
                 if (!el) return;
 
-                // Try scrollIntoView first (works on most browsers)
                 try {
                     el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
                 } catch (e) {
