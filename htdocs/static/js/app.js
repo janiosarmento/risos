@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260112a';
+const APP_VERSION = '20260112b';
 const API_BASE = '/api';
 
 function app() {
@@ -348,26 +348,39 @@ function app() {
             // Bind methods to preserve context
             this._doResize = this.doResize.bind(this);
             this._stopResize = this.stopResize.bind(this);
+            // Mouse events
             document.addEventListener('mousemove', this._doResize);
             document.addEventListener('mouseup', this._stopResize);
+            // Touch events
+            document.addEventListener('touchmove', this._doResize, { passive: false });
+            document.addEventListener('touchend', this._stopResize);
+            document.addEventListener('touchcancel', this._stopResize);
             // Prevent text selection during drag
             document.body.style.userSelect = 'none';
             document.body.style.cursor = 'row-resize';
         },
 
         doResize(e) {
+            e.preventDefault(); // Prevent scroll/refresh on touch
             const container = document.getElementById('split-container');
             if (!container) return;
             const rect = container.getBoundingClientRect();
-            let ratio = ((e.clientY - rect.top) / rect.height) * 100;
+            // Handle both mouse and touch events
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let ratio = ((clientY - rect.top) / rect.height) * 100;
             // Clamp between 20% and 80%
             this.splitRatio = Math.min(80, Math.max(20, Math.round(ratio)));
         },
 
         stopResize() {
             this.resizing = false;
+            // Remove mouse events
             document.removeEventListener('mousemove', this._doResize);
             document.removeEventListener('mouseup', this._stopResize);
+            // Remove touch events
+            document.removeEventListener('touchmove', this._doResize);
+            document.removeEventListener('touchend', this._stopResize);
+            document.removeEventListener('touchcancel', this._stopResize);
             document.body.style.userSelect = '';
             document.body.style.cursor = '';
             // Save to server

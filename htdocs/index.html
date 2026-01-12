@@ -463,8 +463,10 @@
                         <div
                             x-show="isSplitMode"
                             @mousedown="startResize($event)"
-                            class="h-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 cursor-row-resize flex-shrink-0 transition-colors"
+                            @touchstart.prevent="startResize($event)"
+                            class="h-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 cursor-row-resize flex-shrink-0 transition-colors"
                             :class="resizing ? 'bg-blue-500 dark:bg-blue-400' : ''"
+                            style="touch-action: none;"
                         ></div>
 
                         <!-- Split View Reading Pane (only on desktop in split mode) -->
@@ -1396,6 +1398,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260112a"></script>
+    <script src="/static/js/app.js?v=20260112b"></script>
 </body>
 </html>
