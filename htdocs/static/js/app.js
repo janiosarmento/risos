@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260108d';
+const APP_VERSION = '20260108e';
 const API_BASE = '/api';
 
 function app() {
@@ -1314,24 +1314,19 @@ function app() {
         },
 
         scrollToSelected() {
-            // Use nextTick to ensure DOM is updated
-            this.$nextTick(() => {
+            // Use setTimeout to ensure DOM is fully updated (more reliable on mobile)
+            setTimeout(() => {
                 const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
-                const container = document.getElementById('post-list');
-                if (!el || !container) return;
+                if (!el) return;
 
-                const elRect = el.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
-
-                // Check if element is outside visible area
-                if (elRect.top < containerRect.top) {
-                    // Element is above visible area - scroll up
-                    container.scrollTop -= (containerRect.top - elRect.top + 10);
-                } else if (elRect.bottom > containerRect.bottom) {
-                    // Element is below visible area - scroll down
-                    container.scrollTop += (elRect.bottom - containerRect.bottom + 10);
+                // Try scrollIntoView first (works on most browsers)
+                try {
+                    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                } catch (e) {
+                    // Fallback for older browsers
+                    el.scrollIntoView(false);
                 }
-            });
+            }, 50);
         },
 
         nextPost() {
