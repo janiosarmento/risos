@@ -103,7 +103,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 
 - Read relevant files before making changes
 - Follow existing code patterns
-- Update APP_VERSION when changing frontend
+- Update APP_VERSION in **both** app.js and index.html when changing frontend
 - Add translations to both locale files
 - Test API endpoints with curl
 - Commit with descriptive messages
@@ -190,8 +190,9 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 The entire frontend is in one file using Alpine.js. Key sections:
 
 ```javascript
-// Cache busting - UPDATE this when deploying changes
-const APP_VERSION = '20260106j';
+// Cache busting - UPDATE this AND the script tag in index.html when deploying changes
+// Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
+const APP_VERSION = '20260108a';
 
 // Main Alpine.js data object
 document.addEventListener('alpine:init', () => {
@@ -306,7 +307,7 @@ if (this.isKey(e, 'j')) {
 }
 ```
 
-5. **Cache busting**: When changing CSS/JS/locales, update `APP_VERSION`.
+5. **Cache busting**: When changing JS, update `APP_VERSION` in app.js AND the script tag in index.html (both must match). Format: `YYYYMMDD[a-z]`.
 
 ### Backend (Python)
 
@@ -410,7 +411,12 @@ journalctl -u rss-reader -f
 
 ### 1. Cache Issues
 **Problem**: Frontend changes don't appear.
-**Solution**: Update `APP_VERSION` in app.js, hard refresh browser.
+**Solution**: Update version in **TWO places** (they must match):
+1. `htdocs/static/js/app.js` → `const APP_VERSION = 'YYYYMMDD[a-z]';`
+2. `htdocs/index.html` → `<script src="/static/js/app.js?v=YYYYMMDD[a-z]">`
+
+**Version format**: Use today's date + letter suffix: `20260108a`, `20260108b`, etc.
+Increment the letter for each change on the same day.
 
 ### 2. Double Event Handling
 **Problem**: Action fires twice.
@@ -545,7 +551,7 @@ Each has its own database, config, and systemd service.
 
 1. **Make changes** to relevant files
 2. **Test locally** via curl or browser
-3. **Update `APP_VERSION`** if frontend changed
+3. **Update version** if frontend changed (in BOTH `app.js` and `index.html` script tag)
 4. **Restart service** if backend changed
 5. **Update `PROGRESSO.md`** with session notes
 6. **Commit and push** with descriptive message
@@ -588,7 +594,7 @@ git push
 
 ---
 
-*Last updated: 2026-01-06*
+*Last updated: 2026-01-08*
 
 ---
 
