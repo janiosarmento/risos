@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260112b';
+const APP_VERSION = '20260118a';
 const API_BASE = '/api';
 
 function app() {
@@ -31,7 +31,7 @@ function app() {
         hasMore: true,
         offset: 0,
         pageSize: 50,
-        showReadPosts: false,
+        postFilter: 'unread', // 'unread', 'all', or 'starred'
         selectedPosts: new Set(),
         selectMode: false,
         collapsedCategories: new Set(JSON.parse(localStorage.getItem('rss_collapsed_categories') || '[]')),
@@ -993,22 +993,21 @@ function app() {
                     limit: this.pageSize,
                 });
 
-                // Apply starred filter (ignores other filters)
-                if (this.filter === 'starred') {
-                    params.set('starred_only', 'true');
-                } else {
-                    // Apply unread filter unless showing all
-                    if (!this.showReadPosts) {
-                        params.set('unread_only', 'true');
-                    }
-
-                    // Apply feed/category filter
-                    if (this.filter === 'feed') {
-                        params.set('feed_id', this.filterId);
-                    } else if (this.filter === 'category') {
-                        params.set('category_id', this.filterId);
-                    }
+                // Apply feed/category filter
+                if (this.filter === 'feed') {
+                    params.set('feed_id', this.filterId);
+                } else if (this.filter === 'category') {
+                    params.set('category_id', this.filterId);
                 }
+
+                // Apply post filter (unread/all/starred within current context)
+                // When sidebar filter is 'starred', always show starred posts
+                if (this.filter === 'starred' || this.postFilter === 'starred') {
+                    params.set('starred_only', 'true');
+                } else if (this.postFilter === 'unread') {
+                    params.set('unread_only', 'true');
+                }
+                // postFilter === 'all' doesn't add any filter
 
                 const data = await this.fetchApi(`/posts?${params}`);
 
@@ -1438,7 +1437,7 @@ function app() {
                 this.selectMode = false;
 
                 // Reload if showing unread only
-                if (!this.showReadPosts) {
+                if (this.postFilter === 'unread') {
                     await this.loadPosts(true);
                 }
             } catch (error) {

@@ -121,32 +121,31 @@ def list_posts(
     # Track which feeds to return unread counts for
     relevant_feed_ids = set()
 
-    # Starred filter (ignores other filters if active)
+    # Apply feed/category filter first
+    if feed_id is not None:
+        query = query.filter(Post.feed_id == feed_id)
+        relevant_feed_ids.add(feed_id)
+    elif category_id is not None:
+        # Get feeds from the category
+        category_feeds = (
+            db.query(Feed.id)
+            .filter(Feed.category_id == category_id)
+            .all()
+        )
+        feed_ids_list = [f.id for f in category_feeds]
+        relevant_feed_ids.update(feed_ids_list)
+        feed_ids = (
+            db.query(Feed.id)
+            .filter(Feed.category_id == category_id)
+            .subquery()
+        )
+        query = query.filter(Post.feed_id.in_(feed_ids))
+
+    # Apply starred or unread filter (mutually exclusive)
     if starred_only:
         query = query.filter(Post.is_starred == True)
-    else:
-        # Normal filters
-        if feed_id is not None:
-            query = query.filter(Post.feed_id == feed_id)
-            relevant_feed_ids.add(feed_id)
-        elif category_id is not None:
-            # Get feeds from the category
-            category_feeds = (
-                db.query(Feed.id)
-                .filter(Feed.category_id == category_id)
-                .all()
-            )
-            feed_ids_list = [f.id for f in category_feeds]
-            relevant_feed_ids.update(feed_ids_list)
-            feed_ids = (
-                db.query(Feed.id)
-                .filter(Feed.category_id == category_id)
-                .subquery()
-            )
-            query = query.filter(Post.feed_id.in_(feed_ids))
-
-        if unread_only:
-            query = query.filter(Post.is_read == False)
+    elif unread_only:
+        query = query.filter(Post.is_read == False)
 
     # Count total
     total = query.count()

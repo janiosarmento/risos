@@ -151,14 +151,14 @@
                     <!-- Filters -->
                     <div class="p-2 border-b border-gray-200 dark:border-gray-700">
                         <button
-                            @click="showReadPosts = false; setFilter('unread')"
+                            @click="postFilter = 'unread'; setFilter('unread')"
                             class="w-full text-left px-3 py-2 rounded text-sm"
-                            :class="filter === 'unread' && !showReadPosts ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                            :class="filter === 'unread' && postFilter === 'unread' ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
                         >
                             <span x-text="t('sidebar.unread')"></span>
                             <span
                                 class="float-right"
-                                :class="filter === 'unread' && !showReadPosts ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
+                                :class="filter === 'unread' && postFilter === 'unread' ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
                                 x-text="totalUnread"
                             ></span>
                         </button>
@@ -309,18 +309,45 @@
                                     :class="selectMode ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                                 ><span x-text="t('posts.select')"></span><span class="hidden md:inline opacity-60"> (X)</span></button>
                                 <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
+                                <!-- Post filter: Unread -->
                                 <button
-                                    @click="showReadPosts = false; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded"
-                                    :class="!showReadPosts ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                    x-text="t('sidebar.unread')"
-                                ></button>
+                                    @click="postFilter = 'unread'; loadPosts(true)"
+                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
+                                    :class="postFilter === 'unread' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    :title="t('sidebar.unread')"
+                                >
+                                    <!-- Circle icon (unread) - mobile only -->
+                                    <svg class="w-4 h-4 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="8" stroke-width="2"/>
+                                    </svg>
+                                    <span class="hidden md:inline" x-text="t('sidebar.unread')"></span>
+                                </button>
+                                <!-- Post filter: All -->
                                 <button
-                                    @click="showReadPosts = true; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded"
-                                    :class="showReadPosts ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                    x-text="t('sidebar.all')"
-                                ></button>
+                                    @click="postFilter = 'all'; loadPosts(true)"
+                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
+                                    :class="postFilter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    :title="t('sidebar.all')"
+                                >
+                                    <!-- List icon (all) - mobile only -->
+                                    <svg class="w-4 h-4 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                    </svg>
+                                    <span class="hidden md:inline" x-text="t('sidebar.all')"></span>
+                                </button>
+                                <!-- Post filter: Starred -->
+                                <button
+                                    @click="postFilter = 'starred'; loadPosts(true)"
+                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
+                                    :class="postFilter === 'starred' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    :title="t('sidebar.starred')"
+                                >
+                                    <!-- Star icon (starred) - mobile only -->
+                                    <svg class="w-4 h-4 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                                    </svg>
+                                    <span class="hidden md:inline" x-text="t('sidebar.starred')"></span>
+                                </button>
                             </div>
                         </div>
                         <!-- Selection toolbar -->
@@ -1398,6 +1425,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260112b"></script>
+    <script src="/static/js/app.js?v=20260118a"></script>
 </body>
 </html>

@@ -3,7 +3,10 @@
 # =============================================================================
 
 # WordOps / Server-specific
-conf/
+conf/*
+!conf/nginx/
+conf/nginx/*
+!conf/nginx/custom.conf
 logs/
 nginx/
 
