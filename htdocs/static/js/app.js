@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260120a';
+const APP_VERSION = '20260120b';
 const API_BASE = '/api';
 
 function app() {
@@ -1191,11 +1191,21 @@ function app() {
                     starred_at: data.starred_at,
                 });
 
-                // Update starred count
+                // Update global/contextual starred count
                 if (data.is_starred === true) {
                     this.starredCount++;
                 } else {
                     this.starredCount = Math.max(0, this.starredCount - 1);
+                }
+
+                // Update feed's starred count (for settings modal)
+                const feed = this.feeds.find(f => f.id === post.feed_id);
+                if (feed) {
+                    if (data.is_starred === true) {
+                        feed.starred_count = (feed.starred_count || 0) + 1;
+                    } else {
+                        feed.starred_count = Math.max(0, (feed.starred_count || 0) - 1);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to toggle star:', error);
