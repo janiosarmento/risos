@@ -170,6 +170,7 @@ class PostListResponse(BaseModel):
     total: int
     has_more: bool
     feed_unread_counts: Optional[Dict[int, int]] = None  # {feed_id: unread_count}
+    starred_count: Optional[int] = None  # Starred posts count for current context
 
 
 class MarkReadRequest(BaseModel):

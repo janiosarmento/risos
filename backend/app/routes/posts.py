@@ -181,6 +181,14 @@ def list_posts(
             if fid not in feed_unread_counts:
                 feed_unread_counts[fid] = 0
 
+    # Get starred count for current context
+    starred_query = db.query(func.count(Post.id)).filter(Post.is_starred == True)
+    if feed_id is not None:
+        starred_query = starred_query.filter(Post.feed_id == feed_id)
+    elif category_id is not None:
+        starred_query = starred_query.filter(Post.feed_id.in_(feed_ids_list))
+    starred_count = starred_query.scalar()
+
     # Convert to response
     result = []
     for post in posts:
@@ -217,6 +225,7 @@ def list_posts(
         total=total,
         has_more=has_more,
         feed_unread_counts=feed_unread_counts if feed_unread_counts else None,
+        starred_count=starred_count,
     )
 
 

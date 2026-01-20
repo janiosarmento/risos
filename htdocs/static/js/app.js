@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260118a';
+const APP_VERSION = '20260120a';
 const API_BASE = '/api';
 
 function app() {
@@ -754,11 +754,6 @@ function app() {
         getNavigableItems() {
             const items = [];
 
-            // Starred (if has items)
-            if (this.starredCount > 0) {
-                items.push({ type: 'starred' });
-            }
-
             // Unread
             items.push({ type: 'unread' });
 
@@ -793,7 +788,6 @@ function app() {
 
         getCurrentItemIndex(items) {
             return items.findIndex(item => {
-                if (item.type === 'starred' && this.filter === 'starred') return true;
                 if (item.type === 'unread' && this.filter === 'unread') return true;
                 if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
                 if (item.type === 'feed' && this.filter === 'feed' && this.filterId === item.id) return true;
@@ -802,9 +796,7 @@ function app() {
         },
 
         navigateToItem(item) {
-            if (item.type === 'starred') {
-                this.setFilter('starred');
-            } else if (item.type === 'unread') {
+            if (item.type === 'unread') {
                 this.setFilter('unread');
             } else if (item.type === 'category') {
                 this.setFilter('category', item.id);
@@ -944,19 +936,9 @@ function app() {
             await Promise.all([
                 this.loadFeeds(),
                 this.loadCategories(),
-                this.loadStarredCount(),
             ]);
             await this.loadPosts(true);
             this.checkHealth();
-        },
-
-        async loadStarredCount() {
-            try {
-                const data = await this.fetchApi('/posts?starred_only=true&limit=1');
-                this.starredCount = data.total || 0;
-            } catch (error) {
-                console.error('Failed to load starred count:', error);
-            }
         },
 
         async loadFeeds() {
@@ -1028,6 +1010,11 @@ function app() {
                             feed.unread_count = count;
                         }
                     }
+                }
+
+                // Update starred count for current context
+                if (data.starred_count !== undefined) {
+                    this.starredCount = data.starred_count;
                 }
             } catch (error) {
                 console.error('Failed to load posts:', error);
@@ -1291,7 +1278,6 @@ function app() {
                 // Only reload UI if there are new posts
                 if (totalNew > 0) {
                     await this.loadFeeds();
-                    await this.loadStarredCount();
                     await this.loadPosts(true);
                     this.showSuccess(this.t('refresh.newPosts').replace('{count}', totalNew));
                 } else {
@@ -1792,7 +1778,6 @@ function app() {
             // Refresh feed unread counts silently
             try {
                 await this.loadFeeds();
-                await this.loadStarredCount();
             } catch (e) {
                 // Ignore errors on idle refresh
             }
