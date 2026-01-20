@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-01-07
+**Última atualização:** 2026-01-20
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -23,6 +23,30 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, e m
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-01-20 — Filtro de Favoritos na Lista de Posts
+
+### Filtro de Posts com 3 Estados
+- Antes: apenas "Não lidos" e "Todos"
+- Agora: "Não lidos", "Todos" e "Favoritos"
+- Mobile: ícones compactos (○ círculo, ≡ lista, ★ estrela)
+- Desktop: texto completo nos botões
+
+### Contagem Contextual de Favoritos
+- Contagem exibida no botão de filtro: `★ 241` (mobile), `Favoritos (241)` (desktop)
+- Contagem é contextual:
+  - Na visão global → total de favoritos
+  - Em uma categoria → favoritos da categoria
+  - Em um feed → favoritos do feed
+- Backend retorna `starred_count` na resposta de `/api/posts`
+- Removida função `loadStarredCount()` obsoleta
+
+### Remoção de "Favoritos" da Sidebar
+- Item "Favoritos" removido da sidebar (economia de espaço no mobile)
+- Funcionalidade movida para o botão de filtro na lista de posts
+- Backend permite combinar `starred_only` com `feed_id`/`category_id`
 
 ---
 
