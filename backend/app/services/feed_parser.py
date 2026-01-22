@@ -15,7 +15,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Configuration
-USER_AGENT = "RSSReader/1.0"
+USER_AGENT = "Risos/1.0 (+https://github.com/janiosarmento/risos; like Miniflux)"
 TIMEOUT_SECONDS = 10
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_REDIRECTS = 3
