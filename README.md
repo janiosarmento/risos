@@ -12,6 +12,7 @@ A self-hosted RSS reader with AI-powered summaries.
   - Title translation for foreign-language articles
   - Smart skip of paywalls and error pages
 - **Organization** — Categories, starred posts, read/unread tracking
+- **AI Suggestions** — Personalized post recommendations based on your likes
 - **Keyboard-first** — Full navigation with J/K/Enter, batch operations with X
 - **Split View Mode** — Gmail-style reading pane with resizable divider (desktop)
 - **Dark/Light Theme** — System preference or manual
@@ -74,6 +75,28 @@ The app includes built-in protections to handle API rate limits gracefully:
 - **State Reset on Restart** — All cooldowns and circuit breaker state are cleared when the service restarts, ensuring a fresh start.
 
 You can monitor the queue status via `GET /api/admin/queue-status` and clear stuck items with `POST /api/admin/clear-queue-cooldowns`.
+
+### Suggestions System
+
+The app learns what you like and suggests similar posts. Here's how it works:
+
+1. **Like posts** — Press `L` or click the heart icon on posts you enjoy
+2. **Profile generation** — After 10+ likes, the system builds your interest profile
+3. **Tag matching** — New posts are compared by topic tags (extracted during summarization)
+4. **AI scoring** — Candidates with 3+ matching tags are evaluated by AI for relevance
+
+Suggestions appear in the sidebar (purple "Suggested" button) once matches are found.
+
+**Why tags instead of embeddings?**
+
+Modern recommendation systems often use vector embeddings and semantic similarity. We deliberately chose a simpler approach:
+
+- **Cost** — Embeddings require additional API calls for every post. Tags are extracted alongside summaries at no extra cost.
+- **Transparency** — Tags are human-readable. You can see exactly why a post was suggested.
+- **Effectiveness** — For a personal RSS reader with hundreds of posts, tag overlap works remarkably well. Not every problem needs a sophisticated solution.
+- **Simplicity** — No vector database, no embedding model, no similarity search infrastructure. Just SQL queries.
+
+The AI is used twice: once to extract tags during summarization, and once to score candidates against your profile. Everything else is traditional filtering — fast, cheap, and effective.
 
 ## Web Server
 
@@ -149,6 +172,7 @@ Each has its own database, config, and service.
 | `M` | Toggle read/unread |
 | `A` | Mark all as read |
 | `S` | Toggle star |
+| `L` | Toggle like (trains suggestions) |
 | `X` | Toggle select mode |
 | `Space` | Toggle checkbox (in select mode) |
 | `R` | Refresh feeds |
