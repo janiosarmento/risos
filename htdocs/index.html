@@ -143,6 +143,23 @@
                                 x-text="totalUnread"
                             ></span>
                         </button>
+                        <!-- Suggested posts (only visible when there are suggestions) -->
+                        <button
+                            x-show="suggestedCount > 0"
+                            @click="postFilter = 'unread'; setFilter('suggested')"
+                            class="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2"
+                            :class="filter === 'suggested' ? 'bg-purple-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                        >
+                            <svg class="w-4 h-4" :class="filter === 'suggested' ? 'text-white' : 'text-purple-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            <span x-text="t('sidebar.suggested')"></span>
+                            <span
+                                class="ml-auto"
+                                :class="filter === 'suggested' ? 'text-white/80' : 'text-purple-600 dark:text-purple-400'"
+                                x-text="suggestedCount"
+                            ></span>
+                        </button>
                     </div>
 
                     <!-- Categories & Feeds Tree -->
@@ -418,11 +435,18 @@
                                         :class="post.is_read ? 'bg-gray-400 dark:bg-gray-600' : 'bg-blue-500'"
                                     ></div>
                                     <div class="flex-1 min-w-0">
-                                        <h3
-                                            class="font-medium line-clamp-2"
-                                            :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
-                                            x-text="post.title"
-                                        ></h3>
+                                        <div class="flex items-start gap-2">
+                                            <h3
+                                                class="font-medium line-clamp-2 flex-1"
+                                                :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
+                                                x-text="post.title"
+                                            ></h3>
+                                            <span
+                                                x-show="post.is_suggested"
+                                                class="flex-shrink-0 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded"
+                                                x-text="Math.round(post.suggestion_score || 0) + '%'"
+                                            ></span>
+                                        </div>
                                         <template x-if="post.translated_title">
                                             <p class="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-1 mb-1" x-text="post.translated_title"></p>
                                         </template>

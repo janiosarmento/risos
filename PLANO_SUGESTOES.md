@@ -1,7 +1,7 @@
 # Plano de Implementação — Posts Sugeridos
 
 **Criado:** 2026-01-23
-**Status:** Planejado (não iniciado)
+**Status:** ✅ Implementado (2026-01-24)
 
 ---
 
@@ -539,11 +539,11 @@ POST /api/admin/process-suggestions
 3. **Fase 3**: Sistema de like — backend ✓ (endpoint PATCH + auto-like no star)
 4. **Fase 3b**: Sistema de like — frontend ✓ (botão + atalho L)
 5. ⏸️ **Pausa**: Acumular likes (usuário precisa gostar de 10+ posts)
-6. **Fase 4**: Geração de perfil (prompt + serviço + job 6h)
-7. **Fase 5**: Pré-filtro por tags (candidatos com ≥3 tags em comum)
-8. **Fase 6**: Comparação em batch (prompt + serviço + job 1h)
-9. **Fase 7**: Frontend de sugestões (sidebar + indicador + atalho G S)
-10. **Fase 8**: Endpoints admin (status, regenerate-profile, process-suggestions)
+6. **Fase 4**: Geração de perfil (prompt + serviço + job 6h) ✓
+7. **Fase 5**: Pré-filtro por tags (candidatos com ≥3 tags em comum) ✓
+8. **Fase 6**: Comparação em batch (prompt + serviço + job 1h) ✓
+9. **Fase 7**: Frontend de sugestões (sidebar + indicador + navegação) ✓
+10. **Fase 8**: Endpoints admin (status, regenerate-profile, process-suggestions) ✓
 
 ---
 

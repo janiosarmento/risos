@@ -205,6 +205,12 @@ class Scheduler:
         # Job: process_summaries (every 1 minute)
         self._tasks.append(asyncio.create_task(self._job_process_summaries()))
 
+        # Job: update_user_profile (every 6 hours, if stale)
+        self._tasks.append(asyncio.create_task(self._job_update_user_profile()))
+
+        # Job: process_suggestions (every hour)
+        self._tasks.append(asyncio.create_task(self._job_process_suggestions()))
+
     async def _job_update_feeds(self):
         """Job to update feeds periodically."""
         from app.services.feed_ingestion import ingest_feed
@@ -790,6 +796,83 @@ class Scheduler:
                 break
             except Exception as e:
                 logger.error(f"Error in job process_summaries: {e}")
+
+            await asyncio.sleep(interval)
+
+    async def _job_update_user_profile(self):
+        """Job to update user interest profile for recommendations."""
+        from app.services.user_profile import (
+            is_profile_stale,
+            generate_user_profile,
+            get_liked_posts_count,
+            MIN_LIKED_POSTS,
+        )
+
+        # Check every 6 hours
+        interval = 6 * 60 * 60  # 6 hours in seconds
+
+        while self._running and self.is_leader:
+            try:
+                db = SessionLocal()
+                try:
+                    # Check if profile needs update
+                    if is_profile_stale(db):
+                        liked_count = get_liked_posts_count(db)
+                        if liked_count >= MIN_LIKED_POSTS:
+                            logger.info(
+                                f"Job update_user_profile: regenerating profile "
+                                f"({liked_count} liked posts)"
+                            )
+                            await generate_user_profile(db)
+                        else:
+                            logger.debug(
+                                f"Job update_user_profile: not enough likes "
+                                f"({liked_count}/{MIN_LIKED_POSTS})"
+                            )
+                    else:
+                        logger.debug("Job update_user_profile: profile is fresh")
+                finally:
+                    db.close()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in job update_user_profile: {e}")
+
+            await asyncio.sleep(interval)
+
+    async def _job_process_suggestions(self):
+        """Job to process suggestion candidates using AI comparison."""
+        from app.services.suggestions import process_suggestion_candidates
+        from app.services.user_profile import get_user_profile
+
+        # Check every hour
+        interval = 60 * 60  # 1 hour in seconds
+
+        while self._running and self.is_leader:
+            try:
+                db = SessionLocal()
+                try:
+                    # Only process if we have a user profile
+                    profile = get_user_profile(db)
+                    if profile and profile.get("profile"):
+                        logger.info("Job process_suggestions: starting...")
+                        suggested_count = await process_suggestion_candidates(db)
+                        logger.info(
+                            f"Job process_suggestions: completed "
+                            f"({suggested_count} new suggestions)"
+                        )
+                    else:
+                        logger.debug(
+                            "Job process_suggestions: no user profile yet, skipping"
+                        )
+                finally:
+                    db.close()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in job process_suggestions: {e}")
 
             await asyncio.sleep(interval)
 

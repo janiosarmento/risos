@@ -202,7 +202,7 @@ async def health_check():
 
 
 # Include routers
-from app.routes import auth, categories, feeds, posts, proxy, admin, preferences
+from app.routes import auth, categories, feeds, posts, proxy, admin, preferences, suggestions
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
@@ -211,3 +211,4 @@ app.include_router(posts.router, prefix="/api")
 app.include_router(proxy.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(preferences.router, prefix="/api")
+app.include_router(suggestions.router, prefix="/api")

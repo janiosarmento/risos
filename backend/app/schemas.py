@@ -137,6 +137,8 @@ class PostResponse(BaseModel):
     starred_at: Optional[datetime] = None
     is_liked: bool = False
     liked_at: Optional[str] = None
+    is_suggested: bool = False
+    suggestion_score: Optional[float] = None
     summary_status: str = (
         "not_configured"  # not_configured, pending, ready, failed
     )
@@ -173,6 +175,7 @@ class PostListResponse(BaseModel):
     has_more: bool
     feed_unread_counts: Optional[Dict[int, int]] = None  # {feed_id: unread_count}
     starred_count: Optional[int] = None  # Starred posts count for current context
+    suggested_count: Optional[int] = None  # AI-suggested posts count
 
 
 class MarkReadRequest(BaseModel):

@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260124b';
+const APP_VERSION = '20260124c';
 const API_BASE = '/api';
 
 function app() {
@@ -151,6 +151,7 @@ function app() {
         },
 
         starredCount: 0,
+        suggestedCount: 0,
 
         get opmlResultText() {
             if (!this.opmlResult) return '';
@@ -763,6 +764,11 @@ function app() {
             // Unread
             items.push({ type: 'unread' });
 
+            // Suggested (only if there are suggestions)
+            if (this.suggestedCount > 0) {
+                items.push({ type: 'suggested' });
+            }
+
             // Categories and their feeds
             for (const category of this.categories) {
                 const categoryUnread = this.getCategoryUnread(category.id);
@@ -795,6 +801,7 @@ function app() {
         getCurrentItemIndex(items) {
             return items.findIndex(item => {
                 if (item.type === 'unread' && this.filter === 'unread') return true;
+                if (item.type === 'suggested' && this.filter === 'suggested') return true;
                 if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
                 if (item.type === 'feed' && this.filter === 'feed' && this.filterId === item.id) return true;
                 return false;
@@ -804,6 +811,8 @@ function app() {
         navigateToItem(item) {
             if (item.type === 'unread') {
                 this.setFilter('unread');
+            } else if (item.type === 'suggested') {
+                this.setFilter('suggested');
             } else if (item.type === 'category') {
                 this.setFilter('category', item.id);
             } else if (item.type === 'feed') {
@@ -988,10 +997,12 @@ function app() {
                     params.set('category_id', this.filterId);
                 }
 
-                // Apply post filter (unread/all/starred within current context)
+                // Apply post filter (unread/all/starred/suggested within current context)
                 // When sidebar filter is 'starred', always show starred posts
                 if (this.filter === 'starred' || this.postFilter === 'starred') {
                     params.set('starred_only', 'true');
+                } else if (this.filter === 'suggested') {
+                    params.set('suggested_only', 'true');
                 } else if (this.postFilter === 'unread') {
                     params.set('unread_only', 'true');
                 }
@@ -1021,6 +1032,11 @@ function app() {
                 // Update starred count for current context
                 if (data.starred_count !== undefined) {
                     this.starredCount = data.starred_count;
+                }
+
+                // Update suggested count
+                if (data.suggested_count !== undefined) {
+                    this.suggestedCount = data.suggested_count;
                 }
             } catch (error) {
                 console.error('Failed to load posts:', error);
@@ -1060,6 +1076,8 @@ function app() {
                 title = this.t('sidebar.unread');
             } else if (this.filter === 'starred') {
                 title = this.t('sidebar.starred');
+            } else if (this.filter === 'suggested') {
+                title = this.t('sidebar.suggested');
             } else if (this.filter === 'feed') {
                 const feed = this.feeds.find(f => f.id === this.filterId);
                 title = feed ? feed.title : 'Feed';

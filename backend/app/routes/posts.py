@@ -107,6 +107,7 @@ def list_posts(
     category_id: Optional[int] = Query(None, description="Filter by category"),
     unread_only: bool = Query(False, description="Only unread"),
     starred_only: bool = Query(False, description="Only starred"),
+    suggested_only: bool = Query(False, description="Only AI-suggested"),
     limit: int = Query(20, ge=1, le=100, description="Post limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     db: Session = Depends(get_db),
@@ -142,9 +143,11 @@ def list_posts(
         )
         query = query.filter(Post.feed_id.in_(feed_ids))
 
-    # Apply starred or unread filter (mutually exclusive)
+    # Apply starred, suggested, or unread filter (mutually exclusive)
     if starred_only:
         query = query.filter(Post.is_starred == True)
+    elif suggested_only:
+        query = query.filter(Post.is_suggested == True)
     elif unread_only:
         query = query.filter(Post.is_read == False)
 
@@ -190,6 +193,13 @@ def list_posts(
         starred_query = starred_query.filter(Post.feed_id.in_(feed_ids_list))
     starred_count = starred_query.scalar()
 
+    # Get suggested unread count (global - not filtered by feed/category)
+    suggested_count = (
+        db.query(func.count(Post.id))
+        .filter(Post.is_suggested == True, Post.is_read == False)
+        .scalar()
+    )
+
     # Convert to response
     result = []
     for post in posts:
@@ -213,6 +223,8 @@ def list_posts(
             "starred_at": post.starred_at,
             "is_liked": bool(post.is_liked),
             "liked_at": post.liked_at,
+            "is_suggested": bool(post.is_suggested),
+            "suggestion_score": post.suggestion_score,
             "summary_status": "ready"
             if summary
             else get_summary_status(db, post),
@@ -229,6 +241,7 @@ def list_posts(
         has_more=has_more,
         feed_unread_counts=feed_unread_counts if feed_unread_counts else None,
         starred_count=starred_count,
+        suggested_count=suggested_count,
     )
 
 
@@ -346,6 +359,8 @@ async def get_post(
         starred_at=post.starred_at,
         is_liked=bool(post.is_liked),
         liked_at=post.liked_at,
+        is_suggested=bool(post.is_suggested),
+        suggestion_score=post.suggestion_score,
         summary_status=summary_status,
         summary_pt=summary_pt,
         one_line_summary=one_line_summary,
@@ -388,7 +403,10 @@ def toggle_star(
     If starred, removes star. If not, adds star.
     Auto-likes the post when starring (but unstarring does NOT remove like).
     """
+    from app.services.user_profile import invalidate_user_profile
+
     post = get_post_or_404(db, post_id)
+    auto_liked = False
 
     if post.is_starred:
         post.is_starred = False
@@ -400,8 +418,13 @@ def toggle_star(
         if not post.is_liked:
             post.is_liked = 1
             post.liked_at = datetime.utcnow().isoformat()
+            auto_liked = True
 
     db.commit()
+
+    # Invalidate profile if auto-like happened
+    if auto_liked:
+        invalidate_user_profile(db)
 
     return {
         "id": post_id,
@@ -421,6 +444,8 @@ def toggle_like(
     Toggle liked status of a post.
     Used to train the recommendation system.
     """
+    from app.services.user_profile import invalidate_user_profile
+
     post = get_post_or_404(db, post_id)
 
     if post.is_liked:
@@ -431,6 +456,9 @@ def toggle_like(
         post.liked_at = datetime.utcnow().isoformat()
 
     db.commit()
+
+    # Mark user profile as stale for regeneration
+    invalidate_user_profile(db)
 
     return {
         "id": post_id,
