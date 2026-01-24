@@ -23,7 +23,7 @@ Sistema de recomendação de posts baseado em IA. O usuário marca posts que "go
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
 │  Post com       │────▶│  Extração    │────▶│  post_tags      │
-│  Resumo IA      │     │  de Tags     │     │  (até 10/post)  │
+│  Resumo IA      │     │  de Tags     │     │  (7 por post)   │
 └─────────────────┘     └──────────────┘     └─────────────────┘
                                                       │
                                                       ▼
@@ -118,14 +118,14 @@ system_prompt: |
   1. A 2-3 sentence summary in {language}
   2. A one-line summary (max 100 chars) in {language}
   3. The title translated to {language} (or original if already in {language})
-  4. 5-10 lowercase tags describing the main topics (in English)
+  4. Exactly 7 lowercase tags describing the main topics (in English)
 
   Respond in JSON format:
   {
     "summary": "...",
     "one_line": "...",
     "translated_title": "...",
-    "tags": ["tag1", "tag2", ..., "tag10"]
+    "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7"]
   }
 ```
 
@@ -336,8 +336,8 @@ def get_suggestion_candidates(db: Session) -> List[Post]:
         post_tags = {t.tag for t in post.tags}
         common_tags = post_tags.intersection(set(profile_tags))
 
-        # Precisa de pelo menos 4 tags em comum
-        if len(common_tags) >= 4:
+        # Precisa de pelo menos 3 tags em comum (~43% overlap)
+        if len(common_tags) >= 3:
             candidates.append((post, len(common_tags)))
 
     # Ordenar por mais tags em comum
@@ -558,12 +558,13 @@ POST /api/admin/process-suggestions
    - Favoritar automaticamente marca como liked
    - Desfavoritar NÃO remove o like
 
-3. **Quantidade de tags**: ⚠️ EM ANÁLISE (5-10 tags por post)
-   - Mais tags = melhor matching, mas mais tokens consumidos
-   - Avaliar custo/benefício antes de implementar
+3. **Quantidade de tags**: 7 tags por post
+   - Meio-termo entre precisão e ruído
+   - Custo de tokens negligível (~$0.002/dia)
 
-4. **Threshold de tags para candidato**: 4 tags em comum
-   - Mais restritivo para melhorar qualidade das sugestões
+4. **Threshold de tags para candidato**: 3 tags em comum
+   - 3/7 = ~43% de overlap
+   - Bom equilíbrio entre volume e qualidade
 
 5. **Score mínimo para sugestão**: 80%
    - Ajustar baseado em feedback se necessário
@@ -571,6 +572,70 @@ POST /api/admin/process-suggestions
 6. **Expiração de sugestões**: Não expira
    - Processos de limpeza existentes já removem posts antigos
    - Sugestões são removidas junto com os posts
+
+---
+
+## Avaliação Posterior (1-2 semanas após deploy)
+
+Após rodar o sistema por 1-2 semanas, avaliar:
+
+### Métricas a Observar
+
+1. **Volume de sugestões por dia**
+   - Query: `SELECT COUNT(*) FROM posts WHERE is_suggested = 1 AND suggested_at > date('now', '-1 day')`
+   - Esperado: 5-20 sugestões/dia
+   - Se < 5: threshold muito alto ou poucas tags em comum
+   - Se > 50: threshold muito baixo ou tags muito genéricas
+
+2. **Taxa de acerto** (sugestões que o usuário leu/gostou)
+   - Query: `SELECT COUNT(*) FROM posts WHERE is_suggested = 1 AND is_read = 1`
+   - Comparar com total de sugestões
+
+3. **Qualidade das tags**
+   - Query: `SELECT tag, COUNT(*) FROM post_tags GROUP BY tag ORDER BY COUNT(*) DESC LIMIT 20`
+   - Tags muito frequentes ("technology", "news") indicam ruído
+   - Tags muito raras indicam fragmentação
+
+### Ajustes Possíveis
+
+| Problema | Solução |
+|----------|---------|
+| Muitas sugestões ruins | Aumentar threshold (3→4) ou score mínimo (80→85%) |
+| Poucas sugestões | Diminuir threshold (3→2) ou score mínimo (80→70%) |
+| Tags genéricas demais | Ajustar prompt para pedir tags mais específicas |
+| Tags muito específicas | Ajustar prompt para incluir categorias mais amplas |
+
+### Queries Úteis
+
+```sql
+-- Posts sugeridos dos últimos 7 dias
+SELECT p.title, p.suggestion_score, p.suggested_at, p.is_read
+FROM posts p
+WHERE p.is_suggested = 1
+  AND p.suggested_at > date('now', '-7 days')
+ORDER BY p.suggestion_score DESC;
+
+-- Tags mais comuns nos posts gostados
+SELECT t.tag, COUNT(*) as cnt
+FROM post_tags t
+JOIN posts p ON t.post_id = p.id
+WHERE p.is_liked = 1
+GROUP BY t.tag
+ORDER BY cnt DESC
+LIMIT 20;
+
+-- Overlap médio entre sugestões e perfil
+SELECT AVG(common_tags) FROM (
+    SELECT p.id, COUNT(*) as common_tags
+    FROM posts p
+    JOIN post_tags t ON t.post_id = p.id
+    WHERE p.is_suggested = 1
+      AND t.tag IN (SELECT value FROM json_each(
+          (SELECT user_interest_tags FROM app_settings LIMIT 1)
+      ))
+    GROUP BY p.id
+);
+```
 
 ---
 
