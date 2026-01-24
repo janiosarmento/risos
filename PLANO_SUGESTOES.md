@@ -171,32 +171,6 @@ def save_summary_with_tags(db, post_id, summary_result):
     db.commit()
 ```
 
-### 2.4 Backfill de Tags
-
-Script para extrair tags de resumos existentes:
-
-```python
-# scripts/backfill_tags.py
-
-def backfill_tags():
-    """
-    Para posts com resumo mas sem tags, re-processar
-    apenas para extrair tags (chamada IA mais barata).
-    """
-    posts_without_tags = db.query(Post).join(AISummary).outerjoin(PostTag).filter(
-        PostTag.id == None
-    ).all()
-
-    for post in posts_without_tags:
-        # Chamada IA só para extrair tags do resumo existente
-        tags = extract_tags_from_summary(post.summary)
-        for tag in tags:
-            db.add(PostTag(post_id=post.id, tag=tag))
-    db.commit()
-```
-
-**Alternativa mais barata:** Extrair tags do resumo existente com regex/NLP local, sem chamar IA.
-
 ---
 
 ## Fase 3: Sistema de "Gostei"
