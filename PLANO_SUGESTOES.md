@@ -23,7 +23,7 @@ Sistema de recomendação de posts baseado em IA. O usuário marca posts que "go
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐
 │  Post com       │────▶│  Extração    │────▶│  post_tags      │
-│  Resumo IA      │     │  de Tags     │     │  (3-5 por post) │
+│  Resumo IA      │     │  de Tags     │     │  (até 10/post)  │
 └─────────────────┘     └──────────────┘     └─────────────────┘
                                                       │
                                                       ▼
@@ -118,14 +118,14 @@ system_prompt: |
   1. A 2-3 sentence summary in {language}
   2. A one-line summary (max 100 chars) in {language}
   3. The title translated to {language} (or original if already in {language})
-  4. 3-5 lowercase tags describing the main topics (in English)
+  4. 5-10 lowercase tags describing the main topics (in English)
 
   Respond in JSON format:
   {
     "summary": "...",
     "one_line": "...",
     "translated_title": "...",
-    "tags": ["tag1", "tag2", "tag3"]
+    "tags": ["tag1", "tag2", ..., "tag10"]
   }
 ```
 
@@ -307,8 +307,8 @@ def get_suggestion_candidates(db: Session) -> List[Post]:
         post_tags = {t.tag for t in post.tags}
         common_tags = post_tags.intersection(set(profile_tags))
 
-        # Precisa de pelo menos 2 tags em comum
-        if len(common_tags) >= 2:
+        # Precisa de pelo menos 4 tags em comum
+        if len(common_tags) >= 4:
             candidates.append((post, len(common_tags)))
 
     # Ordenar por mais tags em comum
@@ -520,24 +520,23 @@ POST /api/admin/process-suggestions
 
 ---
 
-## Decisões Pendentes
+## Decisões Tomadas
 
-1. **Reusar `starred` como `liked`?**
-   - Pros: Menos mudanças, favoritos viram likes
-   - Cons: Semântica diferente (favorito ≠ gostei)
-   - **Recomendação:** Criar campo separado `is_liked`
+1. **Campo de liked**: Criar campo separado `is_liked` (não reusar `starred`)
+   - Semântica diferente: favorito é para guardar, like é para treinar IA
 
-2. **Threshold de tags para candidato**
-   - Começar com 2 tags em comum
-   - Ajustar baseado em resultados
+2. **Quantidade de tags**: 5-10 tags por post
+   - Mais tags = melhor qualidade de matching
 
-3. **Score mínimo para sugestão**
-   - Começar com 80%
-   - Ajustar baseado em feedback
+3. **Threshold de tags para candidato**: 4 tags em comum
+   - Mais restritivo para melhorar qualidade das sugestões
 
-4. **Expiração de sugestões**
-   - Sugestões não lidas após 7 dias → remover flag?
-   - Ou manter indefinidamente?
+4. **Score mínimo para sugestão**: 80%
+   - Ajustar baseado em feedback se necessário
+
+5. **Expiração de sugestões**: Não expira
+   - Processos de limpeza existentes já removem posts antigos
+   - Sugestões são removidas junto com os posts
 
 ---
 
