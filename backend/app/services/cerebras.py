@@ -10,7 +10,7 @@ import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, List
 
 import httpx
 
@@ -218,9 +218,8 @@ class SummaryResult:
 
     summary_pt: str
     one_line_summary: str
-    translated_title: str = (
-        None  # Translated title (if not in target language)
-    )
+    translated_title: str = None  # Translated title (if not in target language)
+    tags: List[str] = field(default_factory=list)  # Topic tags for recommendations
 
 
 class CircuitBreaker:
@@ -729,6 +728,21 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                     if translated_title.lower() in ("null", "none", ""):
                         translated_title = None
 
+                # Extract and normalize tags
+                raw_tags = result.get("tags", [])
+                tags = []
+                if isinstance(raw_tags, list):
+                    for tag in raw_tags:
+                        if isinstance(tag, str):
+                            normalized = tag.lower().strip()
+                            # Filter out empty and overly generic tags
+                            if normalized and len(normalized) > 1 and normalized not in (
+                                "news", "article", "technology", "update", "post"
+                            ):
+                                tags.append(normalized)
+                # Keep max 7 tags
+                tags = tags[:7]
+
                 # Allow both empty (error pages) or both filled
                 # But not one empty and other filled
                 if bool(summary_pt) != bool(one_line):
@@ -746,6 +760,7 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
                     summary_pt=summary_pt,
                     one_line_summary=one_line,
                     translated_title=translated_title,
+                    tags=tags,
                 )
 
             except (json.JSONDecodeError, ValueError) as e:

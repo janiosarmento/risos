@@ -25,6 +25,7 @@ from app.schemas import (
 from app.services.content_extractor import extract_full_content
 from app.services.cerebras import generate_summary, CerebrasError
 from app.services.content_hasher import compute_content_hash
+from app.services.tags import save_post_tags
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +211,8 @@ def list_posts(
             "read_at": post.read_at,
             "is_starred": post.is_starred or False,
             "starred_at": post.starred_at,
+            "is_liked": bool(post.is_liked),
+            "liked_at": post.liked_at,
             "summary_status": "ready"
             if summary
             else get_summary_status(db, post),
@@ -299,6 +302,11 @@ async def get_post(
                     translated_title=result.translated_title,
                 )
                 db.add(new_summary)
+
+                # Save tags for recommendations
+                if result.tags:
+                    save_post_tags(db, post.id, result.tags)
+
                 db.commit()
 
                 summary_pt = result.summary_pt
@@ -336,6 +344,8 @@ async def get_post(
         read_at=post.read_at,
         is_starred=post.is_starred or False,
         starred_at=post.starred_at,
+        is_liked=bool(post.is_liked),
+        liked_at=post.liked_at,
         summary_status=summary_status,
         summary_pt=summary_pt,
         one_line_summary=one_line_summary,
@@ -376,6 +386,7 @@ def toggle_star(
     """
     Toggle starred status of a post.
     If starred, removes star. If not, adds star.
+    Auto-likes the post when starring (but unstarring does NOT remove like).
     """
     post = get_post_or_404(db, post_id)
 
@@ -385,6 +396,10 @@ def toggle_star(
     else:
         post.is_starred = True
         post.starred_at = datetime.utcnow()
+        # Auto-like when starring (for recommendations)
+        if not post.is_liked:
+            post.is_liked = 1
+            post.liked_at = datetime.utcnow().isoformat()
 
     db.commit()
 
@@ -392,6 +407,35 @@ def toggle_star(
         "id": post_id,
         "is_starred": bool(post.is_starred),
         "starred_at": post.starred_at,
+        "is_liked": bool(post.is_liked),
+    }
+
+
+@router.patch("/{post_id}/like")
+def toggle_like(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Toggle liked status of a post.
+    Used to train the recommendation system.
+    """
+    post = get_post_or_404(db, post_id)
+
+    if post.is_liked:
+        post.is_liked = 0
+        post.liked_at = None
+    else:
+        post.is_liked = 1
+        post.liked_at = datetime.utcnow().isoformat()
+
+    db.commit()
+
+    return {
+        "id": post_id,
+        "is_liked": bool(post.is_liked),
+        "liked_at": post.liked_at,
     }
 
 
@@ -596,6 +640,10 @@ async def regenerate_summary(
                 translated_title=result.translated_title,
             )
             db.add(new_summary)
+
+        # Save/update tags for recommendations
+        if result.tags:
+            save_post_tags(db, post_id, result.tags)
 
         db.commit()
         logger.info(f"Summary regenerated successfully for post {post_id}")

@@ -15,6 +15,7 @@ from sqlalchemy import (
     CheckConstraint,
     Float,
     Index,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -97,10 +98,20 @@ class Post(Base):
     starred_at = Column(DateTime)
     fetch_full_attempted_at = Column(DateTime)
 
+    # Suggestions system
+    is_liked = Column(Integer, default=0)
+    liked_at = Column(Text)
+    is_suggested = Column(Integer, default=0)
+    suggestion_score = Column(Float)
+    suggested_at = Column(Text)
+
     # Relationships
     feed = relationship("Feed", back_populates="posts")
     summary_queue_entry = relationship(
         "SummaryQueue", back_populates="post", cascade="all, delete-orphan"
+    )
+    tags = relationship(
+        "PostTag", back_populates="post", cascade="all, delete-orphan"
     )
 
 
@@ -138,6 +149,29 @@ Index("idx_posts_read_at", Post.read_at, sqlite_where=Post.is_read == True)
 Index(
     "idx_posts_starred", Post.is_starred, sqlite_where=Post.is_starred == True
 )
+Index("idx_posts_liked", Post.is_liked, sqlite_where=Post.is_liked == 1)
+Index("idx_posts_suggested", Post.is_suggested, sqlite_where=Post.is_suggested == 1)
+
+
+class PostTag(Base):
+    """Tags extracted from post summaries for recommendation system."""
+
+    __tablename__ = "post_tags"
+
+    id = Column(Integer, primary_key=True)
+    post_id = Column(
+        Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False
+    )
+    tag = Column(Text, nullable=False)
+    created_at = Column(Text, default=lambda: datetime.utcnow().isoformat())
+
+    post = relationship("Post", back_populates="tags")
+
+    __table_args__ = (UniqueConstraint("post_id", "tag", name="uq_post_tag"),)
+
+
+Index("idx_post_tags_tag", PostTag.tag)
+Index("idx_post_tags_post_id", PostTag.post_id)
 
 
 class AISummary(Base):

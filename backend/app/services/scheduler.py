@@ -549,6 +549,7 @@ class Scheduler:
             PermanentError,
         )
         from app.services.content_extractor import extract_full_content
+        from app.services.tags import save_post_tags
 
         # Interval based on rate limit (with safety margin)
         interval = max(5, 60 // settings.cerebras_max_rpm + 1)
@@ -707,6 +708,11 @@ class Scheduler:
                             translated_title=summary_result.translated_title,
                         )
                         db.add(ai_summary)
+
+                        # Save tags for recommendations
+                        if summary_result.tags:
+                            tag_count = save_post_tags(db, post.id, summary_result.tags)
+                            logger.debug(f"Saved {tag_count} tags for post {post.id}")
 
                         # Remove from queue
                         db.query(SummaryQueue).filter(

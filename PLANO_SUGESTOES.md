@@ -516,13 +516,13 @@ POST /api/admin/process-suggestions
 
 ### Chamadas IA por Dia
 
-| Operação | Frequência | Chamadas |
-|----------|------------|----------|
-| Resumos (já existente) | 500 posts | 500 |
-| Extração de tags | junto com resumo | 0 extra |
-| Atualização de perfil | 1x/semana | ~0.14 |
-| Comparação em batch | 1-2x/dia | 2 |
-| **Total extra** | | **~2/dia** |
+| Operação               | Frequência       | Chamadas   |
+|------------------------|------------------|------------|
+| Resumos (já existente) | 500 posts        | 500        |
+| Extração de tags       | junto com resumo | 0 extra    |
+| Atualização de perfil  | 1x/semana        | ~0.14      |
+| Comparação em batch    | 1-2x/dia         | 2          |
+| **Total extra**        |                  | **~2/dia** |
 
 ### Armazenamento
 
@@ -534,18 +534,16 @@ POST /api/admin/process-suggestions
 
 ## Ordem de Implementação
 
-1. **Fase 1**: Schema e migração (30 min)
-2. **Fase 2**: Extração de tags no resumo (1h)
-3. **Fase 3**: Sistema de like (1h)
-4. **Fase 7.2**: Botão de like no frontend (30 min)
-5. **Testar e acumular likes** (esperar usuário gostar de 10+ posts)
-6. **Fase 4**: Geração de perfil (1h)
-7. **Fase 5**: Pré-filtro por tags (1h)
-8. **Fase 6**: Comparação em batch (1h)
-9. **Fase 7**: Frontend completo (2h)
-10. **Fase 8**: Endpoints e admin (1h)
-
-**Tempo total estimado:** 8-10 horas
+1. **Fase 1**: Schema e migração ✓
+2. **Fase 2**: Extração de tags ✓ (prompt + cerebras.py + salvar no banco)
+3. **Fase 3**: Sistema de like — backend ✓ (endpoint PATCH + auto-like no star)
+4. **Fase 3b**: Sistema de like — frontend ✓ (botão + atalho L)
+5. ⏸️ **Pausa**: Acumular likes (usuário precisa gostar de 10+ posts)
+6. **Fase 4**: Geração de perfil (prompt + serviço + job 6h)
+7. **Fase 5**: Pré-filtro por tags (candidatos com ≥3 tags em comum)
+8. **Fase 6**: Comparação em batch (prompt + serviço + job 1h)
+9. **Fase 7**: Frontend de sugestões (sidebar + indicador + atalho G S)
+10. **Fase 8**: Endpoints admin (status, regenerate-profile, process-suggestions)
 
 ---
 

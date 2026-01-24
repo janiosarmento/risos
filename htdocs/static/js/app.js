@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260120b';
+const APP_VERSION = '20260124a';
 const API_BASE = '/api';
 
 function app() {
@@ -684,6 +684,9 @@ function app() {
                     } else if (this.isKey(e, 's')) {
                         this.toggleStar(this.currentPost);
                         return;
+                    } else if (this.isKey(e, 'l')) {
+                        this.toggleLike(this.currentPost);
+                        return;
                     } else if (this.isKey(e, 'r') && e.shiftKey) {
                         this.regenerateSummary();
                         return;
@@ -1189,6 +1192,7 @@ function app() {
                 this.updatePost(post.id, {
                     is_starred: data.is_starred,
                     starred_at: data.starred_at,
+                    is_liked: data.is_liked,  // Auto-like when starring
                 });
 
                 // Update global/contextual starred count
@@ -1209,6 +1213,21 @@ function app() {
                 }
             } catch (error) {
                 console.error('Failed to toggle star:', error);
+            }
+        },
+
+        async toggleLike(post) {
+            try {
+                const data = await this.fetchApi(`/posts/${post.id}/like`, {
+                    method: 'PATCH',
+                });
+
+                this.updatePost(post.id, {
+                    is_liked: data.is_liked,
+                    liked_at: data.liked_at,
+                });
+            } catch (error) {
+                console.error('Failed to toggle like:', error);
             }
         },
 

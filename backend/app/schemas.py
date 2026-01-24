@@ -135,6 +135,8 @@ class PostResponse(BaseModel):
     read_at: Optional[datetime]
     is_starred: bool = False
     starred_at: Optional[datetime] = None
+    is_liked: bool = False
+    liked_at: Optional[str] = None
     summary_status: str = (
         "not_configured"  # not_configured, pending, ready, failed
     )

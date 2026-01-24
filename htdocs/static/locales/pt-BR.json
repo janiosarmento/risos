@@ -46,7 +46,7 @@
     "antiBotReason1": "O site bloqueia acesso automatizado",
     "antiBotReason2": "O conteúdo é um vídeo ou mídia",
     "shortcuts": "ESC fechar | M lido/não lido",
-    "starShortcut": "S favoritar | Shift+R regenerar",
+    "starShortcut": "S favoritar | L gostei | Shift+R regenerar",
     "navShortcuts": "J/K navegar posts",
     "read": "Lido",
     "unread": "Não lido",
