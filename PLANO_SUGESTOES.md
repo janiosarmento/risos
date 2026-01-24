@@ -196,11 +196,40 @@ def toggle_like(post_id: int, db: Session = Depends(get_db)):
     return {"is_liked": post.is_liked, "liked_at": post.liked_at}
 ```
 
-### 3.2 Frontend
+### 3.2 Auto-like ao Favoritar
+
+Quando um post é favoritado (starred), automaticamente recebe like também:
+
+```python
+# routes/posts.py - modificar toggle_star existente
+
+@router.patch("/{post_id}/star")
+def toggle_star(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(404, "Post not found")
+
+    post.is_starred = not post.is_starred
+    post.starred_at = datetime.utcnow().isoformat() if post.is_starred else None
+
+    # Auto-like ao favoritar (mas não remove like ao desfavoritar)
+    if post.is_starred and not post.is_liked:
+        post.is_liked = True
+        post.liked_at = datetime.utcnow().isoformat()
+        invalidate_user_profile(db)
+
+    db.commit()
+    return {"is_starred": post.is_starred, "starred_at": post.starred_at}
+```
+
+**Nota:** Desfavoritar NÃO remove o like. O usuário pode querer manter o like para treinar a IA mesmo sem guardar nos favoritos.
+
+### 3.3 Frontend
 
 - Novo ícone de "like" (coração ou polegar) no post
 - Atalho de teclado: `L` para toggle like
 - Contagem de posts gostados na UI (opcional)
+- Ao favoritar, ícone de like também fica ativo automaticamente
 
 ---
 
@@ -525,16 +554,21 @@ POST /api/admin/process-suggestions
 1. **Campo de liked**: Criar campo separado `is_liked` (não reusar `starred`)
    - Semântica diferente: favorito é para guardar, like é para treinar IA
 
-2. **Quantidade de tags**: 5-10 tags por post
-   - Mais tags = melhor qualidade de matching
+2. **Auto-like ao favoritar**: Sim
+   - Favoritar automaticamente marca como liked
+   - Desfavoritar NÃO remove o like
 
-3. **Threshold de tags para candidato**: 4 tags em comum
+3. **Quantidade de tags**: ⚠️ EM ANÁLISE (5-10 tags por post)
+   - Mais tags = melhor matching, mas mais tokens consumidos
+   - Avaliar custo/benefício antes de implementar
+
+4. **Threshold de tags para candidato**: 4 tags em comum
    - Mais restritivo para melhorar qualidade das sugestões
 
-4. **Score mínimo para sugestão**: 80%
+5. **Score mínimo para sugestão**: 80%
    - Ajustar baseado em feedback se necessário
 
-5. **Expiração de sugestões**: Não expira
+6. **Expiração de sugestões**: Não expira
    - Processos de limpeza existentes já removem posts antigos
    - Sugestões são removidas junto com os posts
 
