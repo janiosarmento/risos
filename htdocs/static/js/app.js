@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260124h';
+const APP_VERSION = '20260124i';
 const API_BASE = '/api';
 
 function app() {
@@ -1018,6 +1018,10 @@ function app() {
                     params.set('starred_only', 'true');
                 } else if (this.filter === 'suggested') {
                     params.set('suggested_only', 'true');
+                    // Also respect unread filter in suggested view
+                    if (this.postFilter === 'unread') {
+                        params.set('unread_only', 'true');
+                    }
                 } else if (this.postFilter === 'unread') {
                     params.set('unread_only', 'true');
                 }

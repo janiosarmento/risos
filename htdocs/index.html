@@ -143,9 +143,8 @@
                                 x-text="totalUnread"
                             ></span>
                         </button>
-                        <!-- Suggested posts (only visible when there are suggestions) -->
+                        <!-- Suggested posts -->
                         <button
-                            x-show="suggestedCount > 0"
                             @click="postFilter = 'unread'; setFilter('suggested')"
                             class="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2"
                             :class="filter === 'suggested' ? 'bg-purple-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
@@ -155,6 +154,7 @@
                             </svg>
                             <span x-text="t('sidebar.suggested')"></span>
                             <span
+                                x-show="suggestedCount > 0"
                                 class="ml-auto"
                                 :class="filter === 'suggested' ? 'text-white/80' : 'text-purple-600 dark:text-purple-400'"
                                 x-text="suggestedCount"
