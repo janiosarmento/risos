@@ -83,9 +83,9 @@ The app learns what you like and suggests similar posts. Here's how it works:
 1. **Like posts** — Press `L` or click the heart icon on posts you enjoy
 2. **Profile generation** — After 10+ likes, the system builds your interest profile
 3. **Tag matching** — New posts are compared by topic tags (extracted during summarization)
-4. **AI scoring** — Candidates with 3+ matching tags are evaluated by AI for relevance
+4. **AI scoring** — Candidates with enough matching tags are evaluated by AI for relevance
 
-Suggestions appear in the sidebar (purple "Suggested" button) once matches are found.
+Suggestions appear in the sidebar (purple "Suggested" button) once matches are found. You can adjust the sensitivity in **Settings > General > Suggestion Sensitivity** (1-5 tags, default 3). Lower values mean more suggestions, higher values mean more precision.
 
 **Why tags instead of embeddings?**
 
