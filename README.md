@@ -63,7 +63,7 @@ JWT_SECRET=your_secret_key_minimum_32_chars  # openssl rand -hex 32
 CEREBRAS_API_KEY=your_key                    # from https://cloud.cerebras.ai/
 ```
 
-All other settings (AI model, summary language, data retention, interface behavior) are configured in the UI via **Settings > General**.
+All other settings (AI model, summary language, data retention, interface behavior) are configured in the UI via **Settings > General**. The settings page also shows the app version and a "Clear cache" link for troubleshooting.
 
 ### Rate Limiting & Reliability
 
