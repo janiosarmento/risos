@@ -1359,6 +1359,22 @@
                                             <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.seconds')"></span>
                                         </div>
                                     </div>
+                                    <!-- Suggestion Sensitivity -->
+                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.suggestionMinTags')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.suggestionMinTagsDesc')"></p>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="5"
+                                                :value="suggestionMinTags"
+                                                @change="setSuggestionMinTags($event.target.value)"
+                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            >
+                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.tags')"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

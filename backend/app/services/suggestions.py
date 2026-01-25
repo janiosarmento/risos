@@ -15,8 +15,8 @@ from app.services.user_profile import get_setting, set_setting, get_user_profile
 
 logger = logging.getLogger(__name__)
 
-# Minimum tag overlap to consider a post as candidate
-MIN_TAG_OVERLAP = 3
+# Default minimum tag overlap (can be overridden in preferences)
+DEFAULT_MIN_TAG_OVERLAP = 3
 
 # Maximum candidates to process per batch
 MAX_CANDIDATES_PER_BATCH = 50
@@ -25,7 +25,7 @@ MAX_CANDIDATES_PER_BATCH = 50
 CANDIDATE_WINDOW_HOURS = 24
 
 
-def get_suggestion_candidates(db: Session) -> List[Tuple[Post, int]]:
+def get_suggestion_candidates(db: Session, min_tag_overlap: int = None) -> List[Tuple[Post, int]]:
     """
     Get posts that are potential suggestions based on tag overlap with user profile.
 
@@ -34,11 +34,20 @@ def get_suggestion_candidates(db: Session) -> List[Tuple[Post, int]]:
     - Have an AI summary
     - Are not already suggested
     - Are not read
-    - Have at least MIN_TAG_OVERLAP tags in common with user's interest tags
+    - Have at least min_tag_overlap tags in common with user's interest tags
+
+    Args:
+        db: Database session
+        min_tag_overlap: Minimum tags in common (default: from preferences or 3)
 
     Returns:
         List of (Post, tag_overlap_count) tuples, sorted by overlap (highest first)
     """
+    # Get minimum tag overlap from preferences if not specified
+    if min_tag_overlap is None:
+        from app.routes.preferences import get_effective_suggestion_min_tags
+        min_tag_overlap = get_effective_suggestion_min_tags(db)
+
     # Get user's interest tags from profile
     profile = get_user_profile(db)
     if not profile or not profile.get("tags"):
@@ -49,10 +58,10 @@ def get_suggestion_candidates(db: Session) -> List[Tuple[Post, int]]:
     if not profile_tags:
         return []
 
-    logger.debug(f"Finding candidates with overlap to {len(profile_tags)} profile tags")
+    logger.debug(f"Finding candidates with min {min_tag_overlap} tags overlap (profile has {len(profile_tags)} tags)")
 
-    # Calculate time threshold
-    time_threshold = (datetime.utcnow() - timedelta(hours=CANDIDATE_WINDOW_HOURS)).isoformat()
+    # Calculate time threshold (use datetime object for proper comparison)
+    time_threshold = datetime.utcnow() - timedelta(hours=CANDIDATE_WINDOW_HOURS)
 
     # Get recent posts with their tags
     # Posts must have a summary (join with AISummary)
@@ -81,7 +90,7 @@ def get_suggestion_candidates(db: Session) -> List[Tuple[Post, int]]:
         common_tags = post_tags.intersection(profile_tags)
         overlap_count = len(common_tags)
 
-        if overlap_count >= MIN_TAG_OVERLAP:
+        if overlap_count >= min_tag_overlap:
             candidates.append((post, overlap_count))
             logger.debug(
                 f"Candidate: '{post.title[:50]}...' with {overlap_count} tags in common: {common_tags}"

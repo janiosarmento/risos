@@ -30,6 +30,8 @@ PREF_TOAST_TIMEOUT = "pref_toast_timeout"
 PREF_IDLE_REFRESH = "pref_idle_refresh"
 PREF_READING_MODE = "pref_reading_mode"
 PREF_SPLIT_RATIO = "pref_split_ratio"
+# Suggestions settings
+PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 
 
 class PreferencesResponse(BaseModel):
@@ -47,6 +49,8 @@ class PreferencesResponse(BaseModel):
     idle_refresh_seconds: Optional[int] = None
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
+    # Suggestions settings
+    suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions (1-5)
 
 
 class PreferencesUpdate(BaseModel):
@@ -64,6 +68,8 @@ class PreferencesUpdate(BaseModel):
     idle_refresh_seconds: Optional[int] = None
     reading_mode: Optional[str] = None
     split_ratio: Optional[int] = None
+    # Suggestions settings
+    suggestion_min_tags: Optional[int] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -103,6 +109,7 @@ def get_preferences(
         PREF_IDLE_REFRESH,
         PREF_READING_MODE,
         PREF_SPLIT_RATIO,
+        PREF_SUGGESTION_MIN_TAGS,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -153,6 +160,8 @@ def get_preferences(
         ),
         reading_mode=prefs[PREF_READING_MODE] or "fullscreen",
         split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
+        # Suggestions
+        suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
     )
 
 
@@ -205,6 +214,12 @@ def update_preferences(
         # Clamp to valid range
         ratio = max(20, min(80, prefs.split_ratio))
         _set_setting(db, PREF_SPLIT_RATIO, str(ratio))
+
+    # Suggestions settings
+    if prefs.suggestion_min_tags is not None:
+        # Clamp to valid range (1-5)
+        min_tags = max(1, min(5, prefs.suggestion_min_tags))
+        _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(min_tags))
 
     db.commit()
 
@@ -292,3 +307,14 @@ def get_effective_idle_refresh(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return env_settings.idle_refresh_seconds
+
+
+def get_effective_suggestion_min_tags(db: Session) -> int:
+    """Get minimum tag overlap for suggestions from app_settings or default (3)."""
+    saved = _get_setting(db, PREF_SUGGESTION_MIN_TAGS)
+    if saved:
+        try:
+            return max(1, min(5, int(saved)))
+        except (ValueError, TypeError):
+            pass
+    return 3  # Default: 3 tags minimum

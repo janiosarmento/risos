@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260124c';
+const APP_VERSION = '20260124d';
 const API_BASE = '/api';
 
 function app() {
@@ -61,6 +61,9 @@ function app() {
         // Idle detection
         idleTimeoutId: null,
         idleRefreshSeconds: 180, // Default 3 minutes, loaded from config
+
+        // Suggestions
+        suggestionMinTags: 3, // Default 3 tags overlap required
 
         // Reading mode
         readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
@@ -336,6 +339,11 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        setSuggestionMinTags(value) {
+            this.suggestionMinTags = Math.max(1, Math.min(5, parseInt(value) || 3));
+            if (this.token) this.savePreferencesToServer();
+        },
+
         setReadingMode(mode) {
             this.readingMode = mode;
             // Close post when switching modes
@@ -409,6 +417,7 @@ function app() {
                         idle_refresh_seconds: this.idleRefreshSeconds,
                         reading_mode: this.readingMode,
                         split_ratio: this.splitRatio,
+                        suggestion_min_tags: this.suggestionMinTags,
                     }),
                 });
             } catch (e) {
@@ -465,6 +474,9 @@ function app() {
                 if (serverPrefs.idle_refresh_seconds !== null && serverPrefs.idle_refresh_seconds !== undefined) {
                     this.idleRefreshSeconds = serverPrefs.idle_refresh_seconds;
                     this.resetIdleTimer();
+                }
+                if (serverPrefs.suggestion_min_tags !== null && serverPrefs.suggestion_min_tags !== undefined) {
+                    this.suggestionMinTags = serverPrefs.suggestion_min_tags;
                 }
                 if (serverPrefs.reading_mode) {
                     this.readingMode = serverPrefs.reading_mode;

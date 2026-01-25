@@ -97,7 +97,10 @@
     "readingModeDesc": "Escolha como os posts são exibidos ao abrir",
     "readingModeFullscreen": "Tela Cheia",
     "readingModeSplit": "Dividido",
-    "readingModeSplitNote": "Modo dividido só disponível em telas de 1024px ou mais"
+    "readingModeSplitNote": "Modo dividido só disponível em telas de 1024px ou mais",
+    "suggestionMinTags": "Sensibilidade das Sugestões",
+    "suggestionMinTagsDesc": "Mínimo de tags em comum para sugerir um post (1=mais sugestões, 5=mais precisas)",
+    "tags": "tags"
   },
   "splitView": {
     "selectPost": "Selecione um post para ler",
