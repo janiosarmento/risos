@@ -143,12 +143,12 @@ def list_posts(
         )
         query = query.filter(Post.feed_id.in_(feed_ids))
 
-    # Apply starred, suggested, or unread filter (mutually exclusive)
+    # Apply filters (can be combined)
     if starred_only:
         query = query.filter(Post.is_starred == True)
-    elif suggested_only:
+    if suggested_only:
         query = query.filter(Post.is_suggested == True)
-    elif unread_only:
+    if unread_only:
         query = query.filter(Post.is_read == False)
 
     # Count total
