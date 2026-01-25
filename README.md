@@ -76,6 +76,24 @@ The app includes built-in protections to handle API rate limits gracefully:
 
 You can monitor the queue status via `GET /api/admin/queue-status` and clear stuck items with `POST /api/admin/clear-queue-cooldowns`.
 
+### Cloudflare Bypass (Optional)
+
+Some sites use Cloudflare protection that blocks automated requests. The app can detect these blocks and fall back to [curl-impersonate](https://github.com/lwthiker/curl-impersonate), a tool that mimics Chrome's TLS fingerprint.
+
+**This is optional** — the app works fine without it. When a Cloudflare block is detected and curl-impersonate is not installed, the error message will indicate this clearly.
+
+To install (Linux x86_64):
+
+```bash
+curl -LO https://github.com/lwthiker/curl-impersonate/releases/download/v0.6.1/curl-impersonate-v0.6.1.x86_64-linux-gnu.tar.gz
+tar -xzf curl-impersonate-v0.6.1.x86_64-linux-gnu.tar.gz
+sudo mv curl-impersonate-chrome /usr/local/bin/
+```
+
+For other platforms, see the [releases page](https://github.com/lwthiker/curl-impersonate/releases).
+
+**Limitations:** curl-impersonate bypasses TLS fingerprint detection, but cannot solve JavaScript challenges. Sites using Cloudflare's JS-based verification will still be blocked.
+
 ### Suggestions System
 
 The app learns what you like and suggests similar posts. Here's how it works:
