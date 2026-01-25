@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260124g';
+const APP_VERSION = '20260124h';
 const API_BASE = '/api';
 
 function app() {
@@ -1354,6 +1354,19 @@ function app() {
                     await this.loadFeeds();
                     await this.loadPosts(true);
                     this.showSuccess(this.t('refresh.newPosts').replace('{count}', totalNew));
+
+                    // Process suggestions for new posts (fire and forget)
+                    this.fetchApi('/suggestions/admin/process-suggestions', { method: 'POST' })
+                        .then(result => {
+                            if (result && result.success && result.message) {
+                                // Update suggested count if new suggestions were found
+                                const match = result.message.match(/(\d+) new suggestions/);
+                                if (match && parseInt(match[1]) > 0) {
+                                    this.suggestedCount += parseInt(match[1]);
+                                }
+                            }
+                        })
+                        .catch(() => {}); // Ignore errors
                 } else {
                     this.showInfo(this.t('refresh.noNewPosts'));
                 }
