@@ -100,7 +100,8 @@
     "readingModeSplitNote": "Split view only available on screens 1024px or wider",
     "suggestionMinTags": "Suggestion Sensitivity",
     "suggestionMinTagsDesc": "Minimum tags in common to suggest a post (1=more suggestions, 5=more precise)",
-    "tags": "tags"
+    "tags": "tags",
+    "clearCache": "Clear cache"
   },
   "splitView": {
     "selectPost": "Select a post to read",

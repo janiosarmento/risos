@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260125b';
+const APP_VERSION = '20260125c';
 const API_BASE = '/api';
 
 function app() {
@@ -1832,6 +1832,13 @@ function app() {
             this.editingFeed = null;
             this.newCategoryName = '';
             this.newFeed = { url: '', category_id: '' };
+        },
+
+        clearCacheAndReload() {
+            // Clear localStorage
+            localStorage.clear();
+            // Reload with cache-busting timestamp
+            window.location.href = window.location.pathname + '?_=' + Date.now();
         },
 
         // Idle detection - auto refresh unread counts after inactivity
