@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260124e';
+const APP_VERSION = '20260124f';
 const API_BASE = '/api';
 
 function app() {
@@ -179,12 +179,15 @@ function app() {
         },
 
         updatePost(id, updates) {
-            const listPost = this.getPostById(id);
-            if (listPost) {
-                Object.assign(listPost, updates);
+            // Find the post in the list and update it
+            const index = this.getPostIndex(id);
+            if (index >= 0) {
+                // Replace the object to ensure Alpine reactivity on all browsers
+                this.posts[index] = { ...this.posts[index], ...updates };
             }
+            // Also update currentPost if it's the same post
             if (this.currentPost?.id === id) {
-                Object.assign(this.currentPost, updates);
+                this.currentPost = { ...this.currentPost, ...updates };
             }
         },
 
