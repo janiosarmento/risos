@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260124d';
+const APP_VERSION = '20260124e';
 const API_BASE = '/api';
 
 function app() {
@@ -1210,6 +1210,15 @@ function app() {
                 const feed = this.feeds.find(f => f.id === post.feed_id);
                 if (feed) {
                     feed.unread_count = Math.max(0, (feed.unread_count || 0) + (isRead ? -1 : 1));
+                }
+
+                // Update suggested count if this was a suggested post
+                if (post.is_suggested) {
+                    if (isRead) {
+                        this.suggestedCount = Math.max(0, this.suggestedCount - 1);
+                    } else {
+                        this.suggestedCount++;
+                    }
                 }
             } catch (error) {
                 console.error('Failed to mark post read:', error);
