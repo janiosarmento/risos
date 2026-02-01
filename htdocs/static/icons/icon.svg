@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#111827" rx="64"/>
+
+  <!-- RSS Icon (top-left, 2/3 size) -->
+  <g transform="translate(24, 24)">
+    <!-- RSS dot -->
+    <circle cx="48" cy="292" r="44" fill="#f97316"/>
+    <!-- RSS inner wave -->
+    <path d="M48 180c100 0 160 60 160 160" fill="none" stroke="#f97316" stroke-width="44" stroke-linecap="round"/>
+    <!-- RSS outer wave -->
+    <path d="M48 68c156 0 272 116 272 272" fill="none" stroke="#f97316" stroke-width="44" stroke-linecap="round"/>
+  </g>
+
+  <!-- Cat face with tears of joy (bottom-right, 2/3 size) -->
+  <g transform="translate(168, 168)">
+    <!-- Cat head -->
+    <ellipse cx="200" cy="220" rx="130" ry="115" fill="#ffcc4d"/>
+
+    <!-- Left ear -->
+    <path d="M95 130 L70 30 L140 90 Z" fill="#ffcc4d"/>
+    <path d="M100 115 L85 50 L130 95 Z" fill="#ffaaaa"/>
+
+    <!-- Right ear -->
+    <path d="M305 130 L330 30 L260 90 Z" fill="#ffcc4d"/>
+    <path d="M300 115 L315 50 L270 95 Z" fill="#ffaaaa"/>
+
+    <!-- Eyes (closed, happy) -->
+    <path d="M130 200 Q150 170 170 200" fill="none" stroke="#664500" stroke-width="8" stroke-linecap="round"/>
+    <path d="M230 200 Q250 170 270 200" fill="none" stroke="#664500" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Tears -->
+    <ellipse cx="115" cy="230" rx="15" ry="22" fill="#5dadec"/>
+    <ellipse cx="285" cy="230" rx="15" ry="22" fill="#5dadec"/>
+
+    <!-- Nose -->
+    <ellipse cx="200" cy="250" rx="18" ry="12" fill="#ffaaaa"/>
+
+    <!-- Mouth (big smile) -->
+    <path d="M150 270 Q200 320 250 270" fill="none" stroke="#664500" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- Whiskers -->
+    <line x1="80" y1="250" x2="135" y2="260" stroke="#664500" stroke-width="4"/>
+    <line x1="80" y1="275" x2="135" y2="275" stroke="#664500" stroke-width="4"/>
+    <line x1="265" y1="260" x2="320" y2="250" stroke="#664500" stroke-width="4"/>
+    <line x1="265" y1="275" x2="320" y2="275" stroke="#664500" stroke-width="4"/>
+  </g>
+</svg>
