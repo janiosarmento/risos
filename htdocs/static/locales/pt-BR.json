@@ -175,7 +175,9 @@
   },
   "time": {
     "now": "agora",
-    "unknown": "Desconhecido"
+    "unknown": "Desconhecido",
+    "hoursAgo": "{n} hora(s) atrás",
+    "daysAgo": "{n} dia(s) atrás"
   },
   "refresh": {
     "updating": "Atualizando {current}/{total}: {title}...",

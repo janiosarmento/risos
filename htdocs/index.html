@@ -420,7 +420,8 @@
                                     'bg-blue-100 dark:bg-gray-800': selectedIndex === index,
                                     'hover:bg-gray-100 dark:hover:bg-gray-800': selectedIndex !== index,
                                     'opacity-60': post.is_read,
-                                    'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id)
+                                    'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id),
+                                    'mt-4 border-t-4 border-t-gray-300 dark:border-t-gray-600': shouldShowDateSeparator(index) && index > 0
                                 }"
                                 :data-index="index"
                             >
@@ -1506,6 +1507,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260120b"></script>
+    <script src="/static/js/app.js?v=20260207b"></script>
 </body>
 </html>
