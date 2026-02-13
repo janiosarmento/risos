@@ -1136,12 +1136,11 @@
                             <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
                                 <h3 class="text-lg font-medium mb-3" x-text="t('opml.exportTitle')"></h3>
                                 <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('opml.exportDesc')"></p>
-                                <a
-                                    :href="'/api/feeds/export-opml'"
-                                    class="inline-block px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
-                                    download="feeds.opml"
+                                <button
+                                    @click="exportOpml()"
+                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
                                     x-text="t('opml.download')"
-                                ></a>
+                                ></button>
                             </div>
                         </div>
 
@@ -1507,6 +1506,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260207b"></script>
+    <script src="/static/js/app.js?v=20260213a"></script>
 </body>
 </html>

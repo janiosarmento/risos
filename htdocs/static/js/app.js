@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260207b';
+const APP_VERSION = '20260213a';
 const API_BASE = '/api';
 
 function app() {
@@ -1844,6 +1844,24 @@ function app() {
                 this.importingOpml = false;
                 // Reset file input
                 event.target.value = '';
+            }
+        },
+
+        async exportOpml() {
+            try {
+                const response = await fetch(`${API_BASE}/feeds/export-opml`, {
+                    headers: { 'Authorization': `Bearer ${this.token}` },
+                });
+                if (!response.ok) throw new Error('Export failed');
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'feeds.opml';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Failed to export OPML:', error);
             }
         },
 
