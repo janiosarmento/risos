@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260218a';
+const APP_VERSION = '20260220a';
 const API_BASE = '/api';
 
 function app() {
@@ -1882,6 +1882,15 @@ function app() {
             this.editingFeed = null;
             this.newCategoryName = '';
             this.newFeed = { url: '', category_id: '' };
+        },
+
+        async resetCircuitBreaker() {
+            try {
+                await this.fetchApi('/admin/reset-circuit-breaker', { method: 'POST' });
+                this.showToast(this.t('settings.circuitBreakerReset'));
+            } catch (error) {
+                console.error('Failed to reset circuit breaker:', error);
+            }
         },
 
         clearCacheAndReload() {

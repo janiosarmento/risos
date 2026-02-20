@@ -101,7 +101,9 @@
     "suggestionMinTags": "Sensibilidade das Sugestões",
     "suggestionMinTagsDesc": "Mínimo de tags em comum para sugerir um post (1=mais sugestões, 5=mais precisas)",
     "tags": "tags",
-    "clearCache": "Limpar cache"
+    "clearCache": "Limpar cache",
+    "resetCircuitBreaker": "Resetar IA",
+    "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso"
   },
   "splitView": {
     "selectPost": "Selecione um post para ler",

@@ -101,7 +101,9 @@
     "suggestionMinTags": "Suggestion Sensitivity",
     "suggestionMinTagsDesc": "Minimum tags in common to suggest a post (1=more suggestions, 5=more precise)",
     "tags": "tags",
-    "clearCache": "Clear cache"
+    "clearCache": "Clear cache",
+    "resetCircuitBreaker": "Reset AI",
+    "circuitBreakerReset": "AI circuit breaker reset successfully"
   },
   "splitView": {
     "selectPost": "Select a post to read",

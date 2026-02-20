@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import SummaryQueue, SummaryFailure, AISummary, Post
+from app.models import SummaryQueue, SummaryFailure, AISummary, Post, AppSettings
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +317,44 @@ def clear_queue_cooldowns(
     db.commit()
 
     return {"ok": True, "cleared": in_cooldown}
+
+
+@router.post("/reset-circuit-breaker")
+def reset_circuit_breaker(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Reset circuit breaker, API key cooldowns, and queue cooldowns.
+    """
+    from app.services.cerebras import circuit_breaker, api_key_rotator
+
+    # Reset circuit breaker in DB
+    db.query(AppSettings).filter(
+        AppSettings.key.in_([
+            "cerebras_state",
+            "cerebras_failures",
+            "cerebras_half_successes",
+            "cerebras_last_failure",
+            "cerebras_last_call",
+        ])
+    ).delete()
+
+    # Reset queue cooldowns
+    in_cooldown = (
+        db.query(SummaryQueue)
+        .filter(SummaryQueue.cooldown_until > datetime.utcnow())
+        .count()
+    )
+    db.query(SummaryQueue).update(
+        {"cooldown_until": None, "attempts": 0, "locked_at": None}
+    )
+
+    db.commit()
+
+    # Reload in-memory state
+    circuit_breaker._load_state()
+
+    return {"ok": True, "queue_cooldowns_cleared": in_cooldown}
 
 
 # =============================================================================
