@@ -212,6 +212,50 @@ class PermanentError(CerebrasError):
     pass
 
 
+class ModelSpecificError(PermanentError):
+    """Error likely caused by the model (bad response format, unknown structure).
+    Triggers model fallback when other models are available."""
+
+    pass
+
+
+# Cache for available models (shared with admin routes)
+_available_models_cache: Optional[List[str]] = None
+_available_models_cache_time: Optional[datetime] = None
+_MODELS_CACHE_TTL = timedelta(minutes=30)
+
+
+async def get_available_models() -> List[str]:
+    """Fetch available model IDs from Cerebras API (cached 30 min)."""
+    global _available_models_cache, _available_models_cache_time
+
+    now = datetime.utcnow()
+    if _available_models_cache and _available_models_cache_time:
+        if now - _available_models_cache_time < _MODELS_CACHE_TTL:
+            return _available_models_cache
+
+    api_keys = settings.cerebras_api_keys
+    if not api_keys:
+        return []
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(
+                "https://api.cerebras.ai/v1/models",
+                headers={"Authorization": f"Bearer {api_keys[0]}"},
+            )
+            if response.status_code == 200:
+                data = response.json()
+                models = [m["id"] for m in data.get("data", [])]
+                _available_models_cache = models
+                _available_models_cache_time = now
+                return models
+    except Exception as e:
+        logger.warning(f"Failed to fetch available models: {e}")
+
+    return _available_models_cache or []
+
+
 @dataclass
 class SummaryResult:
     """Summary generation result."""
@@ -566,9 +610,170 @@ def is_garbage_content(content: str) -> bool:
     return False
 
 
+async def _call_model(
+    model: str, api_key: str, key_index: int, messages: list
+) -> SummaryResult:
+    """
+    Make a single API call to a specific model and parse the response.
+
+    Raises:
+        TemporaryError: Infrastructure error (rate limit, timeout, server error)
+        ModelSpecificError: Error likely caused by the model (bad response format)
+        PermanentError: Other permanent errors
+    """
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.3,
+        "max_tokens": 1000,
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=settings.cerebras_timeout
+        ) as client:
+            response = await client.post(
+                CEREBRAS_API_URL,
+                headers=headers,
+                json=payload,
+            )
+
+            # Handle rate limit (cooldown specific to this key, does not affect circuit breaker)
+            if response.status_code == 429:
+                retry_after = response.headers.get("retry-after", "unknown")
+                logger.warning(
+                    f"Rate limit 429 on key {key_index + 1}: "
+                    f"retry-after={retry_after}, "
+                    f"headers={dict(response.headers)}"
+                )
+                api_key_rotator.set_key_cooldown(api_key, seconds=300)
+                raise TemporaryError(
+                    f"Rate limit reached on key {key_index + 1}"
+                )
+
+            # Handle server errors
+            if response.status_code >= 500:
+                circuit_breaker.record_failure()
+                raise TemporaryError(
+                    f"Server error: HTTP {response.status_code}"
+                )
+
+            # Handle client errors
+            if response.status_code >= 400:
+                raise ModelSpecificError(
+                    f"Request error: HTTP {response.status_code}"
+                )
+
+            # Parse response
+            data = response.json()
+            logger.debug(f"API response keys: {data.keys()}")
+
+            if "choices" not in data or not data["choices"]:
+                logger.error(f"Response without choices: {data}")
+                raise ModelSpecificError("Empty API response")
+
+            choice = data["choices"][0]
+            logger.debug(f"Choice keys: {choice.keys()}")
+
+            # Check if response was truncated
+            if choice.get("finish_reason") == "length":
+                logger.warning(
+                    "Response truncated by API (finish_reason=length)"
+                )
+
+            # Try different response structures
+            message = choice.get("message", {})
+            if "content" in message:
+                content_response = message["content"]
+            elif "reasoning" in message:
+                content_response = message["reasoning"]
+            elif "text" in choice:
+                content_response = choice["text"]
+            elif "content" in choice:
+                content_response = choice["content"]
+            else:
+                logger.error(f"Unknown response structure: {choice}")
+                raise ModelSpecificError(
+                    f"Unknown response structure: {list(choice.keys())}"
+                )
+
+            # Parse JSON from response
+            try:
+                result = _parse_json_response(content_response)
+
+                summary_pt = result.get("summary_pt", "").strip()
+                one_line = result.get("one_line_summary", "").strip()
+                translated_title = result.get("translated_title")
+
+                # Fix double-escaped newlines
+                summary_pt = summary_pt.replace("\\n", "\n")
+                one_line = one_line.replace("\\n", "\n")
+
+                # Clean translated_title if "null" string or empty
+                if translated_title and isinstance(translated_title, str):
+                    translated_title = translated_title.strip()
+                    if translated_title.lower() in ("null", "none", ""):
+                        translated_title = None
+
+                # Extract and normalize tags
+                raw_tags = result.get("tags", [])
+                tags = []
+                if isinstance(raw_tags, list):
+                    for tag in raw_tags:
+                        if isinstance(tag, str):
+                            normalized = tag.lower().strip()
+                            if normalized and len(normalized) > 1 and normalized not in (
+                                "news", "article", "technology", "update", "post"
+                            ):
+                                tags.append(normalized)
+                tags = tags[:7]
+
+                # Allow both empty (error pages) or both filled
+                if bool(summary_pt) != bool(one_line):
+                    raise ValueError(
+                        "Inconsistent fields (one empty, other not)"
+                    )
+
+                # Truncate one_line if needed
+                if len(one_line) > 150:
+                    one_line = one_line[:147] + "..."
+
+                circuit_breaker.record_success()
+
+                return SummaryResult(
+                    summary_pt=summary_pt,
+                    one_line_summary=one_line,
+                    translated_title=translated_title,
+                    tags=tags,
+                )
+
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Error parsing response from model {model}: {e}")
+                logger.error(f"Raw response: {content_response[:500]}")
+                raise ModelSpecificError(f"Invalid response: {e}")
+
+    except httpx.TimeoutException:
+        circuit_breaker.record_failure()
+        raise TemporaryError(f"Timeout after {settings.cerebras_timeout}s")
+
+    except httpx.RequestError as e:
+        circuit_breaker.record_failure()
+        raise TemporaryError(f"Connection error: {e}")
+
+
 async def generate_summary(content: str, title: str = "", title_only: bool = False) -> SummaryResult:
     """
-    Generate summary using Cerebras API.
+    Generate summary using Cerebras API with model fallback.
+
+    Tries the user's preferred model first. If it fails with a model-specific
+    error (bad response format, unknown structure), falls back to other
+    available models. Infrastructure errors (rate limit, timeout) are NOT
+    retried with different models.
 
     Args:
         content: Article content to summarize
@@ -601,12 +806,12 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     if not api_key:
         raise TemporaryError("All API keys are in cooldown")
 
-    # Truncate content if too large (max ~4000 tokens ≈ 16000 chars)
+    # Truncate content if too large
     max_content_len = 12000
     if len(content) > max_content_len:
         content = content[:max_content_len] + "..."
 
-    # Get effective settings from app_settings (with env fallback)
+    # Get effective settings
     from app.routes.preferences import (
         get_effective_summary_language,
         get_effective_cerebras_model,
@@ -614,166 +819,50 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
 
     db = SessionLocal()
     try:
-        effective_model = get_effective_cerebras_model(db)
+        preferred_model = get_effective_cerebras_model(db)
         effective_language = get_effective_summary_language(db)
     finally:
         db.close()
 
-    # Prepare request
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    # Build message list (reused across model attempts)
+    messages = [
+        {"role": "system", "content": get_system_prompt()},
+        {"role": "user", "content": get_user_prompt(content, title, effective_language)},
+    ]
 
-    payload = {
-        "model": effective_model,
-        "messages": [
-            {"role": "system", "content": get_system_prompt()},
-            {"role": "user", "content": get_user_prompt(content, title, effective_language)},
-        ],
-        "temperature": 0.3,
-        "max_tokens": 1000,
-    }
-
+    # Build model list: preferred first, then others as fallback
+    models_to_try = [preferred_model]
     try:
-        async with httpx.AsyncClient(
-            timeout=settings.cerebras_timeout
-        ) as client:
-            response = await client.post(
-                CEREBRAS_API_URL,
-                headers=headers,
-                json=payload,
+        available = await get_available_models()
+        for m in available:
+            if m != preferred_model:
+                models_to_try.append(m)
+    except Exception:
+        pass  # If we can't fetch models, just try the preferred one
+
+    last_error = None
+    for model in models_to_try:
+        try:
+            result = await _call_model(model, api_key, key_index, messages)
+            if model != preferred_model:
+                logger.info(
+                    f"Fallback model {model} succeeded "
+                    f"(preferred {preferred_model} failed)"
+                )
+            return result
+
+        except ModelSpecificError as e:
+            logger.warning(
+                f"Model {model} failed: {e}"
+                + (f", trying next model..." if model != models_to_try[-1] else "")
             )
+            last_error = e
+            continue
 
-            # Handle rate limit (cooldown specific to this key, does not affect circuit breaker)
-            if response.status_code == 429:
-                # Log rate limit details for debugging
-                retry_after = response.headers.get("retry-after", "unknown")
-                logger.warning(
-                    f"Rate limit 429 on key {key_index + 1}: "
-                    f"retry-after={retry_after}, "
-                    f"headers={dict(response.headers)}"
-                )
-                # Use 5-minute cooldown to avoid hitting rate limits repeatedly
-                api_key_rotator.set_key_cooldown(api_key, seconds=300)
-                raise TemporaryError(
-                    f"Rate limit reached on key {key_index + 1}"
-                )
+        except (TemporaryError, PermanentError):
+            # Infrastructure errors — don't try other models
+            raise
 
-            # Handle server errors
-            if response.status_code >= 500:
-                circuit_breaker.record_failure()
-                raise TemporaryError(
-                    f"Server error: HTTP {response.status_code}"
-                )
-
-            # Handle client errors
-            if response.status_code >= 400:
-                circuit_breaker.record_failure()
-                raise PermanentError(
-                    f"Request error: HTTP {response.status_code}"
-                )
-
-            # Parse response
-            data = response.json()
-            logger.debug(f"API response keys: {data.keys()}")
-
-            if "choices" not in data or not data["choices"]:
-                circuit_breaker.record_failure()
-                logger.error(f"Response without choices: {data}")
-                raise PermanentError("Empty API response")
-
-            choice = data["choices"][0]
-            logger.debug(f"Choice keys: {choice.keys()}")
-
-            # Check if response was truncated
-            if choice.get("finish_reason") == "length":
-                logger.warning(
-                    "Response truncated by API (finish_reason=length)"
-                )
-
-            # Try different response structures
-            message = choice.get("message", {})
-            if "content" in message:
-                content_response = message["content"]
-            elif "reasoning" in message:
-                # Some models return 'reasoning' instead of 'content'
-                content_response = message["reasoning"]
-            elif "text" in choice:
-                content_response = choice["text"]
-            elif "content" in choice:
-                content_response = choice["content"]
-            else:
-                logger.error(f"Unknown response structure: {choice}")
-                circuit_breaker.record_failure()
-                raise PermanentError(
-                    f"Unknown response structure: {list(choice.keys())}"
-                )
-
-            # Parse JSON from response
-            try:
-                result = _parse_json_response(content_response)
-
-                summary_pt = result.get("summary_pt", "").strip()
-                one_line = result.get("one_line_summary", "").strip()
-                translated_title = result.get("translated_title")
-
-                # Fix double-escaped newlines (LLM sometimes outputs \\n instead of \n)
-                # After json.loads(), \\n becomes literal \n string
-                summary_pt = summary_pt.replace("\\n", "\n")
-                one_line = one_line.replace("\\n", "\n")
-
-                # Clean translated_title if "null" string or empty
-                if translated_title and isinstance(translated_title, str):
-                    translated_title = translated_title.strip()
-                    if translated_title.lower() in ("null", "none", ""):
-                        translated_title = None
-
-                # Extract and normalize tags
-                raw_tags = result.get("tags", [])
-                tags = []
-                if isinstance(raw_tags, list):
-                    for tag in raw_tags:
-                        if isinstance(tag, str):
-                            normalized = tag.lower().strip()
-                            # Filter out empty and overly generic tags
-                            if normalized and len(normalized) > 1 and normalized not in (
-                                "news", "article", "technology", "update", "post"
-                            ):
-                                tags.append(normalized)
-                # Keep max 7 tags
-                tags = tags[:7]
-
-                # Allow both empty (error pages) or both filled
-                # But not one empty and other filled
-                if bool(summary_pt) != bool(one_line):
-                    raise ValueError(
-                        "Inconsistent fields (one empty, other not)"
-                    )
-
-                # Truncate one_line if needed
-                if len(one_line) > 150:
-                    one_line = one_line[:147] + "..."
-
-                circuit_breaker.record_success()
-
-                return SummaryResult(
-                    summary_pt=summary_pt,
-                    one_line_summary=one_line,
-                    translated_title=translated_title,
-                    tags=tags,
-                )
-
-            except (json.JSONDecodeError, ValueError) as e:
-                logger.error(f"Error parsing response: {e}")
-                logger.error(f"Raw response: {content_response[:500]}")
-                circuit_breaker.record_failure()
-                raise PermanentError(f"Invalid response: {e}")
-
-    except httpx.TimeoutException:
-        circuit_breaker.record_failure()
-        raise TemporaryError(f"Timeout after {settings.cerebras_timeout}s")
-
-    except httpx.RequestError as e:
-        circuit_breaker.record_failure()
-        raise TemporaryError(f"Connection error: {e}")
+    # All models failed with model-specific errors
+    circuit_breaker.record_failure()
+    raise PermanentError(f"All models failed. Last error: {last_error}")
