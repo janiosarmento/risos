@@ -566,13 +566,14 @@ def is_garbage_content(content: str) -> bool:
     return False
 
 
-async def generate_summary(content: str, title: str = "") -> SummaryResult:
+async def generate_summary(content: str, title: str = "", title_only: bool = False) -> SummaryResult:
     """
     Generate summary using Cerebras API.
 
     Args:
         content: Article content to summarize
         title: Article title (for translation if needed)
+        title_only: If True, skip garbage check (content is just the title)
 
     Returns:
         SummaryResult with summaries
@@ -582,7 +583,7 @@ async def generate_summary(content: str, title: str = "") -> SummaryResult:
         PermanentError: Permanent error (do not retry)
     """
     # Check if content is garbage (error, session, paywall)
-    if is_garbage_content(content):
+    if not title_only and is_garbage_content(content):
         logger.info(
             "Content detected as error/session page, returning empty"
         )

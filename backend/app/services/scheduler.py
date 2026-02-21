@@ -691,19 +691,26 @@ class Scheduler:
                     if not content:
                         content = post.content
 
+                    title_only = False
                     if not content:
-                        # No content, remove from queue
-                        db.query(SummaryQueue).filter(
-                            SummaryQueue.id == candidate.id
-                        ).delete()
-                        db.commit()
-                        continue
+                        if post.title:
+                            # No content but has title — use title as content
+                            # so the AI can at least translate the title
+                            content = post.title
+                            title_only = True
+                        else:
+                            # No content and no title, remove from queue
+                            db.query(SummaryQueue).filter(
+                                SummaryQueue.id == candidate.id
+                            ).delete()
+                            db.commit()
+                            continue
 
                     # Call API
                     try:
                         logger.info(f"Generating summary for post {post.id}...")
                         summary_result = await generate_summary(
-                            content, title=post.title
+                            content, title=post.title, title_only=title_only
                         )
 
                         # Save summary
