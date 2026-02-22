@@ -40,9 +40,11 @@ Sistema de recomendação de posts baseado em IA. O usuário marca posts que "go
                                                       │
                                                       ▼
                         ┌──────────────┐     ┌─────────────────┐
-                        │  Comparação  │────▶│  Sugeridos      │
-                        │  IA (batch)  │     │  (score ≥80%)   │
-                        └──────────────┘     └─────────────────┘
+                        │  Score:      │────▶│  Sugeridos      │
+                        │  overlap /   │     │  (com score %)  │
+                        │  tags_per_   │     └─────────────────┘
+                        │  post * 100  │
+                        └──────────────┘
 ```
 
 ---
@@ -118,7 +120,7 @@ system_prompt: |
   1. A 2-3 sentence summary in {language}
   2. A one-line summary (max 100 chars) in {language}
   3. The title translated to {language} (or original if already in {language})
-  4. Exactly 7 lowercase tags describing the main topics (in English)
+  4. Exactly {tags_count} lowercase tags describing the main topics (in English)
 
   Respond in JSON format:
   {
@@ -349,71 +351,42 @@ def get_suggestion_candidates(db: Session) -> List[Post]:
 
 ---
 
-## Fase 6: Comparação IA em Batch
+## Fase 6: Scoring por Tag Overlap (sem LLM)
 
-### 6.1 Prompt de Comparação
+> **Nota:** A comparação por IA em batch foi removida. O score agora é calculado
+> puramente por tag overlap: `score = overlap_count / tags_per_post * 100`.
+> Isso elimina chamadas extras de IA e torna o sistema instantâneo.
 
-```yaml
-comparison_prompt: |
-  User interest profile:
-  {profile}
-
-  Rate how well each article summary matches the user's interests.
-  Score from 0 to 100 (100 = perfect match).
-  Only return articles with score >= 80.
-
-  Articles:
-  {articles}
-
-  Respond in JSON:
-  {
-    "matches": [
-      {"id": 123, "score": 85},
-      {"id": 456, "score": 92}
-    ]
-  }
-```
-
-### 6.2 Serviço de Comparação
+### 6.1 Serviço de Scoring
 
 ```python
 # services/suggestions.py
 
 def process_suggestion_candidates(db: Session):
     """
-    Processa candidatos em batch e marca os aprovados como sugeridos.
+    Processa candidatos e marca como sugeridos.
+    Score = overlap / tags_per_post * 100 (sem chamadas IA).
     """
-
-    profile = get_setting(db, "user_interest_profile")
-    if not profile:
-        return
+    tags_per_post = get_effective_tags_per_post(db)
 
     candidates = get_suggestion_candidates(db)
     if not candidates:
-        return
+        return 0
 
-    # Formatar artigos para o prompt
-    articles = "\n---\n".join([
-        f"ID: {p.id}\nTitle: {p.title}\nSummary: {p.ai_summary.one_line_summary}"
-        for p in candidates
-    ])
-
-    # Chamada IA única para todo o batch
-    result = call_cerebras(comparison_prompt.format(
-        profile=profile,
-        articles=articles
-    ))
-
-    # Marcar sugeridos
-    for match in result.get("matches", []):
-        post = db.query(Post).filter(Post.id == match["id"]).first()
-        if post:
-            post.is_suggested = 1
-            post.suggestion_score = match["score"]
-            post.suggested_at = datetime.utcnow().isoformat()
+    for post, overlap_count in candidates:
+        score = min(100, round((overlap_count / tags_per_post) * 100))
+        post.is_suggested = 1
+        post.suggestion_score = score
+        post.suggested_at = datetime.utcnow().isoformat()
 
     db.commit()
 ```
+
+### 6.2 Regeneração Manual
+
+Ao clicar "Regenerar sugestões" no frontend, o backend:
+1. Reseta todas as sugestões não-lidas (`is_suggested → 0`)
+2. Reprocessa todos os candidatos com o score atualizado
 
 ### 6.3 Job de Processamento
 
@@ -425,8 +398,7 @@ def process_suggestions():
     """Processa candidatos a sugestão a cada hora."""
     db = get_db_session()
 
-    # Só processar se tiver perfil
-    if get_setting(db, "user_interest_profile"):
+    if get_user_profile(db):
         process_suggestion_candidates(db)
 ```
 
@@ -520,9 +492,9 @@ POST /api/admin/process-suggestions
 |------------------------|------------------|------------|
 | Resumos (já existente) | 500 posts        | 500        |
 | Extração de tags       | junto com resumo | 0 extra    |
-| Atualização de perfil  | 1x/semana        | ~0.14      |
-| Comparação em batch    | 1-2x/dia         | 2          |
-| **Total extra**        |                  | **~2/dia** |
+| Atualização de perfil  | agregação de tags| 0 (puro SQL)|
+| Scoring por overlap    | 1x/hora          | 0 (puro SQL)|
+| **Total extra**        |                  | **0/dia**  |
 
 ### Armazenamento
 
@@ -556,16 +528,15 @@ POST /api/admin/process-suggestions
    - Favoritar automaticamente marca como liked
    - Desfavoritar NÃO remove o like
 
-3. **Quantidade de tags**: 7 tags por post
+3. **Quantidade de tags**: Configurável (3-15, default 7) via Settings > AI
    - Meio-termo entre precisão e ruído
-   - Custo de tokens negligível (~$0.002/dia)
+   - Usado no cálculo do score: `overlap / tags_per_post * 100`
 
 4. **Threshold de tags para candidato**: 3 tags em comum
    - 3/7 = ~43% de overlap
    - Bom equilíbrio entre volume e qualidade
 
-5. **Score mínimo para sugestão**: 80%
-   - Ajustar baseado em feedback se necessário
+5. **Score**: `overlap / tags_per_post * 100` (sem score mínimo — todos os candidatos com min_tags overlap são sugeridos)
 
 6. **Expiração de sugestões**: Não expira
    - Processos de limpeza existentes já removem posts antigos
@@ -598,8 +569,8 @@ Após rodar o sistema por 1-2 semanas, avaliar:
 
 | Problema | Solução |
 |----------|---------|
-| Muitas sugestões ruins | Aumentar threshold (3→4) ou score mínimo (80→85%) |
-| Poucas sugestões | Diminuir threshold (3→2) ou score mínimo (80→70%) |
+| Muitas sugestões ruins | Aumentar min tags (3→4) em Settings > General |
+| Poucas sugestões | Diminuir min tags (3→2) em Settings > General |
 | Tags genéricas demais | Ajustar prompt para pedir tags mais específicas |
 | Tags muito específicas | Ajustar prompt para incluir categorias mais amplas |
 

@@ -102,10 +102,12 @@ The app learns what you like and suggests similar posts — no extra AI calls ne
 
 1. **Like posts** — Press `L` or click the heart icon on posts you enjoy
 2. **Profile generation** — After 10+ likes, the system aggregates all unique tags from your liked posts
-3. **Tag matching** — New posts are scored by how many tags they share with your profile
-4. **Suggestions** — Posts with enough matching tags are marked as suggested
+3. **Tag matching** — New posts are scored by how many tags they share with your profile (`overlap / tags_per_post × 100%`)
+4. **Suggestions** — Posts with enough matching tags are marked as suggested, with a score badge
 
-Suggestions appear in the sidebar (purple "Suggested" button). Click the refresh icon next to it to regenerate suggestions on demand. You can adjust the sensitivity in **Settings > General > Suggestion Sensitivity** (1-5 tags, default 3). Lower values mean more suggestions, higher values mean more precision.
+Suggestions appear in the sidebar (purple "Suggested" button) with a purple percentage badge showing the match score. Click the refresh icon next to it to regenerate suggestions on demand. You can adjust:
+- **Suggestion Sensitivity** in Settings > General (1-5 tags, default 3) — minimum tag overlap to suggest a post
+- **Tags per Post** in Settings > AI (3-15, default 7) — number of tags the AI generates per summary, also used as the denominator for score calculation
 
 **Why tags instead of embeddings or AI scoring?**
 
