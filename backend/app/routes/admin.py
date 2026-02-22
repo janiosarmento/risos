@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.config import load_prompts, settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import SummaryQueue, SummaryFailure, AISummary, Post, AppSettings
@@ -142,6 +142,16 @@ def get_public_config():
     return {
         "toast_timeout_seconds": settings.toast_timeout_seconds,
         "idle_refresh_seconds": settings.idle_refresh_seconds,
+    }
+
+
+@router.get("/prompt-defaults")
+def get_prompt_defaults(user: dict = Depends(get_current_user)):
+    """Return default prompts from prompts.yaml (for Reset to defaults)."""
+    prompts = load_prompts()
+    return {
+        "system_prompt": prompts.get("system_prompt", ""),
+        "user_prompt": prompts.get("user_prompt", ""),
     }
 
 
@@ -387,8 +397,14 @@ async def get_available_models(user: dict = Depends(get_current_user)):
         if now - _models_cache_time < MODELS_CACHE_TTL:
             return _models_cache
 
-    # Get API key
-    api_keys = settings.cerebras_api_keys
+    # Get API key from DB settings or env fallback
+    from app.routes.preferences import get_effective_cerebras_api_keys
+    db_session = next(get_db())
+    try:
+        api_keys = get_effective_cerebras_api_keys(db_session)
+    finally:
+        db_session.close()
+
     if not api_keys:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

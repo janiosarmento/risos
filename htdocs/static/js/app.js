@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260220a';
+const APP_VERSION = '20260221b';
 const API_BASE = '/api';
 
 function app() {
@@ -136,6 +136,13 @@ function app() {
         cerebrasModel: null,   // Loaded from server preferences
         availableSummaryLanguages: [], // Loaded from server
         availableModels: [], // Loaded from server (requires auth)
+        cerebrasApiKeys: '',     // raw text from textarea (masked on load)
+        systemPrompt: '',
+        userPrompt: '',
+        defaultSystemPrompt: '', // for Reset to defaults
+        defaultUserPrompt: '',
+        savingAiSettings: false,
+        aiSettingsSaved: false,
 
         // Data Settings
         feedUpdateInterval: 30,  // Loaded from server preferences
@@ -292,6 +299,47 @@ function app() {
             this.cerebrasModel = model;
             if (this.token) {
                 this.savePreferencesToServer();
+            }
+        },
+
+        async loadPromptDefaults() {
+            try {
+                const data = await this.fetchApi('/admin/prompt-defaults');
+                this.defaultSystemPrompt = data.system_prompt;
+                this.defaultUserPrompt = data.user_prompt;
+            } catch (e) {
+                console.warn('Failed to load prompt defaults:', e);
+            }
+        },
+
+        resetPromptsToDefaults() {
+            this.systemPrompt = this.defaultSystemPrompt;
+            this.userPrompt = this.defaultUserPrompt;
+        },
+
+        async saveAiSettings() {
+            this.savingAiSettings = true;
+            this.aiSettingsSaved = false;
+            try {
+                const payload = {
+                    system_prompt: this.systemPrompt,
+                    user_prompt: this.userPrompt,
+                };
+                // Only send API keys if user changed them (not masked)
+                if (this.cerebrasApiKeys && !this.cerebrasApiKeys.includes('****')) {
+                    payload.cerebras_api_keys = this.cerebrasApiKeys;
+                }
+                await this.fetchApi('/preferences', {
+                    method: 'PUT',
+                    body: JSON.stringify(payload),
+                });
+                this.aiSettingsSaved = true;
+                setTimeout(() => { this.aiSettingsSaved = false; }, 2000);
+            } catch (e) {
+                console.error('Failed to save AI settings:', e);
+                this.showError(e.message);
+            } finally {
+                this.savingAiSettings = false;
             }
         },
 
@@ -487,6 +535,17 @@ function app() {
                 if (serverPrefs.split_ratio !== null && serverPrefs.split_ratio !== undefined) {
                     this.splitRatio = serverPrefs.split_ratio;
                 }
+
+                // AI keys and prompts
+                if (serverPrefs.cerebras_api_keys) {
+                    this.cerebrasApiKeys = serverPrefs.cerebras_api_keys;
+                }
+                if (serverPrefs.system_prompt) {
+                    this.systemPrompt = serverPrefs.system_prompt;
+                }
+                if (serverPrefs.user_prompt) {
+                    this.userPrompt = serverPrefs.user_prompt;
+                }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);
             }
@@ -636,8 +695,9 @@ function app() {
                 this.token = storedToken;
                 await this.loadData();
                 await this.syncPreferences();
-                // Load AI models (requires auth)
+                // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
+                this.loadPromptDefaults();
                 this.setupIdleDetection();
             }
 
@@ -903,8 +963,9 @@ function app() {
                 this.password = '';
                 await this.loadData();
                 await this.syncPreferences();
-                // Load AI models (requires auth)
+                // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
+                this.loadPromptDefaults();
                 this.setupIdleDetection();
             } catch (error) {
                 this.loginError = error.message;

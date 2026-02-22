@@ -36,6 +36,16 @@ class ApiKeyRotator:
         self._current_index = 0
         self._load_state()
 
+    def _get_keys(self) -> list:
+        """Get API keys from DB settings or env fallback."""
+        from app.routes.preferences import get_effective_cerebras_api_keys
+
+        db = SessionLocal()
+        try:
+            return get_effective_cerebras_api_keys(db)
+        finally:
+            db.close()
+
     def _load_state(self):
         """Load current index from database."""
         db = SessionLocal()
@@ -48,7 +58,7 @@ class ApiKeyRotator:
             if row:
                 saved_index = int(row.value)
                 # Apply modulo in case number of keys changed
-                num_keys = len(settings.cerebras_api_keys)
+                num_keys = len(self._get_keys())
                 if num_keys > 0:
                     self._current_index = saved_index % num_keys
                 else:
@@ -92,7 +102,7 @@ class ApiKeyRotator:
         Returns:
             Tuple of (api_key, key_index) or (None, None) if none available
         """
-        keys = settings.cerebras_api_keys
+        keys = self._get_keys()
         if not keys:
             return None, None
 
@@ -131,7 +141,7 @@ class ApiKeyRotator:
             self._key_cooldowns[key] = datetime.utcnow() + timedelta(
                 seconds=seconds
             )
-            keys = settings.cerebras_api_keys
+            keys = self._get_keys()
             if key in keys:
                 key_index = keys.index(key) + 1
                 logger.warning(
@@ -149,7 +159,7 @@ class ApiKeyRotator:
         Check if any API key is available (not in cooldown).
         Does NOT advance the index - use for pre-checks.
         """
-        keys = settings.cerebras_api_keys
+        keys = self._get_keys()
         if not keys:
             return False
 
@@ -163,7 +173,7 @@ class ApiKeyRotator:
 
     def get_status(self) -> dict:
         """Return status of all keys."""
-        keys = settings.cerebras_api_keys
+        keys = self._get_keys()
         now = datetime.utcnow()
         status = {
             "total_keys": len(keys),
@@ -234,7 +244,7 @@ async def get_available_models() -> List[str]:
         if now - _available_models_cache_time < _MODELS_CACHE_TTL:
             return _available_models_cache
 
-    api_keys = settings.cerebras_api_keys
+    api_keys = api_key_rotator._get_keys()
     if not api_keys:
         return []
 
@@ -444,8 +454,11 @@ class CircuitBreaker:
 circuit_breaker = CircuitBreaker()
 
 
-def get_system_prompt() -> str:
-    """Returns the system prompt from prompts.yaml (loaded dynamically)."""
+def get_system_prompt(db=None) -> str:
+    """Returns the system prompt from DB settings or prompts.yaml fallback."""
+    if db:
+        from app.routes.preferences import get_effective_system_prompt
+        return get_effective_system_prompt(db)
     prompts = load_prompts()
     return prompts.get(
         "system_prompt",
@@ -453,18 +466,22 @@ def get_system_prompt() -> str:
     )
 
 
-def get_user_prompt(content: str, title: str = "", language: str = None) -> str:
+def get_user_prompt(content: str, title: str = "", language: str = None, db=None) -> str:
     """
     Returns the user prompt with content, title, language, and date interpolated.
-    Prompts are loaded dynamically from prompts.yaml.
+    Reads template from DB settings or prompts.yaml fallback.
     If language is not provided, uses settings.summary_language as fallback.
     """
     from datetime import datetime
 
-    prompts = load_prompts()
-    template = prompts.get(
-        "user_prompt", "Summarize this article in {language}:\n\n{content}"
-    )
+    if db:
+        from app.routes.preferences import get_effective_user_prompt
+        template = get_effective_user_prompt(db)
+    else:
+        prompts = load_prompts()
+        template = prompts.get(
+            "user_prompt", "Summarize this article in {language}:\n\n{content}"
+        )
     return template.format(
         language=language or settings.summary_language,
         content=content,
@@ -821,14 +838,14 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     try:
         preferred_model = get_effective_cerebras_model(db)
         effective_language = get_effective_summary_language(db)
+
+        # Build message list (reused across model attempts)
+        messages = [
+            {"role": "system", "content": get_system_prompt(db)},
+            {"role": "user", "content": get_user_prompt(content, title, effective_language, db)},
+        ]
     finally:
         db.close()
-
-    # Build message list (reused across model attempts)
-    messages = [
-        {"role": "system", "content": get_system_prompt()},
-        {"role": "user", "content": get_user_prompt(content, title, effective_language)},
-    ]
 
     # Build model list: preferred first, then others as fallback
     models_to_try = [preferred_model]

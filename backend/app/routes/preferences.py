@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.config import settings as env_settings
+from app.config import load_prompts, settings as env_settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import AppSettings
@@ -32,6 +32,10 @@ PREF_READING_MODE = "pref_reading_mode"
 PREF_SPLIT_RATIO = "pref_split_ratio"
 # Suggestions settings
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
+# AI keys and prompts
+PREF_CEREBRAS_API_KEYS = "pref_cerebras_api_keys"
+PREF_SYSTEM_PROMPT = "pref_system_prompt"
+PREF_USER_PROMPT = "pref_user_prompt"
 
 
 class PreferencesResponse(BaseModel):
@@ -51,6 +55,10 @@ class PreferencesResponse(BaseModel):
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions (1-5)
+    # AI keys and prompts
+    cerebras_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
+    system_prompt: Optional[str] = None
+    user_prompt: Optional[str] = None
 
 
 class PreferencesUpdate(BaseModel):
@@ -70,6 +78,10 @@ class PreferencesUpdate(BaseModel):
     split_ratio: Optional[int] = None
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None
+    # AI keys and prompts
+    cerebras_api_keys: Optional[str] = None
+    system_prompt: Optional[str] = None
+    user_prompt: Optional[str] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -110,6 +122,9 @@ def get_preferences(
         PREF_READING_MODE,
         PREF_SPLIT_RATIO,
         PREF_SUGGESTION_MIN_TAGS,
+        PREF_CEREBRAS_API_KEYS,
+        PREF_SYSTEM_PROMPT,
+        PREF_USER_PROMPT,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -162,6 +177,12 @@ def get_preferences(
         split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
         # Suggestions
         suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
+        # AI keys and prompts
+        cerebras_api_keys=_mask_keys(
+            prefs[PREF_CEREBRAS_API_KEYS] or env_settings.cerebras_api_key
+        ),
+        system_prompt=prefs[PREF_SYSTEM_PROMPT] or load_prompts().get("system_prompt", ""),
+        user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
     )
 
 
@@ -221,6 +242,18 @@ def update_preferences(
         min_tags = max(1, min(5, prefs.suggestion_min_tags))
         _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(min_tags))
 
+    # AI keys and prompts
+    if prefs.cerebras_api_keys is not None and prefs.cerebras_api_keys.strip():
+        # Only save if not masked (contains actual keys, not "****")
+        if "****" not in prefs.cerebras_api_keys:
+            _set_setting(db, PREF_CEREBRAS_API_KEYS, prefs.cerebras_api_keys.strip())
+
+    if prefs.system_prompt is not None:
+        _set_setting(db, PREF_SYSTEM_PROMPT, prefs.system_prompt)
+
+    if prefs.user_prompt is not None:
+        _set_setting(db, PREF_USER_PROMPT, prefs.user_prompt)
+
     db.commit()
 
     # Return updated preferences
@@ -230,6 +263,60 @@ def update_preferences(
 # =============================================================================
 # Helper for other modules to get settings
 # =============================================================================
+
+def _mask_keys(raw: str) -> str:
+    """Mask API keys for display: show first 5 and last 4 chars."""
+    if not raw:
+        return ""
+    keys = [k.strip() for k in raw.split(",") if k.strip()]
+    masked = []
+    for k in keys:
+        if len(k) > 12:
+            masked.append(k[:5] + "****" + k[-4:])
+        else:
+            masked.append("****")
+    return ", ".join(masked)
+
+
+def get_effective_cerebras_api_keys(db: Session) -> list:
+    """Get API keys from app_settings or env default."""
+    saved = _get_setting(db, PREF_CEREBRAS_API_KEYS)
+    if saved:
+        return [k.strip() for k in saved.split(",") if k.strip()]
+    # Fallback to .env
+    keys = env_settings.cerebras_api_keys
+    if keys:
+        # Save to DB for future reads
+        _set_setting(db, PREF_CEREBRAS_API_KEYS, env_settings.cerebras_api_key)
+        db.commit()
+    return keys
+
+
+def get_effective_system_prompt(db: Session) -> str:
+    """Get system prompt from app_settings or prompts.yaml default."""
+    saved = _get_setting(db, PREF_SYSTEM_PROMPT)
+    if saved:
+        return saved
+    prompts = load_prompts()
+    prompt = prompts.get("system_prompt", "")
+    if prompt:
+        _set_setting(db, PREF_SYSTEM_PROMPT, prompt)
+        db.commit()
+    return prompt
+
+
+def get_effective_user_prompt(db: Session) -> str:
+    """Get user prompt template from app_settings or prompts.yaml default."""
+    saved = _get_setting(db, PREF_USER_PROMPT)
+    if saved:
+        return saved
+    prompts = load_prompts()
+    prompt = prompts.get("user_prompt", "")
+    if prompt:
+        _set_setting(db, PREF_USER_PROMPT, prompt)
+        db.commit()
+    return prompt
+
 
 def get_effective_summary_language(db: Session) -> str:
     """Get summary language from app_settings or env default."""

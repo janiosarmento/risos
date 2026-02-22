@@ -903,6 +903,12 @@
                             x-text="t('settings.tabs.opml')"
                         ></button>
                         <button
+                            @click="settingsTab = 'ai'"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'ai' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.ai')"
+                        ></button>
+                        <button
                             @click="settingsTab = 'general'"
                             class="px-4 py-2 text-sm font-medium"
                             :class="settingsTab === 'general' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
@@ -1144,6 +1150,93 @@
                             </div>
                         </div>
 
+                        <!-- AI Tab -->
+                        <div x-show="settingsTab === 'ai'" class="space-y-4">
+                            <!-- API Keys -->
+                            <div>
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.apiKeys')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.apiKeysDesc')"></p>
+                                <textarea
+                                    x-model="cerebrasApiKeys"
+                                    :placeholder="t('settings.apiKeysPlaceholder')"
+                                    rows="2"
+                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                ></textarea>
+                            </div>
+
+                            <!-- AI Model -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
+                                <select
+                                    @change="setCerebrasModel($event.target.value)"
+                                    class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    :disabled="availableModels.length === 0"
+                                >
+                                    <template x-if="availableModels.length === 0">
+                                        <option x-text="t('settings.loadingModels')"></option>
+                                    </template>
+                                    <template x-for="model in availableModels" :key="model.id">
+                                        <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <!-- Summary Language -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
+                                <select
+                                    @change="setSummaryLanguage($event.target.value)"
+                                    class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                >
+                                    <template x-for="lang in availableSummaryLanguages" :key="lang.code">
+                                        <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <!-- System Prompt -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.systemPrompt')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.systemPromptDesc')"></p>
+                                <textarea
+                                    x-model="systemPrompt"
+                                    rows="10"
+                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                ></textarea>
+                            </div>
+
+                            <!-- User Prompt -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.userPrompt')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.userPromptDesc')"></p>
+                                <textarea
+                                    x-model="userPrompt"
+                                    rows="8"
+                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                ></textarea>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                                <button
+                                    @click="saveAiSettings()"
+                                    :disabled="savingAiSettings"
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors disabled:opacity-50"
+                                >
+                                    <span x-show="!savingAiSettings && !aiSettingsSaved" x-text="t('settings.saveAiSettings')"></span>
+                                    <span x-show="savingAiSettings">...</span>
+                                    <span x-show="aiSettingsSaved" x-text="t('settings.saved')"></span>
+                                </button>
+                                <button
+                                    @click="resetPromptsToDefaults()"
+                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium transition-colors"
+                                    x-text="t('settings.resetDefaults')"
+                                ></button>
+                            </div>
+                        </div>
+
                         <!-- General Tab -->
                         <div x-show="settingsTab === 'general'" class="space-y-2">
 
@@ -1205,51 +1298,6 @@
                                             ></button>
                                         </div>
                                         <p class="text-gray-400 dark:text-gray-500 text-xs mt-2" x-text="t('settings.readingModeSplitNote')"></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Accordion: AI Summaries -->
-                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                <button
-                                    @click="toggleAccordion('ai')"
-                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
-                                >
-                                    <span class="font-medium" x-text="t('settings.aiSummaries')"></span>
-                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.ai ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </button>
-                                <div x-show="settingsAccordion.ai" x-collapse class="p-4 space-y-4">
-                                    <!-- Summary Language -->
-                                    <div>
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
-                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
-                                        <select
-                                            @change="setSummaryLanguage($event.target.value)"
-                                            class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                        >
-                                            <template x-for="lang in availableSummaryLanguages" :key="lang.code">
-                                                <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
-                                            </template>
-                                        </select>
-                                    </div>
-                                    <!-- AI Model -->
-                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
-                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
-                                        <select
-                                            @change="setCerebrasModel($event.target.value)"
-                                            class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                            :disabled="availableModels.length === 0"
-                                        >
-                                            <template x-if="availableModels.length === 0">
-                                                <option x-text="t('settings.loadingModels')"></option>
-                                            </template>
-                                            <template x-for="model in availableModels" :key="model.id">
-                                                <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
-                                            </template>
-                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -1513,6 +1561,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260220a"></script>
+    <script src="/static/js/app.js?v=20260221b"></script>
 </body>
 </html>
