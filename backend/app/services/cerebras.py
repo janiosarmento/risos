@@ -475,18 +475,21 @@ def get_user_prompt(content: str, title: str = "", language: str = None, db=None
     from datetime import datetime
 
     if db:
-        from app.routes.preferences import get_effective_user_prompt
+        from app.routes.preferences import get_effective_user_prompt, get_effective_tags_per_post
         template = get_effective_user_prompt(db)
+        tags_count = get_effective_tags_per_post(db)
     else:
         prompts = load_prompts()
         template = prompts.get(
             "user_prompt", "Summarize this article in {language}:\n\n{content}"
         )
+        tags_count = 7
     return template.format(
         language=language or settings.summary_language,
         content=content,
         title=title or "Untitled",
         date=datetime.now().strftime("%Y-%m-%d"),
+        tags_count=tags_count,
     )
 
 

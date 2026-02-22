@@ -14,6 +14,7 @@ Available placeholders in `user_prompt`:
 | `{content}` | The article content |
 | `{title}` | The article title |
 | `{date}` | Current date (YYYY-MM-DD) |
+| `{tags_count}` | Number of tags to generate per post (configured in Settings > AI) |
 
 **Note:** In the JSON format section of the user prompt, curly braces must be doubled (`{{` and `}}`) to avoid being interpreted as placeholders.
 
@@ -122,11 +123,11 @@ Respond EXACTLY in this JSON format:
   "summary_pt": "Paragraph with the main news and context.\n\n• Specific detail 1\n• Specific detail 2\n• Specific detail 3\n\nConclusion if relevant.",
   "one_line_summary": "Specific summary with the main fact (max 100 chars)",
   "translated_title": "Title translated to {language}, or null if already in {language}",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7"]
+  "tags": ["tag1", "tag2", "...", "tagN"]
 }}
 
 TAGS RULES:
-- Exactly 7 tags describing the main topics
+- Exactly {tags_count} tags describing the main topics
 - All tags in lowercase English
 - Use specific terms, not generic (e.g., "react" not "javascript-framework")
 - Include: technology names, companies, concepts, domains

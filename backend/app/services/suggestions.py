@@ -113,13 +113,15 @@ def process_suggestion_candidates(db: Session) -> int:
     Returns:
         Number of posts marked as suggested
     """
+    from app.routes.preferences import get_effective_tags_per_post
+
     # Get user profile
     profile = get_user_profile(db)
     if not profile or not profile.get("tags"):
         logger.info("No user profile available, skipping suggestion processing")
         return 0
 
-    total_profile_tags = len(profile["tags"])
+    tags_per_post = get_effective_tags_per_post(db)
 
     # Get candidates
     candidates = get_suggestion_candidates(db)
@@ -133,8 +135,8 @@ def process_suggestion_candidates(db: Session) -> int:
     now = datetime.utcnow().isoformat()
 
     for post, overlap_count in candidates:
-        # Score = percentage of profile tags matched
-        score = round((overlap_count / total_profile_tags) * 100)
+        # Score = percentage of tags_per_post matched by overlap
+        score = min(100, round((overlap_count / tags_per_post) * 100))
 
         post.is_suggested = 1
         post.suggestion_score = score

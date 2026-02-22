@@ -67,13 +67,29 @@
                     <form @submit.prevent="login()">
                         <div class="mb-4">
                             <label class="block text-sm font-medium mb-2" x-text="t('auth.password')"></label>
-                            <input
-                                type="password"
-                                x-model="password"
-                                class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                :placeholder="t('auth.password')"
-                                autofocus
-                            >
+                            <div class="relative" x-data="{ showPw: false }">
+                                <input
+                                    :type="showPw ? 'text' : 'password'"
+                                    x-model="password"
+                                    class="w-full px-4 py-2 pr-10 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    :placeholder="t('auth.password')"
+                                    autofocus
+                                >
+                                <button
+                                    type="button"
+                                    @click="showPw = !showPw"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    tabindex="-1"
+                                >
+                                    <svg x-show="!showPw" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <svg x-show="showPw" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <div x-show="loginError" class="mb-4 text-red-400 text-sm" x-text="loginError"></div>
                         <button
@@ -499,6 +515,11 @@
                                                     <path x-show="!post.is_liked" fill="none" stroke="currentColor" stroke-width="1.5" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path>
                                                 </svg>
                                             </button>
+                                            <span
+                                                x-show="post.is_suggested && post.suggestion_score != null"
+                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                                x-text="Math.round(post.suggestion_score) + '%'"
+                                            ></span>
                                             <span x-text="getFeedTitle(post.feed_id)"></span>
                                             <span>-</span>
                                             <span x-text="formatDate(post.published_at || post.fetched_at)"></span>
@@ -1203,6 +1224,23 @@
                                 </select>
                             </div>
 
+                            <!-- Tags per Post -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.tagsPerPost')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.tagsPerPostDesc')"></p>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="range"
+                                        min="3" max="15" step="1"
+                                        :value="tagsPerPost"
+                                        @input="setTagsPerPost($event.target.value)"
+                                        class="flex-1"
+                                    >
+                                    <span class="text-sm font-mono w-8 text-center" x-text="tagsPerPost"></span>
+                                    <span class="text-sm text-gray-500" x-text="t('settings.tags')"></span>
+                                </div>
+                            </div>
+
                             <!-- System Prompt -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.systemPrompt')"></label>
@@ -1568,6 +1606,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260222c"></script>
+    <script src="/static/js/app.js?v=20260222e"></script>
 </body>
 </html>

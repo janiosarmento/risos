@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models import Post
 from app.routes.auth import get_current_user
 from app.services.suggestions import get_suggestion_stats, process_suggestion_candidates
 from app.services.user_profile import (
@@ -117,9 +118,21 @@ def process_suggestions(
 ):
     """
     Force processing of suggestion candidates.
-    Finds posts with tag overlap and scores them by overlap percentage.
+    Resets existing suggestions so they are re-scored, then finds posts
+    with tag overlap and scores them by overlap percentage.
     """
     try:
+        # Reset existing unread suggestions so they become candidates again
+        db.query(Post).filter(
+            Post.is_suggested == 1,
+            Post.is_read == 0,
+        ).update({
+            Post.is_suggested: 0,
+            Post.suggestion_score: None,
+            Post.suggested_at: None,
+        })
+        db.commit()
+
         suggested_count = process_suggestion_candidates(db)
         return AdminActionResponse(
             success=True,

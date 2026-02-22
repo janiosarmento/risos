@@ -34,6 +34,7 @@ PREF_SPLIT_RATIO = "pref_split_ratio"
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 # AI keys and prompts
 PREF_CEREBRAS_API_KEYS = "pref_cerebras_api_keys"
+PREF_TAGS_PER_POST = "pref_tags_per_post"
 PREF_SYSTEM_PROMPT = "pref_system_prompt"
 PREF_USER_PROMPT = "pref_user_prompt"
 
@@ -57,6 +58,7 @@ class PreferencesResponse(BaseModel):
     suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions (1-5)
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
+    tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
 
@@ -80,6 +82,7 @@ class PreferencesUpdate(BaseModel):
     suggestion_min_tags: Optional[int] = None
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None
+    tags_per_post: Optional[int] = None
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
 
@@ -123,6 +126,7 @@ def get_preferences(
         PREF_SPLIT_RATIO,
         PREF_SUGGESTION_MIN_TAGS,
         PREF_CEREBRAS_API_KEYS,
+        PREF_TAGS_PER_POST,
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
     ]
@@ -181,6 +185,7 @@ def get_preferences(
         cerebras_api_keys=_mask_keys(
             prefs[PREF_CEREBRAS_API_KEYS] or env_settings.cerebras_api_key
         ),
+        tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
         system_prompt=prefs[PREF_SYSTEM_PROMPT] or load_prompts().get("system_prompt", ""),
         user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
     )
@@ -247,6 +252,10 @@ def update_preferences(
         # Only save if not masked (contains actual keys, not "****")
         if "****" not in prefs.cerebras_api_keys:
             _set_setting(db, PREF_CEREBRAS_API_KEYS, prefs.cerebras_api_keys.strip())
+
+    if prefs.tags_per_post is not None:
+        tags_per_post = max(3, min(15, prefs.tags_per_post))
+        _set_setting(db, PREF_TAGS_PER_POST, str(tags_per_post))
 
     if prefs.system_prompt is not None:
         _set_setting(db, PREF_SYSTEM_PROMPT, prefs.system_prompt)
@@ -394,6 +403,17 @@ def get_effective_idle_refresh(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return env_settings.idle_refresh_seconds
+
+
+def get_effective_tags_per_post(db: Session) -> int:
+    """Get number of tags per post from app_settings or default (7)."""
+    saved = _get_setting(db, PREF_TAGS_PER_POST)
+    if saved:
+        try:
+            return max(3, min(15, int(saved)))
+        except (ValueError, TypeError):
+            pass
+    return 7  # Default: 7 tags per post
 
 
 def get_effective_suggestion_min_tags(db: Session) -> int:

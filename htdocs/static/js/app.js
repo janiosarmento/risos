@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260222c';
+const APP_VERSION = '20260222e';
 const API_BASE = '/api';
 
 function app() {
@@ -65,6 +65,7 @@ function app() {
         // Suggestions
         regeneratingSuggestions: false,
         suggestionMinTags: 3, // Default 3 tags overlap required
+        tagsPerPost: 7, // Default 7 tags per AI summary
 
         // Reading mode
         readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
@@ -396,6 +397,11 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        setTagsPerPost(value) {
+            this.tagsPerPost = Math.max(3, Math.min(15, parseInt(value) || 7));
+            if (this.token) this.savePreferencesToServer();
+        },
+
         setReadingMode(mode) {
             this.readingMode = mode;
             // Close post when switching modes
@@ -470,6 +476,7 @@ function app() {
                         reading_mode: this.readingMode,
                         split_ratio: this.splitRatio,
                         suggestion_min_tags: this.suggestionMinTags,
+                        tags_per_post: this.tagsPerPost,
                     }),
                 });
             } catch (e) {
@@ -529,6 +536,9 @@ function app() {
                 }
                 if (serverPrefs.suggestion_min_tags !== null && serverPrefs.suggestion_min_tags !== undefined) {
                     this.suggestionMinTags = serverPrefs.suggestion_min_tags;
+                }
+                if (serverPrefs.tags_per_post !== null && serverPrefs.tags_per_post !== undefined) {
+                    this.tagsPerPost = serverPrefs.tags_per_post;
                 }
                 if (serverPrefs.reading_mode) {
                     this.readingMode = serverPrefs.reading_mode;
