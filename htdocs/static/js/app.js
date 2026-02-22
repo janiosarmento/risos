@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260221b';
+const APP_VERSION = '20260222a';
 const API_BASE = '/api';
 
 function app() {
@@ -63,6 +63,7 @@ function app() {
         idleRefreshSeconds: 180, // Default 3 minutes, loaded from config
 
         // Suggestions
+        regeneratingSuggestions: false,
         suggestionMinTags: 3, // Default 3 tags overlap required
 
         // Reading mode
@@ -1609,6 +1610,33 @@ function app() {
                 this.showError(this.t('errors.regenerateSummary') + ': ' + this.translateError(error.message));
             } finally {
                 this.regeneratingSummary = false;
+            }
+        },
+
+        // Regenerate suggestions
+        async regenerateSuggestions() {
+            if (this.regeneratingSuggestions) return;
+            this.regeneratingSuggestions = true;
+
+            try {
+                // Regenerate profile first, then process suggestions
+                await this.fetchApi('/suggestions/admin/regenerate-profile', { method: 'POST' });
+                const result = await this.fetchApi('/suggestions/admin/process-suggestions', { method: 'POST' });
+
+                if (result && result.success) {
+                    const match = result.message.match(/(\d+) new suggestions/);
+                    const count = match ? parseInt(match[1]) : 0;
+                    this.showSuccess(this.t('sidebar.suggestionsFound').replace('{count}', count));
+                    // Reload posts and counts
+                    await this.loadPosts(true);
+                } else {
+                    this.showError(result?.message || this.t('errors.requestFailed'));
+                }
+            } catch (error) {
+                console.error('Failed to regenerate suggestions:', error);
+                this.showError(this.t('errors.requestFailed'));
+            } finally {
+                this.regeneratingSuggestions = false;
             }
         },
 

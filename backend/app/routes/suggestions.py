@@ -70,8 +70,7 @@ def get_status(
 
 
 @router.post("/admin/regenerate-profile", response_model=AdminActionResponse)
-async def regenerate_profile(
-    background_tasks: BackgroundTasks,
+def regenerate_profile(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -92,7 +91,7 @@ async def regenerate_profile(
 
     # Generate immediately instead of waiting for scheduled job
     try:
-        result = await generate_user_profile(db)
+        result = generate_user_profile(db)
         if result:
             return AdminActionResponse(
                 success=True,
@@ -112,16 +111,16 @@ async def regenerate_profile(
 
 
 @router.post("/admin/process-suggestions", response_model=AdminActionResponse)
-async def process_suggestions(
+def process_suggestions(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     """
     Force processing of suggestion candidates.
-    Finds posts with tag overlap and evaluates them with AI.
+    Finds posts with tag overlap and scores them by overlap percentage.
     """
     try:
-        suggested_count = await process_suggestion_candidates(db)
+        suggested_count = process_suggestion_candidates(db)
         return AdminActionResponse(
             success=True,
             message=f"Processed suggestions: {suggested_count} new suggestions found",

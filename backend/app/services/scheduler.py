@@ -830,7 +830,7 @@ class Scheduler:
                                 f"Job update_user_profile: regenerating profile "
                                 f"({liked_count} liked posts)"
                             )
-                            await generate_user_profile(db)
+                            generate_user_profile(db)
                         else:
                             logger.debug(
                                 f"Job update_user_profile: not enough likes "
@@ -864,7 +864,7 @@ class Scheduler:
                     profile = get_user_profile(db)
                     if profile and profile.get("profile"):
                         logger.info("Job process_suggestions: starting...")
-                        suggested_count = await process_suggestion_candidates(db)
+                        suggested_count = process_suggestion_candidates(db)
                         logger.info(
                             f"Job process_suggestions: completed "
                             f"({suggested_count} new suggestions)"

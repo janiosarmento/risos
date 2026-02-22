@@ -1,17 +1,16 @@
 """
 Suggestion system for recommending posts based on user interests.
-Uses tag overlap for pre-filtering and AI comparison for final scoring.
+Uses tag overlap between user profile and post tags — no LLM calls.
 """
 
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Post, AISummary, PostTag
-from app.services.user_profile import get_setting, set_setting, get_user_profile
+from app.models import Post, AISummary
+from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
 
@@ -106,43 +105,21 @@ def get_suggestion_candidates(db: Session, min_tag_overlap: int = None) -> List[
     return candidates
 
 
-def get_candidates_for_ai_comparison(db: Session) -> List[Post]:
+def process_suggestion_candidates(db: Session) -> int:
     """
-    Get candidate posts ready for AI comparison.
-    This is a simpler interface that just returns the posts.
-
-    Returns:
-        List of Post objects that are candidates for suggestions
-    """
-    candidates = get_suggestion_candidates(db)
-    return [post for post, _ in candidates]
-
-
-async def process_suggestion_candidates(db: Session) -> int:
-    """
-    Process suggestion candidates using AI comparison.
-
-    Gets candidates with tag overlap, sends them to AI for scoring,
-    and marks posts with score >= 80 as suggested.
+    Process suggestion candidates using tag overlap scoring.
+    No LLM calls — score is based on tag overlap percentage.
 
     Returns:
         Number of posts marked as suggested
     """
-    from app.config import load_prompts
-    from app.services.cerebras import (
-        api_key_rotator,
-        circuit_breaker,
-        _parse_json_response,
-        CEREBRAS_API_URL,
-    )
-    from app.routes.preferences import get_effective_cerebras_model
-    import httpx
-
     # Get user profile
     profile = get_user_profile(db)
-    if not profile or not profile.get("profile"):
+    if not profile or not profile.get("tags"):
         logger.info("No user profile available, skipping suggestion processing")
         return 0
+
+    total_profile_tags = len(profile["tags"])
 
     # Get candidates
     candidates = get_suggestion_candidates(db)
@@ -152,117 +129,24 @@ async def process_suggestion_candidates(db: Session) -> int:
 
     logger.info(f"Processing {len(candidates)} suggestion candidates")
 
-    # Load prompt
-    prompts = load_prompts()
-    comparison_prompt = prompts.get("comparison_prompt", "")
-    if not comparison_prompt:
-        logger.error("comparison_prompt not found in prompts.yaml")
-        return 0
+    suggested_count = 0
+    now = datetime.utcnow().isoformat()
 
-    # Format articles for the prompt (need to get one_line_summary from AISummary)
-    articles_parts = []
-    for post, overlap in candidates:
-        summary = db.query(AISummary).filter(
-            AISummary.content_hash == post.content_hash
-        ).first()
-        one_line = summary.one_line_summary if summary else "No summary"
-        articles_parts.append(f"ID: {post.id}\nTitle: {post.title}\nSummary: {one_line}")
+    for post, overlap_count in candidates:
+        # Score = percentage of profile tags matched
+        score = round((overlap_count / total_profile_tags) * 100)
 
-    articles_text = "\n---\n".join(articles_parts)
+        post.is_suggested = 1
+        post.suggestion_score = score
+        post.suggested_at = now
+        suggested_count += 1
+        logger.info(
+            f"Suggested: '{post.title[:50]}...' (score: {score}, overlap: {overlap_count})"
+        )
 
-    # Check circuit breaker
-    can_call, reason = circuit_breaker.can_call()
-    if not can_call:
-        logger.warning(f"Cannot process suggestions: {reason}")
-        return 0
-
-    # Get API key
-    api_key, key_index = api_key_rotator.get_next_key()
-    if not api_key:
-        logger.warning("Cannot process suggestions: all API keys in cooldown")
-        return 0
-
-    # Prepare request
-    effective_model = get_effective_cerebras_model(db)
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "model": effective_model,
-        "messages": [
-            {
-                "role": "user",
-                "content": comparison_prompt.format(
-                    profile=profile["profile"],
-                    articles=articles_text
-                )
-            },
-        ],
-        "temperature": 0.3,
-        "max_tokens": 2000,
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=90) as client:
-            response = await client.post(
-                CEREBRAS_API_URL,
-                headers=headers,
-                json=payload,
-            )
-
-            if response.status_code == 429:
-                api_key_rotator.set_key_cooldown(api_key, seconds=300)
-                logger.warning("Rate limit hit during suggestion processing")
-                return 0
-
-            if response.status_code >= 400:
-                circuit_breaker.record_failure()
-                logger.error(f"API error during suggestion processing: {response.status_code}")
-                return 0
-
-            data = response.json()
-
-            if "choices" not in data or not data["choices"]:
-                logger.error("Empty response during suggestion processing")
-                return 0
-
-            content = data["choices"][0].get("message", {}).get("content", "")
-            result = _parse_json_response(content)
-
-            circuit_breaker.record_success()
-
-        # Process matches
-        matches = result.get("matches", [])
-        suggested_count = 0
-        now = datetime.utcnow().isoformat()
-
-        for match in matches:
-            post_id = match.get("id")
-            score = match.get("score", 0)
-
-            if not post_id or score < 80:
-                continue
-
-            post = db.query(Post).filter(Post.id == post_id).first()
-            if post and not post.is_suggested:
-                post.is_suggested = 1
-                post.suggestion_score = score
-                post.suggested_at = now
-                suggested_count += 1
-                logger.info(
-                    f"Suggested: '{post.title[:50]}...' (score: {score})"
-                )
-
-        db.commit()
-        logger.info(f"Marked {suggested_count} posts as suggested")
-        return suggested_count
-
-    except Exception as e:
-        logger.error(f"Error processing suggestions: {e}")
-        return 0
+    db.commit()
+    logger.info(f"Marked {suggested_count} posts as suggested")
+    return suggested_count
 
 
 def get_suggestion_stats(db: Session) -> dict:

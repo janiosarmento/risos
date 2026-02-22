@@ -20,6 +20,9 @@
     "all": "All",
     "starred": "Starred",
     "suggested": "Suggested",
+    "regenerateSuggestions": "Regenerate suggestions",
+    "regenerating": "Regenerating...",
+    "suggestionsFound": "{count} suggestions found",
     "noCategory": "Uncategorized",
     "settings": "Settings",
     "refresh": "Refresh"

@@ -20,6 +20,9 @@
     "all": "Todos",
     "starred": "Favoritos",
     "suggested": "Sugeridos",
+    "regenerateSuggestions": "Regenerar sugestões",
+    "regenerating": "Regenerando...",
+    "suggestionsFound": "{count} sugestões encontradas",
     "noCategory": "Sem categoria",
     "settings": "Configurações",
     "refresh": "Atualizar"
