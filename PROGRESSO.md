@@ -1,13 +1,13 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-01-20
+**Última atualização:** 2026-02-21
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,49 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, e m
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-21 — Fallback de Modelos, Prompt e Documentação
+
+### Fallback Automático de Modelo IA
+- Quando o modelo preferido retorna respostas inválidas, o sistema tenta outros modelos disponíveis
+- Nova classe `ModelSpecificError` para erros de parsing/resposta (activa fallback)
+- Erros de infraestrutura (429, 5xx, timeout) NÃO activam fallback
+- Função `_call_model()` extraída para chamada individual a um modelo
+- Função `get_available_models()` com cache de 30 minutos
+- `generate_summary()` itera pela lista de modelos até obter sucesso
+
+### Melhoria do Prompt de Resumos
+- Regras anti-repetição adicionadas ao `prompts.yaml`
+- Bullets devem adicionar informação nova (não repetir o parágrafo inicial)
+- Resumo de uma linha não pode repetir a primeira frase do resumo longo
+- Nova regra de verificação de qualidade antes de retornar
+
+### Tradução de Títulos sem Conteúdo
+- Posts sem conteúdo (comum no Lobsters, HN) agora usam o título como conteúdo
+- Flag `title_only=True` ignora verificação `is_garbage_content()` (< 50 chars)
+- Permite pelo menos traduzir o título mesmo sem resumo completo
+
+### Botão de Reset do Circuit Breaker
+- Novo endpoint `POST /api/admin/reset-circuit-breaker`
+- Limpa estado do circuit breaker, cooldowns da fila e tentativas
+- Link discreto "Resetar IA" / "Reset AI" no rodapé do modal de configurações
+
+### Separadores de Data na Lista de Posts
+- Separação visual quando a data relativa muda entre posts
+- Classes CSS condicionais (border-top) baseadas em `getDateGroup()`
+- Sem elemento HTML extra, apenas classes no artigo existente
+
+### Correção da Exportação OPML
+- `<a href>` não enviava token JWT → 404
+- Substituído por `<button>` com `fetch()` autenticado + download via blob
+
+### Rename "Todos os Posts" → "Não lidos"
+- Label do sidebar corrigido para reflectir o comportamento real (filtro de não lidos)
+
+### Atualização da Documentação
+- README.md, AI.md, PROJECT.md e PROGRESSO.md actualizados
 
 ---
 

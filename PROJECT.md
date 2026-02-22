@@ -61,13 +61,18 @@ The project prioritizes:
 │   │   │   ├── categories.py
 │   │   │   ├── feeds.py
 │   │   │   ├── posts.py
-│   │   │   └── system.py           # Health, status
+│   │   │   ├── admin.py            # Admin (locales, models, circuit breaker)
+│   │   │   ├── preferences.py      # User preferences API
+│   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
 │   │       ├── __init__.py
 │   │       ├── feed_parser.py
+│   │       ├── feed_ingestion.py   # Post insertion logic
 │   │       ├── content_extractor.py
 │   │       ├── html_sanitizer.py
-│   │       ├── cerebras.py         # AI client + circuit breaker
+│   │       ├── content_hasher.py   # Content deduplication
+│   │       ├── url_normalizer.py   # URL normalization
+│   │       ├── cerebras.py         # AI client + circuit breaker + model fallback
 │   │       └── scheduler.py        # APScheduler + jobs
 │   ├── alembic/                    # Migrations
 │   │   ├── versions/
@@ -565,6 +570,28 @@ Note on 429:
 - HTTP 429 does NOT count toward opening circuit
 - 429 activates rate_limited_until (see Rate Limiting)
 
+### Model Fallback
+
+When the preferred model returns invalid responses (bad JSON, empty response, unknown structure), the system automatically tries other available models:
+
+1. Fetch available models from Cerebras API (cached 30 minutes)
+2. Try preferred model first
+3. On `ModelSpecificError` (parsing/response errors, HTTP 4xx except 429): try next model
+4. On infrastructure errors (429, 5xx, timeout): raise immediately, no fallback
+5. If all models fail: raise the last error
+
+Error classification:
+- `ModelSpecificError` (triggers fallback): JSON not found, inconsistent fields, unknown structure, HTTP 4xx
+- `TemporaryError` (no fallback): HTTP 429, 5xx, timeout, connection error
+- `PermanentError` (no fallback): other permanent errors
+
+### Title-Only Posts
+
+Posts without content (common on link aggregators like Lobsters, Hacker News) are handled specially:
+- Title is used as content with `title_only=True` flag
+- Bypasses `is_garbage_content()` check (which rejects text < 50 chars)
+- Allows at least title translation even without full summarization
+
 
 ## AI Rate Limiting
 
@@ -1009,6 +1036,17 @@ POST /api/posts/mark-read
   Response: { "marked": 50 }
 ```
 
+### Preferences
+
+```
+GET /api/preferences
+  Response: { "locale": "en-US", "theme": "system", "reading_mode": "fullscreen", ... }
+
+PUT /api/preferences
+  Body: { "locale": "pt-BR", "theme": "dark", ... }
+  Response: { "ok": true }
+```
+
 ### Proxy
 
 ```
@@ -1019,9 +1057,28 @@ GET /api/proxy?url=https://example.com/article
 ### Admin (protected)
 
 ```
+GET /api/admin/locales
+  Response: [{ "code": "en-US", "name": "English (US)" }, ...]
+
+GET /api/admin/languages
+  Response: [{ "code": "English", "name": "English" }, ...]
+
+GET /api/admin/models
+  Response: [{ "id": "llama3.1-8b", "name": "llama3.1-8b" }, ...]
+
 POST /api/admin/reprocess-summary
   Body: { "content_hash": "..." }
   Response: { "ok": true, "queued": true }
+
+POST /api/admin/reset-circuit-breaker
+  Response: { "ok": true, "queue_cooldowns_cleared": 3 }
+  Note: resets circuit breaker state, clears queue cooldowns and attempts
+
+GET /api/admin/queue-status
+  Response: { "pending": 5, "locked": 0, "cooldown": 1, ... }
+
+POST /api/admin/clear-queue-cooldowns
+  Response: { "ok": true, "cleared": 3 }
 
 POST /api/admin/vacuum
   Response: { "ok": true, "freed_bytes": 1000000 }

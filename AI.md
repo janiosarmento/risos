@@ -123,7 +123,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 |-------|------------|
 | **Frontend** | Alpine.js 3.x, Tailwind CSS (CDN) |
 | **Backend** | FastAPI, SQLAlchemy, SQLite (WAL mode) |
-| **AI** | Cerebras API (Llama 3.3 70B) |
+| **AI** | Cerebras API (configurable model with fallback) |
 | **Scheduler** | APScheduler |
 | **Server** | Gunicorn + Uvicorn workers, Nginx reverse proxy |
 
@@ -156,10 +156,10 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── feeds.py            # CRUD + refresh + OPML
 │   │   │   ├── posts.py            # List/read posts, mark read
 │   │   │   ├── preferences.py      # User preferences API
-│   │   │   ├── admin.py            # Admin endpoints (locales, models)
+│   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
-│   │       ├── cerebras.py         # AI client + circuit breaker + queue
+│   │       ├── cerebras.py         # AI client + circuit breaker + model fallback
 │   │       ├── scheduler.py        # APScheduler jobs
 │   │       ├── feed_parser.py      # RSS/Atom parsing
 │   │       ├── feed_ingestion.py   # Post insertion logic
@@ -192,7 +192,7 @@ The entire frontend is in one file using Alpine.js. Key sections:
 ```javascript
 // Cache busting - UPDATE this AND the script tag in index.html when deploying changes
 // Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
-const APP_VERSION = '20260108a';
+const APP_VERSION = '20260221a';
 
 // Main Alpine.js data object
 document.addEventListener('alpine:init', () => {
@@ -385,16 +385,18 @@ journalctl -u rss-reader -f
 - OPML import/export
 
 ### AI
-- Automatic article summarization (Cerebras/Llama)
-- Title translation for foreign-language articles
+- Automatic article summarization (Cerebras, configurable model)
+- Automatic model fallback on response errors
+- Title translation for foreign-language articles (including title-only posts)
 - Configurable summary language and model
-- Rate limiting and circuit breaker
+- Rate limiting and circuit breaker (with manual reset via Settings)
 
 ### UI/UX
 - Fullscreen modal or split-view reading modes
 - Resizable split view (20-80% ratio)
 - Dark/light theme (system preference or manual)
 - Keyboard navigation (J/K/Enter, [/] for feeds)
+- Date separators in post list (visual grouping by relative date)
 - Mobile responsive
 - Bilingual (EN/PT)
 
@@ -439,7 +441,7 @@ Increment the letter for each change on the same day.
 
 ### 6. AI Summaries Not Generating
 **Problem**: Queue stuck, no summaries appearing.
-**Solution**: Check circuit breaker state in database, verify Cerebras API key, check rate limits.
+**Solution**: Use the "Reset AI" button in Settings footer to reset the circuit breaker. Also check Cerebras API key and rate limits. The system will automatically try fallback models if the preferred model returns invalid responses.
 
 ---
 
@@ -566,7 +568,7 @@ Brief description of changes
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 EOF
 )"
 git push
@@ -594,7 +596,7 @@ git push
 
 ---
 
-*Last updated: 2026-01-20*
+*Last updated: 2026-02-21*
 
 ---
 

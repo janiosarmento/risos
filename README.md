@@ -7,9 +7,10 @@ A self-hosted RSS reader with AI-powered summaries.
 ## Features
 
 - **RSS/Atom Feeds** — Subscribe to any feed, or paste a website URL for auto-discovery
-- **AI Summaries** — Automatic summarization via Cerebras AI (Llama 3.3 70B)
+- **AI Summaries** — Automatic summarization via Cerebras AI (configurable model)
   - Full article extraction for better context
-  - Title translation for foreign-language articles
+  - Title translation for foreign-language articles (including title-only posts)
+  - Automatic model fallback when preferred model fails
   - Smart skip of paywalls and error pages
 - **Organization** — Categories, starred posts, read/unread tracking
 - **AI Suggestions** — Personalized post recommendations based on your likes
@@ -69,7 +70,8 @@ All other settings (AI model, summary language, data retention, interface behavi
 
 The app includes built-in protections to handle API rate limits gracefully:
 
-- **Circuit Breaker** — Temporarily stops API calls after repeated failures, preventing cascade errors. Automatically recovers after a cooldown period.
+- **Circuit Breaker** — Temporarily stops API calls after repeated failures, preventing cascade errors. Automatically recovers after a cooldown period. Can be manually reset via Settings.
+- **Model Fallback** — When the preferred AI model returns invalid responses, the system automatically tries other available models before giving up.
 - **Rate Limit Handling** — When the API returns 429 (rate limited), the app backs off for 5 minutes before retrying.
 - **Queue Management** — Summary requests are queued and processed at a controlled rate. Failed requests are retried with exponential backoff.
 - **State Reset on Restart** — All cooldowns and circuit breaker state are cleared when the service restarts, ensuring a fresh start.
