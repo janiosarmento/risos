@@ -12,6 +12,7 @@ nginx/
 
 # Internal development docs
 PLANO.md
+REFACTOR.md
 
 # Claude Code
 .claude/
