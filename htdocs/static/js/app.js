@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260222a';
+const APP_VERSION = '20260222b';
 const API_BASE = '/api';
 
 function app() {
@@ -1620,13 +1620,20 @@ function app() {
 
             try {
                 // Regenerate profile first, then process suggestions
-                await this.fetchApi('/suggestions/admin/regenerate-profile', { method: 'POST' });
+                const profileResult = await this.fetchApi('/suggestions/admin/regenerate-profile', { method: 'POST' });
+                const tagsMatch = profileResult?.message?.match(/(\d+) tags/);
+                const tagsCount = tagsMatch ? parseInt(tagsMatch[1]) : 0;
+
                 const result = await this.fetchApi('/suggestions/admin/process-suggestions', { method: 'POST' });
 
                 if (result && result.success) {
                     const match = result.message.match(/(\d+) new suggestions/);
                     const count = match ? parseInt(match[1]) : 0;
-                    this.showSuccess(this.t('sidebar.suggestionsFound').replace('{count}', count));
+                    this.showSuccess(
+                        this.t('sidebar.suggestionsFound')
+                            .replace('{count}', count)
+                            .replace('{tags}', tagsCount)
+                    );
                     // Reload posts and counts
                     await this.loadPosts(true);
                 } else {

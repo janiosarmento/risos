@@ -22,7 +22,7 @@
     "suggested": "Suggested",
     "regenerateSuggestions": "Regenerate suggestions",
     "regenerating": "Regenerating...",
-    "suggestionsFound": "{count} suggestions found",
+    "suggestionsFound": "{count} suggestions found (based on {tags} tags)",
     "noCategory": "Uncategorized",
     "settings": "Settings",
     "refresh": "Refresh"
