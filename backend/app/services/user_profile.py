@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 # Minimum liked posts required to generate profile
 MIN_LIKED_POSTS = 10
 
-# Maximum number of top tags to keep in profile
-MAX_PROFILE_TAGS = 20
-
 
 def get_setting(db: Session, key: str) -> Optional[str]:
     """Get a setting value from app_settings."""
@@ -98,14 +95,13 @@ def generate_user_profile(db: Session) -> Optional[Dict]:
         )
         return None
 
-    # Aggregate tags from liked posts by frequency
+    # Aggregate all unique tags from liked posts by frequency
     tag_counts = (
         db.query(PostTag.tag, func.count(PostTag.tag).label("cnt"))
         .join(Post, PostTag.post_id == Post.id)
         .filter(Post.is_liked == 1)
         .group_by(PostTag.tag)
         .order_by(func.count(PostTag.tag).desc())
-        .limit(MAX_PROFILE_TAGS)
         .all()
     )
 
