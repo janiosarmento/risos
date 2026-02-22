@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260222b';
+const APP_VERSION = '20260222c';
 const API_BASE = '/api';
 
 function app() {

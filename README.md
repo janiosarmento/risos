@@ -98,25 +98,21 @@ For other platforms, see the [releases page](https://github.com/lwthiker/curl-im
 
 ### Suggestions System
 
-The app learns what you like and suggests similar posts. Here's how it works:
+The app learns what you like and suggests similar posts — no extra AI calls needed. Here's how it works:
 
 1. **Like posts** — Press `L` or click the heart icon on posts you enjoy
-2. **Profile generation** — After 10+ likes, the system builds your interest profile
-3. **Tag matching** — New posts are compared by topic tags (extracted during summarization)
-4. **AI scoring** — Candidates with enough matching tags are evaluated by AI for relevance
+2. **Profile generation** — After 10+ likes, the system aggregates all unique tags from your liked posts
+3. **Tag matching** — New posts are scored by how many tags they share with your profile
+4. **Suggestions** — Posts with enough matching tags are marked as suggested
 
-Suggestions appear in the sidebar (purple "Suggested" button) once matches are found. You can adjust the sensitivity in **Settings > General > Suggestion Sensitivity** (1-5 tags, default 3). Lower values mean more suggestions, higher values mean more precision.
+Suggestions appear in the sidebar (purple "Suggested" button). Click the refresh icon next to it to regenerate suggestions on demand. You can adjust the sensitivity in **Settings > General > Suggestion Sensitivity** (1-5 tags, default 3). Lower values mean more suggestions, higher values mean more precision.
 
-**Why tags instead of embeddings?**
+**Why tags instead of embeddings or AI scoring?**
 
-Modern recommendation systems often use vector embeddings and semantic similarity. We deliberately chose a simpler approach:
-
-- **Cost** — Embeddings require additional API calls for every post. Tags are extracted alongside summaries at no extra cost.
+- **Zero extra cost** — Tags are extracted during summarization. Profile and scoring use pure SQL, no API calls.
 - **Transparency** — Tags are human-readable. You can see exactly why a post was suggested.
-- **Effectiveness** — For a personal RSS reader with hundreds of posts, tag overlap works remarkably well. Not every problem needs a sophisticated solution.
-- **Simplicity** — No vector database, no embedding model, no similarity search infrastructure. Just SQL queries.
-
-The AI is used twice: once to extract tags during summarization, and once to score candidates against your profile. Everything else is traditional filtering — fast, cheap, and effective.
+- **Speed** — Tag overlap is computed instantly via database queries.
+- **Simplicity** — No vector database, no embedding model, no extra LLM calls. Just SQL.
 
 ## Web Server
 
@@ -205,12 +201,9 @@ Shortcuts are shown on buttons in desktop view.
 
 ### AI Prompts
 
-```bash
-cp backend/prompts.yaml.example backend/prompts.yaml
-nano backend/prompts.yaml
-```
+Prompts can be edited in the web interface via **Settings > AI**. The defaults are loaded from `backend/prompts.yaml` and can be restored with "Reset to defaults".
 
-Changes apply immediately (no restart). The file is gitignored.
+For the full reference of default prompts and available placeholders, see [PROMPTS.md](PROMPTS.md).
 
 ### Translations
 

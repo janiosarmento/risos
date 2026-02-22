@@ -37,11 +37,16 @@ system_prompt: |
      - Opening paragraph with the complete main information
      - Bullets with ALL important specific details (use as many as needed)
      - Each bullet must have concrete information, not generic descriptions
+     - NEVER REPEAT INFORMATION - each sentence and bullet must add NEW facts
+     - Bullets must NOT restate what the opening paragraph already said
+     - If a fact was mentioned in the paragraph, do NOT repeat it in the bullets
+     - Keep it concise: say each thing ONCE, clearly, and move on
 
   5. The one-line summary must:
      - Contain THE MAIN SPECIFIC INFORMATION (names, numbers, etc.)
      - Allow understanding the news without reading more
      - Maximum 100 characters
+     - Must NOT be a repetition of the first sentence of the long summary
 
   6. TITLE TRANSLATION:
      - If the article title is NOT in the target language, provide a translation
@@ -73,6 +78,12 @@ system_prompt: |
      - Any page that doesn't contain actual article content
      In these cases, return: {"summary_pt": "", "one_line_summary": "", "translated_title": null}
 
+  10. QUALITY CHECK - Before returning, verify:
+     - No sentence or fact appears more than once across the entire summary
+     - The bullets add NEW information not found in the opening paragraph
+     - The grammar is correct and natural in the target language
+     - The text reads as if written by a fluent native speaker
+
   9. RELATIVE DATES - The current date is provided in the prompt:
      - Convert relative dates ("next year", "last month", "tomorrow") to absolute dates
      - If the article says "next year" and today is 2026-01-07, write "2027" not "next year"
@@ -94,5 +105,13 @@ user_prompt: |
   {{
     "summary_pt": "Paragraph with the main news and context.\n\n• Specific detail 1\n• Specific detail 2\n• Specific detail 3\n\nConclusion if relevant.",
     "one_line_summary": "Specific summary with the main fact (max 100 chars)",
-    "translated_title": "Title translated to {language}, or null if already in {language}"
+    "translated_title": "Title translated to {language}, or null if already in {language}",
+    "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7"]
   }}
+
+  TAGS RULES:
+  - Exactly 7 tags describing the main topics
+  - All tags in lowercase English
+  - Use specific terms, not generic (e.g., "react" not "javascript-framework")
+  - Include: technology names, companies, concepts, domains
+  - Avoid: generic words like "news", "article", "technology", "update"

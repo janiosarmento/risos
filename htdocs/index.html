@@ -472,11 +472,6 @@
                                                 :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
                                                 x-text="post.title"
                                             ></h3>
-                                            <span
-                                                x-show="post.is_suggested"
-                                                class="flex-shrink-0 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded"
-                                                x-text="Math.round(post.suggestion_score || 0) + '%'"
-                                            ></span>
                                         </div>
                                         <template x-if="post.translated_title">
                                             <p class="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-1 mb-1" x-text="post.translated_title"></p>
@@ -1573,6 +1568,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260222b"></script>
+    <script src="/static/js/app.js?v=20260222c"></script>
 </body>
 </html>
