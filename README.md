@@ -11,6 +11,7 @@ A self-hosted RSS reader with AI-powered summaries.
   - Full article extraction for better context
   - Title translation for foreign-language articles (including title-only posts)
   - Automatic model fallback when preferred model fails
+  - Model attribution on each summary (shows which model generated it)
   - Smart skip of paywalls and error pages
 - **Organization** — Categories, starred posts, read/unread tracking
 - **AI Suggestions** — Personalized post recommendations based on your likes
@@ -20,7 +21,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Multi-language UI** — English and Portuguese
 - **Configurable Settings** — AI model, data retention, interface behavior
 - **OPML Import/Export** — Migrate from other readers
-- **Mobile Friendly** — Responsive design
+- **Mobile Friendly** — Responsive design with password peek on login
 
 ## Screenshots
 

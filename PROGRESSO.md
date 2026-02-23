@@ -1,13 +1,13 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-02-21
+**Última atualização:** 2026-02-23
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,36 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-23 — Tags Configuráveis, Score de Sugestões, Atribuição de Modelo
+
+### Tags por Post Configurável
+- Novo placeholder `{tags_count}` no user prompt (substitui o "Exactly 7 tags" fixo)
+- Setting "Tags per Post" (3-15, default 7) na aba AI das Settings
+- Valor usado no prompt e como denominador do score de sugestões
+
+### Score de Sugestões Significativo
+- Fórmula alterada: `overlap / tags_per_post * 100` (antes era `overlap / total_profile_tags * 100`)
+- Badge purple restaurado na lista de posts sugeridos com percentagem
+- Regenerar sugestões agora reseta as existentes antes de re-calcular scores
+- Corrigida condição JS que escondia badge quando score era 0 (falsy)
+
+### Atribuição de Modelo nos Resumos
+- Cada resumo gerado inclui `— nome_do_modelo` no final
+- Aplicado nos 3 caminhos: scheduler, on-demand, e regeneração manual
+- Campo `model` adicionado ao `SummaryResult`
+- Nota: campo `model` da resposta da API Cerebras é não-fiável (devolve sempre `llama3.1-8b`); usa-se o modelo pedido
+
+### Toggle de Senha no Login
+- Botão de olho (show/hide) no campo de senha do login
+- Estado local com `x-data="{ showPw: false }"`, sem poluir state global
+- `tabindex="-1"` para não interferir na navegação por Tab
+- Área de toque adequada para tablet/celular
+
+### Cap de Tags Ajustado
+- Truncação de tags subiu de 7 para 15 (máximo configurável de tags_per_post)
 
 ---
 

@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260222f';
+const APP_VERSION = '20260223b';
 const API_BASE = '/api';
 
 function app() {
@@ -143,8 +143,6 @@ function app() {
         userPrompt: '',
         defaultSystemPrompt: '', // for Reset to defaults
         defaultUserPrompt: '',
-        savingAiSettings: false,
-        aiSettingsSaved: false,
 
         // Data Settings
         feedUpdateInterval: 30,  // Loaded from server preferences
@@ -320,8 +318,6 @@ function app() {
         },
 
         async saveAiSettings() {
-            this.savingAiSettings = true;
-            this.aiSettingsSaved = false;
             try {
                 const payload = {
                     system_prompt: this.systemPrompt,
@@ -335,13 +331,9 @@ function app() {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
-                this.aiSettingsSaved = true;
-                setTimeout(() => { this.aiSettingsSaved = false; }, 2000);
             } catch (e) {
                 console.error('Failed to save AI settings:', e);
                 this.showError(e.message);
-            } finally {
-                this.savingAiSettings = false;
             }
         },
 
@@ -1983,6 +1975,10 @@ function app() {
         },
 
         _closeSettingsInternal() {
+            // Auto-save AI settings (prompts/keys) on close if logged in
+            if (this.token) {
+                this.saveAiSettings();
+            }
             this.showSettings = false;
             this.editingCategory = null;
             this.editingFeed = null;

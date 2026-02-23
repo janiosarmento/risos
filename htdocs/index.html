@@ -1266,15 +1266,6 @@
                             <!-- Action buttons -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-3">
                                 <button
-                                    @click="saveAiSettings()"
-                                    :disabled="savingAiSettings"
-                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors disabled:opacity-50"
-                                >
-                                    <span x-show="!savingAiSettings && !aiSettingsSaved" x-text="t('settings.saveAiSettings')"></span>
-                                    <span x-show="savingAiSettings">...</span>
-                                    <span x-show="aiSettingsSaved" x-text="t('settings.saved')"></span>
-                                </button>
-                                <button
                                     @click="resetPromptsToDefaults()"
                                     class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium transition-colors"
                                     x-text="t('settings.resetDefaults')"
@@ -1606,6 +1597,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260222f"></script>
+    <script src="/static/js/app.js?v=20260223b"></script>
 </body>
 </html>

@@ -115,8 +115,6 @@
     "tagsPerPostDesc": "Número de tags geradas por resumo IA (usado no score de sugestões)",
     "userPromptDesc": "Template enviado com cada artigo. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
     "resetDefaults": "Restaurar padrões",
-    "saveAiSettings": "Salvar",
-    "saved": "Salvo!",
     "clearCache": "Limpar cache",
     "resetCircuitBreaker": "Resetar IA",
     "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso"

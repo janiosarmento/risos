@@ -585,6 +585,12 @@ Error classification:
 - `TemporaryError` (no fallback): HTTP 429, 5xx, timeout, connection error
 - `PermanentError` (no fallback): other permanent errors
 
+### Model Attribution
+
+Each generated summary has the model name appended at the end (`— model_name`), so users can see which model produced each summary. This helps identify quality differences between models.
+
+**Important:** The Cerebras API response `model` field is unreliable (always returns `llama3.1-8b` regardless of the actual model used). The system uses the **requested** model name instead.
+
 ### Title-Only Posts
 
 Posts without content (common on link aggregators like Lobsters, Hacker News) are handled specially:
