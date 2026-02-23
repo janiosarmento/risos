@@ -689,7 +689,7 @@ async def regenerate_summary(
         return {
             "success": True,
             "post_id": post_id,
-            "summary_pt": result.summary_pt,
+            "summary_pt": summary_text,
             "one_line_summary": result.one_line_summary,
             "translated_title": result.translated_title,
         }
