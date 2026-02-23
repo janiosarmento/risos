@@ -771,6 +771,7 @@ async def _call_model(
                     one_line_summary=one_line,
                     translated_title=translated_title,
                     tags=tags,
+                    model=model,  # Use requested model (API response field is unreliable)
                 )
 
             except (json.JSONDecodeError, ValueError) as e:
@@ -865,10 +866,9 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     for model in models_to_try:
         try:
             result = await _call_model(model, api_key, key_index, messages)
-            result.model = model
             if model != preferred_model:
                 logger.info(
-                    f"Fallback model {model} succeeded "
+                    f"Fallback model {result.model} succeeded "
                     f"(preferred {preferred_model} failed)"
                 )
             return result
