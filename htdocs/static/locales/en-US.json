@@ -114,7 +114,7 @@
     "tagsPerPost": "Tags per Post",
     "tagsPerPostDesc": "Number of tags generated per AI summary (used for suggestion scoring)",
     "userPromptDesc": "Template sent with each article. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
-    "resetDefaults": "Reset to defaults",
+    "resetDefaults": "Reset prompts to defaults",
     "clearCache": "Clear cache",
     "resetCircuitBreaker": "Reset AI",
     "circuitBreakerReset": "AI circuit breaker reset successfully"
