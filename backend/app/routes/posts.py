@@ -307,10 +307,15 @@ async def get_post(
                     content_for_summary, title=post.title
                 )
 
+                # Append model attribution to summary
+                summary_with_model = result.summary_pt
+                if summary_with_model and result.model:
+                    summary_with_model += f"\n\n— {result.model}"
+
                 # Save to database
                 new_summary = AISummary(
                     content_hash=post.content_hash,
-                    summary_pt=result.summary_pt,
+                    summary_pt=summary_with_model,
                     one_line_summary=result.one_line_summary,
                     translated_title=result.translated_title,
                 )
@@ -322,7 +327,7 @@ async def get_post(
 
                 db.commit()
 
-                summary_pt = result.summary_pt
+                summary_pt = summary_with_model
                 one_line_summary = result.one_line_summary
                 translated_title = result.translated_title
                 summary_status = "ready"
@@ -653,9 +658,14 @@ async def regenerate_summary(
             .first()
         )
 
+        # Append model attribution to summary
+        summary_text = result.summary_pt
+        if summary_text and result.model:
+            summary_text += f"\n\n— {result.model}"
+
         if existing_summary:
             # Update existing summary
-            existing_summary.summary_pt = result.summary_pt
+            existing_summary.summary_pt = summary_text
             existing_summary.one_line_summary = result.one_line_summary
             existing_summary.translated_title = result.translated_title
             existing_summary.created_at = datetime.utcnow()
@@ -663,7 +673,7 @@ async def regenerate_summary(
             # Create new summary
             new_summary = AISummary(
                 content_hash=new_content_hash,
-                summary_pt=result.summary_pt,
+                summary_pt=summary_text,
                 one_line_summary=result.one_line_summary,
                 translated_title=result.translated_title,
             )

@@ -274,6 +274,7 @@ class SummaryResult:
     one_line_summary: str
     translated_title: str = None  # Translated title (if not in target language)
     tags: List[str] = field(default_factory=list)  # Topic tags for recommendations
+    model: str = ""  # Model that actually generated this summary
 
 
 class CircuitBreaker:
@@ -751,7 +752,7 @@ async def _call_model(
                                 "news", "article", "technology", "update", "post"
                             ):
                                 tags.append(normalized)
-                tags = tags[:7]
+                tags = tags[:15]  # Cap at max configurable tags_per_post
 
                 # Allow both empty (error pages) or both filled
                 if bool(summary_pt) != bool(one_line):
@@ -864,6 +865,7 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     for model in models_to_try:
         try:
             result = await _call_model(model, api_key, key_index, messages)
+            result.model = model
             if model != preferred_model:
                 logger.info(
                     f"Fallback model {model} succeeded "

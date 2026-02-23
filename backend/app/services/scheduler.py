@@ -713,10 +713,15 @@ class Scheduler:
                             content, title=post.title, title_only=title_only
                         )
 
+                        # Append model attribution to summary
+                        summary_text = summary_result.summary_pt
+                        if summary_text and summary_result.model:
+                            summary_text += f"\n\n— {summary_result.model}"
+
                         # Save summary
                         ai_summary = AISummary(
                             content_hash=candidate.content_hash,
-                            summary_pt=summary_result.summary_pt,
+                            summary_pt=summary_text,
                             one_line_summary=summary_result.one_line_summary,
                             translated_title=summary_result.translated_title,
                         )
