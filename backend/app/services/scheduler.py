@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import text
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -294,12 +294,12 @@ class Scheduler:
             # - Has content_hash
             # - Not in summary_queue
             # - No entry in ai_summaries
-            # - Not read (don't waste tokens on read posts)
+            # - Not read (don't waste tokens on read posts), unless favorited
             orphaned_posts = (
                 db.query(Post)
                 .filter(
                     Post.content_hash.isnot(None),
-                    Post.is_read == False,  # noqa: E712
+                    or_(Post.is_read == False, Post.is_favorite == True),  # noqa: E712
                     ~Post.content_hash.in_(
                         db.query(SummaryQueue.content_hash)
                     ),
@@ -657,7 +657,8 @@ class Scheduler:
                         continue
 
                     # Skip already read posts (not worth spending API on them)
-                    if post.is_read:
+                    # But always generate for favorites (needed for tags/suggestions)
+                    if post.is_read and not post.is_favorite:
                         db.query(SummaryQueue).filter(
                             SummaryQueue.id == candidate.id
                         ).delete()
