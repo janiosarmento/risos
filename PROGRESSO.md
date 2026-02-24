@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-02-23
+**Última atualização:** 2026-02-24
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -23,6 +23,22 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-24 — Limpeza de Interface, Economia de Tokens
+
+### Auto-save e Remoção do Botão Save na Aba AI
+- Settings AI agora salva automaticamente ao fechar o modal (como as outras abas)
+- Botão "Save" removido da aba AI para interface mais limpa
+- Estados `savingAiSettings`/`aiSettingsSaved` removidos do JS
+- Label do reset clarificado: "Reset prompts to defaults" / "Restaurar prompts padrão"
+
+### Resumos para Posts Favoritos Lidos
+- Scheduler agora gera resumo para posts favoritos mesmo que já lidos
+- Necessário para gerar tags adequadas para o sistema de sugestões
+- Dois pontos ajustados: backfill (enfileiramento) e processamento da fila
+- Condição: `is_read == False OR is_favorite == True`
 
 ---
 

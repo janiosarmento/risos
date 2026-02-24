@@ -472,6 +472,14 @@ Table `ai_summaries` stores summaries by content_hash (not by post).
 
 Benefit: posts with identical content share the same summary without additional AI cost.
 
+### Token-Saving Rules
+
+To avoid wasting API calls, the scheduler skips posts that are already read — unless they are favorited. Favorited posts always get summaries to ensure proper tag generation for the suggestion system.
+
+This applies in two places:
+- **Backfill job**: only enqueues unread posts or favorited posts (`is_read == False OR is_favorite == True`)
+- **Queue processing**: before calling the API, re-checks if the post was read since enqueue; skips it unless favorited
+
 ### Persistent Queue (by post)
 
 Table `summary_queue` with one entry per post_id.
