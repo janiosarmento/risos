@@ -40,9 +40,7 @@ def run_migrations():
         # Find alembic.ini relative to project directory
         base_dir = Path(__file__).resolve().parent.parent
         alembic_cfg = Config(str(base_dir / "alembic.ini"))
-        alembic_cfg.set_main_option(
-            "script_location", str(base_dir / "alembic")
-        )
+        alembic_cfg.set_main_option("script_location", str(base_dir / "alembic"))
 
         logger.info("Running database migrations...")
         command.upgrade(alembic_cfg, "head")
@@ -64,31 +62,23 @@ def check_database_integrity():
         db_path = Path(settings.database_path)
 
         if not db_path.exists():
-            logger.info(
-                "Database does not exist yet, skipping integrity check"
-            )
+            logger.info("Database does not exist yet, skipping integrity check")
             return
 
         db_size_mb = db_path.stat().st_size / (1024 * 1024)
 
         with engine.connect() as conn:
             if db_size_mb > 100:
-                logger.info(
-                    f"Database size: {db_size_mb:.1f}MB - running quick_check"
-                )
+                logger.info(f"Database size: {db_size_mb:.1f}MB - running quick_check")
                 result = conn.execute(text("PRAGMA quick_check;")).fetchone()
             else:
                 logger.info(
                     f"Database size: {db_size_mb:.1f}MB - running integrity_check"
                 )
-                result = conn.execute(
-                    text("PRAGMA integrity_check;")
-                ).fetchone()
+                result = conn.execute(text("PRAGMA integrity_check;")).fetchone()
 
             if result[0] != "ok":
-                logger.critical(
-                    f"Database integrity check failed: {result[0]}"
-                )
+                logger.critical(f"Database integrity check failed: {result[0]}")
                 sys.exit(1)
 
             logger.info("Database integrity check passed")
@@ -111,21 +101,25 @@ def reset_ai_state():
     try:
         # Reset circuit breaker state
         db.query(AppSettings).filter(
-            AppSettings.key.in_([
-                "cerebras_state",
-                "cerebras_failures",
-                "cerebras_half_successes",
-                "cerebras_last_failure",
-                "cerebras_last_call",
-            ])
+            AppSettings.key.in_(
+                [
+                    "cerebras_state",
+                    "cerebras_failures",
+                    "cerebras_half_successes",
+                    "cerebras_last_failure",
+                    "cerebras_last_call",
+                ]
+            )
         ).delete()
 
         # Reset queue cooldowns and attempts
-        db.query(SummaryQueue).update({
-            "cooldown_until": None,
-            "attempts": 0,
-            "locked_at": None,
-        })
+        db.query(SummaryQueue).update(
+            {
+                "cooldown_until": None,
+                "attempts": 0,
+                "locked_at": None,
+            }
+        )
 
         db.commit()
         logger.info("AI state reset: circuit breaker, queue cooldowns cleared")
@@ -202,7 +196,16 @@ async def health_check():
 
 
 # Include routers
-from app.routes import auth, categories, feeds, posts, proxy, admin, preferences, suggestions
+from app.routes import (
+    auth,
+    categories,
+    feeds,
+    posts,
+    proxy,
+    admin,
+    preferences,
+    suggestions,
+)
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")

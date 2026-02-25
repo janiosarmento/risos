@@ -24,7 +24,9 @@ MAX_CANDIDATES_PER_BATCH = 50
 CANDIDATE_WINDOW_HOURS = 24
 
 
-def get_suggestion_candidates(db: Session, min_tag_overlap: int = None) -> List[Tuple[Post, int]]:
+def get_suggestion_candidates(
+    db: Session, min_tag_overlap: int = None
+) -> List[Tuple[Post, int]]:
     """
     Get posts that are potential suggestions based on tag overlap with user profile.
 
@@ -45,6 +47,7 @@ def get_suggestion_candidates(db: Session, min_tag_overlap: int = None) -> List[
     # Get minimum tag overlap from preferences if not specified
     if min_tag_overlap is None:
         from app.routes.preferences import get_effective_suggestion_min_tags
+
         min_tag_overlap = get_effective_suggestion_min_tags(db)
 
     # Get user's interest tags from profile
@@ -57,7 +60,9 @@ def get_suggestion_candidates(db: Session, min_tag_overlap: int = None) -> List[
     if not profile_tags:
         return []
 
-    logger.debug(f"Finding candidates with min {min_tag_overlap} tags overlap (profile has {len(profile_tags)} tags)")
+    logger.debug(
+        f"Finding candidates with min {min_tag_overlap} tags overlap (profile has {len(profile_tags)} tags)"
+    )
 
     # Calculate time threshold (use datetime object for proper comparison)
     time_threshold = datetime.utcnow() - timedelta(hours=CANDIDATE_WINDOW_HOURS)
@@ -162,9 +167,7 @@ def get_suggestion_stats(db: Session) -> dict:
 
     # Count suggested posts (not read)
     suggested_unread = (
-        db.query(Post)
-        .filter(Post.is_suggested == 1, Post.is_read == 0)
-        .count()
+        db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).count()
     )
 
     # Total suggested posts

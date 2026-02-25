@@ -46,9 +46,7 @@ def get_current_user(
             raise credentials_exception
 
         # Check if token is in blacklist
-        blacklisted = (
-            db.query(TokenBlacklist).filter(TokenBlacklist.jti == jti).first()
-        )
+        blacklisted = db.query(TokenBlacklist).filter(TokenBlacklist.jti == jti).first()
 
         if blacklisted:
             raise credentials_exception

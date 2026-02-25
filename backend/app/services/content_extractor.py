@@ -113,7 +113,11 @@ def _is_cloudflare_blocked(status_code: int, html: str) -> bool:
             return True
 
     # Also check for challenge patterns regardless of status code
-    challenge_patterns = ["cf-challenge", "cf-browser-verification", "challenge-platform"]
+    challenge_patterns = [
+        "cf-challenge",
+        "cf-browser-verification",
+        "challenge-platform",
+    ]
     if any(p in html_lower for p in challenge_patterns):
         return True
 
@@ -136,8 +140,10 @@ def _fetch_with_curl_impersonate(url: str) -> Tuple[bool, str, Optional[str]]:
                 "curl-impersonate-chrome",
                 "-s",  # Silent mode
                 "-L",  # Follow redirects
-                "--max-time", "30",  # Timeout
-                "--max-redirs", "5",  # Max redirects
+                "--max-time",
+                "30",  # Timeout
+                "--max-redirs",
+                "5",  # Max redirects
                 url,
             ],
             capture_output=True,
@@ -154,7 +160,10 @@ def _fetch_with_curl_impersonate(url: str) -> Tuple[bool, str, Optional[str]]:
 
         # Check if we still got a Cloudflare block
         html_lower = html.lower()
-        if any(p in html_lower for p in ["checking your browser", "cf-challenge", "just a moment"]):
+        if any(
+            p in html_lower
+            for p in ["checking your browser", "cf-challenge", "just a moment"]
+        ):
             return False, "", "Cloudflare JavaScript challenge (requires browser)"
 
         logger.info(f"Successfully fetched with curl-impersonate: {url}")
@@ -244,7 +253,7 @@ async def extract_full_content(url: str) -> ExtractedContent:
             response = await client.get(
                 url,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                     "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
                     "Accept-Encoding": "gzip, deflate",  # No brotli (br) - httpx doesn't support it
@@ -263,7 +272,9 @@ async def extract_full_content(url: str) -> ExtractedContent:
             if response.status_code != 200:
                 # Check if it's a Cloudflare block
                 if _is_cloudflare_blocked(response.status_code, response.text):
-                    logger.info(f"Cloudflare block detected for {url} (HTTP {response.status_code})")
+                    logger.info(
+                        f"Cloudflare block detected for {url} (HTTP {response.status_code})"
+                    )
                     use_curl_fallback = True
                 else:
                     return ExtractedContent(
@@ -309,9 +320,7 @@ async def extract_full_content(url: str) -> ExtractedContent:
         use_curl_fallback = True
     except Exception as e:
         logger.error(f"Error extracting content from {url}: {e}")
-        return ExtractedContent(
-            title="", content="", success=False, error=str(e)
-        )
+        return ExtractedContent(title="", content="", success=False, error=str(e))
 
     # Try curl-impersonate fallback if needed and available
     if use_curl_fallback:

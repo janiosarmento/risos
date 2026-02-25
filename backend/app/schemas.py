@@ -13,6 +13,7 @@ def fix_literal_newlines(text: Optional[str]) -> Optional[str]:
         return text.replace("\\n", "\n")
     return text
 
+
 # Constants
 MAX_CATEGORY_NAME_LENGTH = 255
 
@@ -139,9 +140,7 @@ class PostResponse(BaseModel):
     liked_at: Optional[str] = None
     is_suggested: bool = False
     suggestion_score: Optional[float] = None
-    summary_status: str = (
-        "not_configured"  # not_configured, pending, ready, failed
-    )
+    summary_status: str = "not_configured"  # not_configured, pending, ready, failed
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
 
