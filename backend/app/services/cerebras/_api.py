@@ -11,6 +11,7 @@ from typing import Optional, List
 import httpx
 
 from app.config import settings
+from app.database import SessionLocal
 from app.services.cerebras._types import (
     CerebrasError,
     TemporaryError,
