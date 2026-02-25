@@ -113,6 +113,8 @@
     "userPrompt": "Prompt do Usuário",
     "tagsPerPost": "Tags por Post",
     "tagsPerPostDesc": "Número de tags geradas por resumo IA (usado no score de sugestões)",
+    "showTags": "Exibir tags no resumo",
+    "showTagsDesc": "Mostrar as tags geradas pela IA abaixo do resumo",
     "userPromptDesc": "Template enviado com cada artigo. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
     "resetDefaults": "Restaurar prompts padrão",
     "clearCache": "Limpar cache",

@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Post, Feed, Category, AISummary, SummaryQueue
+from app.models import Post, Feed, Category, AISummary, PostTag, SummaryQueue
 from app.schemas import (
     PostResponse,
     PostDetail,
@@ -307,12 +307,10 @@ async def get_post(
                     content_for_summary, title=post.title
                 )
 
-                # Append model attribution and tags to summary
+                # Append model attribution to summary
                 summary_with_model = result.summary_pt
                 if summary_with_model and result.model:
                     summary_with_model += f"\n\n— {result.model}"
-                    if result.tags:
-                        summary_with_model += f"\n*Tags: {', '.join(result.tags)}*"
 
                 # Save to database
                 new_summary = AISummary(
@@ -348,6 +346,16 @@ async def get_post(
                 )
                 summary_status = "failed"
 
+    # Compute matched tags for suggested posts
+    post_tags = [pt.tag for pt in post.tags]
+    matched_tags = []
+    if post.is_suggested and post_tags:
+        from app.services.user_profile import get_user_profile
+        profile = get_user_profile(db)
+        if profile and profile.get("tags"):
+            profile_tags = {t.lower() for t in profile["tags"]}
+            matched_tags = [t for t in post_tags if t.lower() in profile_tags]
+
     return PostDetail(
         id=post.id,
         feed_id=post.feed_id,
@@ -372,6 +380,8 @@ async def get_post(
         summary_pt=summary_pt,
         one_line_summary=one_line_summary,
         translated_title=translated_title,
+        tags=post_tags,
+        matched_tags=matched_tags,
     )
 
 
@@ -660,12 +670,10 @@ async def regenerate_summary(
             .first()
         )
 
-        # Append model attribution and tags to summary
+        # Append model attribution to summary
         summary_text = result.summary_pt
         if summary_text and result.model:
             summary_text += f"\n\n— {result.model}"
-            if result.tags:
-                summary_text += f"\n*Tags: {', '.join(result.tags)}*"
 
         if existing_summary:
             # Update existing summary
@@ -696,6 +704,7 @@ async def regenerate_summary(
             "summary_pt": summary_text,
             "one_line_summary": result.one_line_summary,
             "translated_title": result.translated_title,
+            "tags": result.tags or [],
         }
 
     except CerebrasError as e:

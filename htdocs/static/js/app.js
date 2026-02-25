@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260223b';
+const APP_VERSION = '20260225a';
 const API_BASE = '/api';
 
 function app() {
@@ -66,6 +66,7 @@ function app() {
         regeneratingSuggestions: false,
         suggestionMinTags: 3, // Default 3 tags overlap required
         tagsPerPost: 7, // Default 7 tags per AI summary
+        showTags: localStorage.getItem('rss_show_tags') === 'true', // Show AI tags in summary
 
         // Reading mode
         readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
@@ -246,6 +247,16 @@ function app() {
                 .replace(/\*(.+?)\*/g, '<em>$1</em>')
                 .replace(/^• /gm, '<li>')
                 .replace(/\n/g, '<br>');
+        },
+
+        // Render tags with matched ones in bold
+        renderTags(tags, matchedTags) {
+            if (!tags || !tags.length) return '';
+            const matched = new Set((matchedTags || []).map(t => t.toLowerCase()));
+            const rendered = tags.map(t =>
+                matched.has(t.toLowerCase()) ? `<strong class="text-gray-700 dark:text-gray-200">${t}</strong>` : t
+            );
+            return 'Tags: ' + rendered.join(', ');
         },
 
         async setLocale(locale) {
@@ -1602,6 +1613,7 @@ function app() {
                     summary_pt: this.cleanText(data.summary_pt),
                     one_line_summary: this.cleanText(data.one_line_summary),
                     translated_title: data.translated_title,
+                    tags: data.tags || [],
                     summary_status: 'ready',
                 };
 

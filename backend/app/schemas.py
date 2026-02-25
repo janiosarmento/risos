@@ -160,6 +160,8 @@ class PostDetail(PostResponse):
     summary_pt: Optional[str] = None
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
+    tags: List[str] = []
+    matched_tags: List[str] = []
 
     @field_validator("summary_pt", "one_line_summary", mode="after")
     @classmethod
