@@ -651,7 +651,7 @@ async def _call_model(
         "model": model,
         "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 1000,
+        "max_tokens": 1500,
     }
 
     try:
@@ -702,7 +702,8 @@ async def _call_model(
             logger.debug(f"Choice keys: {choice.keys()}")
 
             # Check if response was truncated
-            if choice.get("finish_reason") == "length":
+            was_truncated = choice.get("finish_reason") == "length"
+            if was_truncated:
                 logger.warning(
                     "Response truncated by API (finish_reason=length)"
                 )
@@ -763,6 +764,18 @@ async def _call_model(
                 # Truncate one_line if needed
                 if len(one_line) > 150:
                     one_line = one_line[:147] + "..."
+
+                # Detect incomplete/truncated summaries
+                if summary_pt:
+                    last_char = summary_pt.rstrip()[-1] if summary_pt.strip() else ""
+                    ends_properly = last_char in ".!?:;)\"'»"
+                    if was_truncated or (not ends_properly and not tags):
+                        raise ModelSpecificError(
+                            f"Incomplete summary: "
+                            f"truncated={was_truncated}, "
+                            f"tags={len(tags)}, "
+                            f"ends_with='{last_char}'"
+                        )
 
                 circuit_breaker.record_success()
 
