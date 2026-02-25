@@ -5,7 +5,6 @@ Includes circuit breaker, rate limiting and API key load balancing.
 
 import json
 import logging
-import re
 import threading
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict, List
@@ -38,12 +37,16 @@ from app.services.cerebras._constants import (
     SUMMARY_TEMPERATURE,
     SUMMARY_MAX_TOKENS,
     MAX_CONTENT_LENGTH,
-    MIN_CONTENT_LENGTH,
-    SHORT_CONTENT_LENGTH,
     MAX_ONE_LINE_LENGTH,
     MAX_TAGS,
     RATE_LIMIT_COOLDOWN_SECONDS,
     DEFAULT_KEY_COOLDOWN_SECONDS,
+)
+from app.services.cerebras._parsing import (
+    is_garbage_content,  # noqa: F401
+    normalize_tags,
+    normalize_tag,
+    parse_json_response,
 )
 
 
@@ -441,143 +444,6 @@ circuit_breaker = CircuitBreaker()
 from app.services.cerebras._prompts import get_system_prompt, get_user_prompt  # noqa: F401
 
 
-def _parse_json_response(content: str) -> dict:
-    """
-    Parse JSON response robustly.
-    Handles markdown code blocks, incorrect escapes, etc.
-    """
-
-    # Remove markdown code blocks if present
-    # Pattern: ```json ... ``` or ``` ... ```
-    code_block_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
-    if code_block_match:
-        content = code_block_match.group(1)
-
-    # Try direct parse first
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        pass
-
-    # Try to extract JSON from within text
-    json_start = content.find("{")
-    json_end = content.rfind("}") + 1
-
-    if json_start < 0 or json_end <= json_start:
-        raise ValueError("JSON not found in response")
-
-    json_str = content[json_start:json_end]
-
-    # Try parse
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        pass
-
-    # Try to fix common escape issues
-    # Literal newlines inside strings
-    json_str_fixed = json_str
-
-    # Replace real newlines inside strings with \n
-    # This is a hack but helps with some models
-    def fix_string_newlines(match):
-        s = match.group(0)
-        # Replace real newlines with escape
-        s = s.replace("\n", "\\n").replace("\r", "\\r")
-        return s
-
-    # Find JSON strings and fix
-    json_str_fixed = re.sub(r'"[^"]*"', fix_string_newlines, json_str)
-
-    try:
-        return json.loads(json_str_fixed)
-    except json.JSONDecodeError:
-        pass
-
-    # Last attempt: extract fields manually with regex
-    summary_match = re.search(
-        r'"summary_pt"\s*:\s*"((?:[^"\\]|\\.)*)"|"summary_pt"\s*:\s*"([^"]*)"',
-        json_str,
-        re.DOTALL,
-    )
-    one_line_match = re.search(
-        r'"one_line_summary"\s*:\s*"((?:[^"\\]|\\.)*)"|"one_line_summary"\s*:\s*"([^"]*)"',
-        json_str,
-        re.DOTALL,
-    )
-
-    if summary_match and one_line_match:
-        summary = summary_match.group(1) or summary_match.group(2) or ""
-        one_line = one_line_match.group(1) or one_line_match.group(2) or ""
-        # Decode basic escapes
-        summary = (
-            summary.replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace('\\"', '"')
-        )
-        one_line = (
-            one_line.replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace('\\"', '"')
-        )
-        return {"summary_pt": summary, "one_line_summary": one_line}
-
-    raise ValueError(f"Could not parse JSON: {json_str[:200]}...")
-
-
-# Patterns that indicate error/garbage pages (no real content)
-GARBAGE_PATTERNS = [
-    # GitHub session errors
-    "reload to refresh your session",
-    "you signed in with another tab",
-    "you signed out in another tab",
-    "you switched accounts on another tab",
-    "you can't perform that action at this time",
-    "octocat-spinner",
-    # Common error pages
-    "access denied",
-    "403 forbidden",
-    "404 not found",
-    "500 internal server error",
-    "502 bad gateway",
-    "503 service unavailable",
-    "page not found",
-    # Paywalls/login walls
-    "subscribe to continue reading",
-    "create an account to continue",
-    "sign in to continue",
-    "this content is for subscribers only",
-    # Cookie/GDPR walls
-    "we use cookies",
-    "accept all cookies",
-    "manage cookie preferences",
-]
-
-
-def is_garbage_content(content: str) -> bool:
-    """
-    Detect if content is an error/session/paywall page
-    that should not be sent to AI.
-    """
-    if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
-        return True
-
-    content_lower = content.lower()
-
-    # Check for garbage patterns
-    matches = sum(
-        1 for pattern in GARBAGE_PATTERNS if pattern in content_lower
-    )
-
-    # If multiple patterns match or content is very short with one match
-    if matches >= 2:
-        return True
-    if matches >= 1 and len(content.strip()) < SHORT_CONTENT_LENGTH:
-        return True
-
-    return False
-
-
 async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
     """
     Translate non-English tags to English using a fast, small model.
@@ -612,12 +478,9 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
 
             data = response.json()
             content = data["choices"][0]["message"]["content"].strip()
-            translated = [
-                t.lower().strip().replace(" ", "-").replace("_", "-")
-                for t in content.split(",")
-            ]
+            translated = [normalize_tag(t) for t in content.split(",")]
             # Basic validation: similar count, no empty
-            translated = [t.strip("-") for t in translated if t.strip("-")]
+            translated = [t for t in translated if t]
             if len(translated) >= len(tags) // 2:
                 logger.info(f"Tags translated: [{tags_str}] -> [{', '.join(translated)}]")
                 return translated
@@ -728,7 +591,7 @@ async def _call_model(
 
             # Parse JSON from response
             try:
-                result = _parse_json_response(content_response)
+                result = parse_json_response(content_response)
 
                 summary_pt = result.get("summary_pt", "").strip()
                 one_line = result.get("one_line_summary", "").strip()
@@ -745,23 +608,7 @@ async def _call_model(
                         translated_title = None
 
                 # Extract and normalize tags
-                raw_tags = result.get("tags", [])
-                tags = []
-                if isinstance(raw_tags, list):
-                    for tag in raw_tags:
-                        if isinstance(tag, str):
-                            normalized = tag.lower().strip()
-                            # Normalize separators: spaces and underscores become hyphens
-                            normalized = normalized.replace(" ", "-").replace("_", "-")
-                            # Collapse multiple hyphens
-                            while "--" in normalized:
-                                normalized = normalized.replace("--", "-")
-                            normalized = normalized.strip("-")
-                            if normalized and len(normalized) > 1 and normalized not in (
-                                "news", "article", "technology", "update", "post"
-                            ):
-                                tags.append(normalized)
-                tags = tags[:MAX_TAGS]
+                tags = normalize_tags(result.get("tags", []), MAX_TAGS)
 
                 # Non gpt-oss models often generate tags in the summary language;
                 # use a cheap llama call to translate them to English
