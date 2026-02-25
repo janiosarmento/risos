@@ -7,12 +7,19 @@ import json
 import logging
 import re
 import threading
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Optional, Tuple, Dict, List
 
 import httpx
+
+from app.services.cerebras._types import (
+    CircuitState,
+    CerebrasError,
+    TemporaryError,
+    PermanentError,
+    ModelSpecificError,
+    SummaryResult,
+)
 
 from app.config import load_prompts, settings
 from app.database import SessionLocal
@@ -198,35 +205,8 @@ class ApiKeyRotator:
 api_key_rotator = ApiKeyRotator()
 
 
-class CircuitState(Enum):
-    CLOSED = "closed"  # Normal, allowing calls
-    OPEN = "open"  # Blocked after many failures
-    HALF = "half"  # Testing if service recovered
-
-
-class CerebrasError(Exception):
-    """Base Cerebras client error."""
-
-    pass
-
-
-class TemporaryError(CerebrasError):
-    """Temporary error (timeout, 429, 5xx)."""
-
-    pass
-
-
-class PermanentError(CerebrasError):
-    """Permanent error (invalid payload, empty response after retries)."""
-
-    pass
-
-
-class ModelSpecificError(PermanentError):
-    """Error likely caused by the model (bad response format, unknown structure).
-    Triggers model fallback when other models are available."""
-
-    pass
+    # Types imported from _types.py:
+    # CircuitState, CerebrasError, TemporaryError, PermanentError, ModelSpecificError
 
 
 # Cache for available models (shared with admin routes)
@@ -266,15 +246,7 @@ async def get_available_models() -> List[str]:
     return _available_models_cache or []
 
 
-@dataclass
-class SummaryResult:
-    """Summary generation result."""
-
-    summary_pt: str
-    one_line_summary: str
-    translated_title: str = None  # Translated title (if not in target language)
-    tags: List[str] = field(default_factory=list)  # Topic tags for recommendations
-    model: str = ""  # Model that actually generated this summary
+    # SummaryResult imported from _types.py
 
 
 class CircuitBreaker:
