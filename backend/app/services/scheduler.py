@@ -669,11 +669,16 @@ class Scheduler:
                             content = post.title
                             title_only = True
                         else:
-                            # No content and no title, remove from queue
+                            # No content and no title, skip permanently
+                            post.skip_summary = True
                             db.query(SummaryQueue).filter(
                                 SummaryQueue.id == candidate.id
                             ).delete()
                             db.commit()
+                            logger.debug(
+                                f"Post {post.id}: no content, "
+                                "marked skip_summary"
+                            )
                             continue
 
                     # Call API
@@ -748,17 +753,19 @@ class Scheduler:
                         candidate.error_type = "permanent"
 
                         if candidate.attempts >= 5:
-                            # Move to failures
+                            # Move to failures and mark post as skip
                             failure = SummaryFailure(
                                 content_hash=candidate.content_hash,
                                 last_error=str(e),
                             )
                             db.add(failure)
+                            post.skip_summary = True
                             db.query(SummaryQueue).filter(
                                 SummaryQueue.id == candidate.id
                             ).delete()
                             logger.error(
-                                f"Post {post.id}: permanent failure after 5 attempts"
+                                f"Post {post.id}: permanent failure after "
+                                "5 attempts, marked skip_summary"
                             )
                         else:
                             candidate.locked_at = None

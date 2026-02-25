@@ -299,8 +299,8 @@ async def get_post(
             one_line_summary = summary.one_line_summary
             translated_title = summary.translated_title
             summary_status = "ready"
-        elif content_for_summary and len(content_for_summary.strip()) > 100:
-            # Generate on-demand summary if there's enough content
+        elif content_for_summary and len(content_for_summary.strip()) > 100 and not post.skip_summary:
+            # Generate on-demand summary if there's enough content and not skipped
             try:
                 logger.info(f"Generating on-demand summary for post {post.id}")
                 result = await generate_summary(
@@ -344,6 +344,8 @@ async def get_post(
                 logger.error(
                     f"Unexpected error generating summary for post {post.id}: {e}"
                 )
+                post.skip_summary = True
+                db.commit()
                 summary_status = "failed"
 
     # Compute matched tags (tags that overlap with user's interest profile)
