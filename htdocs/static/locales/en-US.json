@@ -113,6 +113,8 @@
     "userPrompt": "User Prompt",
     "tagsPerPost": "Tags per Post",
     "tagsPerPostDesc": "Number of tags generated per AI summary (used for suggestion scoring)",
+    "modelCooldown": "Model Cooldown (min)",
+    "modelCooldownDesc": "Grace period before retrying a failed model (5-120 minutes)",
     "showTags": "Show tags in summary",
     "showTagsDesc": "Display AI-generated tags below the summary",
     "userPromptDesc": "Template sent with each article. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",

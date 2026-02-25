@@ -35,6 +35,7 @@ PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 # AI keys and prompts
 PREF_CEREBRAS_API_KEYS = "pref_cerebras_api_keys"
 PREF_TAGS_PER_POST = "pref_tags_per_post"
+PREF_MODEL_COOLDOWN = "pref_model_cooldown_minutes"
 PREF_SYSTEM_PROMPT = "pref_system_prompt"
 PREF_USER_PROMPT = "pref_user_prompt"
 
@@ -59,6 +60,7 @@ class PreferencesResponse(BaseModel):
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
+    model_cooldown_minutes: Optional[int] = None  # grace period for failed models (5-120)
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
 
@@ -83,6 +85,7 @@ class PreferencesUpdate(BaseModel):
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None
     tags_per_post: Optional[int] = None
+    model_cooldown_minutes: Optional[int] = None
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
 
@@ -127,6 +130,7 @@ def get_preferences(
         PREF_SUGGESTION_MIN_TAGS,
         PREF_CEREBRAS_API_KEYS,
         PREF_TAGS_PER_POST,
+        PREF_MODEL_COOLDOWN,
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
     ]
@@ -186,6 +190,9 @@ def get_preferences(
             prefs[PREF_CEREBRAS_API_KEYS] or env_settings.cerebras_api_key
         ),
         tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
+        model_cooldown_minutes=int_or_default(
+            prefs[PREF_MODEL_COOLDOWN], env_settings.model_cooldown_minutes
+        ),
         system_prompt=prefs[PREF_SYSTEM_PROMPT] or load_prompts().get("system_prompt", ""),
         user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
     )
@@ -256,6 +263,10 @@ def update_preferences(
     if prefs.tags_per_post is not None:
         tags_per_post = max(3, min(15, prefs.tags_per_post))
         _set_setting(db, PREF_TAGS_PER_POST, str(tags_per_post))
+
+    if prefs.model_cooldown_minutes is not None:
+        cooldown = max(5, min(120, prefs.model_cooldown_minutes))
+        _set_setting(db, PREF_MODEL_COOLDOWN, str(cooldown))
 
     if prefs.system_prompt is not None:
         _set_setting(db, PREF_SYSTEM_PROMPT, prefs.system_prompt)
@@ -414,6 +425,17 @@ def get_effective_tags_per_post(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 7  # Default: 7 tags per post
+
+
+def get_effective_model_cooldown(db: Session) -> int:
+    """Get model cooldown in minutes from app_settings or env default."""
+    saved = _get_setting(db, PREF_MODEL_COOLDOWN)
+    if saved:
+        try:
+            return max(5, min(120, int(saved)))
+        except (ValueError, TypeError):
+            pass
+    return env_settings.model_cooldown_minutes
 
 
 def get_effective_suggestion_min_tags(db: Session) -> int:

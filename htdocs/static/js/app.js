@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260225a';
+const APP_VERSION = '20260225b';
 const API_BASE = '/api';
 
 function app() {
@@ -66,6 +66,7 @@ function app() {
         regeneratingSuggestions: false,
         suggestionMinTags: 3, // Default 3 tags overlap required
         tagsPerPost: 7, // Default 7 tags per AI summary
+        modelCooldownMinutes: 30, // Default 30min grace period for failed models
         showTags: localStorage.getItem('rss_show_tags') === 'true', // Show AI tags in summary
 
         // Reading mode
@@ -405,6 +406,11 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        setModelCooldown(value) {
+            this.modelCooldownMinutes = Math.max(5, Math.min(120, parseInt(value) || 30));
+            if (this.token) this.savePreferencesToServer();
+        },
+
         setReadingMode(mode) {
             this.readingMode = mode;
             // Close post when switching modes
@@ -480,6 +486,7 @@ function app() {
                         split_ratio: this.splitRatio,
                         suggestion_min_tags: this.suggestionMinTags,
                         tags_per_post: this.tagsPerPost,
+                        model_cooldown_minutes: this.modelCooldownMinutes,
                     }),
                 });
             } catch (e) {
@@ -542,6 +549,9 @@ function app() {
                 }
                 if (serverPrefs.tags_per_post !== null && serverPrefs.tags_per_post !== undefined) {
                     this.tagsPerPost = serverPrefs.tags_per_post;
+                }
+                if (serverPrefs.model_cooldown_minutes !== null && serverPrefs.model_cooldown_minutes !== undefined) {
+                    this.modelCooldownMinutes = serverPrefs.model_cooldown_minutes;
                 }
                 if (serverPrefs.reading_mode) {
                     this.readingMode = serverPrefs.reading_mode;

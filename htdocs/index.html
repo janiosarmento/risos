@@ -1251,6 +1251,23 @@
                                 </div>
                             </div>
 
+                            <!-- Model Cooldown -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.modelCooldown')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.modelCooldownDesc')"></p>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="range"
+                                        min="5" max="120" step="5"
+                                        :value="modelCooldownMinutes"
+                                        @input="setModelCooldown($event.target.value)"
+                                        class="flex-1"
+                                    >
+                                    <span class="text-sm font-mono w-8 text-center" x-text="modelCooldownMinutes"></span>
+                                    <span class="text-sm text-gray-500">min</span>
+                                </div>
+                            </div>
+
                             <!-- Show Tags Toggle -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <label class="flex items-center gap-3 cursor-pointer">
@@ -1618,6 +1635,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260225a"></script>
+    <script src="/static/js/app.js?v=20260225b"></script>
 </body>
 </html>

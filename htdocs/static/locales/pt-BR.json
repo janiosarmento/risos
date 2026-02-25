@@ -113,6 +113,8 @@
     "userPrompt": "Prompt do Usuário",
     "tagsPerPost": "Tags por Post",
     "tagsPerPostDesc": "Número de tags geradas por resumo IA (usado no score de sugestões)",
+    "modelCooldown": "Cooldown de Modelo (min)",
+    "modelCooldownDesc": "Período de espera antes de retentar um modelo com erro (5-120 minutos)",
     "showTags": "Exibir tags no resumo",
     "showTagsDesc": "Mostrar as tags geradas pela IA abaixo do resumo",
     "userPromptDesc": "Template enviado com cada artigo. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",

@@ -39,9 +39,7 @@ class Settings(BaseSettings):
         """Returns list of API keys (supports comma-separated values)."""
         if not self.cerebras_api_key:
             return []
-        return [
-            k.strip() for k in self.cerebras_api_key.split(",") if k.strip()
-        ]
+        return [k.strip() for k in self.cerebras_api_key.split(",") if k.strip()]
 
     cerebras_max_rpm: int = 20
     cerebras_timeout: int = 30
@@ -51,6 +49,7 @@ class Settings(BaseSettings):
     failure_threshold: int = 5
     recovery_timeout_seconds: int = 300
     half_open_max_requests: int = 3
+    model_cooldown_minutes: int = 30
 
     # Rate Limiting HTTP
     login_rate_limit: int = 5

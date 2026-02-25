@@ -5,8 +5,8 @@ API calls, tag translation, model fallback, and orchestration.
 
 import json
 import logging
-from datetime import datetime
-from typing import Optional, List
+from datetime import datetime, timedelta
+from typing import Dict, Optional, List
 
 import httpx
 
@@ -49,6 +49,9 @@ from app.services.cerebras._infrastructure import (  # noqa: F401
 from app.services.cerebras._prompts import get_system_prompt, get_user_prompt  # noqa: F401
 
 logger = logging.getLogger(__name__)
+
+# Model cooldown: models that returned errors are paused for a grace period
+_model_cooldowns: Dict[str, datetime] = {}  # model_id -> cooldown_until
 
 
 # Cache for available models (shared with admin routes)
@@ -353,12 +356,14 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     from app.routes.preferences import (
         get_effective_summary_language,
         get_effective_cerebras_model,
+        get_effective_model_cooldown,
     )
 
     db = SessionLocal()
     try:
         preferred_model = get_effective_cerebras_model(db)
         effective_language = get_effective_summary_language(db)
+        cooldown_minutes = get_effective_model_cooldown(db)
 
         # Build message list (reused across model attempts)
         messages = [
@@ -378,8 +383,23 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     except Exception:
         pass  # If we can't fetch models, just try the preferred one
 
+    # Filter out models in cooldown (grace period after errors)
+    now = datetime.utcnow()
+    active_models = [
+        m for m in models_to_try if _model_cooldowns.get(m, now) <= now
+    ]
+    if not active_models:
+        # All models paused — clear cooldowns and try all
+        logger.warning("All models in cooldown, clearing cooldowns")
+        _model_cooldowns.clear()
+        active_models = models_to_try
+
+    skipped = set(models_to_try) - set(active_models)
+    if skipped:
+        logger.info(f"Models in cooldown (skipped): {', '.join(sorted(skipped))}")
+
     last_error = None
-    for model in models_to_try:
+    for model in active_models:
         try:
             result = await _call_model(model, api_key, key_index, messages)
             if model != preferred_model:
@@ -390,9 +410,16 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
             return result
 
         except ModelSpecificError as e:
+            # Pause this model for the configured grace period
+            _model_cooldowns[model] = now + timedelta(minutes=cooldown_minutes)
             logger.warning(
-                f"Model {model} failed: {e}"
-                + (f", trying next model..." if model != models_to_try[-1] else "")
+                f"Model {model} failed: {e}, "
+                f"paused for {cooldown_minutes}min"
+                + (
+                    ", trying next model..."
+                    if model != active_models[-1]
+                    else ""
+                )
             )
             last_error = e
             continue
