@@ -1,6 +1,6 @@
 """Cerebras AI client for summary generation."""
 
-# Re-export everything from submodules during refactoring
+# Public API re-exported from submodules
 from app.services.cerebras._types import (  # noqa: F401
     CircuitState,
     CerebrasError,
@@ -20,7 +20,7 @@ from app.services.cerebras._infrastructure import (  # noqa: F401
     circuit_breaker,
     api_key_rotator,
 )
-from app.services.cerebras._legacy import (  # noqa: F401
+from app.services.cerebras._api import (  # noqa: F401
     generate_summary,
     get_available_models,
 )
