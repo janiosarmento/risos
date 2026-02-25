@@ -346,10 +346,10 @@ async def get_post(
                 )
                 summary_status = "failed"
 
-    # Compute matched tags for suggested posts
+    # Compute matched tags (tags that overlap with user's interest profile)
     post_tags = [pt.tag for pt in post.tags]
     matched_tags = []
-    if post.is_suggested and post_tags:
+    if post_tags:
         from app.services.user_profile import get_user_profile
         profile = get_user_profile(db)
         if profile and profile.get("tags"):
