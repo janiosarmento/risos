@@ -640,6 +640,57 @@ def is_garbage_content(content: str) -> bool:
     return False
 
 
+async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
+    """
+    Translate non-English tags to English using a fast, small model.
+    Returns translated tags or original tags on failure.
+    """
+    if not tags:
+        return tags
+
+    tags_str = ", ".join(tags)
+    messages = [
+        {"role": "system", "content": "You translate tags to English. Reply with ONLY the comma-separated translated tags, nothing else."},
+        {"role": "user", "content": f"Translate these tags to English (keep brand names, proper nouns, and already-English tags exactly as-is; use lowercase hyphens): {tags_str}"},
+    ]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": "llama3.1-8b",
+        "messages": messages,
+        "temperature": 0.1,
+        "max_tokens": 200,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(CEREBRAS_API_URL, headers=headers, json=payload)
+            if response.status_code != 200:
+                logger.warning(f"Tag translation failed: HTTP {response.status_code}")
+                return tags
+
+            data = response.json()
+            content = data["choices"][0]["message"]["content"].strip()
+            translated = [
+                t.lower().strip().replace(" ", "-").replace("_", "-")
+                for t in content.split(",")
+            ]
+            # Basic validation: similar count, no empty
+            translated = [t.strip("-") for t in translated if t.strip("-")]
+            if len(translated) >= len(tags) // 2:
+                logger.info(f"Tags translated: [{tags_str}] -> [{', '.join(translated)}]")
+                return translated
+            else:
+                logger.warning(f"Tag translation gave too few results: {len(translated)} from {len(tags)}")
+                return tags
+    except Exception as e:
+        logger.warning(f"Tag translation error: {e}")
+        return tags
+
+
 async def _call_model(
     model: str, api_key: str, key_index: int, messages: list
 ) -> SummaryResult:
@@ -773,6 +824,11 @@ async def _call_model(
                             ):
                                 tags.append(normalized)
                 tags = tags[:15]  # Cap at max configurable tags_per_post
+
+                # Non gpt-oss models often generate tags in the summary language;
+                # use a cheap llama call to translate them to English
+                if tags and "gpt-oss" not in model:
+                    tags = await _translate_tags(tags, api_key, key_index)
 
                 # Allow both empty (error pages) or both filled
                 if bool(summary_pt) != bool(one_line):
