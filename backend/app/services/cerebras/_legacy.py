@@ -27,8 +27,24 @@ from app.models import AppSettings
 
 logger = logging.getLogger(__name__)
 
-# Configuration
-CEREBRAS_API_URL = "https://api.cerebras.ai/v1/chat/completions"
+from app.services.cerebras._constants import (
+    CEREBRAS_API_URL,
+    MODELS_CACHE_TTL,
+    MODELS_FETCH_TIMEOUT,
+    TAG_TRANSLATION_MODEL,
+    TAG_TRANSLATION_TEMPERATURE,
+    TAG_TRANSLATION_MAX_TOKENS,
+    TAG_TRANSLATION_TIMEOUT,
+    SUMMARY_TEMPERATURE,
+    SUMMARY_MAX_TOKENS,
+    MAX_CONTENT_LENGTH,
+    MIN_CONTENT_LENGTH,
+    SHORT_CONTENT_LENGTH,
+    MAX_ONE_LINE_LENGTH,
+    MAX_TAGS,
+    RATE_LIMIT_COOLDOWN_SECONDS,
+    DEFAULT_KEY_COOLDOWN_SECONDS,
+)
 
 
 class ApiKeyRotator:
@@ -142,7 +158,7 @@ class ApiKeyRotator:
             # All keys in cooldown
             return None, None
 
-    def set_key_cooldown(self, key: str, seconds: int = 60):
+    def set_key_cooldown(self, key: str, seconds: int = DEFAULT_KEY_COOLDOWN_SECONDS):
         """Put a key in cooldown after rate limit."""
         with self._lock:
             self._key_cooldowns[key] = datetime.utcnow() + timedelta(
@@ -205,14 +221,9 @@ class ApiKeyRotator:
 api_key_rotator = ApiKeyRotator()
 
 
-    # Types imported from _types.py:
-    # CircuitState, CerebrasError, TemporaryError, PermanentError, ModelSpecificError
-
-
 # Cache for available models (shared with admin routes)
 _available_models_cache: Optional[List[str]] = None
 _available_models_cache_time: Optional[datetime] = None
-_MODELS_CACHE_TTL = timedelta(minutes=30)
 
 
 async def get_available_models() -> List[str]:
@@ -221,7 +232,7 @@ async def get_available_models() -> List[str]:
 
     now = datetime.utcnow()
     if _available_models_cache and _available_models_cache_time:
-        if now - _available_models_cache_time < _MODELS_CACHE_TTL:
+        if now - _available_models_cache_time < MODELS_CACHE_TTL:
             return _available_models_cache
 
     api_keys = api_key_rotator._get_keys()
@@ -229,7 +240,7 @@ async def get_available_models() -> List[str]:
         return []
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=MODELS_FETCH_TIMEOUT) as client:
             response = await client.get(
                 "https://api.cerebras.ai/v1/models",
                 headers={"Authorization": f"Bearer {api_keys[0]}"},
@@ -593,7 +604,7 @@ def is_garbage_content(content: str) -> bool:
     Detect if content is an error/session/paywall page
     that should not be sent to AI.
     """
-    if not content or len(content.strip()) < 50:
+    if not content or len(content.strip()) < MIN_CONTENT_LENGTH:
         return True
 
     content_lower = content.lower()
@@ -606,7 +617,7 @@ def is_garbage_content(content: str) -> bool:
     # If multiple patterns match or content is very short with one match
     if matches >= 2:
         return True
-    if matches >= 1 and len(content.strip()) < 200:
+    if matches >= 1 and len(content.strip()) < SHORT_CONTENT_LENGTH:
         return True
 
     return False
@@ -631,14 +642,14 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
         "Content-Type": "application/json",
     }
     payload = {
-        "model": "llama3.1-8b",
+        "model": TAG_TRANSLATION_MODEL,
         "messages": messages,
-        "temperature": 0.1,
-        "max_tokens": 200,
+        "temperature": TAG_TRANSLATION_TEMPERATURE,
+        "max_tokens": TAG_TRANSLATION_MAX_TOKENS,
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=TAG_TRANSLATION_TIMEOUT) as client:
             response = await client.post(CEREBRAS_API_URL, headers=headers, json=payload)
             if response.status_code != 200:
                 logger.warning(f"Tag translation failed: HTTP {response.status_code}")
@@ -682,8 +693,8 @@ async def _call_model(
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": 0.3,
-        "max_tokens": 2048,
+        "temperature": SUMMARY_TEMPERATURE,
+        "max_tokens": SUMMARY_MAX_TOKENS,
     }
 
     # Minimize reasoning tokens for thinking models
@@ -708,7 +719,7 @@ async def _call_model(
                     f"retry-after={retry_after}, "
                     f"headers={dict(response.headers)}"
                 )
-                api_key_rotator.set_key_cooldown(api_key, seconds=300)
+                api_key_rotator.set_key_cooldown(api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS)
                 raise TemporaryError(
                     f"Rate limit reached on key {key_index + 1}"
                 )
@@ -795,7 +806,7 @@ async def _call_model(
                                 "news", "article", "technology", "update", "post"
                             ):
                                 tags.append(normalized)
-                tags = tags[:15]  # Cap at max configurable tags_per_post
+                tags = tags[:MAX_TAGS]
 
                 # Non gpt-oss models often generate tags in the summary language;
                 # use a cheap llama call to translate them to English
@@ -809,8 +820,8 @@ async def _call_model(
                     )
 
                 # Truncate one_line if needed
-                if len(one_line) > 150:
-                    one_line = one_line[:147] + "..."
+                if len(one_line) > MAX_ONE_LINE_LENGTH:
+                    one_line = one_line[:MAX_ONE_LINE_LENGTH - 3] + "..."
 
                 # Detect incomplete/truncated summaries
                 if summary_pt:
@@ -889,7 +900,7 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
         raise TemporaryError("All API keys are in cooldown")
 
     # Truncate content if too large
-    max_content_len = 12000
+    max_content_len = MAX_CONTENT_LENGTH
     if len(content) > max_content_len:
         content = content[:max_content_len] + "..."
 
