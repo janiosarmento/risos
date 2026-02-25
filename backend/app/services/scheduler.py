@@ -617,6 +617,18 @@ class Scheduler:
                         db.commit()
                         continue
 
+                    # Skip posts marked as "skip summary" by user
+                    if post.skip_summary:
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
+                        db.commit()
+                        logger.debug(
+                            f"Post {post.id} marked skip_summary, "
+                            "removing from queue"
+                        )
+                        continue
+
                     # Skip already read posts (not worth spending API on them)
                     # But always generate for favorites (needed for tags/suggestions)
                     if post.is_read and not post.is_favorite:

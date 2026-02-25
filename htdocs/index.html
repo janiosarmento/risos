@@ -80,6 +80,7 @@
                                     @click="showPw = !showPw"
                                     class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                     tabindex="-1"
+                                    :title="showPw ? t('auth.hidePassword') : t('auth.showPassword')"
                                 >
                                     <svg x-show="!showPw" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path>
@@ -139,7 +140,7 @@
                             </button>
                             <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm hidden md:block" x-text="t('app.logout')"></button>
                             <!-- Mobile close button -->
-                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :title="t('sidebar.closeMenu')">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -222,6 +223,7 @@
                                         @click.stop="toggleCategoryCollapse(category.id)"
                                         class="p-0.5 -ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-transform"
                                         :class="filter === 'category' && filterId === category.id ? 'hover:bg-blue-500' : ''"
+                                        :title="t('sidebar.toggleCategory')"
                                     >
                                         <svg
                                             class="w-3 h-3 transition-transform duration-200"
@@ -315,6 +317,7 @@
                                 <button
                                     @click="sidebarOpen = true"
                                     class="md:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    :title="t('sidebar.openMenu')"
                                 >
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -497,7 +500,7 @@
                                             <button
                                                 @click.stop="toggleStar(post)"
                                                 class="flex-shrink-0 hover:scale-110 transition-transform"
-                                                :title="post.is_starred ? t('sidebar.starred') : 'Star'"
+                                                :title="post.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
                                             >
                                                 <svg class="w-4 h-4" :class="post.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" fill="currentColor" viewBox="0 0 20 20">
                                                     <path x-show="post.is_starred" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
@@ -508,7 +511,7 @@
                                             <button
                                                 @click.stop="toggleLike(post)"
                                                 class="flex-shrink-0 hover:scale-110 transition-transform"
-                                                :title="post.is_liked ? 'Unlike' : 'Like'"
+                                                :title="post.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                                             >
                                                 <svg class="w-4 h-4" :class="post.is_liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'" fill="currentColor" viewBox="0 0 20 20">
                                                     <path x-show="post.is_liked" fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
@@ -598,26 +601,26 @@
                                         <!-- Action buttons -->
                                         <div class="flex items-center gap-1 flex-shrink-0">
                                             <!-- Nav buttons -->
-                                            <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" title="K">
+                                            <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :title="t('modal.prevPost')">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                                             </button>
-                                            <button @click="nextPost()" :disabled="!canGoNext()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" title="J">
+                                            <button @click="nextPost()" :disabled="!canGoNext()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :title="t('modal.nextPost')">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                             </button>
                                             <!-- Star -->
-                                            <button @click="toggleStar(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" title="S">
+                                            <button @click="toggleStar(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :title="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                                                 </svg>
                                             </button>
                                             <!-- Like -->
-                                            <button @click="toggleLike(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" title="L">
+                                            <button @click="toggleLike(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :title="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
                                                 </svg>
                                             </button>
                                             <!-- Read/Unread -->
-                                            <button @click="toggleRead(currentPost)" class="p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" title="M">
+                                            <button @click="toggleRead(currentPost)" class="p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" :title="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                             </button>
                                             <!-- Original link -->
@@ -625,7 +628,7 @@
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                             </a>
                                             <!-- Close -->
-                                            <button @click="currentPost = null" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl" title="ESC">&times;</button>
+                                            <button @click="currentPost = null" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl" :title="t('modal.closeEsc')">&times;</button>
                                         </div>
                                     </div>
 
@@ -650,12 +653,19 @@
                                         <div class="w-1/3 flex flex-col bg-blue-50 dark:bg-slate-800 min-w-[280px] overflow-hidden flex-shrink-0">
                                             <div class="px-3 py-1.5 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between">
                                                 <h3 class="text-xs font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
-                                                <button @click="regenerateSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="regeneratingSummary ? 'bg-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :disabled="regeneratingSummary" title="Shift+R">
-                                                    <span x-show="!regeneratingSummary" class="flex items-center gap-1">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                                    </span>
-                                                    <span x-show="regeneratingSummary"><svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></span>
-                                                </button>
+                                                <div class="flex items-center gap-1">
+                                                    <button @click="toggleSkipSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :title="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')">
+                                                        <span class="flex items-center gap-1">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                                        </span>
+                                                    </button>
+                                                    <button @click="regenerateSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="regeneratingSummary ? 'bg-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :disabled="regeneratingSummary" :title="t('modal.regenerate')">
+                                                        <span x-show="!regeneratingSummary" class="flex items-center gap-1">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                                        </span>
+                                                        <span x-show="regeneratingSummary"><svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></span>
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div class="flex-1 overflow-y-auto p-4 scrollbar-thin">
                                                 <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
@@ -738,7 +748,7 @@
                                 @click="prevPost()"
                                 class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 :disabled="!canGoPrev()"
-                                title="Post anterior (K)"
+                                :title="t('modal.prevPost')"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -748,7 +758,7 @@
                                 @click="nextPost()"
                                 class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 :disabled="!canGoNext()"
-                                title="Proximo post (J)"
+                                :title="t('modal.nextPost')"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -759,7 +769,7 @@
                         <button
                             @click="toggleStar(currentPost)"
                             class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            :title="currentPost.is_starred ? t('sidebar.starred') : 'Star (S)'"
+                            :title="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
                         >
                             <svg class="w-5 h-5" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" fill="currentColor" viewBox="0 0 20 20">
                                 <path x-show="currentPost.is_starred" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
@@ -770,7 +780,7 @@
                         <button
                             @click="toggleLike(currentPost)"
                             class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            :title="currentPost.is_liked ? 'Unlike (L)' : 'Like (L)'"
+                            :title="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                         >
                             <svg class="w-5 h-5" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'" fill="currentColor" viewBox="0 0 20 20">
                                 <path x-show="currentPost.is_liked" fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
@@ -829,27 +839,42 @@
                     <div class="w-full md:w-1/3 flex flex-col bg-blue-50 dark:bg-slate-800 md:min-w-[300px] border-t md:border-t-0 border-gray-200 dark:border-gray-700 max-h-[40vh] md:max-h-full overflow-hidden flex-shrink-0 md:flex-shrink">
                         <div class="px-4 py-2 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between min-h-[42px]">
                             <h3 class="text-sm font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
-                            <button
-                                @click="regenerateSummary()"
-                                class="text-xs px-2 py-1 rounded transition-colors"
-                                :class="regeneratingSummary ? 'bg-gray-400 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
-                                :disabled="regeneratingSummary"
-                                :title="t('modal.regenerate')"
-                            >
-                                <span x-show="!regeneratingSummary" class="flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                    </svg>
-                                    <span x-text="t('modal.regenerate')"></span>
-                                </span>
-                                <span x-show="regeneratingSummary" class="flex items-center gap-1">
-                                    <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span x-text="t('modal.generating')"></span>
-                                </span>
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <button
+                                    @click="toggleSkipSummary()"
+                                    class="text-xs px-2 py-1 rounded transition-colors"
+                                    :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
+                                    :title="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')"
+                                >
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                                        </svg>
+                                        <span x-text="currentPost.skip_summary ? t('modal.skipSummaryActive') : t('modal.skipSummary')"></span>
+                                    </span>
+                                </button>
+                                <button
+                                    @click="regenerateSummary()"
+                                    class="text-xs px-2 py-1 rounded transition-colors"
+                                    :class="regeneratingSummary ? 'bg-gray-400 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
+                                    :disabled="regeneratingSummary"
+                                    :title="t('modal.regenerate')"
+                                >
+                                    <span x-show="!regeneratingSummary" class="flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        <span x-text="t('modal.regenerate')"></span>
+                                    </span>
+                                    <span x-show="regeneratingSummary" class="flex items-center gap-1">
+                                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span x-text="t('modal.generating')"></span>
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                         <div class="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin bg-blue-50 dark:bg-slate-800">
                             <!-- Resumo disponivel -->
@@ -1584,7 +1609,7 @@
                     </svg>
                     <span x-text="toast.message"></span>
                 </div>
-                <button @click="hideToast()" class="text-white/80 hover:text-white flex-shrink-0">
+                <button @click="hideToast()" class="text-white/80 hover:text-white flex-shrink-0" :title="t('modal.dismiss')">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -1635,6 +1660,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260225b"></script>
+    <script src="/static/js/app.js?v=20260225d"></script>
 </body>
 </html>

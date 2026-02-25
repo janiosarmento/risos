@@ -91,6 +91,7 @@ class Post(Base):
     is_starred = Column(Boolean, default=False)
     starred_at = Column(DateTime)
     fetch_full_attempted_at = Column(DateTime)
+    skip_summary = Column(Boolean, default=False)
 
     # Suggestions system
     is_liked = Column(Integer, default=0)

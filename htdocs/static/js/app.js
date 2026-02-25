@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260225b';
+const APP_VERSION = '20260225d';
 const API_BASE = '/api';
 
 function app() {
@@ -1608,9 +1608,28 @@ function app() {
             }
         },
 
+        // Toggle skip_summary flag on current post
+        async toggleSkipSummary() {
+            if (!this.currentPost) return;
+            try {
+                const data = await this.fetchApi(`/posts/${this.currentPost.id}/skip-summary`, {
+                    method: 'POST',
+                });
+                this.currentPost = { ...this.currentPost, skip_summary: data.skip_summary };
+                this.updatePost(this.currentPost.id, { skip_summary: data.skip_summary });
+            } catch (error) {
+                console.error('Failed to toggle skip summary:', error);
+            }
+        },
+
         // Regenerate AI Summary
         async regenerateSummary() {
             if (!this.currentPost || this.regeneratingSummary) return;
+
+            if (this.currentPost.skip_summary) {
+                this.showToast(this.t('modal.cannotRegenerateSkipped'), 'error');
+                return;
+            }
 
             this.regeneratingSummary = true;
 

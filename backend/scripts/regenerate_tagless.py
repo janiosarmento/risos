@@ -6,23 +6,29 @@ Processes in batches with circuit breaker reset and key rotation.
 
 import asyncio
 import hashlib
-import sys
 import os
+import sys
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from sqlalchemy import not_
 
 from app.database import SessionLocal
 from app.models import AISummary, Post, PostTag
 from app.services.cerebras import circuit_breaker, generate_summary
 from app.services.cerebras._infrastructure import api_key_rotator
 from app.services.tags import save_post_tags
-from sqlalchemy import not_
 
 
 BATCH_SIZE = 6
 TOTAL_POSTS = 48
-DELAY_BETWEEN_CALLS = 12  # seconds, to respect rate limits
+DELAY_BETWEEN_CALLS = 20  # seconds between calls to avoid rate limits
+
+
+def log(msg):
+    """Print with immediate flush for background execution."""
+    print(msg, flush=True)
 
 
 def compute_content_hash(content, title="", url=""):
@@ -42,13 +48,13 @@ async def regenerate_one(db, post):
     """Regenerate summary for a single post. Returns True on success."""
     content = post.full_content or post.content
     if not content or len(content.strip()) < 100:
-        print(f"  #{post.id}: SKIP (insufficient content)")
+        log(f"  #{post.id}: SKIP (insufficient content)")
         return False
 
     try:
         result = await generate_summary(content, title=post.title)
     except Exception as e:
-        print(f"  #{post.id}: ERROR ({e})")
+        log(f"  #{post.id}: ERROR ({e})")
         return False
 
     # Save summary
@@ -86,7 +92,7 @@ async def regenerate_one(db, post):
 
     db.commit()
     tags_str = ", ".join(result.tags) if result.tags else "(none)"
-    print(f"  #{post.id}: OK [{result.model}] tags=[{tags_str}]")
+    log(f"  #{post.id}: OK [{result.model}] tags=[{tags_str}]")
     return True
 
 
@@ -103,7 +109,10 @@ async def main():
         .all()
     )
 
-    print(f"Found {len(posts)} posts without tags to process\n")
+    log(f"Found {len(posts)} posts without tags to process\n")
+
+    # Clear all rate limits at start
+    clear_rate_limits()
 
     success_count = 0
     skip_count = 0
@@ -113,17 +122,15 @@ async def main():
         batch = posts[batch_start : batch_start + BATCH_SIZE]
         batch_num = batch_start // BATCH_SIZE + 1
         total_batches = (len(posts) + BATCH_SIZE - 1) // BATCH_SIZE
-        print(f"--- Batch {batch_num}/{total_batches} ---")
-
-        # Clear rate limits before each batch
-        clear_rate_limits()
+        log(f"--- Batch {batch_num}/{total_batches} ---")
 
         for i, post in enumerate(batch):
+            # Reset circuit breaker before each call
+            circuit_breaker.last_call = None
+            circuit_breaker._save_state()
+
             if i > 0:
                 await asyncio.sleep(DELAY_BETWEEN_CALLS)
-                # Reset circuit breaker for next call
-                circuit_breaker.last_call = None
-                circuit_breaker._save_state()
 
             ok = await regenerate_one(db, post)
             if ok:
@@ -135,10 +142,10 @@ async def main():
             else:
                 error_count += 1
 
-        print()
+        log("")
 
     db.close()
-    print(
+    log(
         f"Done! Success: {success_count}, "
         f"Skipped: {skip_count}, "
         f"Errors: {error_count}"

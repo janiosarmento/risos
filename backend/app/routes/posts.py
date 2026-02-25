@@ -382,6 +382,7 @@ async def get_post(
         translated_title=translated_title,
         tags=post_tags,
         matched_tags=matched_tags,
+        skip_summary=bool(post.skip_summary),
     )
 
 
@@ -723,3 +724,24 @@ async def regenerate_summary(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to regenerate summary: {str(e)}",
         )
+
+
+@router.post("/{post_id}/skip-summary")
+def toggle_skip_summary(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Toggle the skip_summary flag on a post."""
+    post = get_post_or_404(db, post_id)
+    post.skip_summary = not post.skip_summary
+    db.commit()
+
+    # Remove from summary queue if skipping
+    if post.skip_summary:
+        db.query(SummaryQueue).filter(
+            SummaryQueue.post_id == post_id
+        ).delete()
+        db.commit()
+
+    return {"post_id": post_id, "skip_summary": post.skip_summary}

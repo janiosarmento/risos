@@ -161,6 +161,7 @@ class PostDetail(PostResponse):
     translated_title: Optional[str] = None
     tags: List[str] = []
     matched_tags: List[str] = []
+    skip_summary: bool = False
 
     @field_validator("summary_pt", "one_line_summary", mode="after")
     @classmethod
