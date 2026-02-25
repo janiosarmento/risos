@@ -485,13 +485,22 @@ def get_user_prompt(content: str, title: str = "", language: str = None, db=None
             "user_prompt", "Summarize this article in {language}:\n\n{content}"
         )
         tags_count = 7
-    return template.format(
+    prompt = template.format(
         language=language or settings.summary_language,
         content=content,
         title=title or "Untitled",
         date=datetime.now().strftime("%Y-%m-%d"),
         tags_count=tags_count,
     )
+
+    # Always append tag language enforcement (models ignore it when buried in system prompt)
+    prompt += (
+        "\n\nIMPORTANT: All tags MUST be in English, using lowercase hyphens "
+        "(e.g. \"open-source\", \"artificial-intelligence\"). "
+        "NEVER use tags in other languages."
+    )
+
+    return prompt
 
 
 def _parse_json_response(content: str) -> dict:

@@ -107,7 +107,7 @@ user_prompt: |
     "summary_pt": "Paragraph with the main news and context.\n\n• Specific detail 1\n• Specific detail 2\n• Specific detail 3\n\nConclusion if relevant.",
     "one_line_summary": "Specific summary with the main fact (max 100 chars)",
     "translated_title": "Title translated to {language}, or null if already in {language}",
-    "tags": ["tag1", "tag2", "...", "tagN"]
+    "tags": ["english-tag1", "english-tag2", "...", "english-tagN"]
   }}
 
   TAGS RULES:
