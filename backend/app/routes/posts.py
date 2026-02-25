@@ -307,10 +307,12 @@ async def get_post(
                     content_for_summary, title=post.title
                 )
 
-                # Append model attribution to summary
+                # Append model attribution and tags to summary
                 summary_with_model = result.summary_pt
                 if summary_with_model and result.model:
                     summary_with_model += f"\n\n— {result.model}"
+                    if result.tags:
+                        summary_with_model += f"\n*Tags: {', '.join(result.tags)}*"
 
                 # Save to database
                 new_summary = AISummary(
@@ -658,10 +660,12 @@ async def regenerate_summary(
             .first()
         )
 
-        # Append model attribution to summary
+        # Append model attribution and tags to summary
         summary_text = result.summary_pt
         if summary_text and result.model:
             summary_text += f"\n\n— {result.model}"
+            if result.tags:
+                summary_text += f"\n*Tags: {', '.join(result.tags)}*"
 
         if existing_summary:
             # Update existing summary

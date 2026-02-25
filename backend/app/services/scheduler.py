@@ -714,10 +714,12 @@ class Scheduler:
                             content, title=post.title, title_only=title_only
                         )
 
-                        # Append model attribution to summary
+                        # Append model attribution and tags to summary
                         summary_text = summary_result.summary_pt
                         if summary_text and summary_result.model:
                             summary_text += f"\n\n— {summary_result.model}"
+                            if summary_result.tags:
+                                summary_text += f"\n*Tags: {', '.join(summary_result.tags)}*"
 
                         # Save summary
                         ai_summary = AISummary(
