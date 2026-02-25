@@ -2,6 +2,7 @@
 """
 Regenerate summaries for the N most recent posts without tags.
 Processes in batches with circuit breaker reset and key rotation.
+Skips posts marked as skip_summary.
 """
 
 import asyncio
@@ -16,13 +17,13 @@ from sqlalchemy import not_
 
 from app.database import SessionLocal
 from app.models import AISummary, Post, PostTag
-from app.services.cerebras import circuit_breaker, generate_summary
+from app.services.cerebras import circuit_breaker, generate_summary, GarbageContentError
 from app.services.cerebras._infrastructure import api_key_rotator
 from app.services.tags import save_post_tags
 
 
 BATCH_SIZE = 6
-TOTAL_POSTS = 48
+TOTAL_POSTS = 100
 DELAY_BETWEEN_CALLS = 20  # seconds between calls to avoid rate limits
 
 
@@ -48,11 +49,18 @@ async def regenerate_one(db, post):
     """Regenerate summary for a single post. Returns True on success."""
     content = post.full_content or post.content
     if not content or len(content.strip()) < 100:
-        log(f"  #{post.id}: SKIP (insufficient content)")
+        post.skip_summary = True
+        db.commit()
+        log(f"  #{post.id}: SKIP (insufficient content, marked skip_summary)")
         return False
 
     try:
         result = await generate_summary(content, title=post.title)
+    except GarbageContentError as e:
+        post.skip_summary = True
+        db.commit()
+        log(f"  #{post.id}: SKIP ({e})")
+        return False
     except Exception as e:
         log(f"  #{post.id}: ERROR ({e})")
         return False
@@ -99,11 +107,14 @@ async def regenerate_one(db, post):
 async def main():
     db = SessionLocal()
 
-    # Find posts without tags, most recent first
+    # Find posts without tags, excluding skipped, most recent first
     posts_with_tags = db.query(PostTag.post_id).distinct()
     posts = (
         db.query(Post)
-        .filter(not_(Post.id.in_(posts_with_tags)))
+        .filter(
+            not_(Post.id.in_(posts_with_tags)),
+            Post.skip_summary == False,  # noqa: E712
+        )
         .order_by(Post.id.desc())
         .limit(TOTAL_POSTS)
         .all()
@@ -135,9 +146,7 @@ async def main():
             ok = await regenerate_one(db, post)
             if ok:
                 success_count += 1
-            elif not (post.full_content or post.content) or len(
-                (post.full_content or post.content or "").strip()
-            ) < 100:
+            elif post.skip_summary:
                 skip_count += 1
             else:
                 error_count += 1

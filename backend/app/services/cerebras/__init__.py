@@ -7,6 +7,7 @@ from app.services.cerebras._types import (  # noqa: F401
     TemporaryError,
     PermanentError,
     ModelSpecificError,
+    GarbageContentError,
     SummaryResult,
 )
 from app.services.cerebras._prompts import (  # noqa: F401
@@ -34,6 +35,7 @@ __all__ = [
     "TemporaryError",
     "PermanentError",
     "ModelSpecificError",
+    "GarbageContentError",
     "SummaryResult",
     "CircuitState",
     "is_garbage_content",

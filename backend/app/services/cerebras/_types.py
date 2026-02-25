@@ -36,6 +36,13 @@ class ModelSpecificError(PermanentError):
     pass
 
 
+class GarbageContentError(PermanentError):
+    """Content is garbage (error page, paywall, empty result).
+    Post should be marked as skip_summary."""
+
+    pass
+
+
 @dataclass
 class SummaryResult:
     """Summary generation result."""

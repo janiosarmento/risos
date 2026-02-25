@@ -518,6 +518,7 @@ class Scheduler:
             api_key_rotator,
             TemporaryError,
             PermanentError,
+            GarbageContentError,
         )
         from app.services.content_extractor import extract_full_content
         from app.services.tags import save_post_tags
@@ -716,6 +717,15 @@ class Scheduler:
                         logger.info(
                             f"Summary generated successfully for post {post.id}"
                         )
+
+                    except GarbageContentError as e:
+                        # Content is unusable — mark skip and remove from queue
+                        post.skip_summary = True
+                        db.query(SummaryQueue).filter(
+                            SummaryQueue.id == candidate.id
+                        ).delete()
+                        db.commit()
+                        logger.info(f"Post {post.id}: {e}, marked skip_summary")
 
                     except TemporaryError as e:
                         error_msg = str(e)

@@ -23,7 +23,7 @@ from app.schemas import (
     MarkReadRequest,
 )
 from app.services.content_extractor import extract_full_content
-from app.services.cerebras import generate_summary, CerebrasError
+from app.services.cerebras import generate_summary, CerebrasError, GarbageContentError
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
 
@@ -321,7 +321,6 @@ async def get_post(
                 )
                 db.add(new_summary)
 
-                # Save tags for recommendations
                 if result.tags:
                     save_post_tags(db, post.id, result.tags)
 
@@ -331,10 +330,12 @@ async def get_post(
                 one_line_summary = result.one_line_summary
                 translated_title = result.translated_title
                 summary_status = "ready"
-                logger.info(
-                    f"Summary generated successfully for post {post.id}"
-                )
 
+            except GarbageContentError as e:
+                logger.info(f"Post {post.id}: {e}, marked skip_summary")
+                post.skip_summary = True
+                db.commit()
+                summary_status = "failed"
             except CerebrasError as e:
                 logger.warning(
                     f"Failed to generate summary for post {post.id}: {e}"

@@ -17,6 +17,7 @@ from app.services.cerebras._types import (
     TemporaryError,
     PermanentError,
     ModelSpecificError,
+    GarbageContentError,
     SummaryResult,
 )
 from app.services.cerebras._constants import (
@@ -330,12 +331,7 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     """
     # Check if content is garbage (error, session, paywall)
     if not title_only and is_garbage_content(content):
-        logger.info(
-            "Content detected as error/session page, returning empty"
-        )
-        return SummaryResult(
-            summary_pt="", one_line_summary="", translated_title=None
-        )
+        raise GarbageContentError("Content detected as error/session page")
 
     # Check circuit breaker
     can_call, reason = circuit_breaker.can_call()
@@ -402,6 +398,13 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     for model in active_models:
         try:
             result = await _call_model(model, api_key, key_index, messages)
+
+            # Empty result means the model deemed the content unusable
+            if not result.summary_pt and not result.tags:
+                raise GarbageContentError(
+                    "Model returned empty result (unusable content)"
+                )
+
             if model != preferred_model:
                 logger.info(
                     f"Fallback model {result.model} succeeded "
