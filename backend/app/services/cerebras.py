@@ -651,8 +651,12 @@ async def _call_model(
         "model": model,
         "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 1500,
+        "max_tokens": 2048,
     }
+
+    # Minimize reasoning tokens for thinking models
+    if "gpt-oss" in model:
+        payload["reasoning_effort"] = "low"
 
     try:
         async with httpx.AsyncClient(
