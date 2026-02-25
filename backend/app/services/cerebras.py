@@ -753,6 +753,12 @@ async def _call_model(
                     for tag in raw_tags:
                         if isinstance(tag, str):
                             normalized = tag.lower().strip()
+                            # Normalize separators: spaces and underscores become hyphens
+                            normalized = normalized.replace(" ", "-").replace("_", "-")
+                            # Collapse multiple hyphens
+                            while "--" in normalized:
+                                normalized = normalized.replace("--", "-")
+                            normalized = normalized.strip("-")
                             if normalized and len(normalized) > 1 and normalized not in (
                                 "news", "article", "technology", "update", "post"
                             ):

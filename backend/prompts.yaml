@@ -112,7 +112,10 @@ user_prompt: |
 
   TAGS RULES:
   - Exactly {tags_count} tags describing the main topics
-  - All tags in lowercase English
+  - CRITICAL: Tags must ALWAYS be in English, regardless of the article or summary language
+  - All tags in lowercase, using hyphens as separator (e.g., "machine-learning", not "machine learning" or "machine_learning")
   - Use specific terms, not generic (e.g., "react" not "javascript-framework")
   - Include: technology names, companies, concepts, domains
   - Avoid: generic words like "news", "article", "technology", "update"
+  - WRONG tags: "inteligência-artificial", "código-aberto", "segurança"
+  - RIGHT tags: "artificial-intelligence", "open-source", "security"

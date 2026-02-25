@@ -35,7 +35,10 @@ def save_post_tags(db: Session, post_id: int, tags: List[str]) -> int:
     seen = set()
     for tag in tags:
         # Normalize and dedupe
-        tag = tag.lower().strip()
+        tag = tag.lower().strip().replace(" ", "-").replace("_", "-")
+        while "--" in tag:
+            tag = tag.replace("--", "-")
+        tag = tag.strip("-")
         if tag and tag not in seen and len(tag) <= 50:
             seen.add(tag)
             db.add(PostTag(post_id=post_id, tag=tag))
