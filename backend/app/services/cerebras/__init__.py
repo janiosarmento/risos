@@ -1,25 +1,24 @@
 """Cerebras AI client for summary generation."""
 
-# Re-export everything from legacy module during refactoring
-from app.services.cerebras._legacy import (  # noqa: F401
-    # Public API
-    generate_summary,
-    get_available_models,
-    # Global instances
-    circuit_breaker,
-    api_key_rotator,
-    # Exceptions
+# Re-export everything from submodules during refactoring
+from app.services.cerebras._types import (  # noqa: F401
+    CircuitState,
     CerebrasError,
     TemporaryError,
     PermanentError,
     ModelSpecificError,
-    # Types
     SummaryResult,
-    CircuitState,
-    # Functions used elsewhere
-    is_garbage_content,
+)
+from app.services.cerebras._prompts import (  # noqa: F401
     get_system_prompt,
     get_user_prompt,
+)
+from app.services.cerebras._legacy import (  # noqa: F401
+    generate_summary,
+    get_available_models,
+    circuit_breaker,
+    api_key_rotator,
+    is_garbage_content,
 )
 
 __all__ = [
