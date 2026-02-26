@@ -7,7 +7,7 @@
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -26,7 +26,41 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-02-26 — Correcção de Sugestões e Preferências
+## Sessão 2026-02-26 — Tags Ignoradas, Preferências no Servidor, Correcções
+
+### Tags Ignoradas (Controlo Granular de Sugestões)
+- Nova tabela `ignored_tags` para tags que o utilizador marca como irrelevantes
+- API REST: `GET/POST/DELETE /api/tags/ignored`
+- Novo router `routes/tags.py` registado em `main.py`
+- Tags ignoradas excluídas de:
+  - Geração de perfil (`user_profile.py`)
+  - Scoring de sugestões (`suggestions.py` — subtraídas de ambos os lados: perfil e post)
+- `ignored_tags` retornado no detalhe do post (`PostDetail.ignored_tags`)
+- Ao ignorar/restaurar uma tag: sugestões são limpas e perfil invalidado
+
+### Tags Clicáveis com Estados Visuais
+- Tags sempre visíveis (removido toggle `showTags` / `PREF_SHOW_TAGS`)
+- Renderização alterada de `x-html="renderTags()"` para `x-for` com tag chips
+- 3 estados visuais:
+  - **Purple/bold**: tag no perfil do utilizador (matched)
+  - **Cinza**: tag neutra
+  - **Riscada/cinza escuro**: tag ignorada
+- Clique na tag alterna entre ignorada e não-ignorada
+- Tooltips i18n para cada estado (PT e EN)
+- Aplicado nos 2 modos: fullscreen e split view
+
+### Preferências Migradas para Servidor
+- `showTags` era a única setting em localStorage — migrada para `app_settings`
+- Depois removida completamente (tags agora sempre visíveis)
+- Todas as configurações agora persistem no servidor, sincronizadas entre dispositivos
+
+### Regeneração em Batch de Posts sem Tags
+- Batches 4-6 (300 posts): ~282 sucesso, ~16 skipped, ~2 erros
+- Total acumulado: ~600 posts processados
+
+---
+
+## Sessão 2026-02-26a — Correcção de Sugestões e Preferências
 
 ### Threshold Dinâmico de Sugestões
 - Corrigido `get_effective_suggestion_min_tags()` que truncava valor para max=5 (hardcoded)

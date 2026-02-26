@@ -157,6 +157,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── posts.py            # List/read posts, mark read, skip summary
 │   │   │   ├── preferences.py      # User preferences API
 │   │   │   ├── suggestions.py      # Suggestion system admin endpoints
+│   │   │   ├── tags.py             # Ignored tags management API
 │   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
@@ -205,7 +206,7 @@ The entire frontend is in one file using Alpine.js. Key sections:
 ```javascript
 // Cache busting - UPDATE this AND the script tag in index.html when deploying changes
 // Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
-const APP_VERSION = '20260226b';
+const APP_VERSION = '20260226d';
 
 // Main Alpine.js data object
 document.addEventListener('alpine:init', () => {
@@ -413,14 +414,16 @@ journalctl -u rss-reader -f
 - Rate limiting and circuit breaker (with manual reset via Settings)
 - Auto-skip garbage content (`GarbageContentError` — paywalls, error pages, empty results)
 - Skip summary toggle per post (manual or automatic after permanent failures)
-- Tags extracted per post (configurable 3-15, shown on all posts)
+- Tags extracted per post (configurable 3-15, shown as clickable chips on all posts)
 - Tags auto-translated to English for non-GPT models
+- Ignored tags system — exclude irrelevant tags from suggestions
 
 ### Suggestions
 - Like-based user profile (aggregated tags from liked posts)
 - Tag overlap scoring (no extra AI calls)
 - Dynamic sensitivity threshold (1 to tags_per_post)
 - Auto-clear suggestions when threshold changes
+- Ignored tags — user can click any tag to exclude it from scoring and profile
 - Hourly automatic processing + manual regeneration
 
 ### UI/UX
@@ -561,6 +564,9 @@ ai_summaries (id, content_hash, summary_pt, one_line_summary, translated_title, 
 
 -- Post Tags (extracted by AI, used for suggestions)
 post_tags (id, post_id, tag, created_at)
+
+-- Ignored Tags (user-excluded from suggestion scoring)
+ignored_tags (id, tag, created_at)
 
 -- Settings (key-value store)
 app_settings (key, value, updated_at)

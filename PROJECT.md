@@ -64,6 +64,7 @@ The project prioritizes:
 │   │   │   ├── admin.py            # Admin (locales, models, circuit breaker)
 │   │   │   ├── preferences.py      # User preferences API
 │   │   │   ├── suggestions.py     # Suggestion admin endpoints
+│   │   │   ├── tags.py            # Ignored tags management API
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
 │   │       ├── __init__.py
@@ -227,6 +228,13 @@ CREATE TABLE post_tags (
 
 CREATE INDEX idx_post_tags_tag ON post_tags(tag);
 CREATE INDEX idx_post_tags_post_id ON post_tags(post_id);
+
+-- Ignored tags (user-excluded from suggestion scoring and profile)
+CREATE TABLE ignored_tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tag TEXT NOT NULL UNIQUE,
+    created_at TEXT DEFAULT (datetime('now'))
+);
 
 -- AI summary cache (by content_hash)
 CREATE TABLE ai_summaries (

@@ -538,7 +538,14 @@ POST /api/admin/process-suggestions
 
 5. **Score**: `overlap / tags_per_post * 100` (sem score mínimo — todos os candidatos com min_tags overlap são sugeridos)
 
-6. **Expiração de sugestões**: Não expira
+6. **Tags ignoradas**: Tabela `ignored_tags` com tags que o utilizador exclui manualmente
+   - Excluídas da geração de perfil (não entram na agregação de tags de posts gostados)
+   - Excluídas do scoring de sugestões (subtraídas de ambos os lados: perfil e post)
+   - Clique na tag no frontend alterna entre ignorada e não-ignorada
+   - Alterar tags ignoradas limpa sugestões e invalida perfil
+   - API: `GET/POST/DELETE /api/tags/ignored`
+
+7. **Expiração de sugestões**: Não expira
    - Processos de limpeza existentes já removem posts antigos
    - Sugestões são removidas junto com os posts
 

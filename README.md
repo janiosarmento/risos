@@ -18,12 +18,13 @@ A self-hosted RSS reader with AI-powered summaries.
 - **AI Suggestions** — Personalized post recommendations based on your likes
   - Tag overlap scoring (no extra AI calls)
   - Dynamic sensitivity threshold (1 to tags_per_post)
-  - Auto-clear suggestions when threshold changes
+  - Ignored tags — click any tag to exclude it from suggestion scoring
+  - Auto-clear suggestions when threshold or ignored tags change
 - **Keyboard-first** — Full navigation with J/K/Enter, batch operations with X
 - **Split View Mode** — Gmail-style reading pane with resizable divider (desktop)
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
-- **AI Tags** — Topic tags shown on every post, with matched profile tags highlighted
+- **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
 - **Configurable Settings** — AI model, data retention, interface behavior
 - **OPML Import/Export** — Migrate from other readers
 - **Mobile Friendly** — Responsive design with password peek on login
@@ -114,6 +115,7 @@ The app learns what you like and suggests similar posts — no extra AI calls ne
 Suggestions appear in the sidebar (purple "Suggested" button) with a purple percentage badge showing the match score. Click the refresh icon next to it to regenerate suggestions on demand. You can adjust:
 - **Suggestion Sensitivity** in Settings > General (1 to tags_per_post, default 3) — minimum tag overlap to suggest a post. Changing this value automatically clears suggestions that no longer meet the threshold.
 - **Tags per Post** in Settings > AI (3-15, default 7) — number of tags the AI generates per summary, also used as the denominator for score calculation and upper bound for suggestion sensitivity
+- **Ignored Tags** — Click any tag on a post to mark it as ignored. Ignored tags are excluded from both profile generation and suggestion scoring, preventing irrelevant tags from polluting recommendations. Tags show three visual states: purple (in your profile), gray (neutral), and strikethrough (ignored).
 
 **Why tags instead of embeddings or AI scoring?**
 
