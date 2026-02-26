@@ -254,6 +254,9 @@ def update_preferences(
         max_tags = get_effective_tags_per_post(db)
         min_tags = max(1, min(max_tags, prefs.suggestion_min_tags))
         _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(min_tags))
+        # Revoke suggestions that no longer meet the new threshold
+        from app.services.suggestions import revoke_suggestions_below_threshold
+        revoke_suggestions_below_threshold(db, min_tags)
 
     # AI keys and prompts
     if prefs.cerebras_api_keys is not None and prefs.cerebras_api_keys.strip():

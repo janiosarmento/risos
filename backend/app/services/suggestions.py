@@ -147,6 +147,47 @@ def process_suggestion_candidates(db: Session) -> int:
     return suggested_count
 
 
+def revoke_suggestions_below_threshold(db: Session, min_tag_overlap: int) -> int:
+    """
+    Remove suggestion status from posts whose tag overlap is now below the threshold.
+    Called when the user raises suggestion_min_tags.
+
+    Returns:
+        Number of posts un-suggested
+    """
+    profile = get_user_profile(db)
+    if not profile or not profile.get("tags"):
+        return 0
+
+    profile_tags = set(t.lower() for t in profile["tags"])
+
+    suggested_posts = (
+        db.query(Post)
+        .options(joinedload(Post.tags))
+        .filter(Post.is_suggested == 1, Post.is_read == 0)
+        .all()
+    )
+
+    revoked = 0
+    for post in suggested_posts:
+        post_tags = {t.tag.lower() for t in post.tags}
+        overlap = len(post_tags.intersection(profile_tags))
+        if overlap < min_tag_overlap:
+            post.is_suggested = 0
+            post.suggestion_score = None
+            post.suggested_at = None
+            revoked += 1
+            logger.info(
+                f"Revoked suggestion: '{post.title[:50]}...' (overlap={overlap} < threshold={min_tag_overlap})"
+            )
+
+    if revoked:
+        db.commit()
+        logger.info(f"Revoked {revoked} suggestions below new threshold {min_tag_overlap}")
+
+    return revoked
+
+
 def get_suggestion_stats(db: Session) -> dict:
     """
     Get statistics about the suggestion system.
