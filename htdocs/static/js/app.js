@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260226a';
+const APP_VERSION = '20260226b';
 const API_BASE = '/api';
 
 function app() {
@@ -111,6 +111,8 @@ function app() {
                     { code: 'pt-BR', name: 'Português (Brasil)' }
                 ];
             }
+            const saved = this.locale;
+            this.$nextTick(() => { this.locale = saved; });
         },
 
         // Detect browser language and return matching locale or fallback
@@ -284,6 +286,8 @@ function app() {
                 const response = await fetch(`${API_BASE}/admin/languages`);
                 if (response.ok) {
                     this.availableSummaryLanguages = await response.json();
+                    const saved = this.summaryLanguage;
+                    this.$nextTick(() => { this.summaryLanguage = saved; });
                 }
             } catch (e) {
                 console.warn('Failed to load summary languages:', e);
@@ -294,6 +298,9 @@ function app() {
             try {
                 const models = await this.fetchApi('/admin/models');
                 this.availableModels = models || [];
+                // Force select sync after x-for renders options
+                const saved = this.cerebrasModel;
+                this.$nextTick(() => { this.cerebrasModel = saved; });
             } catch (e) {
                 console.warn('Failed to load AI models:', e);
                 this.availableModels = [];
