@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260225d';
+const APP_VERSION = '20260225e';
 const API_BASE = '/api';
 
 function app() {
@@ -397,7 +397,7 @@ function app() {
         },
 
         setSuggestionMinTags(value) {
-            this.suggestionMinTags = Math.max(1, Math.min(5, parseInt(value) || 3));
+            this.suggestionMinTags = Math.max(1, Math.min(this.tagsPerPost, parseInt(value) || 3));
             if (this.token) this.savePreferencesToServer();
         },
 

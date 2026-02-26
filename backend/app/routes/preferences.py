@@ -56,7 +56,7 @@ class PreferencesResponse(BaseModel):
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
     # Suggestions settings
-    suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions (1-5)
+    suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
@@ -250,8 +250,9 @@ def update_preferences(
 
     # Suggestions settings
     if prefs.suggestion_min_tags is not None:
-        # Clamp to valid range (1-5)
-        min_tags = max(1, min(5, prefs.suggestion_min_tags))
+        # Clamp to valid range (1 to tags_per_post)
+        max_tags = get_effective_tags_per_post(db)
+        min_tags = max(1, min(max_tags, prefs.suggestion_min_tags))
         _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(min_tags))
 
     # AI keys and prompts

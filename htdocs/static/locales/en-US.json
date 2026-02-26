@@ -123,7 +123,7 @@
     "readingModeSplit": "Split View",
     "readingModeSplitNote": "Split view only available on screens 1024px or wider",
     "suggestionMinTags": "Suggestion Sensitivity",
-    "suggestionMinTagsDesc": "Minimum tags in common to suggest a post (1=more suggestions, 5=more precise)",
+    "suggestionMinTagsDesc": "Minimum tags in common to suggest a post (1=more suggestions, max=more precise)",
     "tags": "tags",
     "apiKeys": "API Keys",
     "apiKeysDesc": "Cerebras API keys (one per line or comma-separated)",
