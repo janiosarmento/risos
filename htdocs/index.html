@@ -1232,6 +1232,7 @@
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
                                 <select
+                                    x-model="cerebrasModel"
                                     @change="setCerebrasModel($event.target.value)"
                                     class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                     :disabled="availableModels.length === 0"
@@ -1240,7 +1241,7 @@
                                         <option x-text="t('settings.loadingModels')"></option>
                                     </template>
                                     <template x-for="model in availableModels" :key="model.id">
-                                        <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
+                                        <option :value="model.id" x-text="model.id"></option>
                                     </template>
                                 </select>
                             </div>
@@ -1250,11 +1251,12 @@
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
                                 <select
+                                    x-model="summaryLanguage"
                                     @change="setSummaryLanguage($event.target.value)"
                                     class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                 >
                                     <template x-for="lang in availableSummaryLanguages" :key="lang.code">
-                                        <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
+                                        <option :value="lang.code" x-text="lang.name"></option>
                                     </template>
                                 </select>
                             </div>
@@ -1370,11 +1372,12 @@
                                         <label class="block text-sm font-medium mb-1" x-text="t('settings.language')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.languageDesc')"></p>
                                         <select
+                                            x-model="locale"
                                             @change="setLocale($event.target.value)"
                                             class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                         >
                                             <template x-for="loc in availableLocales" :key="loc.code">
-                                                <option :value="loc.code" :selected="locale === loc.code" x-text="loc.name"></option>
+                                                <option :value="loc.code" x-text="loc.name"></option>
                                             </template>
                                         </select>
                                     </div>
@@ -1660,6 +1663,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260225e"></script>
+    <script src="/static/js/app.js?v=20260226a"></script>
 </body>
 </html>
