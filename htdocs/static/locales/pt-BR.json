@@ -135,8 +135,6 @@
     "tagsPerPostDesc": "Número de tags geradas por resumo IA (usado no score de sugestões)",
     "modelCooldown": "Cooldown de Modelo (min)",
     "modelCooldownDesc": "Período de espera antes de retentar um modelo com erro (5-120 minutos)",
-    "showTags": "Exibir tags no resumo",
-    "showTagsDesc": "Mostrar as tags geradas pela IA abaixo do resumo",
     "userPromptDesc": "Template enviado com cada artigo. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
     "resetDefaults": "Restaurar prompts padrão",
     "clearCache": "Limpar cache",
@@ -146,6 +144,11 @@
   "splitView": {
     "selectPost": "Selecione um post para ler",
     "hint": "Pressione J/K para navegar, Enter para abrir"
+  },
+  "tags": {
+    "ignoredTooltip": "Ignorada — clique para restaurar",
+    "profileTooltip": "No seu perfil — clique para ignorar",
+    "neutralTooltip": "Clique para ignorar"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

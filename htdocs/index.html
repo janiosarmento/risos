@@ -671,8 +671,23 @@
                                                 <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
                                                     <div>
                                                         <div class="text-gray-800 dark:text-gray-100 leading-relaxed summary-content" x-html="renderMarkdown(currentPost.summary_pt)"></div>
-                                                        <template x-if="showTags && currentPost.tags && currentPost.tags.length > 0">
-                                                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 italic" x-html="renderTags(currentPost.tags, currentPost.matched_tags)"></div>
+                                                        <template x-if="currentPost.tags && currentPost.tags.length > 0">
+                                                            <div class="mt-3 flex flex-wrap gap-1">
+                                                                <template x-for="tag in currentPost.tags" :key="tag">
+                                                                    <span class="text-xs cursor-pointer px-1.5 py-0.5 rounded-full border transition-colors"
+                                                                        :class="isTagIgnored(tag)
+                                                                            ? 'line-through text-gray-400 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800'
+                                                                            : isTagMatched(tag, currentPost.matched_tags)
+                                                                                ? 'font-bold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30'
+                                                                                : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                                                        :title="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
+                                                                            isTagMatched(tag, currentPost.matched_tags)
+                                                                                ? t('tags.profileTooltip') : t('tags.neutralTooltip')"
+                                                                        @click.stop="toggleTagIgnored(tag)"
+                                                                        x-text="tag"
+                                                                    ></span>
+                                                                </template>
+                                                            </div>
                                                         </template>
                                                     </div>
                                                 </template>
@@ -881,8 +896,23 @@
                             <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
                                 <div>
                                     <div class="text-gray-800 dark:text-gray-100 leading-relaxed summary-content" x-html="renderMarkdown(currentPost.summary_pt)"></div>
-                                    <template x-if="showTags && currentPost.tags && currentPost.tags.length > 0">
-                                        <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 italic" x-text="'Tags: ' + currentPost.tags.join(', ')"></div>
+                                    <template x-if="currentPost.tags && currentPost.tags.length > 0">
+                                        <div class="mt-3 flex flex-wrap gap-1">
+                                            <template x-for="tag in currentPost.tags" :key="tag">
+                                                <span class="text-xs cursor-pointer px-1.5 py-0.5 rounded-full border transition-colors"
+                                                    :class="isTagIgnored(tag)
+                                                        ? 'line-through text-gray-400 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800'
+                                                        : isTagMatched(tag, currentPost.matched_tags)
+                                                            ? 'font-bold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30'
+                                                            : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                                    :title="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
+                                                        isTagMatched(tag, currentPost.matched_tags)
+                                                            ? t('tags.profileTooltip') : t('tags.neutralTooltip')"
+                                                    @click.stop="toggleTagIgnored(tag)"
+                                                    x-text="tag"
+                                                ></span>
+                                            </template>
+                                        </div>
                                     </template>
                                 </div>
                             </template>
@@ -1293,17 +1323,6 @@
                                 </div>
                             </div>
 
-                            <!-- Show Tags Toggle -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="flex items-center gap-3 cursor-pointer">
-                                    <input type="checkbox" :checked="showTags" @change="showTags = $event.target.checked; localStorage.setItem('rss_show_tags', showTags)" class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <div>
-                                        <span class="text-sm font-medium" x-text="t('settings.showTags')"></span>
-                                        <p class="text-gray-500 dark:text-gray-400 text-xs" x-text="t('settings.showTagsDesc')"></p>
-                                    </div>
-                                </label>
-                            </div>
-
                             <!-- System Prompt -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.systemPrompt')"></label>
@@ -1660,6 +1679,6 @@
 
     </div>
 
-    <script src="/static/js/app.js?v=20260226b"></script>
+    <script src="/static/js/app.js?v=20260226d"></script>
 </body>
 </html>

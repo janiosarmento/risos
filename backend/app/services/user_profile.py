@@ -11,7 +11,7 @@ from typing import Optional, Dict
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Post, PostTag, AppSettings
+from app.models import Post, PostTag, AppSettings, IgnoredTag
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +107,14 @@ def generate_user_profile(db: Session) -> Optional[Dict]:
 
     if not tag_counts:
         logger.info("No tags found for liked posts")
+        return None
+
+    # Filter out ignored tags
+    ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
+    tag_counts = [row for row in tag_counts if row.tag.lower() not in ignored]
+
+    if not tag_counts:
+        logger.info("All liked post tags are ignored")
         return None
 
     tags = [row.tag.lower() for row in tag_counts]

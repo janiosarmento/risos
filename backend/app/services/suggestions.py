@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Post, AISummary
+from app.models import Post, AISummary, IgnoredTag
 from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,14 @@ def get_suggestion_candidates(
     if not profile_tags:
         return []
 
+    # Exclude ignored tags from both profile and post sides
+    ignored_tags = {row.tag for row in db.query(IgnoredTag.tag).all()}
+    profile_tags -= ignored_tags
+
+    if not profile_tags:
+        logger.debug("All profile tags are ignored")
+        return []
+
     logger.debug(
         f"Finding candidates with min {min_tag_overlap} tags overlap (profile has {len(profile_tags)} tags)"
     )
@@ -78,7 +86,7 @@ def get_suggestion_candidates(
     # Find posts with sufficient tag overlap
     candidates = []
     for post in unread_posts:
-        post_tags = {t.tag.lower() for t in post.tags}
+        post_tags = {t.tag.lower() for t in post.tags} - ignored_tags
         if not post_tags:
             continue
 

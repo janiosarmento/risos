@@ -205,6 +205,7 @@ from app.routes import (
     admin,
     preferences,
     suggestions,
+    tags,
 )
 
 app.include_router(auth.router, prefix="/api")
@@ -215,3 +216,4 @@ app.include_router(proxy.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(preferences.router, prefix="/api")
 app.include_router(suggestions.router, prefix="/api")
+app.include_router(tags.router, prefix="/api")

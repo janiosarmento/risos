@@ -349,15 +349,21 @@ async def get_post(
                 db.commit()
                 summary_status = "failed"
 
-    # Compute matched tags (tags that overlap with user's interest profile)
+    # Compute matched and ignored tags
     post_tags = [pt.tag for pt in post.tags]
     matched_tags = []
+    ignored_tags = []
     if post_tags:
         from app.services.user_profile import get_user_profile
+        from app.models import IgnoredTag
+
         profile = get_user_profile(db)
         if profile and profile.get("tags"):
             profile_tags = {t.lower() for t in profile["tags"]}
             matched_tags = [t for t in post_tags if t.lower() in profile_tags]
+
+        ignored_set = {row.tag for row in db.query(IgnoredTag.tag).all()}
+        ignored_tags = [t for t in post_tags if t.lower() in ignored_set]
 
     return PostDetail(
         id=post.id,
@@ -385,6 +391,7 @@ async def get_post(
         translated_title=translated_title,
         tags=post_tags,
         matched_tags=matched_tags,
+        ignored_tags=ignored_tags,
         skip_summary=bool(post.skip_summary),
     )
 

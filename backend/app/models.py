@@ -165,6 +165,16 @@ Index("idx_post_tags_tag", PostTag.tag)
 Index("idx_post_tags_post_id", PostTag.post_id)
 
 
+class IgnoredTag(Base):
+    """Tags the user has explicitly marked as irrelevant for suggestions."""
+
+    __tablename__ = "ignored_tags"
+
+    id = Column(Integer, primary_key=True)
+    tag = Column(Text, nullable=False, unique=True)
+    created_at = Column(Text, default=lambda: datetime.utcnow().isoformat())
+
+
 class AISummary(Base):
     __tablename__ = "ai_summaries"
 

@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260226b';
+const APP_VERSION = '20260226d';
 const API_BASE = '/api';
 
 function app() {
@@ -67,7 +67,7 @@ function app() {
         suggestionMinTags: 3, // Default 3 tags overlap required
         tagsPerPost: 7, // Default 7 tags per AI summary
         modelCooldownMinutes: 30, // Default 30min grace period for failed models
-        showTags: localStorage.getItem('rss_show_tags') === 'true', // Show AI tags in summary
+        ignoredTags: new Set(), // Tags ignored for suggestions (loaded from server)
 
         // Reading mode
         readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
@@ -252,14 +252,45 @@ function app() {
                 .replace(/\n/g, '<br>');
         },
 
-        // Render tags with matched ones in bold
-        renderTags(tags, matchedTags) {
-            if (!tags || !tags.length) return '';
-            const matched = new Set((matchedTags || []).map(t => t.toLowerCase()));
-            const rendered = tags.map(t =>
-                matched.has(t.toLowerCase()) ? `<strong class="text-gray-700 dark:text-gray-200">${t}</strong>` : t
-            );
-            return 'Tags: ' + rendered.join(', ');
+        // Load ignored tags from server
+        async loadIgnoredTags() {
+            try {
+                const data = await this.fetchApi('/tags/ignored');
+                this.ignoredTags = new Set(data.tags || []);
+            } catch (e) {
+                console.warn('Failed to load ignored tags:', e);
+            }
+        },
+
+        // Toggle a tag's ignored state
+        async toggleTagIgnored(tag) {
+            const normalized = tag.toLowerCase();
+            try {
+                if (this.ignoredTags.has(normalized)) {
+                    await this.fetchApi(`/tags/ignored/${encodeURIComponent(normalized)}`, { method: 'DELETE' });
+                    this.ignoredTags.delete(normalized);
+                } else {
+                    await this.fetchApi('/tags/ignored', {
+                        method: 'POST',
+                        body: JSON.stringify({ tag: normalized }),
+                    });
+                    this.ignoredTags.add(normalized);
+                }
+                // Force Alpine reactivity (Set mutations don't trigger)
+                this.ignoredTags = new Set(this.ignoredTags);
+            } catch (e) {
+                console.warn('Failed to toggle ignored tag:', e);
+            }
+        },
+
+        // Check if a tag is in the user's profile (matched)
+        isTagMatched(tag, matchedTags) {
+            return (matchedTags || []).some(t => t.toLowerCase() === tag.toLowerCase());
+        },
+
+        // Check if a tag is ignored
+        isTagIgnored(tag) {
+            return this.ignoredTags.has(tag.toLowerCase());
         },
 
         async setLocale(locale) {
@@ -726,6 +757,7 @@ function app() {
                 this.token = storedToken;
                 await this.loadData();
                 await this.syncPreferences();
+                this.loadIgnoredTags();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -994,6 +1026,7 @@ function app() {
                 this.password = '';
                 await this.loadData();
                 await this.syncPreferences();
+                this.loadIgnoredTags();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();

@@ -135,8 +135,6 @@
     "tagsPerPostDesc": "Number of tags generated per AI summary (used for suggestion scoring)",
     "modelCooldown": "Model Cooldown (min)",
     "modelCooldownDesc": "Grace period before retrying a failed model (5-120 minutes)",
-    "showTags": "Show tags in summary",
-    "showTagsDesc": "Display AI-generated tags below the summary",
     "userPromptDesc": "Template sent with each article. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
     "resetDefaults": "Reset prompts to defaults",
     "clearCache": "Clear cache",
@@ -146,6 +144,11 @@
   "splitView": {
     "selectPost": "Select a post to read",
     "hint": "Press J/K to navigate, Enter to open"
+  },
+  "tags": {
+    "ignoredTooltip": "Ignored — click to restore",
+    "profileTooltip": "In your profile — click to ignore",
+    "neutralTooltip": "Click to ignore"
   },
   "categories": {
     "newPlaceholder": "New category name",
