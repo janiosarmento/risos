@@ -4,7 +4,7 @@ Uses tag overlap between user profile and post tags — no LLM calls.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Tuple
 
 from sqlalchemy.orm import Session, joinedload
@@ -20,9 +20,6 @@ DEFAULT_MIN_TAG_OVERLAP = 3
 # Maximum candidates to process per batch
 MAX_CANDIDATES_PER_BATCH = 50
 
-# How far back to look for posts (hours)
-CANDIDATE_WINDOW_HOURS = 24
-
 
 def get_suggestion_candidates(
     db: Session, min_tag_overlap: int = None
@@ -31,10 +28,8 @@ def get_suggestion_candidates(
     Get posts that are potential suggestions based on tag overlap with user profile.
 
     Returns posts that:
-    - Were fetched in the last 24 hours
     - Have an AI summary
-    - Are not already suggested
-    - Are not read
+    - Are not already suggested, read, or liked
     - Have at least min_tag_overlap tags in common with user's interest tags
 
     Args:
@@ -64,17 +59,13 @@ def get_suggestion_candidates(
         f"Finding candidates with min {min_tag_overlap} tags overlap (profile has {len(profile_tags)} tags)"
     )
 
-    # Calculate time threshold (use datetime object for proper comparison)
-    time_threshold = datetime.utcnow() - timedelta(hours=CANDIDATE_WINDOW_HOURS)
-
-    # Get recent posts with their tags
+    # Get unread posts with their tags
     # Posts must have a summary (join with AISummary)
-    recent_posts = (
+    unread_posts = (
         db.query(Post)
         .join(AISummary, Post.content_hash == AISummary.content_hash)
         .options(joinedload(Post.tags))
         .filter(
-            Post.fetched_at > time_threshold,
             Post.is_suggested == 0,
             Post.is_read == 0,
             Post.is_liked == 0,  # Don't suggest posts user already liked
@@ -82,11 +73,11 @@ def get_suggestion_candidates(
         .all()
     )
 
-    logger.debug(f"Found {len(recent_posts)} recent unread posts to check")
+    logger.debug(f"Found {len(unread_posts)} unread posts to check")
 
     # Find posts with sufficient tag overlap
     candidates = []
-    for post in recent_posts:
+    for post in unread_posts:
         post_tags = {t.tag.lower() for t in post.tags}
         if not post_tags:
             continue
