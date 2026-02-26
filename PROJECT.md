@@ -63,6 +63,7 @@ The project prioritizes:
 │   │   │   ├── posts.py
 │   │   │   ├── admin.py            # Admin (locales, models, circuit breaker)
 │   │   │   ├── preferences.py      # User preferences API
+│   │   │   ├── suggestions.py     # Suggestion admin endpoints
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
 │   │       ├── __init__.py
@@ -72,7 +73,15 @@ The project prioritizes:
 │   │       ├── html_sanitizer.py
 │   │       ├── content_hasher.py   # Content deduplication
 │   │       ├── url_normalizer.py   # URL normalization
-│   │       ├── cerebras.py         # AI client + circuit breaker + model fallback
+│   │       ├── cerebras/            # AI client package
+│   │       │   ├── _api.py          # Summary generation + model fallback
+│   │       │   ├── _types.py        # SummaryResult, error classes
+│   │       │   ├── _infrastructure.py # CircuitBreaker, APIKeyRotator
+│   │       │   ├── _constants.py    # Shared constants
+│   │       │   └── _prompts.py      # Prompt loading
+│   │       ├── suggestions.py      # Tag overlap scoring
+│   │       ├── user_profile.py     # User interest profile
+│   │       ├── tags.py             # Post tag persistence
 │   │       └── scheduler.py        # APScheduler + jobs
 │   ├── alembic/                    # Migrations
 │   │   ├── versions/
@@ -180,7 +189,15 @@ CREATE TABLE posts (
     sort_date DATETIME,             -- Sorting: published_at or fetched_at
     is_read BOOLEAN DEFAULT 0,
     read_at DATETIME,
-    fetch_full_attempted_at DATETIME -- Cooldown for full_content retry
+    fetch_full_attempted_at DATETIME, -- Cooldown for full_content retry
+    -- Like/suggestion fields
+    is_liked INTEGER DEFAULT 0,
+    liked_at TEXT,
+    is_suggested INTEGER DEFAULT 0,
+    suggestion_score REAL,
+    suggested_at TEXT,
+    -- Skip summary (garbage content, permanent failures)
+    skip_summary BOOLEAN DEFAULT 0
     -- No UNIQUE constraints; deduplication via partial indexes
 );
 
@@ -199,12 +216,25 @@ CREATE INDEX idx_posts_read_at ON posts(read_at) WHERE is_read = 1;
 CREATE UNIQUE INDEX idx_posts_content_hash ON posts(feed_id, content_hash)
     WHERE content_hash IS NOT NULL AND guid IS NULL AND normalized_url IS NULL;
 
+-- Post tags (extracted by AI, used for suggestion scoring)
+CREATE TABLE post_tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    tag TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, tag)
+);
+
+CREATE INDEX idx_post_tags_tag ON post_tags(tag);
+CREATE INDEX idx_post_tags_post_id ON post_tags(post_id);
+
 -- AI summary cache (by content_hash)
 CREATE TABLE ai_summaries (
     id INTEGER PRIMARY KEY,
     content_hash TEXT UNIQUE NOT NULL,
     summary_pt TEXT NOT NULL,
     one_line_summary TEXT NOT NULL,
+    translated_title TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

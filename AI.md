@@ -121,7 +121,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | Alpine.js 3.x, Tailwind CSS (CDN) |
+| **Frontend** | Alpine.js 3.x, Tailwind CSS (CDN), i18n with full tooltip coverage |
 | **Backend** | FastAPI, SQLAlchemy, SQLite (WAL mode) |
 | **AI** | Cerebras API (configurable model with fallback) |
 | **Scheduler** | APScheduler |
@@ -154,13 +154,24 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── auth.py             # Login/logout
 │   │   │   ├── categories.py       # CRUD for categories
 │   │   │   ├── feeds.py            # CRUD + refresh + OPML
-│   │   │   ├── posts.py            # List/read posts, mark read
+│   │   │   ├── posts.py            # List/read posts, mark read, skip summary
 │   │   │   ├── preferences.py      # User preferences API
+│   │   │   ├── suggestions.py      # Suggestion system admin endpoints
 │   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
-│   │       ├── cerebras.py         # AI client + circuit breaker + model fallback
+│   │       ├── cerebras/            # AI client package
+│   │       │   ├── __init__.py      # Public API exports
+│   │       │   ├── _api.py          # generate_summary, model fallback
+│   │       │   ├── _types.py        # SummaryResult, error classes, GarbageContentError
+│   │       │   ├── _infrastructure.py # CircuitBreaker, APIKeyRotator
+│   │       │   ├── _constants.py    # Shared constants
+│   │       │   ├── _prompts.py      # Prompt loading and formatting
+│   │       │   └── _legacy.py       # Legacy compatibility
 │   │       ├── scheduler.py        # APScheduler jobs
+│   │       ├── suggestions.py      # Tag overlap scoring, clear/reprocess
+│   │       ├── user_profile.py     # User interest profile from liked posts
+│   │       ├── tags.py             # Post tag saving
 │   │       ├── feed_parser.py      # RSS/Atom parsing
 │   │       ├── feed_ingestion.py   # Post insertion logic
 │   │       ├── content_extractor.py # Readability extraction
@@ -172,6 +183,8 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   └── versions/               # Migration files
 │   ├── data/
 │   │   └── reader.db               # SQLite database
+│   ├── scripts/
+│   │   └── regenerate_tagless.py   # Batch regenerate posts without tags
 │   ├── prompts.yaml                # AI prompts (gitignored)
 │   └── .env                        # Config (gitignored)
 │
@@ -192,7 +205,7 @@ The entire frontend is in one file using Alpine.js. Key sections:
 ```javascript
 // Cache busting - UPDATE this AND the script tag in index.html when deploying changes
 // Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
-const APP_VERSION = '20260221a';
+const APP_VERSION = '20260226b';
 
 // Main Alpine.js data object
 document.addEventListener('alpine:init', () => {
@@ -252,16 +265,24 @@ User preferences stored in `app_settings` table. Key preferences:
 - `split_ratio` - percentage for split view (20-80)
 - `summary_language` - AI summary language
 - `cerebras_model` - AI model selection
+- `suggestion_min_tags` - minimum tag overlap for suggestions (1 to tags_per_post)
+- `tags_per_post` - number of tags per AI summary (3-15)
+- `model_cooldown_minutes` - grace period before retrying failed models
 - Plus data retention settings
 
-### AI Service (`backend/app/services/cerebras.py`)
+### AI Service (`backend/app/services/cerebras/`)
 
-Handles all AI operations:
-- Summary generation with prompts from `prompts.yaml`
-- Title translation for foreign articles
-- Circuit breaker (CLOSED → OPEN → HALF states)
-- Rate limiting (respects Cerebras RPM limits)
-- Queue processing with priority system
+Refactored into a package with clear separation of concerns:
+- `_api.py` — Summary generation with prompts, model fallback, `GarbageContentError` for unusable content
+- `_types.py` — `SummaryResult` dataclass, error hierarchy (`TemporaryError`, `PermanentError`, `ModelSpecificError`, `GarbageContentError`)
+- `_infrastructure.py` — `CircuitBreaker` (persistent state in DB), `APIKeyRotator` (round-robin with per-key cooldowns)
+- `_constants.py` — Shared constants
+- `_prompts.py` — Prompt loading from `prompts.yaml` or DB overrides
+
+Key patterns:
+- `GarbageContentError` is raised for paywalls, error pages, or empty AI responses — callers catch it to mark `skip_summary = True`
+- Model fallback: on `ModelSpecificError`, tries other available models automatically
+- Rate limiting respects per-key cooldowns and circuit breaker state
 
 ---
 
@@ -388,8 +409,19 @@ journalctl -u rss-reader -f
 - Automatic article summarization (Cerebras, configurable model)
 - Automatic model fallback on response errors
 - Title translation for foreign-language articles (including title-only posts)
-- Configurable summary language and model
+- Configurable summary language, model, and model cooldown
 - Rate limiting and circuit breaker (with manual reset via Settings)
+- Auto-skip garbage content (`GarbageContentError` — paywalls, error pages, empty results)
+- Skip summary toggle per post (manual or automatic after permanent failures)
+- Tags extracted per post (configurable 3-15, shown on all posts)
+- Tags auto-translated to English for non-GPT models
+
+### Suggestions
+- Like-based user profile (aggregated tags from liked posts)
+- Tag overlap scoring (no extra AI calls)
+- Dynamic sensitivity threshold (1 to tags_per_post)
+- Auto-clear suggestions when threshold changes
+- Hourly automatic processing + manual regeneration
 
 ### UI/UX
 - Fullscreen modal or split-view reading modes
@@ -515,7 +547,8 @@ new_setting: this.newSetting,
 ```sql
 -- Posts
 posts (id, feed_id, guid, url, title, content, full_content,
-       content_hash, published_at, is_read, is_starred, ...)
+       content_hash, published_at, is_read, is_starred,
+       is_liked, is_suggested, suggestion_score, skip_summary, ...)
 
 -- Feeds
 feeds (id, category_id, title, url, last_fetched_at, error_count, ...)
@@ -524,7 +557,10 @@ feeds (id, category_id, title, url, last_fetched_at, error_count, ...)
 categories (id, name, parent_id, position)
 
 -- AI Summaries (keyed by content hash, not post)
-ai_summaries (id, content_hash, summary_pt, translated_title, ...)
+ai_summaries (id, content_hash, summary_pt, one_line_summary, translated_title, ...)
+
+-- Post Tags (extracted by AI, used for suggestions)
+post_tags (id, post_id, tag, created_at)
 
 -- Settings (key-value store)
 app_settings (key, value, updated_at)
@@ -579,11 +615,9 @@ git push
 ## Backlog / Future Ideas
 
 - [ ] Full-text search for posts
-- [ ] Custom tags/labels
 - [ ] PWA with service worker
 - [ ] Reading statistics
-- [ ] Bookmark sync
-- [ ] Feed health monitoring dashboard
+- [ ] Multi-profile with Authelia (see REFACTOR.md)
 
 ---
 
@@ -596,7 +630,7 @@ git push
 
 ---
 
-*Last updated: 2026-02-21*
+*Last updated: 2026-02-26*
 
 ---
 

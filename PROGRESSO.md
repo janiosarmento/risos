@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-02-24
+**Última atualização:** 2026-02-26
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -23,6 +23,70 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-26 — Correcção de Sugestões e Preferências
+
+### Threshold Dinâmico de Sugestões
+- Corrigido `get_effective_suggestion_min_tags()` que truncava valor para max=5 (hardcoded)
+- Agora usa `tags_per_post` como limite superior dinâmico
+- Slider de configuração no frontend usa `:max="tagsPerPost"` em vez de max="5"
+- Descrições nas locales actualizadas para não mencionar "5" como máximo
+
+### Limpar Sugestões ao Alterar Threshold
+- Nova função `clear_all_suggestions()` — limpa todas as sugestões não lidas com um UPDATE
+- Chamada automaticamente quando `suggestion_min_tags` é alterado nas preferências
+- Eliminada duplicação: endpoint `process-suggestions` agora usa a mesma função
+- Removida abordagem anterior (`revoke_suggestions_below_threshold`) que era complexa e falhava
+
+### Correcção dos Selects nas Configurações
+- Selects de modelo, idioma e locale não mostravam o valor salvo ao abrir Settings
+- `:selected` em options de `x-for` não sincroniza correctamente após render
+- Solução: `$nextTick` re-assign do valor após cada lista de opções carregar
+- Afectados: `loadAvailableModels()`, `loadSummaryLanguages()`, `loadAvailableLocales()`
+
+---
+
+## Sessão 2026-02-25 — Refactoring Cerebras, Skip Summary, Tooltips
+
+### Refactoring do Módulo Cerebras
+- `cerebras.py` convertido em package `cerebras/` com ficheiros separados:
+  - `_api.py` — geração de resumos, fallback de modelos
+  - `_types.py` — `SummaryResult`, hierarquia de erros
+  - `_infrastructure.py` — `CircuitBreaker`, `APIKeyRotator`
+  - `_constants.py` — constantes partilhadas
+  - `_prompts.py` — carregamento de prompts
+  - `_legacy.py` — compatibilidade legada
+
+### GarbageContentError
+- Nova excepção centralizada para conteúdo sem qualidade (paywalls, error pages, respostas vazias)
+- `generate_summary()` agora levanta `GarbageContentError` em vez de retornar `SummaryResult` vazio
+- Simplificou 3 callers (scheduler, on-demand, regenerate_tagless) que verificavam resultados vazios
+
+### Skip Summary
+- Novo campo `skip_summary` (Boolean) no modelo Post
+- Toggle manual via botão na UI (ícone 🚫, vermelho quando activo)
+- Auto-skip em: falhas permanentes (5 tentativas), conteúdo sem qualidade, respostas vazias
+- Scheduler e scripts ignoram posts com `skip_summary = True`
+- Regenerar resumo bloqueado quando post está marcado como skip (toast de erro)
+- ~4400 posts retroactivamente marcados como skip via queries SQL
+
+### Tooltips i18n para Botões com Ícone
+- Todos os botões com rótulo apenas ícone agora têm tooltips traduzidos
+- Afectados: toggle de senha, menu mobile, categorias, split view, modal fullscreen, star, like, skip, regenerar
+- Hardcoded strings em PT/EN substituídas por `:title="t('key')"`
+
+### Remoção do Filtro de 24h nas Sugestões
+- `CANDIDATE_WINDOW_HOURS = 24` removido — sugestões agora avaliam TODOS os posts não lidos
+- Post com 6 tags sobrepostas (threshold 5) agora aparece correctamente como sugerido
+
+### Tags Visíveis em Todos os Posts
+- Tags do AI agora exibidas em todos os posts, não apenas nos sugeridos
+- Tags que coincidem com o perfil do utilizador são destacadas
+
+### Auto-tradução de Tags para Inglês
+- Modelos não-GPT geravam tags em português; agora regra "All tags in lowercase English" adicionada ao fim do prompt
 
 ---
 

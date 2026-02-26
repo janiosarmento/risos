@@ -532,9 +532,9 @@ POST /api/admin/process-suggestions
    - Meio-termo entre precisão e ruído
    - Usado no cálculo do score: `overlap / tags_per_post * 100`
 
-4. **Threshold de tags para candidato**: 3 tags em comum
-   - 3/7 = ~43% de overlap
-   - Bom equilíbrio entre volume e qualidade
+4. **Threshold de tags para candidato**: Configurável (1 a tags_per_post, default 3)
+   - Alteração do threshold limpa todas as sugestões automaticamente
+   - Sem filtro temporal — avalia TODOS os posts não lidos (removido CANDIDATE_WINDOW_HOURS=24)
 
 5. **Score**: `overlap / tags_per_post * 100` (sem score mínimo — todos os candidatos com min_tags overlap são sugeridos)
 
