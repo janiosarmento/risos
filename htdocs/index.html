@@ -1232,7 +1232,7 @@
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
                                 <select
-                                    x-model="cerebrasModel"
+                                    x-effect="$el.value = cerebrasModel"
                                     @change="setCerebrasModel($event.target.value)"
                                     class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                     :disabled="availableModels.length === 0"
@@ -1251,7 +1251,7 @@
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
                                 <select
-                                    x-model="summaryLanguage"
+                                    x-effect="$el.value = summaryLanguage"
                                     @change="setSummaryLanguage($event.target.value)"
                                     class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                 >
@@ -1372,7 +1372,7 @@
                                         <label class="block text-sm font-medium mb-1" x-text="t('settings.language')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.languageDesc')"></p>
                                         <select
-                                            x-model="locale"
+                                            x-effect="$el.value = locale"
                                             @change="setLocale($event.target.value)"
                                             class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                         >
