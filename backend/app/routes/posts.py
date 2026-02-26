@@ -230,6 +230,7 @@ def list_posts(
             else get_summary_status(db, post),
             "one_line_summary": summary.one_line_summary if summary else None,
             "translated_title": summary.translated_title if summary else None,
+            "skip_summary": bool(post.skip_summary),
         }
         result.append(PostResponse(**post_dict))
 
