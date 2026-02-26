@@ -447,7 +447,8 @@ def get_effective_suggestion_min_tags(db: Session) -> int:
     saved = _get_setting(db, PREF_SUGGESTION_MIN_TAGS)
     if saved:
         try:
-            return max(1, min(5, int(saved)))
+            max_tags = get_effective_tags_per_post(db)
+            return max(1, min(max_tags, int(saved)))
         except (ValueError, TypeError):
             pass
     return 3  # Default: 3 tags minimum
