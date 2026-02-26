@@ -143,6 +143,7 @@ class PostResponse(BaseModel):
     summary_status: str = "not_configured"  # not_configured, pending, ready, failed
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
+    skip_summary: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -162,7 +163,6 @@ class PostDetail(PostResponse):
     tags: List[str] = []
     matched_tags: List[str] = []
     ignored_tags: List[str] = []
-    skip_summary: bool = False
 
     @field_validator("summary_pt", "one_line_summary", mode="after")
     @classmethod
