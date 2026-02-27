@@ -3,15 +3,21 @@ Post routes.
 Read, mark as read, content extraction and redirect.
 """
 
+import hashlib
+import io
 import logging
+import re
+import unicodedata
+import zipfile
 from datetime import datetime
 from typing import Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
+from starlette.responses import Response
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, subqueryload
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -265,6 +271,135 @@ def list_posts(
         feed_unread_counts=feed_unread_counts if feed_unread_counts else None,
         starred_count=starred_count,
         suggested_count=suggested_count,
+    )
+
+
+def _slugify(text: str) -> str:
+    """Convert text to a safe filename slug."""
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    text = re.sub(r"[^\w\s-]", "", text).strip().lower()
+    text = re.sub(r"[-\s]+", "-", text)
+    return text[:80]
+
+
+def _post_to_markdown(post: Post, summary: Optional[AISummary]) -> str:
+    """Convert a post to a markdown string."""
+    lines = [f"# {post.title or 'Untitled'}", ""]
+
+    translated = summary.translated_title if summary else None
+    if translated and translated != post.title:
+        lines.append(f"**Translated title:** {translated}")
+
+    feed_title = post.feed.title if post.feed else "Unknown"
+    lines.append(f"**Feed:** {feed_title}")
+
+    date = post.published_at or post.fetched_at
+    if date:
+        lines.append(f"**Date:** {date.strftime('%Y-%m-%d %H:%M')}")
+
+    if post.url:
+        lines.append(f"**URL:** {post.url}")
+
+    lines.append("")
+
+    one_line = summary.one_line_summary if summary else None
+    content = one_line or post.content
+    if content:
+        lines.extend(["## Summary", "", content, ""])
+
+    tags = [pt.tag for pt in post.tags]
+    if tags:
+        lines.extend(["## Tags", "", ", ".join(tags), ""])
+
+    return "\n".join(lines)
+
+
+@router.get("/export-starred")
+def export_starred(
+    feed_id: Optional[int] = Query(None, description="Filter by feed"),
+    category_id: Optional[int] = Query(None, description="Filter by category"),
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Export starred posts as a ZIP of markdown files."""
+    query = (
+        db.query(Post)
+        .filter(Post.is_starred == True)
+        .options(joinedload(Post.feed), subqueryload(Post.tags))
+    )
+
+    zip_label = "all"
+
+    if feed_id is not None:
+        query = query.filter(Post.feed_id == feed_id)
+        feed = db.query(Feed).filter(Feed.id == feed_id).first()
+        if feed:
+            zip_label = _slugify(feed.title)
+    elif category_id is not None:
+        feed_ids = (
+            db.query(Feed.id)
+            .filter(Feed.category_id == category_id)
+            .subquery()
+        )
+        query = query.filter(Post.feed_id.in_(feed_ids))
+        category = db.query(Category).filter(Category.id == category_id).first()
+        if category:
+            zip_label = _slugify(category.name)
+
+    posts = query.order_by(Post.starred_at.desc()).all()
+
+    if not posts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No starred posts found",
+        )
+
+    # Fetch summaries for all posts
+    content_hashes = [p.content_hash for p in posts if p.content_hash]
+    summaries_map = {}
+    if content_hashes:
+        summaries = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash.in_(content_hashes))
+            .all()
+        )
+        summaries_map = {s.content_hash: s for s in summaries}
+
+    # Determine if we need subfolders
+    use_subfolders = feed_id is None
+
+    # Build ZIP
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for post in posts:
+            summary = (
+                summaries_map.get(post.content_hash) if post.content_hash else None
+            )
+            md_content = _post_to_markdown(post, summary)
+
+            # Build filename
+            slug = _slugify(post.title or "untitled")
+            short_hash = hashlib.md5(str(post.id).encode()).hexdigest()[:6]
+            filename = f"{slug}-{short_hash}.md"
+
+            if use_subfolders:
+                folder = _slugify(post.feed.title) if post.feed else "unknown"
+                filepath = f"{folder}/{filename}"
+            else:
+                filepath = filename
+
+            zf.writestr(filepath, md_content)
+
+    zip_bytes = buf.getvalue()
+    today = datetime.utcnow().strftime("%Y%m%d")
+    zip_filename = f"starred-{zip_label}-{today}.zip"
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{zip_filename}"'
+        },
     )
 
 

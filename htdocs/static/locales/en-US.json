@@ -37,6 +37,7 @@
     "markAllRead": "Mark all as read",
     "markBlockedRead": "Mark blocked as read",
     "markAsRead": "Mark as read",
+    "exportStarred": "Export starred as ZIP",
     "select": "Select",
     "selectAll": "Select all",
     "clear": "Clear",

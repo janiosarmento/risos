@@ -37,6 +37,7 @@
     "markAllRead": "Marcar todos lidos",
     "markBlockedRead": "Marcar bloqueados lidos",
     "markAsRead": "Marcar como lidos",
+    "exportStarred": "Exportar favoritos como ZIP",
     "select": "Selecionar",
     "selectAll": "Selecionar todos",
     "clear": "Limpar",

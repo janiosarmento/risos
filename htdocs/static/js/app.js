@@ -2070,6 +2070,34 @@ function app() {
             }
         },
 
+        async exportStarred() {
+            try {
+                let url = `${API_BASE}/posts/export-starred`;
+                const params = [];
+                if (this.selectedFeedId) params.push(`feed_id=${this.selectedFeedId}`);
+                else if (this.selectedCategoryId) params.push(`category_id=${this.selectedCategoryId}`);
+                if (params.length) url += '?' + params.join('&');
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${this.token}` },
+                });
+                if (!response.ok) throw new Error('Export failed');
+
+                const disposition = response.headers.get('Content-Disposition');
+                const filename = disposition?.match(/filename="(.+)"/)?.[1] || 'starred.zip';
+
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error('Failed to export starred posts:', error);
+            }
+        },
+
         openSettings() {
             this.showSettings = true;
             history.pushState({ modal: 'settings' }, '');
