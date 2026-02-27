@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260226g';
+const APP_VERSION = '20260227a';
 const API_BASE = '/api';
 
 function app() {
@@ -68,6 +68,7 @@ function app() {
         tagsPerPost: 7, // Default 7 tags per AI summary
         modelCooldownMinutes: 30, // Default 30min grace period for failed models
         ignoredTags: new Set(), // Tags ignored for suggestions (loaded from server)
+        blockedTerms: '', // Newline-separated blocked terms (loaded from server)
 
         // Reading mode
         readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
@@ -449,6 +450,24 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        setBlockedTerms(value) {
+            // Parse, trim, deduplicate, sort, rejoin
+            const lines = value.split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
+            const unique = [...new Set(lines)].sort();
+            this.blockedTerms = unique.join('\n');
+            if (this.token) this.savePreferencesToServer();
+        },
+
+        get blockedTermsSorted() {
+            if (!this.blockedTerms) return '';
+            const lines = this.blockedTerms.split('\n').filter(l => l.trim());
+            return lines.sort().join('\n');
+        },
+
+        get blockedUnreadCount() {
+            return this.posts.filter(p => !p.is_read && p.is_blocked).length;
+        },
+
         setReadingMode(mode) {
             this.readingMode = mode;
             // Close post when switching modes
@@ -525,6 +544,7 @@ function app() {
                         suggestion_min_tags: this.suggestionMinTags,
                         tags_per_post: this.tagsPerPost,
                         model_cooldown_minutes: this.modelCooldownMinutes,
+                        blocked_terms: this.blockedTerms,
                     }),
                 });
             } catch (e) {
@@ -607,6 +627,9 @@ function app() {
                 }
                 if (serverPrefs.user_prompt) {
                     this.userPrompt = serverPrefs.user_prompt;
+                }
+                if (serverPrefs.blocked_terms !== null && serverPrefs.blocked_terms !== undefined) {
+                    this.blockedTerms = serverPrefs.blocked_terms;
                 }
             } catch (e) {
                 console.warn('Failed to sync preferences:', e);
@@ -880,6 +903,8 @@ function app() {
                     this.toggleSelectMode();
                 } else if (this.isKey(e, 'a')) {
                     this.markAllRead();
+                } else if (this.isKey(e, 'n')) {
+                    this.markAllRead(true);
                 } else if (e.key === ' ' && this.selectMode) {
                     e.preventDefault();
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
@@ -1405,12 +1430,12 @@ function app() {
             }
         },
 
-        async markAllRead() {
+        async markAllRead(blockedOnly = false) {
             // Get unread posts currently visible in the interface
             // This ensures we only mark posts the user has seen, not new ones
             // that may have arrived via background refresh
             const visibleUnreadIds = this.posts
-                .filter(p => !p.is_read)
+                .filter(p => !p.is_read && (!blockedOnly || p.is_blocked))
                 .map(p => p.id);
 
             if (visibleUnreadIds.length === 0) return;
@@ -1428,7 +1453,8 @@ function app() {
             }
 
             // Ask for confirmation
-            const msg = this.t('confirm.markAllRead')
+            const msgKey = blockedOnly ? 'confirm.markBlockedRead' : 'confirm.markAllRead';
+            const msg = this.t(msgKey)
                 .replace('{count}', visibleUnreadIds.length)
                 .replace('{context}', contextName);
 

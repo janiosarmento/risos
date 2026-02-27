@@ -26,10 +26,25 @@ from app.services.content_extractor import extract_full_content
 from app.services.cerebras import generate_summary, CerebrasError, GarbageContentError
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
+from app.routes.preferences import get_effective_blocked_terms
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+def _title_matches_term(title_lower: str, term: str) -> bool:
+    """Check if a title matches a blocked term. Supports % as wildcard."""
+    if "%" not in term:
+        return term in title_lower
+    parts = [p for p in term.split("%") if p]
+    pos = 0
+    for part in parts:
+        idx = title_lower.find(part, pos)
+        if idx == -1:
+            return False
+        pos = idx + len(part)
+    return True
 
 
 def get_post_or_404(db: Session, post_id: int) -> Post:
@@ -200,6 +215,9 @@ def list_posts(
         .scalar()
     )
 
+    # Load blocked terms for is_blocked computation
+    blocked_terms = get_effective_blocked_terms(db)
+
     # Convert to response
     result = []
     for post in posts:
@@ -231,6 +249,10 @@ def list_posts(
             "one_line_summary": summary.one_line_summary if summary else None,
             "translated_title": summary.translated_title if summary else None,
             "skip_summary": bool(post.skip_summary),
+            "is_blocked": any(
+                _title_matches_term((post.title or "").lower(), term)
+                for term in blocked_terms
+            ),
         }
         result.append(PostResponse(**post_dict))
 

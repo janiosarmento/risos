@@ -35,6 +35,7 @@
   "posts": {
     "noPosts": "No unread posts",
     "markAllRead": "Mark all as read",
+    "markBlockedRead": "Mark blocked as read",
     "markAsRead": "Mark as read",
     "select": "Select",
     "selectAll": "Select all",
@@ -139,7 +140,10 @@
     "resetDefaults": "Reset prompts to defaults",
     "clearCache": "Clear cache",
     "resetCircuitBreaker": "Reset AI",
-    "circuitBreakerReset": "AI circuit breaker reset successfully"
+    "circuitBreakerReset": "AI circuit breaker reset successfully",
+    "blockedTerms": "Blocked Terms",
+    "blockedTermsDesc": "Posts matching these terms in the title will be highlighted. Use % as wildcard (e.g. best % to watch). One term per line.",
+    "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch"
   },
   "splitView": {
     "selectPost": "Select a post to read",
@@ -209,6 +213,7 @@
     "deleteCategoryWithFeeds": "Delete \"{name}\"? The {count} feeds will be moved to another category.",
     "deleteFeed": "Delete feed \"{title}\"? All posts will be removed.",
     "markAllRead": "Mark {count} posts as read in \"{context}\"?",
+    "markBlockedRead": "Mark {count} blocked posts as read in \"{context}\"?",
     "allPosts": "all feeds",
     "markingAsRead": "Marking as read...",
     "deleting": "Deleting..."

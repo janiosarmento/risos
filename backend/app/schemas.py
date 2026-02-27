@@ -144,6 +144,7 @@ class PostResponse(BaseModel):
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
     skip_summary: bool = False
+    is_blocked: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

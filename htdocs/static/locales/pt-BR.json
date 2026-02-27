@@ -35,6 +35,7 @@
   "posts": {
     "noPosts": "Nenhum post não lido",
     "markAllRead": "Marcar todos lidos",
+    "markBlockedRead": "Marcar bloqueados lidos",
     "markAsRead": "Marcar como lidos",
     "select": "Selecionar",
     "selectAll": "Selecionar todos",
@@ -139,7 +140,10 @@
     "resetDefaults": "Restaurar prompts padrão",
     "clearCache": "Limpar cache",
     "resetCircuitBreaker": "Resetar IA",
-    "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso"
+    "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso",
+    "blockedTerms": "Termos Bloqueados",
+    "blockedTermsDesc": "Posts com esses termos no título serão destacados. Use % como curinga (ex: best % to watch). Um termo por linha.",
+    "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch"
   },
   "splitView": {
     "selectPost": "Selecione um post para ler",
@@ -209,6 +213,7 @@
     "deleteCategoryWithFeeds": "Excluir \"{name}\"? Os {count} feeds serão movidos para outra categoria.",
     "deleteFeed": "Excluir feed \"{title}\"? Todos os posts serão removidos.",
     "markAllRead": "Marcar {count} posts como lidos em \"{context}\"?",
+    "markBlockedRead": "Marcar {count} posts bloqueados como lidos em \"{context}\"?",
     "allPosts": "todos os feeds",
     "markingAsRead": "Marcando como lidos...",
     "deleting": "Excluindo..."

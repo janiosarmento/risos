@@ -38,6 +38,8 @@ PREF_TAGS_PER_POST = "pref_tags_per_post"
 PREF_MODEL_COOLDOWN = "pref_model_cooldown_minutes"
 PREF_SYSTEM_PROMPT = "pref_system_prompt"
 PREF_USER_PROMPT = "pref_user_prompt"
+# Blocked terms
+PREF_BLOCKED_TERMS = "pref_blocked_terms"
 
 
 class PreferencesResponse(BaseModel):
@@ -63,6 +65,8 @@ class PreferencesResponse(BaseModel):
     model_cooldown_minutes: Optional[int] = None  # grace period for failed models (5-120)
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
+    # Blocked terms (newline-separated)
+    blocked_terms: Optional[str] = None
 
 
 class PreferencesUpdate(BaseModel):
@@ -88,6 +92,7 @@ class PreferencesUpdate(BaseModel):
     model_cooldown_minutes: Optional[int] = None
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
+    blocked_terms: Optional[str] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -133,6 +138,7 @@ def get_preferences(
         PREF_MODEL_COOLDOWN,
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
+        PREF_BLOCKED_TERMS,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -195,6 +201,7 @@ def get_preferences(
         ),
         system_prompt=prefs[PREF_SYSTEM_PROMPT] or load_prompts().get("system_prompt", ""),
         user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
+        blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
     )
 
 
@@ -277,6 +284,12 @@ def update_preferences(
 
     if prefs.user_prompt is not None:
         _set_setting(db, PREF_USER_PROMPT, prefs.user_prompt)
+
+    if prefs.blocked_terms is not None:
+        # Clean, sort, and store
+        lines = [line.strip().lower() for line in prefs.blocked_terms.splitlines() if line.strip()]
+        cleaned = "\n".join(sorted(set(lines)))
+        _set_setting(db, PREF_BLOCKED_TERMS, cleaned)
 
     db.commit()
 
@@ -452,3 +465,11 @@ def get_effective_suggestion_min_tags(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 3  # Default: 3 tags minimum
+
+
+def get_effective_blocked_terms(db: Session) -> list:
+    """Get blocked terms list from app_settings. Returns list of lowercase strings."""
+    saved = _get_setting(db, PREF_BLOCKED_TERMS)
+    if not saved:
+        return []
+    return [line.strip() for line in saved.splitlines() if line.strip()]
