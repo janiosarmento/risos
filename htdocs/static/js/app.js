@@ -2,7 +2,7 @@
  * Risos - Alpine.js Application
  */
 
-const APP_VERSION = '20260227a';
+// APP_VERSION is defined in index.html (single source of truth for cache busting)
 const API_BASE = '/api';
 
 function app() {
