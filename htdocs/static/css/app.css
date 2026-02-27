@@ -142,19 +142,7 @@
 }
 
 /* -------------------------------------------
-   5. Blocked Posts
-   ------------------------------------------- */
-
-.post-blocked {
-    border-left: 3px solid #f87171;
-}
-
-.dark .post-blocked {
-    border-left-color: #dc2626;
-}
-
-/* -------------------------------------------
-   6. Mobile / Responsive
+   5. Mobile / Responsive
    ------------------------------------------- */
 
 /* Safe area for devices with notches */

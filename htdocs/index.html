@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260227b';</script>
+    <script>var APP_VERSION = '20260227c';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -532,7 +532,7 @@
                                     'opacity-60': post.is_read,
                                     'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id),
                                     'mt-4 border-t-4 border-t-gray-300 dark:border-t-gray-600': shouldShowDateSeparator(index) && index > 0,
-                                    'post-blocked': post.is_blocked
+                                    'border-l-[3px] border-l-red-400 dark:border-l-red-600': post.is_blocked
                                 }"
                                 :data-index="index"
                             >
