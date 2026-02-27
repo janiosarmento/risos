@@ -121,7 +121,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | Alpine.js 3.x, Tailwind CSS (CDN), i18n with full tooltip coverage |
+| **Frontend** | Alpine.js 3.x, Tailwind CSS (CDN), i18n with full tooltip coverage, SVG sprite sheet |
 | **Backend** | FastAPI, SQLAlchemy, SQLite (WAL mode) |
 | **AI** | Cerebras API (configurable model with fallback) |
 | **Scheduler** | APScheduler |
@@ -206,7 +206,7 @@ The entire frontend is in one file using Alpine.js. Key sections:
 ```javascript
 // Cache busting - UPDATE this AND the script tag in index.html when deploying changes
 // Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
-const APP_VERSION = '20260226d';
+const APP_VERSION = '20260226g';
 
 // Main Alpine.js data object
 document.addEventListener('alpine:init', () => {
@@ -414,6 +414,7 @@ journalctl -u rss-reader -f
 - Rate limiting and circuit breaker (with manual reset via Settings)
 - Auto-skip garbage content (`GarbageContentError` — paywalls, error pages, empty results)
 - Skip summary toggle per post (manual or automatic after permanent failures)
+- Skip summary indicator icon in post list (prohibition icon before title)
 - Tags extracted per post (configurable 3-15, shown as clickable chips on all posts)
 - Tags auto-translated to English for non-GPT models
 - Ignored tags system — exclude irrelevant tags from suggestions
@@ -431,6 +432,7 @@ journalctl -u rss-reader -f
 - Resizable split view (20-80% ratio)
 - Dark/light theme (system preference or manual)
 - Keyboard navigation (J/K/Enter, [/] for feeds)
+- SVG sprite sheet — all icons defined once as `<symbol>`, referenced via `<use href="#icon-name"/>`
 - Date separators in post list (visual grouping by relative date)
 - Mobile responsive
 - Bilingual (EN/PT)
@@ -636,7 +638,7 @@ git push
 
 ---
 
-*Last updated: 2026-02-26*
+*Last updated: 2026-02-27*
 
 ---
 

@@ -25,6 +25,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
 - **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
+- **Skip Summary Indicator** — Posts marked to skip AI summary show a visual icon in the list
 - **Configurable Settings** — AI model, data retention, interface behavior
 - **OPML Import/Export** — Migrate from other readers
 - **Mobile Friendly** — Responsive design with password peek on login

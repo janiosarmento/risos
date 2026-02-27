@@ -75,11 +75,13 @@ The project prioritizes:
 │   │       ├── content_hasher.py   # Content deduplication
 │   │       ├── url_normalizer.py   # URL normalization
 │   │       ├── cerebras/            # AI client package
+│   │       │   ├── __init__.py      # Public API exports
 │   │       │   ├── _api.py          # Summary generation + model fallback
-│   │       │   ├── _types.py        # SummaryResult, error classes
+│   │       │   ├── _types.py        # SummaryResult, error classes, GarbageContentError
 │   │       │   ├── _infrastructure.py # CircuitBreaker, APIKeyRotator
 │   │       │   ├── _constants.py    # Shared constants
-│   │       │   └── _prompts.py      # Prompt loading
+│   │       │   ├── _prompts.py      # Prompt loading
+│   │       │   └── _legacy.py       # Legacy compatibility
 │   │       ├── suggestions.py      # Tag overlap scoring
 │   │       ├── user_profile.py     # User interest profile
 │   │       ├── tags.py             # Post tag persistence

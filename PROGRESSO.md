@@ -1,13 +1,13 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-02-26
+**Última atualização:** 2026-02-27
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, SVG sprite sheet, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,36 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-26b — SVG Sprite Sheet, Skip Summary na Lista, Limpeza de Tags
+
+### SVG Sprite Sheet (`<symbol>` + `<use>`)
+- ~50 SVGs inline no `index.html` refactored para sprite sheet centralizado
+- 23 `<symbol>` definitions num bloco `<svg class="hidden">` no início do `<body>`
+- Cada SVG inline substituído por `<svg class="..."><use href="#icon-name"/></svg>`
+- Star/Heart: toggle fill/stroke via `:fill`/`:stroke` dinâmicos do Alpine.js (em vez de dois `<path>` com `x-show`)
+- Spinner, chevrons, check, x-close, refresh, external-link, prohibition, folder, rss, hamburger, lightbulb, settings, eye, eye-off, document, info, github, circle — todos centralizados
+
+### Ícone de Skip Summary na Lista de Posts
+- Posts marcados como `skip_summary` agora exibem ícone de proibição (⛔ SVG) antes do título na listagem
+- `skip_summary` movido de `PostDetail` para `PostResponse` no schema (disponível na API de listagem)
+- Campo `skip_summary` adicionado ao `post_dict` manual em `list_posts()` no `posts.py`
+
+### Limpeza de Tags Problemáticas
+- **Lote 1**: Tags `consumidor`, `direitos-digitais`, `economia`, `emprego`, `vagas` — 53 posts limpos (resumos + tags apagados)
+- **Lote 2**: Tags `tecnologia`, `soberania-digital`, `guerra`, `tempo`, `tempo-real` — 205 posts limpos
+- Posts limpos serão reprocessados nos próximos batches de regeneração
+
+### Regeneração em Batch de Posts sem Tags
+- Batches 7-13 executados nesta sessão (~700 posts processados)
+- Batch loop automático implementado (corre lotes sequencialmente até acabar)
+- Total acumulado: ~12.700 posts com tags, ~9.200 ainda por processar (de 26.300 total)
+- Taxa de sucesso típica: ~90% OK, ~5% skipped, ~5% erros (rate limits)
+
+### Cache Buster
+- Atualizado para `20260226g` (múltiplas iterações: d→e→f→g)
 
 ---
 
@@ -56,7 +86,6 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ### Regeneração em Batch de Posts sem Tags
 - Batches 4-6 (300 posts): ~282 sucesso, ~16 skipped, ~2 erros
-- Total acumulado: ~600 posts processados
 
 ---
 
