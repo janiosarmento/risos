@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260227d';</script>
+    <script>var APP_VERSION = '20260227e';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -265,9 +265,10 @@
                             @click="refreshFeeds()"
                             class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
                             :disabled="refreshing"
+                            :title="t('sidebar.refresh') + ' (R)'"
                         >
-                            <span x-show="!refreshing"><span x-text="t('sidebar.refresh')"></span><span class="hidden md:inline opacity-60"> (R)</span></span>
-                            <span x-show="refreshing">...</span>
+                            <svg x-show="!refreshing" class="w-4 h-4"><use href="#icon-refresh"/></svg>
+                            <svg x-show="refreshing" class="w-4 h-4 animate-spin"><use href="#icon-spinner"/></svg>
                         </button>
                     </div>
 
