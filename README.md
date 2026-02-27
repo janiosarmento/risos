@@ -25,6 +25,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
 - **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
+- **Blocked Terms** — Define terms to flag noisy posts with a visual indicator; bulk-dismiss with one click
 - **Skip Summary Indicator** — Posts marked to skip AI summary show a visual icon in the list
 - **Configurable Settings** — AI model, data retention, interface behavior
 - **OPML Import/Export** — Migrate from other readers
@@ -198,6 +199,7 @@ Each has its own database, config, and service.
 | `Enter` | Open post |
 | `M` | Toggle read/unread |
 | `A` | Mark all as read |
+| `N` | Mark blocked as read |
 | `S` | Toggle star |
 | `L` | Toggle like (trains suggestions) |
 | `X` | Toggle select mode |

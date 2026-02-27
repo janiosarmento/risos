@@ -103,7 +103,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 
 - Read relevant files before making changes
 - Follow existing code patterns
-- Update APP_VERSION in **both** app.js and index.html when changing frontend
+- Update APP_VERSION in index.html when changing frontend (single source of truth)
 - Add translations to both locale files
 - Test API endpoints with curl
 - Commit with descriptive messages
@@ -204,9 +204,8 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 The entire frontend is in one file using Alpine.js. Key sections:
 
 ```javascript
-// Cache busting - UPDATE this AND the script tag in index.html when deploying changes
+// APP_VERSION is defined in index.html (single source of truth for cache busting)
 // Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
-const APP_VERSION = '20260226g';
 
 // Main Alpine.js data object
 document.addEventListener('alpine:init', () => {
@@ -269,6 +268,7 @@ User preferences stored in `app_settings` table. Key preferences:
 - `suggestion_min_tags` - minimum tag overlap for suggestions (1 to tags_per_post)
 - `tags_per_post` - number of tags per AI summary (3-15)
 - `model_cooldown_minutes` - grace period before retrying failed models
+- `blocked_terms` - newline-separated terms to flag noisy posts (with % wildcard)
 - Plus data retention settings
 
 ### AI Service (`backend/app/services/cerebras/`)
@@ -329,7 +329,7 @@ if (this.isKey(e, 'j')) {
 }
 ```
 
-5. **Cache busting**: When changing JS, update `APP_VERSION` in app.js AND the script tag in index.html (both must match). Format: `YYYYMMDD[a-z]`.
+5. **Cache busting**: When changing frontend, update `APP_VERSION` in the inline `<script>` in index.html (single source of truth — CSS and JS tags are generated from it). Format: `YYYYMMDD[a-z]`.
 
 ### Backend (Python)
 
@@ -418,6 +418,7 @@ journalctl -u rss-reader -f
 - Tags extracted per post (configurable 3-15, shown as clickable chips on all posts)
 - Tags auto-translated to English for non-GPT models
 - Ignored tags system — exclude irrelevant tags from suggestions
+- Blocked terms — flag posts matching user-defined title patterns (with % wildcard support)
 
 ### Suggestions
 - Like-based user profile (aggregated tags from liked posts)
@@ -433,6 +434,8 @@ journalctl -u rss-reader -f
 - Dark/light theme (system preference or manual)
 - Keyboard navigation (J/K/Enter, [/] for feeds)
 - SVG sprite sheet — all icons defined once as `<symbol>`, referenced via `<use href="#icon-name"/>`
+- Blocked post indicator — red left border on posts matching blocked terms
+- Split dropdown "Mark as read" — option to dismiss all or only blocked posts
 - Date separators in post list (visual grouping by relative date)
 - Mobile responsive
 - Bilingual (EN/PT)
@@ -450,9 +453,11 @@ journalctl -u rss-reader -f
 
 ### 1. Cache Issues
 **Problem**: Frontend changes don't appear.
-**Solution**: Update version in **TWO places** (they must match):
-1. `htdocs/static/js/app.js` → `const APP_VERSION = 'YYYYMMDD[a-z]';`
-2. `htdocs/index.html` → `<script src="/static/js/app.js?v=YYYYMMDD[a-z]">`
+**Solution**: Update `APP_VERSION` in the inline `<script>` in `index.html` `<head>`:
+```html
+<script>var APP_VERSION = '20260227c';</script>
+```
+CSS and JS tags are generated automatically from this value via `document.write`.
 
 **Version format**: Use today's date + letter suffix: `20260108a`, `20260108b`, etc.
 Increment the letter for each change on the same day.
@@ -597,7 +602,7 @@ Each has its own database, config, and systemd service.
 
 1. **Make changes** to relevant files
 2. **Test locally** via curl or browser
-3. **Update version** if frontend changed (in BOTH `app.js` and `index.html` script tag)
+3. **Update version** if frontend changed (in `index.html` inline `<script>` — single source of truth)
 4. **Restart service** if backend changed
 5. **Update `PROGRESSO.md`** with session notes
 6. **Commit and push** with descriptive message
@@ -638,7 +643,7 @@ git push
 
 ---
 
-*Last updated: 2026-02-27*
+*Last updated: 2026-02-27 (blocked terms, unified cache buster)*
 
 ---
 

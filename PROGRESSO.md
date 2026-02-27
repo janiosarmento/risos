@@ -7,7 +7,7 @@
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, SVG sprite sheet, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, SVG sprite sheet, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,38 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-27 — Termos Bloqueados, Cache Buster Unificado
+
+### Termos Bloqueados (Blocked Terms)
+- Nova feature para reduzir ruído nos feeds: termos que marcam posts indesejados
+- Termos armazenados em `app_settings` (chave `pref_blocked_terms`), newline-separated
+- Backend computa `is_blocked` dinamicamente para cada post (LIKE case-insensitive no título)
+- Suporte a wildcard `%` para padrões flexíveis (ex: `best % to watch`)
+- Matching via Python `in` operator (equivalente a `LIKE '%term%'`)
+- Borda vermelha à esquerda nos posts bloqueados (Tailwind classes dinâmicas)
+- Botão "Mark all as read" transformado em split dropdown com opção "Mark blocked as read"
+- Badge com contagem de bloqueados não lidos no dropdown
+- Atalho de teclado `N` para marcar bloqueados como lidos
+- Textarea nas Settings > Others para gerir termos (sort automático, dedup, lowercase)
+- Traduções PT e EN
+
+### Cache Buster Unificado
+- `APP_VERSION` definido uma única vez em `index.html` (inline `<script>`)
+- CSS e JS carregados via `document.write` com o mesmo version
+- `app.js` não define mais `APP_VERSION` — lê o global do HTML
+- Apenas 1 ficheiro para atualizar em vez de 2-3
+
+### Limpeza de Tags em Larga Escala (sessão anterior continuada)
+- ~2.029 posts tiveram resumos apagados, ~14.899 tags apagadas
+- Tags portuguesas removidas por padrões morfológicos (-ação, -mento, -dade, -ncia, etc.)
+- ~97 posts marcados como lidos por título (tesla, smart home, 3d printer, etc.)
+- Batch loop de regeneração em execução contínua (~100 posts/batch)
+
+### Cache Buster
+- Atualizado para `20260227c`
 
 ---
 
