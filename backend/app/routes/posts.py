@@ -303,9 +303,13 @@ def _post_to_markdown(post: Post, summary: Optional[AISummary]) -> str:
     lines.append("")
 
     one_line = summary.one_line_summary if summary else None
-    content = one_line or post.content
-    if content:
-        lines.extend(["## Summary", "", content, ""])
+    full_summary = summary.summary_pt if summary else None
+    if one_line:
+        lines.extend(["## Summary", "", one_line, ""])
+    if full_summary:
+        lines.extend(["## Full Summary", "", full_summary, ""])
+    elif post.content:
+        lines.extend(["## Content", "", post.content, ""])
 
     tags = [pt.tag for pt in post.tags]
     if tags:
