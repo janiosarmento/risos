@@ -28,6 +28,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Blocked Terms** — Define terms to flag noisy posts with a visual indicator; bulk-dismiss with one click
 - **Skip Summary Indicator** — Posts marked to skip AI summary show a visual icon in the list
 - **Configurable Settings** — AI model, data retention, interface behavior
+- **Export Starred Posts** — Download starred posts as a ZIP of individual markdown files (grouped by feed)
 - **OPML Import/Export** — Migrate from other readers
 - **Mobile Friendly** — Responsive design with password peek on login
 

@@ -26,7 +26,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-02-27 — Termos Bloqueados, Cache Buster Unificado
+## Sessão 2026-02-27 — Termos Bloqueados, Cache Buster Unificado, Exportação de Favoritos
 
 ### Termos Bloqueados (Blocked Terms)
 - Nova feature para reduzir ruído nos feeds: termos que marcam posts indesejados
@@ -41,6 +41,16 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Textarea nas Settings > Others para gerir termos (sort automático, dedup, lowercase)
 - Traduções PT e EN
 
+### Exportação de Favoritos como ZIP
+- Novo endpoint `GET /api/posts/export-starred` gera ZIP com ficheiros `.md` individuais
+- Cada post vira um markdown com título, título traduzido, feed, data, URL, sumário (uma linha + completo) e tags
+- Nomes dos ficheiros: `titulo-normalizado-abc123.md` (slug + hash para evitar colisões)
+- Agrupamento em subpastas por feed (vista global/categoria) ou flat (vista de feed individual)
+- Aceita `feed_id` e `category_id` como filtros (segue o contexto da vista atual)
+- Ícone de download junto ao botão "Favoritos", visível apenas com `starredCount > 0` e filtro ativo
+- Novo ícone `#icon-download` na sprite sheet SVG
+- ZIP gerado em memória com `zipfile` + `BytesIO` (stdlib, sem dependências novas)
+
 ### Cache Buster Unificado
 - `APP_VERSION` definido uma única vez em `index.html` (inline `<script>`)
 - CSS e JS carregados via `document.write` com o mesmo version
@@ -54,7 +64,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Batch loop de regeneração em execução contínua (~100 posts/batch)
 
 ### Cache Buster
-- Atualizado para `20260227c`
+- Atualizado para `20260227f`
 
 ---
 

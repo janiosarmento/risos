@@ -562,7 +562,7 @@ class Scheduler:
                         )
                         .order_by(
                             SummaryQueue.priority.desc(),
-                            SummaryQueue.created_at.asc(),
+                            SummaryQueue.created_at.desc(),
                         )
                         .first()
                     )

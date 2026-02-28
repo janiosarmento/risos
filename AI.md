@@ -154,7 +154,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── auth.py             # Login/logout
 │   │   │   ├── categories.py       # CRUD for categories
 │   │   │   ├── feeds.py            # CRUD + refresh + OPML
-│   │   │   ├── posts.py            # List/read posts, mark read, skip summary
+│   │   │   ├── posts.py            # List/read posts, mark read, skip summary, export starred
 │   │   │   ├── preferences.py      # User preferences API
 │   │   │   ├── suggestions.py      # Suggestion system admin endpoints
 │   │   │   ├── tags.py             # Ignored tags management API
@@ -403,7 +403,7 @@ journalctl -u rss-reader -f
 - RSS/Atom feed subscription with auto-discovery
 - Category organization with drag-and-drop
 - Read/unread tracking with batch operations
-- Starred posts
+- Starred posts with ZIP export (individual markdown files per post, grouped by feed)
 - OPML import/export
 
 ### AI
