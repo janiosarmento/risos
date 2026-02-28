@@ -578,7 +578,7 @@ ignored_tags (id, tag, created_at)
 -- Settings (key-value store)
 app_settings (key, value, updated_at)
 
--- Summary Queue
+-- Summary Queue (ordered by priority DESC, created_at DESC — newest first)
 summary_queue (id, post_id, content_hash, priority, attempts, ...)
 ```
 

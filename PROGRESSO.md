@@ -1,13 +1,13 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-02-27
+**Última atualização:** 2026-02-28
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, SVG sprite sheet, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, exportação de favoritos como ZIP, SVG sprite sheet, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,28 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-02-28 — Ordem da Queue, Regeneração em Massa
+
+### Ordem da Queue de Resumos
+- Queue de resumos alterada para processar posts mais recentes primeiro (`created_at DESC`)
+- Posts recém-chegados passam à frente do backlog antigo
+- Prioridade continua como critério principal (posts abertos pelo usuário têm priority=10)
+
+### Scripts de Regeneração em Massa
+- `scripts/regenerate_starred.py` — regenera resumos e tags de todos os posts favoritados
+  - Skip automático de posts já regenerados no dia (verifica `created_at` do summary)
+  - Upsert para evitar crash de UNIQUE constraint quando posts compartilham `content_hash`
+  - Delay apenas entre chamadas reais à API (skips são instantâneos)
+- `scripts/regenerate_unread.py` — regenera resumos e tags de posts não lidos sem tags
+- Ambos encadeáveis em sequência para processamento overnight
+
+### Regeneração Executada
+- Fase 1 (não lidos): 60/66 OK, 6 skips, 0 erros
+- Fase 2 (favoritos): 562/619 OK, 48 skips, 9 erros
+- Duração total: ~2h15
 
 ---
 
