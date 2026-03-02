@@ -1161,18 +1161,54 @@ function app() {
             // Setup back button handler for modals
             this.setupBackButtonHandler();
 
-            // Custom tooltips: edge detection + tap dismiss
-            document.addEventListener('mouseenter', (e) => {
-                const el = e.target.closest('.tip');
-                if (!el || !el.dataset.tip) return;
-                const r = el.getBoundingClientRect();
-                el.classList.toggle('tip-right', r.left < 140);
-                el.classList.toggle('tip-left', r.right > window.innerWidth - 140);
-            }, true);
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.tip-visible')) {
-                    document.querySelectorAll('.tip-visible').forEach(el => el.classList.remove('tip-visible'));
+            // Tippy.js tooltips: auto-initialize on [data-tip] elements
+            this.setupTippy();
+        },
+
+        setupTippy() {
+            const tippyDefaults = {
+                arrow: true,
+                delay: [80, 0],
+                duration: [120, 100],
+                touch: ['hold', 400],
+                appendTo: () => document.body,
+            };
+
+            // Initialize tippy on a single element
+            const initTip = (el) => {
+                if (el._tippy) {
+                    el._tippy.setContent(el.dataset.tip || '');
+                    return;
                 }
+                const content = el.dataset.tip;
+                if (!content) return;
+                tippy(el, { ...tippyDefaults, content });
+            };
+
+            // Scan and init all [data-tip] elements
+            const scanAll = () => {
+                document.querySelectorAll('[data-tip]').forEach(initTip);
+            };
+
+            // Initial scan
+            scanAll();
+
+            // Watch for dynamic elements (Alpine.js renders, list updates)
+            const observer = new MutationObserver((mutations) => {
+                let needsScan = false;
+                for (const m of mutations) {
+                    if (m.type === 'childList' && m.addedNodes.length) needsScan = true;
+                    if (m.type === 'attributes' && m.attributeName === 'data-tip') {
+                        initTip(m.target);
+                    }
+                }
+                if (needsScan) scanAll();
+            });
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['data-tip'],
             });
         },
 

@@ -142,97 +142,12 @@
 }
 
 /* -------------------------------------------
-   5. Custom Tooltip
+   5. Tippy.js Tooltip Overrides
    ------------------------------------------- */
 
-/* Container must be relative for positioning */
-.tip {
-    position: relative;
-}
-
-/* Suppress when empty */
-.tip[data-tip=""]::after,
-.tip[data-tip=""]::before,
-.tip:not([data-tip])::after,
-.tip:not([data-tip])::before {
-    display: none;
-}
-
-/* Tooltip bubble — default: above */
-.tip::after {
-    content: attr(data-tip);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1f2937;
-    color: #f9fafb;
+.tippy-box {
     font-size: 0.75rem;
     line-height: 1.4;
-    padding: 6px 10px;
-    border-radius: 6px;
-    white-space: normal;
-    width: max-content;
-    max-width: 280px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.12s ease;
-    z-index: 50;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Arrow — default: above */
-.tip::before {
-    content: "";
-    position: absolute;
-    bottom: calc(100% + 1px);
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #1f2937;
-    opacity: 0;
-    transition: opacity 0.12s ease;
-    z-index: 50;
-    pointer-events: none;
-}
-
-/* Variant: below (for toolbar buttons near top of screen) */
-.tip-bottom::after {
-    bottom: auto;
-    top: calc(100% + 6px);
-}
-.tip-bottom::before {
-    bottom: auto;
-    top: calc(100% + 1px);
-    border-top-color: transparent;
-    border-bottom-color: #1f2937;
-}
-
-/* Show on hover (desktop) and tap (mobile) */
-.tip:hover::after,
-.tip:hover::before,
-.tip.tip-visible::after,
-.tip.tip-visible::before {
-    opacity: 1;
-}
-
-/* Keep tooltip inside viewport — shift when near edges */
-.tip.tip-right::after { left: 0; transform: translateX(0); }
-.tip.tip-right::before { left: 14px; transform: translateX(0); }
-.tip.tip-left::after { left: auto; right: 0; transform: translateX(0); }
-.tip.tip-left::before { left: auto; right: 14px; transform: translateX(0); }
-
-/* Dark mode */
-.dark .tip::after {
-    background: #e5e7eb;
-    color: #111827;
-}
-.dark .tip::before {
-    border-top-color: #e5e7eb;
-}
-.dark .tip-bottom::before {
-    border-top-color: transparent;
-    border-bottom-color: #e5e7eb;
 }
 
 /* -------------------------------------------
