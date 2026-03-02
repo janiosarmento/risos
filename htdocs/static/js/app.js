@@ -542,25 +542,28 @@ function app() {
                 });
                 // Build lookup map: post_id -> { classification, reason }
                 const map = {};
-                let stats = { essential: 0, situational: 0, redundant: 0 };
                 for (const item of (data.analysis?.essential || [])) {
                     map[item.post_id] = { classification: 'essential', reason: item.reason || '' };
-                    stats.essential++;
                 }
                 for (const item of (data.analysis?.redundant || [])) {
                     map[item.post_id] = { classification: 'redundant', reason: item.reason || '', covered_by: item.covered_by };
-                    stats.redundant++;
                 }
                 for (const item of (data.analysis?.keep_if_interested || [])) {
                     map[item.post_id] = { classification: 'keep_if_interested', reason: item.reason || '' };
-                    stats.situational++;
                 }
                 // Tag visible posts not classified by AI as unclassified
                 for (const post of this.posts) {
                     if (post.is_starred && !map[post.id]) {
                         map[post.id] = { classification: 'unclassified', reason: this.t('curation.unclassifiedReason') };
-                        stats.unclassified = (stats.unclassified || 0) + 1;
                     }
+                }
+                // Compute stats from final map (avoids double-counting if AI duplicates a post)
+                const stats = { essential: 0, situational: 0, redundant: 0, unclassified: 0 };
+                for (const info of Object.values(map)) {
+                    if (info.classification === 'essential') stats.essential++;
+                    else if (info.classification === 'redundant') stats.redundant++;
+                    else if (info.classification === 'unclassified') stats.unclassified++;
+                    else stats.situational++;
                 }
                 this.curationResults = map;
                 this.curationSummary = data.summary || '';
