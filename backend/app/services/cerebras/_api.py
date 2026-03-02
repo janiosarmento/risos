@@ -559,4 +559,4 @@ async def call_llm_json(
             continue
 
     circuit_breaker.record_failure()
-    raise PermanentError(f"call_llm_json: all models failed. Last error: {last_error}")
+    raise PermanentError(f"All AI models failed. Last error: {last_error}")

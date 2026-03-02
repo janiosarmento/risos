@@ -947,6 +947,9 @@ class BatchUnstarRequest(BaseModel):
 
 class CurateRequest(BaseModel):
     topic_id: Optional[int] = None
+    feed_id: Optional[int] = None
+    category_id: Optional[int] = None
+    tag: Optional[str] = None
 
 
 class ExportSelectionRequest(BaseModel):
@@ -971,7 +974,9 @@ async def curate_starred(
         .options(subqueryload(Post.tags), joinedload(Post.feed))
     )
 
-    topic_name = "All Starred"
+    context_name = "All Starred"
+
+    # Apply topic or tag filter (mutually exclusive, topic takes precedence)
     if body.topic_id is not None:
         topic_tags = [
             row.tag
@@ -982,12 +987,28 @@ async def curate_starred(
             from app.models import Topic as TopicModel
             topic = db.query(TopicModel).filter(TopicModel.id == body.topic_id).first()
             if topic:
-                topic_name = topic.name
+                context_name = topic.name
+    elif body.tag:
+        query = query.join(PostTag).filter(PostTag.tag == body.tag.strip().lower())
+        context_name = f"tag: {body.tag}"
+
+    # Apply feed/category filter
+    if body.feed_id is not None:
+        query = query.filter(Post.feed_id == body.feed_id)
+        feed = db.query(Feed).filter(Feed.id == body.feed_id).first()
+        if feed:
+            context_name = feed.title or context_name
+    elif body.category_id is not None:
+        cat_feed_ids = [
+            f.id for f in db.query(Feed.id).filter(Feed.category_id == body.category_id).all()
+        ]
+        if cat_feed_ids:
+            query = query.filter(Post.feed_id.in_(cat_feed_ids))
 
     posts = query.order_by(Post.starred_at.desc()).all()
 
     if not posts:
-        return {"topic": topic_name, "total_posts": 0, "analysis": {"essential": [], "redundant": [], "keep_if_interested": []}, "summary": "No starred posts found."}
+        return {"topic": context_name, "total_posts": 0, "analysis": {"essential": [], "redundant": [], "keep_if_interested": []}, "summary": "No starred posts found."}
 
     # Fetch summaries
     content_hashes = [p.content_hash for p in posts if p.content_hash]
@@ -1013,7 +1034,7 @@ async def curate_starred(
         f"IMPORTANT: All 'reason' fields and the 'summary' field MUST be written in {language}."
     )
 
-    user_prompt = f"""The user has {len(posts)} starred articles in the topic "{topic_name}".
+    user_prompt = f"""The user has {len(posts)} starred articles in the topic "{context_name}".
 They want to reduce their starred articles to only the most valuable ones.
 
 Here are the articles (with AI-generated summaries):
@@ -1055,7 +1076,7 @@ Respond in JSON:
                 item["title"] = post_map[pid].title
 
     return {
-        "topic": topic_name,
+        "topic": context_name,
         "total_posts": len(posts),
         "analysis": {
             "essential": result.get("essential", []),

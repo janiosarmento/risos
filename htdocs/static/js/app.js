@@ -525,6 +525,9 @@ function app() {
             try {
                 const body = {};
                 if (this.selectedTopicId) body.topic_id = this.selectedTopicId;
+                if (this.tagFilter) body.tag = this.tagFilter;
+                if (this.filter === 'feed') body.feed_id = this.filterId;
+                else if (this.filter === 'category') body.category_id = this.filterId;
                 const data = await this.fetchApi('/posts/curate', {
                     method: 'POST',
                     body: JSON.stringify(body),
@@ -1005,10 +1008,15 @@ function app() {
             this.toast.type = type;
             this.toast.show = true;
 
+            // Errors stay visible longer (3x) so user can read the message
+            const duration = type === 'error'
+                ? Math.max(this.toastTimeoutSeconds * 3, 10) * 1000
+                : this.toastTimeoutSeconds * 1000;
+
             if (autoClose && this.toastTimeoutSeconds > 0) {
                 this.toast.timeoutId = setTimeout(() => {
                     this.hideToast();
-                }, this.toastTimeoutSeconds * 1000);
+                }, duration);
             }
         },
 
