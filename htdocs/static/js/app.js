@@ -523,7 +523,7 @@ function app() {
         async curatePosts() {
             // Warn if too many posts for AI context window
             if (this.starredCount > CURATION_WARN_THRESHOLD) {
-                if (!await this.showConfirm(this.t('curation.tooManyPosts', { count: this.starredCount }))) return;
+                if (!await this.showConfirm(this.t('curation.tooManyPosts').replace('{count}', this.starredCount))) return;
                 this.confirmDone();
             }
             this.curatingPosts = true;
