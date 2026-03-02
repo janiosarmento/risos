@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260302n';</script>
+    <script>var APP_VERSION = '20260302v';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -113,6 +113,9 @@
         <symbol id="icon-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.582a.5.5 0 010 .963L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
             <path d="M20 3v4M22 5h-4"/>
+        </symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
         </symbol>
         <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -1705,10 +1708,17 @@
                                                 />
                                             </template>
                                             <template x-if="editingTopic !== topic.id">
-                                                <span class="text-sm font-medium cursor-pointer" @dblclick="editingTopic = topic.id" x-text="topic.name"></span>
+                                                <span class="text-sm font-medium" x-text="topic.name"></span>
                                             </template>
                                             <div class="flex items-center gap-2">
                                                 <span class="text-xs text-gray-500 dark:text-gray-400" x-text="topic.post_count + ' posts'"></span>
+                                                <button
+                                                    @click="editingTopic = topic.id"
+                                                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                    :data-tip="t('settings.topics.rename')"
+                                                >
+                                                    <svg class="w-3.5 h-3.5"><use href="#icon-edit"/></svg>
+                                                </button>
                                                 <button
                                                     @click="suggestTagsForTopic(topic.id)"
                                                     :disabled="suggestingTagsForTopicId !== null"
@@ -1734,15 +1744,28 @@
                                                 </span>
                                             </template>
                                         </div>
-                                        <div class="relative flex gap-1" x-data="{ val: '', suggestions: [], selIdx: -1, debounceTimer: null }" @click.away="suggestions = []">
+                                        <div class="relative flex gap-1" x-data="{
+                                            val: '', suggestions: [], selIdx: -1, debounceTimer: null,
+                                            async search() {
+                                                if (this.val.trim().length >= 1) {
+                                                    try { const r = await fetchApi('/tags/search?q=' + encodeURIComponent(this.val.trim()) + '&exclude_topic_id=' + topic.id); this.suggestions = r.tags || []; this.selIdx = -1; } catch(e) { this.suggestions = []; }
+                                                } else { this.suggestions = []; }
+                                            },
+                                            async pick(tag) {
+                                                await addTagsToTopic(topic.id, [tag]);
+                                                this.suggestions = this.suggestions.filter(s => s.tag !== tag);
+                                                this.$nextTick(() => this.$refs.input.focus());
+                                            }
+                                        }" @click.away="suggestions = []; val = ''">
                                             <input
                                                 type="text"
+                                                x-ref="input"
                                                 x-model="val"
-                                                @input="clearTimeout(debounceTimer); debounceTimer = setTimeout(async () => { if (val.trim().length >= 1) { try { const r = await fetchApi('/tags/search?q=' + encodeURIComponent(val.trim()) + '&exclude_topic_id=' + topic.id); suggestions = r.tags || []; selIdx = -1; } catch(e) { suggestions = []; } } else { suggestions = []; } }, 200)"
+                                                @input="clearTimeout(debounceTimer); debounceTimer = setTimeout(() => search(), 200)"
                                                 @keydown.arrow-down.prevent="if (suggestions.length) selIdx = (selIdx + 1) % suggestions.length"
                                                 @keydown.arrow-up.prevent="if (suggestions.length) selIdx = selIdx <= 0 ? suggestions.length - 1 : selIdx - 1"
-                                                @keydown.enter.prevent="if (selIdx >= 0 && suggestions[selIdx]) { addTagsToTopic(topic.id, [suggestions[selIdx].tag]); val = ''; suggestions = []; } else if (val.trim() && suggestions.length) { addTagsToTopic(topic.id, [suggestions[0].tag]); val = ''; suggestions = []; }"
-                                                @keydown.escape="suggestions = []"
+                                                @keydown.enter.prevent="if (selIdx >= 0 && suggestions[selIdx]) { pick(suggestions[selIdx].tag); selIdx = -1; } else if (val.trim() && suggestions.length) { pick(suggestions[0].tag); }"
+                                                @keydown.escape="suggestions = []; val = ''"
                                                 :placeholder="t('settings.topics.addTagPlaceholder')"
                                                 class="flex-1 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                                 autocomplete="off"
@@ -1751,7 +1774,7 @@
                                             <div x-show="suggestions.length > 0" class="absolute top-full left-0 right-8 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                                 <template x-for="(s, idx) in suggestions" :key="s.tag">
                                                     <button
-                                                        @click="addTagsToTopic(topic.id, [s.tag]); val = ''; suggestions = []"
+                                                        @click="pick(s.tag)"
                                                         class="w-full text-left px-3 py-1.5 text-xs flex justify-between items-center"
                                                         :class="idx === selIdx ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
                                                     >
@@ -1779,7 +1802,7 @@
                                     class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
                                 >
                                     <span class="font-medium" x-text="t('settings.theme')"></span>
-                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.appearance ? 'rotate-180' : ''" <use href="#icon-chevron-down"/></svg>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.appearance ? 'rotate-180' : ''"><use href="#icon-chevron-down"/></svg>
                                 </button>
                                 <div x-show="settingsAccordion.appearance" x-collapse class="p-4 space-y-4">
                                     <!-- Theme -->
@@ -1839,7 +1862,7 @@
                                     class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
                                 >
                                     <span class="font-medium" x-text="t('settings.data')"></span>
-                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.data ? 'rotate-180' : ''" <use href="#icon-chevron-down"/></svg>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.data ? 'rotate-180' : ''"><use href="#icon-chevron-down"/></svg>
                                 </button>
                                 <div x-show="settingsAccordion.data" x-collapse class="p-4 space-y-4">
                                     <!-- Feed Update Interval -->
@@ -1916,7 +1939,7 @@
                                     class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
                                 >
                                     <span class="font-medium" x-text="t('settings.interface')"></span>
-                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.interface ? 'rotate-180' : ''" <use href="#icon-chevron-down"/></svg>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.interface ? 'rotate-180' : ''"><use href="#icon-chevron-down"/></svg>
                                 </button>
                                 <div x-show="settingsAccordion.interface" x-collapse class="p-4 space-y-4">
                                     <!-- Toast Timeout -->
@@ -1993,6 +2016,135 @@
                                             class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm font-mono"
                                         ></textarea>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Tag Consolidation -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                <button
+                                    @click="toggleAccordion('tagMerge')"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+                                >
+                                    <span class="font-medium" x-text="t('settings.tagMerge.title')"></span>
+                                    <svg class="w-5 h-5 transition-transform" :class="settingsAccordion.tagMerge ? 'rotate-180' : ''" ><use href="#icon-chevron-down"/></svg>
+                                </button>
+                                <div x-show="settingsAccordion.tagMerge" x-collapse class="px-4 py-3 space-y-4">
+                                    <p class="text-gray-500 dark:text-gray-400 text-xs" x-text="t('settings.tagMerge.desc')"></p>
+
+                                    <!-- Purge Rare Tags -->
+                                    <div class="border border-gray-200 dark:border-gray-700 rounded p-3 space-y-2 bg-gray-50 dark:bg-gray-800/50">
+                                        <label class="block text-sm font-medium" x-text="t('settings.tagMerge.purgeTitle')"></label>
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs" x-text="t('settings.tagMerge.purgeDesc')"></p>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <label class="text-xs text-gray-500 dark:text-gray-400" x-text="t('settings.tagMerge.purgeThreshold')"></label>
+                                            <input type="number" min="1" max="10" x-model.number="purgeMaxCount"
+                                                   @change="previewRareTags()"
+                                                   class="w-20 px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">
+                                            <span class="text-xs text-gray-500 dark:text-gray-400" x-text="t('settings.tagMerge.posts')"></span>
+                                            <button @click="previewRareTags()" :disabled="purgeLoading"
+                                                    class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+                                                    x-text="t('settings.tagMerge.preview')"></button>
+                                        </div>
+                                        <!-- Breakdown -->
+                                        <template x-if="purgeBreakdowns.length > 0">
+                                            <div class="space-y-1">
+                                                <template x-for="b in purgeBreakdowns" :key="b.max_count">
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400"
+                                                       x-text="'≤ ' + b.max_count + (b.max_count === 1 ? ' post: ' : ' posts: ') + b.tag_count + ' ' + t('settings.tagMerge.tagsLabel')"></p>
+                                                </template>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400"
+                                                   x-text="t('settings.tagMerge.totalTags').replace('{total}', purgeTotalTags).replace('{from}', '').replace('–{to}', '').replace('—', '—')"></p>
+                                            </div>
+                                        </template>
+                                        <!-- Sample -->
+                                        <div x-show="purgeSample.length > 0" class="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                                            <template x-for="s in purgeSample" :key="s.tag">
+                                                <span class="text-xs px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                                                      x-text="s.tag + ' (' + s.count + ')'"></span>
+                                            </template>
+                                            <span x-show="purgeBreakdowns.length > 0 && purgeBreakdowns[purgeBreakdowns.length-1].tag_count > 50"
+                                                  class="text-xs text-gray-400 italic">…</span>
+                                        </div>
+                                        <!-- Purge button -->
+                                        <button x-show="purgeBreakdowns.length > 0"
+                                                @click="purgeRareTags()"
+                                                :disabled="purgingTags"
+                                                class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">
+                                            <span x-show="!purgingTags" x-text="t('settings.tagMerge.purgeApply').replace('{count}', purgeBreakdowns[purgeMaxCount-1]?.tag_count || 0)"></span>
+                                            <span x-show="purgingTags" x-text="t('settings.tagMerge.purging')"></span>
+                                        </button>
+                                    </div>
+
+                                    <!-- AI Merge Controls -->
+                                    <div class="border-t border-gray-200 dark:border-gray-700 pt-3"></div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <label class="text-xs text-gray-500 dark:text-gray-400" x-text="t('settings.tagMerge.offset')"></label>
+                                        <input type="number" min="0" x-model.number="mergeOffset" class="w-20 px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">
+                                        <label class="text-xs text-gray-500 dark:text-gray-400" x-text="t('settings.tagMerge.batchSize')"></label>
+                                        <input type="number" min="10" max="200" x-model.number="mergeBatchSize" class="w-20 px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">
+                                        <button
+                                            @click="suggestTagMerges()"
+                                            :disabled="mergeSuggesting"
+                                            class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                        >
+                                            <span x-show="!mergeSuggesting" x-text="t('settings.tagMerge.analyze')"></span>
+                                            <span x-show="mergeSuggesting" x-text="t('settings.tagMerge.analyzing')"></span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Total tag count -->
+                                    <p x-show="mergeTotalTags > 0" class="text-xs text-gray-500 dark:text-gray-400"
+                                       x-text="t('settings.tagMerge.totalTags').replace('{total}', mergeTotalTags).replace('{from}', mergeOffset).replace('{to}', Math.min(mergeOffset + mergeBatchSize, mergeTotalTags))">
+                                    </p>
+
+                                    <!-- Merge groups -->
+                                    <div x-show="mergeGroups.length > 0" class="space-y-2 max-h-80 overflow-y-auto">
+                                        <template x-for="(group, gi) in mergeGroups" :key="gi">
+                                            <div class="border border-gray-200 dark:border-gray-700 rounded p-2"
+                                                 :class="group.selected ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700' : ''">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <input type="checkbox" x-model="group.selected" class="rounded">
+                                                    <span class="text-xs font-medium text-gray-400" x-text="'→'"></span>
+                                                    <input type="text" x-model="group.canonical"
+                                                           class="text-sm font-semibold bg-transparent border-b border-dashed border-gray-400 dark:border-gray-500 focus:border-blue-500 focus:outline-none px-1 py-0"
+                                                           :data-tip="t('settings.tagMerge.editCanonical')">
+                                                </div>
+                                                <div class="flex flex-wrap gap-1 ml-5">
+                                                    <template x-for="(tag, ti) in group.merge" :key="ti">
+                                                        <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                                            <span x-text="tag"></span>
+                                                            <button @click="group.merge.splice(ti, 1); if (group.merge.length === 0) mergeGroups.splice(gi, 1)" class="hover:text-red-500">&times;</button>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Apply button -->
+                                    <div x-show="mergeGroups.length > 0" class="flex items-center gap-2">
+                                        <button
+                                            @click="applyTagMerges()"
+                                            :disabled="mergeApplying || mergeGroups.filter(g => g.selected).length === 0"
+                                            class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                                        >
+                                            <span x-show="!mergeApplying" x-text="t('settings.tagMerge.apply')"></span>
+                                            <span x-show="mergeApplying" x-text="t('settings.tagMerge.applying')"></span>
+                                        </button>
+                                        <button
+                                            @click="mergeGroups.forEach(g => g.selected = true)"
+                                            class="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 underline"
+                                            x-text="t('settings.tagMerge.selectAll')"
+                                        ></button>
+                                        <button
+                                            @click="mergeGroups.forEach(g => g.selected = false)"
+                                            class="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 underline"
+                                            x-text="t('settings.tagMerge.selectNone')"
+                                        ></button>
+                                    </div>
+
+                                    <!-- Empty state -->
+                                    <p x-show="mergeGroups.length === 0 && mergeTotalTags > 0 && !mergeSuggesting" class="text-xs text-gray-400 italic" x-text="t('settings.tagMerge.noGroups')"></p>
                                 </div>
                             </div>
 

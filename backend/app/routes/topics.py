@@ -42,7 +42,7 @@ def list_topics(
     user: dict = Depends(get_current_user),
 ):
     """List all topics with tags, post count, and unread count."""
-    topics = db.query(Topic).order_by(Topic.position, Topic.name).all()
+    topics = db.query(Topic).order_by(Topic.name).all()
 
     result = []
     for topic in topics:

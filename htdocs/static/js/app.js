@@ -56,7 +56,7 @@ function app() {
         // Settings
         showSettings: false,
         settingsTab: 'categories',
-        settingsAccordion: { appearance: true, ai: false, data: false, interface: false }, // Accordion open state
+        settingsAccordion: { appearance: true, ai: false, data: false, interface: false, tagMerge: false }, // Accordion open state
         newCategoryName: '',
         newFeed: { url: '', category_id: '' },
         editingCategory: null,
@@ -69,6 +69,20 @@ function app() {
         suggestingTopics: false, // Loading state for AI suggestion
         editingTopic: null, // Topic being edited in settings
         newTopicName: '', // New topic name input
+
+        // Tag consolidation (merge + purge)
+        mergeOffset: 0,
+        mergeBatchSize: 100,
+        mergeGroups: [],      // [{canonical, merge: [...], selected: true}]
+        mergeTotalTags: 0,
+        mergeSuggesting: false,
+        mergeApplying: false,
+        purgeMaxCount: 1,
+        purgeBreakdowns: [],  // [{max_count, tag_count}]
+        purgeTotalTags: 0,
+        purgeSample: [],      // [{tag, count}]
+        purgeLoading: false,
+        purgingTags: false,
 
 
         // Health
@@ -297,6 +311,149 @@ function app() {
                 this.ignoredTags = new Set(this.ignoredTags);
             } catch (e) {
                 console.warn('Failed to toggle ignored tag:', e);
+            }
+        },
+
+        // --- Tag Consolidation (purge + merge) ---
+
+        async previewRareTags() {
+            this.purgeLoading = true;
+            try {
+                const data = await this.fetchApi(`/tags/rare-preview?max_count=${this.purgeMaxCount}`);
+                this.purgeBreakdowns = data.breakdowns || [];
+                this.purgeTotalTags = data.total_tags;
+                this.purgeSample = data.sample || [];
+            } catch (e) {
+                this.showToast(e.message || this.t('errors.requestFailed'), 'error');
+            } finally {
+                this.purgeLoading = false;
+            }
+        },
+
+        async purgeRareTags() {
+            const count = this.purgeBreakdowns[this.purgeMaxCount - 1]?.tag_count || 0;
+            if (!count) return;
+            if (!await this.showConfirm(
+                this.t('settings.tagMerge.purgeConfirm')
+                    .replace('{count}', count)
+                    .replace('{threshold}', this.purgeMaxCount)
+            )) return;
+
+            this.confirmLoading(this.t('settings.tagMerge.purgeStarting'));
+
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+
+                const response = await fetch(`${API_BASE}/tags/purge-rare`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ max_count: this.purgeMaxCount }),
+                });
+
+                if (response.status === 401) { this.logout(); return; }
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.detail || this.t('errors.requestFailed'));
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let result = null;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    while (buffer.includes('\n')) {
+                        const nl = buffer.indexOf('\n');
+                        const line = buffer.slice(0, nl);
+                        buffer = buffer.slice(nl + 1);
+                        if (!line.trim()) continue;
+                        const event = JSON.parse(line);
+                        if (event.type === 'progress') {
+                            this.confirmLoading(
+                                this.t('settings.tagMerge.purgeProgress')
+                                    .replace('{deleted}', event.deleted)
+                                    .replace('{total}', event.total)
+                            );
+                        } else if (event.type === 'done') {
+                            result = event;
+                        }
+                    }
+                }
+
+                this.confirmDone();
+                if (result) {
+                    this.showToast(
+                        this.t('settings.tagMerge.purgeSuccess')
+                            .replace('{tags}', result.tags_removed)
+                            .replace('{rows}', result.rows_deleted),
+                        'success'
+                    );
+                }
+                await this.previewRareTags();
+            } catch (e) {
+                this.confirmDone();
+                this.showToast(e.message || this.t('errors.requestFailed'), 'error');
+            }
+        },
+
+        async suggestTagMerges() {
+            this.mergeSuggesting = true;
+            try {
+                const data = await this.fetchApi('/tags/suggest-merges', {
+                    method: 'POST',
+                    body: JSON.stringify({ offset: this.mergeOffset, batch_size: this.mergeBatchSize }),
+                });
+                this.mergeTotalTags = data.total_tags;
+                this.mergeGroups = (data.groups || []).map(g => ({
+                    canonical: g.canonical,
+                    merge: [...g.merge],
+                    selected: true,
+                }));
+                if (this.mergeGroups.length === 0) {
+                    this.showToast(this.t('settings.tagMerge.noGroups'), 'info');
+                }
+            } catch (e) {
+                this.showToast(e.message || this.t('errors.requestFailed'), 'error');
+            } finally {
+                this.mergeSuggesting = false;
+            }
+        },
+
+        async applyTagMerges() {
+            const selected = this.mergeGroups.filter(g => g.selected && g.merge.length > 0);
+            if (selected.length === 0) return;
+            this.mergeApplying = true;
+            try {
+                const data = await this.fetchApi('/tags/apply-merges', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        merges: selected.map(g => ({ canonical: g.canonical, merge: g.merge })),
+                    }),
+                });
+                const msg = this.t('settings.tagMerge.success')
+                    .replace('{merged}', data.tags_merged)
+                    .replace('{posts}', data.posts_affected);
+                this.showToast(msg, 'success');
+                // Remove applied groups, advance offset
+                this.mergeGroups = this.mergeGroups.filter(g => !g.selected);
+                if (this.mergeGroups.length === 0) {
+                    this.mergeOffset += this.mergeBatchSize;
+                }
+            } catch (e) {
+                this.showToast(e.message || this.t('errors.requestFailed'), 'error');
+            } finally {
+                this.mergeApplying = false;
+                // Guard: keep settings open so user can continue with next batch
+                this.$nextTick(() => {
+                    if (!this.showSettings) {
+                        this.showSettings = true;
+                        history.pushState({ modal: 'settings' }, '');
+                    }
+                });
             }
         },
 

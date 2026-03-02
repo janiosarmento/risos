@@ -1,8 +1,43 @@
 """Prompt construction for the Cerebras client."""
 
+import logging
+import time
 from datetime import datetime
+from typing import List, Optional
 
 from app.config import load_prompts, settings
+
+logger = logging.getLogger(__name__)
+
+# In-memory cache for popular tags
+_popular_tags_cache: Optional[List[str]] = None
+_popular_tags_cache_time: float = 0
+_POPULAR_TAGS_TTL = 3600  # 1 hour
+
+
+def _get_popular_tags(db, limit: int = 200) -> List[str]:
+    """Return the most frequent tags, cached in memory for 1 hour."""
+    global _popular_tags_cache, _popular_tags_cache_time
+
+    now = time.monotonic()
+    if _popular_tags_cache is not None and (now - _popular_tags_cache_time) < _POPULAR_TAGS_TTL:
+        return _popular_tags_cache
+
+    from sqlalchemy import func
+    from app.models import PostTag
+
+    rows = (
+        db.query(PostTag.tag)
+        .group_by(PostTag.tag)
+        .order_by(func.count(PostTag.post_id).desc())
+        .limit(limit)
+        .all()
+    )
+    tags = [row.tag for row in rows]
+    _popular_tags_cache = tags
+    _popular_tags_cache_time = now
+    logger.info("Refreshed popular tags cache: %d tags", len(tags))
+    return tags
 
 
 def get_system_prompt(db=None) -> str:
@@ -47,5 +82,16 @@ def get_user_prompt(content: str, title: str = "", language: str = None, db=None
         "(e.g. \"open-source\", \"artificial-intelligence\"). "
         "NEVER use tags in other languages."
     )
+
+    # Inject popular existing tags to encourage reuse
+    if db:
+        popular = _get_popular_tags(db)
+        if popular:
+            tags_str = ", ".join(popular)
+            prompt += (
+                "\n\nPREFERRED TAGS — reuse these when they fit the article's topics "
+                "(only create a new tag if none of these adequately describe a topic):\n"
+                f"{tags_str}"
+            )
 
     return prompt
