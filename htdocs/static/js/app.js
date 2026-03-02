@@ -551,18 +551,11 @@ function app() {
                 for (const item of (data.analysis?.keep_if_interested || [])) {
                     map[item.post_id] = { classification: 'keep_if_interested', reason: item.reason || '' };
                 }
-                // Tag visible posts not classified by AI as unclassified
-                for (const post of this.posts) {
-                    if (post.is_starred && !map[post.id]) {
-                        map[post.id] = { classification: 'unclassified', reason: this.t('curation.unclassifiedReason') };
-                    }
-                }
                 // Compute stats from final map (avoids double-counting if AI duplicates a post)
-                const stats = { essential: 0, situational: 0, redundant: 0, unclassified: 0 };
+                const stats = { essential: 0, situational: 0, redundant: 0, total: data.total_posts || 0 };
                 for (const info of Object.values(map)) {
                     if (info.classification === 'essential') stats.essential++;
                     else if (info.classification === 'redundant') stats.redundant++;
-                    else if (info.classification === 'unclassified') stats.unclassified++;
                     else stats.situational++;
                 }
                 this.curationResults = map;
