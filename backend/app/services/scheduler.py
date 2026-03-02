@@ -291,7 +291,7 @@ class Scheduler:
                 db.query(Post)
                 .filter(
                     Post.content_hash.isnot(None),
-                    or_(Post.is_read == False, Post.is_favorite == True),  # noqa: E712
+                    or_(Post.is_read == False, Post.is_starred == True),  # noqa: E712
                     ~Post.content_hash.in_(db.query(SummaryQueue.content_hash)),
                     ~Post.content_hash.in_(db.query(AISummary.content_hash)),
                 )
@@ -632,7 +632,7 @@ class Scheduler:
 
                     # Skip already read posts (not worth spending API on them)
                     # But always generate for favorites (needed for tags/suggestions)
-                    if post.is_read and not post.is_favorite:
+                    if post.is_read and not post.is_starred:
                         db.query(SummaryQueue).filter(
                             SummaryQueue.id == candidate.id
                         ).delete()
