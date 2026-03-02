@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260301p';</script>
+    <script>var APP_VERSION = '20260302a';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -661,6 +661,9 @@
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
                                     <span>✗</span> <span x-text="curationStats.redundant"></span>
                                 </span>
+                                <span x-show="curationStats.unclassified > 0" class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                                    <span>…</span> <span x-text="curationStats.unclassified"></span>
+                                </span>
                                 <span class="text-gray-400 dark:text-gray-500">|</span>
                                 <button
                                     @click="selectRedundantPosts()"
@@ -785,10 +788,11 @@
                                                 :class="{
                                                     'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': getCurationBadge(post.id)?.classification === 'essential',
                                                     'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': getCurationBadge(post.id)?.classification === 'redundant',
-                                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': getCurationBadge(post.id)?.classification === 'keep_if_interested'
+                                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': getCurationBadge(post.id)?.classification === 'keep_if_interested',
+                                                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300': getCurationBadge(post.id)?.classification === 'unclassified'
                                                 }"
                                                 :title="getCurationBadge(post.id)?.reason"
-                                                x-text="getCurationBadge(post.id)?.classification === 'essential' ? '★ essential' : getCurationBadge(post.id)?.classification === 'redundant' ? '✗ redundant' : '? situational'"
+                                                x-text="getCurationBadge(post.id)?.classification === 'essential' ? '★ essential' : getCurationBadge(post.id)?.classification === 'redundant' ? '✗ redundant' : getCurationBadge(post.id)?.classification === 'unclassified' ? '… missed' : '? situational'"
                                             ></span>
                                             <span x-text="getFeedTitle(post.feed_id)"></span>
                                             <span>-</span>

@@ -192,7 +192,8 @@
     "archiveSelected": "Archive selected",
     "archiveConfirm": "Unstar the selected posts? They will remain in the database but leave the starred list.",
     "clear": "Clear curation",
-    "tooManyPosts": "You have {count} starred posts in this view. AI curation works best with up to 50 posts — try filtering by feed or topic first for better results. Continue anyway?"
+    "tooManyPosts": "You have {count} starred posts in this view. AI curation works best with up to 50 posts — try filtering by feed or topic first for better results. Continue anyway?",
+    "unclassifiedReason": "Not analyzed by AI — may have been skipped due to list size"
   },
   "categories": {
     "newPlaceholder": "New category name",

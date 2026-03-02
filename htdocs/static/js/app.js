@@ -51,7 +51,7 @@ function app() {
         topicsExpanded: localStorage.getItem('rss_topics_expanded') === '1', // Sidebar "Topics" section
         curationResults: null, // { post_id: { classification, reason } }
         curationSummary: '', // AI summary text
-        curationStats: { essential: 0, situational: 0, redundant: 0 },
+        curationStats: { essential: 0, situational: 0, redundant: 0, unclassified: 0 },
         curatingPosts: false, // Loading state for curation
 
         // Settings
@@ -554,6 +554,13 @@ function app() {
                 for (const item of (data.analysis?.keep_if_interested || [])) {
                     map[item.post_id] = { classification: 'keep_if_interested', reason: item.reason || '' };
                     stats.situational++;
+                }
+                // Tag visible posts not classified by AI as unclassified
+                for (const post of this.posts) {
+                    if (post.is_starred && !map[post.id]) {
+                        map[post.id] = { classification: 'unclassified', reason: this.t('curation.unclassifiedReason') };
+                        stats.unclassified = (stats.unclassified || 0) + 1;
+                    }
                 }
                 this.curationResults = map;
                 this.curationSummary = data.summary || '';
