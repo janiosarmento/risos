@@ -1039,7 +1039,7 @@ async def curate_starred(
         "You are a knowledge management assistant helping curate a personal library of saved articles. "
         "Your job is to identify which articles are essential references, which are redundant, "
         "and which are situational. Be specific about WHY each article is essential or redundant. "
-        f"IMPORTANT: All 'reason' fields and the 'summary' field MUST be written in {language}."
+        f"IMPORTANT: All 'reason' fields MUST be written in {language}."
     )
 
     user_prompt = f"""The user has {len(posts)} starred articles in the topic "{context_name}".
@@ -1070,7 +1070,6 @@ Respond in JSON:
     {{"post_id": 321, "reason": "..."}},
     ...
   ],
-  "summary": "Brief overall assessment"
 }}"""
 
     result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192)
@@ -1091,7 +1090,6 @@ Respond in JSON:
             "redundant": result.get("redundant", []),
             "keep_if_interested": result.get("keep_if_interested", []),
         },
-        "summary": result.get("summary", ""),
     }
 
 

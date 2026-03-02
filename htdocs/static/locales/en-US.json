@@ -193,6 +193,7 @@
     "archiveConfirm": "Unstar the selected posts? They will remain in the database but leave the starred list.",
     "clear": "Clear curation",
     "tooManyPosts": "You have {count} starred posts in this view. AI curation works best with up to 50 posts — try filtering by feed or topic first for better results. Continue anyway?",
+    "disclaimer": "Badges are AI estimates — hover for details. Use your own judgment when archiving.",
     "unclassifiedReason": "Not analyzed by AI — may have been skipped due to list size"
   },
   "categories": {

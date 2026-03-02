@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260302e';</script>
+    <script>var APP_VERSION = '20260302f';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -646,21 +646,22 @@
                         </div>
                         <!-- Curation results panel -->
                         <div x-show="curationResults" class="mt-2 space-y-2">
-                            <!-- Summary -->
-                            <div x-show="curationSummary" class="p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded text-xs text-purple-800 dark:text-purple-200">
-                                <p x-text="curationSummary"></p>
-                            </div>
+                            <!-- Disclaimer -->
+                            <p class="text-[11px] text-gray-400 dark:text-gray-500 italic" x-text="t('curation.disclaimer')"></p>
                             <!-- Stats + actions -->
                             <div class="flex flex-wrap items-center gap-2 text-xs">
                                 <span class="text-gray-500 dark:text-gray-400" x-text="curationStats.total + ' posts →'"></span>
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
-                                    <span>★</span> <span x-text="'~' + curationStats.essential"></span>
+                                    <span>★</span> <span x-text="curationStats.essential"></span>
                                 </span>
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded">
-                                    <span>?</span> <span x-text="'~' + curationStats.situational"></span>
+                                    <span>?</span> <span x-text="curationStats.situational"></span>
                                 </span>
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
-                                    <span>✗</span> <span x-text="'~' + curationStats.redundant"></span>
+                                    <span>✗</span> <span x-text="curationStats.redundant"></span>
+                                </span>
+                                <span x-show="curationStats.unclassified > 0" class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-400 rounded" :title="t('curation.unclassifiedReason')">
+                                    <span>—</span> <span x-text="curationStats.unclassified"></span>
                                 </span>
                                 <span class="text-gray-400 dark:text-gray-500">|</span>
                                 <button

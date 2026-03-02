@@ -445,11 +445,13 @@ journalctl -u rss-reader -f
 - Respects current view context: filters by feed, category, topic, or tag
 - Three classifications: essential (green), redundant (red), situational (yellow)
 - Inline badges on posts with hover-to-see-reason
-- Persistent summary panel with stats (replaces ephemeral toast)
+- Persistent stats panel with disclaimer (no AI-generated summary — AI can't do math reliably)
+- Stats computed client-side from actual badges assigned to posts (always accurate)
+- Unclassified posts (missed by AI) shown as gray badge; sum always equals total
 - User manually selects posts to archive (badges are advisory, not prescriptive)
 - "Download selected" exports as ZIP of markdown (backup before archiving)
 - "Archive selected" batch-unstars with confirmation dialog
-- All AI output (reasons, summary) respects user's summary language preference
+- AI classification reasons respect user's summary language preference
 - Post limits: soft warning at 50 posts (`CURATION_WARN_THRESHOLD` in app.js), hard limit at 100 (`CURATION_MAX_POSTS` in posts.py) — beyond this, prompt exceeds model context window
 - Curation results auto-clear when switching feed, category, topic, or tag
 
@@ -676,7 +678,7 @@ git push
 
 ---
 
-*Last updated: 2026-03-01 (Topics, AI Curation, sparkles icon, curation limits)*
+*Last updated: 2026-03-02 (Topics, AI Curation, sparkles icon, curation limits, client-side stats)*
 
 ---
 

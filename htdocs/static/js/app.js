@@ -50,7 +50,6 @@ function app() {
         selectedTopicId: null, // Currently active topic filter
         topicsExpanded: localStorage.getItem('rss_topics_expanded') === '1', // Sidebar "Topics" section
         curationResults: null, // { post_id: { classification, reason } }
-        curationSummary: '', // AI summary text
         curationStats: { essential: 0, situational: 0, redundant: 0, unclassified: 0 },
         curatingPosts: false, // Loading state for curation
 
@@ -528,8 +527,8 @@ function app() {
             }
             this.curatingPosts = true;
             this.curationResults = null;
-            this.curationSummary = '';
-            this.curationStats = { essential: 0, situational: 0, redundant: 0 };
+
+            this.curationStats = { essential: 0, situational: 0, redundant: 0, unclassified: 0 };
             try {
                 const body = {};
                 if (this.selectedTopicId) body.topic_id = this.selectedTopicId;
@@ -552,14 +551,15 @@ function app() {
                     map[item.post_id] = { classification: 'keep_if_interested', reason: item.reason || '' };
                 }
                 // Compute stats from final map (avoids double-counting if AI duplicates a post)
-                const stats = { essential: 0, situational: 0, redundant: 0, total: data.total_posts || 0 };
+                const stats = { essential: 0, situational: 0, redundant: 0, unclassified: 0, total: data.total_posts || 0 };
                 for (const info of Object.values(map)) {
                     if (info.classification === 'essential') stats.essential++;
                     else if (info.classification === 'redundant') stats.redundant++;
                     else stats.situational++;
                 }
+                const classified = stats.essential + stats.situational + stats.redundant;
+                stats.unclassified = Math.max(0, stats.total - classified);
                 this.curationResults = map;
-                this.curationSummary = data.summary || '';
                 this.curationStats = stats;
             } catch (e) {
                 this.showToast(e.message, 'error');
@@ -641,8 +641,8 @@ function app() {
         // Clear curation results
         clearCuration() {
             this.curationResults = null;
-            this.curationSummary = '';
-            this.curationStats = { essential: 0, situational: 0, redundant: 0 };
+
+            this.curationStats = { essential: 0, situational: 0, redundant: 0, unclassified: 0 };
         },
 
         // Check if a tag is in the user's profile (matched)
