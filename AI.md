@@ -154,16 +154,17 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── auth.py             # Login/logout
 │   │   │   ├── categories.py       # CRUD for categories
 │   │   │   ├── feeds.py            # CRUD + refresh + OPML
-│   │   │   ├── posts.py            # List/read posts, mark read, skip summary, export starred, tag filter
+│   │   │   ├── posts.py            # List/read posts, mark read, skip summary, export starred, tag/topic filter, curation, batch-unstar
 │   │   │   ├── preferences.py      # User preferences API
 │   │   │   ├── suggestions.py      # Suggestion system admin endpoints
 │   │   │   ├── tags.py             # Tag management: popular tags + ignored tags API
+│   │   │   ├── topics.py           # Topics CRUD, AI topic suggestion
 │   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
 │   │       ├── cerebras/            # AI client package
 │   │       │   ├── __init__.py      # Public API exports
-│   │       │   ├── _api.py          # generate_summary, model fallback
+│   │       │   ├── _api.py          # generate_summary, call_llm_json, model fallback
 │   │       │   ├── _types.py        # SummaryResult, error classes, GarbageContentError
 │   │       │   ├── _infrastructure.py # CircuitBreaker, APIKeyRotator
 │   │       │   ├── _constants.py    # Shared constants
@@ -428,6 +429,28 @@ journalctl -u rss-reader -f
 - Ignored tags — user can click any tag to exclude it from scoring and profile
 - Hourly automatic processing + manual regeneration
 
+### Topics
+- Named groups of tags for organizing content (e.g., "Self-Hosting", "Machine Learning")
+- Full CRUD: create, rename, delete, reorder
+- Add/remove tags from topics (manual or AI-assisted)
+- AI topic suggestion: analyzes top 150 unassigned tags and proposes 5-12 groupings
+- Per-topic AI tag suggestion: suggests which unassigned tags fit a specific topic
+- Sidebar section with unread count badges; click to filter posts by topic
+- Topic filter: OR across topic tags, composes with starred/unread/feed filters
+- Topic and tag filters are mutually exclusive
+- "Add tag to topic" shortcut from tag filter indicator
+
+### Curation
+- AI-powered analysis of starred posts to identify essential vs redundant articles
+- Can analyze all starred posts or filter by topic
+- Three classifications: essential (green), redundant (red), situational (yellow)
+- Inline badges on posts with hover-to-see-reason
+- Persistent summary panel with stats (replaces ephemeral toast)
+- "Select redundant" auto-selects red-classified posts
+- "Download selected" exports as ZIP of markdown (backup before archiving)
+- "Archive selected" batch-unstars with confirmation dialog
+- All AI output (reasons, summary) respects user's summary language preference
+
 ### UI/UX
 - Fullscreen modal or split-view reading modes
 - Resizable split view (20-80% ratio)
@@ -437,7 +460,8 @@ journalctl -u rss-reader -f
 - Blocked post indicator — red left border on posts matching blocked terms
 - Split dropdown "Mark as read" — option to dismiss all or only blocked posts
 - Date separators in post list (visual grouping by relative date)
-- Mobile responsive
+- Mobile responsive (Top Tags, Topics, post tags, and Curate hidden on mobile for cleaner UX)
+- Login screen mobile hint for desktop/tablet recommendation
 - Bilingual (EN/PT)
 
 ### Settings
@@ -446,6 +470,7 @@ journalctl -u rss-reader -f
 - Data retention (posts per feed, age limits)
 - Toast notification duration
 - Auto-refresh interval
+- Topics management tab (CRUD + AI suggestions)
 
 ---
 
@@ -575,6 +600,12 @@ post_tags (id, post_id, tag, created_at)
 -- Ignored Tags (user-excluded from suggestion scoring)
 ignored_tags (id, tag, created_at)
 
+-- Topics (named tag groups)
+topics (id, name, position, created_at)
+
+-- Topic Tags (many-to-many: topic <-> tag)
+topic_tags (topic_id, tag)  -- composite PK
+
 -- Settings (key-value store)
 app_settings (key, value, updated_at)
 
@@ -643,7 +674,7 @@ git push
 
 ---
 
-*Last updated: 2026-02-27 (blocked terms, unified cache buster)*
+*Last updated: 2026-03-01 (Topics, AI Curation, mobile cleanup)*
 
 ---
 

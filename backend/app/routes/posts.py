@@ -10,10 +10,11 @@ import re
 import unicodedata
 import zipfile
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 from starlette.responses import Response
 from sqlalchemy import func
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Session, joinedload, subqueryload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Post, Feed, Category, AISummary, PostTag, SummaryQueue
+from app.models import Post, Feed, Category, AISummary, PostTag, SummaryQueue, TopicTag
 from app.schemas import (
     PostResponse,
     PostDetail,
@@ -127,6 +128,7 @@ def list_posts(
     feed_id: Optional[int] = Query(None, description="Filter by feed"),
     category_id: Optional[int] = Query(None, description="Filter by category"),
     tag: Optional[str] = Query(None, description="Filter by tag"),
+    topic_id: Optional[int] = Query(None, description="Filter by topic (OR across topic tags)"),
     unread_only: bool = Query(False, description="Only unread"),
     starred_only: bool = Query(False, description="Only starred"),
     suggested_only: bool = Query(False, description="Only AI-suggested"),
@@ -145,8 +147,18 @@ def list_posts(
     # Track which feeds to return unread counts for
     relevant_feed_ids = set()
 
-    # Apply tag filter (composable with feed/category)
-    if tag:
+    # Apply topic or tag filter (mutually exclusive; topic_id takes precedence)
+    if topic_id is not None:
+        topic_tags = [
+            row.tag
+            for row in db.query(TopicTag.tag).filter(TopicTag.topic_id == topic_id).all()
+        ]
+        if topic_tags:
+            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
+        else:
+            # Empty topic — no posts match
+            query = query.filter(Post.id == -1)
+    elif tag:
         query = query.join(PostTag).filter(PostTag.tag == tag.strip().lower())
 
     # Apply feed/category filter first
@@ -212,7 +224,11 @@ def list_posts(
                 feed_unread_counts[fid] = 0
 
     # Get starred count for current context
-    starred_query = db.query(func.count(Post.id)).filter(Post.is_starred == True)
+    starred_query = db.query(func.count(func.distinct(Post.id))).filter(Post.is_starred == True)
+    if topic_id is not None and topic_tags:
+        starred_query = starred_query.join(PostTag).filter(PostTag.tag.in_(topic_tags))
+    elif tag:
+        starred_query = starred_query.join(PostTag).filter(PostTag.tag == tag.strip().lower())
     if feed_id is not None:
         starred_query = starred_query.filter(Post.feed_id == feed_id)
     elif category_id is not None:
@@ -923,3 +939,203 @@ def toggle_skip_summary(
         db.commit()
 
     return {"post_id": post_id, "skip_summary": post.skip_summary}
+
+
+class BatchUnstarRequest(BaseModel):
+    post_ids: List[int]
+
+
+class CurateRequest(BaseModel):
+    topic_id: Optional[int] = None
+
+
+class ExportSelectionRequest(BaseModel):
+    post_ids: List[int]
+
+
+@router.post("/curate")
+async def curate_starred(
+    body: CurateRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Analyze starred posts with AI to identify essential vs redundant."""
+    from app.services.cerebras._api import call_llm_json
+    from app.routes.preferences import get_effective_summary_language
+
+    language = get_effective_summary_language(db)
+
+    query = (
+        db.query(Post)
+        .filter(Post.is_starred == True)  # noqa: E712
+        .options(subqueryload(Post.tags), joinedload(Post.feed))
+    )
+
+    topic_name = "All Starred"
+    if body.topic_id is not None:
+        topic_tags = [
+            row.tag
+            for row in db.query(TopicTag.tag).filter(TopicTag.topic_id == body.topic_id).all()
+        ]
+        if topic_tags:
+            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
+            from app.models import Topic as TopicModel
+            topic = db.query(TopicModel).filter(TopicModel.id == body.topic_id).first()
+            if topic:
+                topic_name = topic.name
+
+    posts = query.order_by(Post.starred_at.desc()).all()
+
+    if not posts:
+        return {"topic": topic_name, "total_posts": 0, "analysis": {"essential": [], "redundant": [], "keep_if_interested": []}, "summary": "No starred posts found."}
+
+    # Fetch summaries
+    content_hashes = [p.content_hash for p in posts if p.content_hash]
+    summaries_map = {}
+    if content_hashes:
+        summaries = db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
+        summaries_map = {s.content_hash: s for s in summaries}
+
+    # Build post list for LLM
+    posts_text = []
+    for p in posts:
+        summary = summaries_map.get(p.content_hash) if p.content_hash else None
+        one_line = summary.one_line_summary if summary else (p.content[:100] if p.content else "No summary")
+        tags = ", ".join(t.tag for t in p.tags)
+        posts_text.append(f"- ID: {p.id} | Title: {p.title} | Summary: {one_line} | Tags: {tags}")
+
+    posts_with_summaries = "\n".join(posts_text)
+
+    system_prompt = (
+        "You are a knowledge management assistant helping curate a personal library of saved articles. "
+        "Your job is to identify which articles are essential references, which are redundant, "
+        "and which are situational. Be specific about WHY each article is essential or redundant. "
+        f"IMPORTANT: All 'reason' fields and the 'summary' field MUST be written in {language}."
+    )
+
+    user_prompt = f"""The user has {len(posts)} starred articles in the topic "{topic_name}".
+They want to reduce their starred articles to only the most valuable ones.
+
+Here are the articles (with AI-generated summaries):
+
+{posts_with_summaries}
+
+Analyze these articles and classify each one:
+- "essential": Must-keep reference — unique information, comprehensive coverage, or foundational
+- "redundant": Information is mostly covered by other articles in this set. Specify which ones.
+- "keep_if_interested": Niche or situational — valuable only for specific use cases
+
+For each article, explain your reasoning in one sentence.
+
+Respond in JSON:
+{{
+  "essential": [
+    {{"post_id": 123, "reason": "..."}},
+    ...
+  ],
+  "redundant": [
+    {{"post_id": 456, "reason": "...", "covered_by": [123, 789]}},
+    ...
+  ],
+  "keep_if_interested": [
+    {{"post_id": 321, "reason": "..."}},
+    ...
+  ],
+  "summary": "Brief overall assessment"
+}}"""
+
+    result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192)
+
+    # Enrich result with post titles
+    post_map = {p.id: p for p in posts}
+    for category in ["essential", "redundant", "keep_if_interested"]:
+        for item in result.get(category, []):
+            pid = item.get("post_id")
+            if pid and pid in post_map:
+                item["title"] = post_map[pid].title
+
+    return {
+        "topic": topic_name,
+        "total_posts": len(posts),
+        "analysis": {
+            "essential": result.get("essential", []),
+            "redundant": result.get("redundant", []),
+            "keep_if_interested": result.get("keep_if_interested", []),
+        },
+        "summary": result.get("summary", ""),
+    }
+
+
+@router.post("/batch-unstar")
+def batch_unstar(
+    body: BatchUnstarRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Unstar multiple posts at once."""
+    if not body.post_ids:
+        return {"success": True, "count": 0}
+
+    count = (
+        db.query(Post)
+        .filter(Post.id.in_(body.post_ids), Post.is_starred == True)  # noqa: E712
+        .update({"is_starred": False, "starred_at": None}, synchronize_session="fetch")
+    )
+    db.commit()
+
+    return {"success": True, "count": count}
+
+
+@router.post("/export-selection")
+def export_selection(
+    body: ExportSelectionRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Export selected posts as a ZIP of markdown files."""
+    if not body.post_ids:
+        raise HTTPException(status_code=400, detail="No posts selected")
+
+    posts = (
+        db.query(Post)
+        .filter(Post.id.in_(body.post_ids))
+        .options(joinedload(Post.feed), subqueryload(Post.tags))
+        .order_by(Post.sort_date.desc())
+        .all()
+    )
+
+    if not posts:
+        raise HTTPException(status_code=404, detail="No posts found")
+
+    # Fetch summaries
+    content_hashes = [p.content_hash for p in posts if p.content_hash]
+    summaries_map = {}
+    if content_hashes:
+        summaries = db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
+        summaries_map = {s.content_hash: s for s in summaries}
+
+    # Build ZIP
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for post in posts:
+            summary = summaries_map.get(post.content_hash) if post.content_hash else None
+            md_content = _post_to_markdown(post, summary)
+
+            slug = _slugify(post.title or "untitled")
+            short_hash = hashlib.md5(str(post.id).encode()).hexdigest()[:6]
+            filename = f"{slug}-{short_hash}.md"
+
+            folder = _slugify(post.feed.title) if post.feed else "unknown"
+            filepath = f"{folder}/{filename}"
+
+            zf.writestr(filepath, md_content)
+
+    zip_bytes = buf.getvalue()
+    today = datetime.utcnow().strftime("%Y%m%d")
+    zip_filename = f"selection-{today}.zip"
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
+    )

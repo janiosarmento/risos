@@ -26,12 +26,14 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Multi-language UI** — English and Portuguese
 - **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
 - **Tag Navigation** — Filter posts by clicking tags in the post list; collapsible "Top Tags" sidebar section; tag filter composes with feed/category views
+- **Topics** — Named groups of tags for content organization (e.g., "Self-Hosting", "Machine Learning"); AI-assisted topic creation from popular tags; per-topic AI tag suggestions; sidebar filtering by topic with unread badges
+- **AI Curation** — Analyze starred posts to identify essential vs redundant articles; inline color-coded badges with reasons; persistent summary panel with stats; batch archive with ZIP export safety net; respects user's summary language
 - **Blocked Terms** — Define terms to flag noisy posts with a visual indicator; bulk-dismiss with one click
 - **Skip Summary Indicator** — Posts marked to skip AI summary show a visual icon in the list
 - **Configurable Settings** — AI model, data retention, interface behavior
 - **Export Starred Posts** — Download starred posts as a ZIP of individual markdown files (grouped by feed)
 - **OPML Import/Export** — Migrate from other readers
-- **Mobile Friendly** — Responsive design with password peek on login
+- **Mobile Friendly** — Responsive design with streamlined mobile interface (advanced features like Topics and Curation available on desktop/tablet)
 
 ## Screenshots
 

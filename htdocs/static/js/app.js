@@ -45,6 +45,13 @@ function app() {
         tagFilterCount: 0, // Total posts matching current tag filter
         popularTags: [], // [{tag, count}] loaded from /api/tags/popular
         topTagsExpanded: localStorage.getItem('rss_top_tags_expanded') === '1', // Sidebar "Top Tags" section
+        topics: [], // [{id, name, tags, post_count, unread_count}]
+        selectedTopicId: null, // Currently active topic filter
+        topicsExpanded: localStorage.getItem('rss_topics_expanded') === '1', // Sidebar "Topics" section
+        curationResults: null, // { post_id: { classification, reason } }
+        curationSummary: '', // AI summary text
+        curationStats: { essential: 0, situational: 0, redundant: 0 },
+        curatingPosts: false, // Loading state for curation
 
         // Settings
         showSettings: false,
@@ -58,6 +65,11 @@ function app() {
         savingFeed: false,
         importingOpml: false,
         opmlResult: null,
+        topicSuggestions: null, // AI-suggested topics for review
+        suggestingTopics: false, // Loading state for AI suggestion
+        editingTopic: null, // Topic being edited in settings
+        newTopicName: '', // New topic name input
+        newTopicTagInput: '', // Tag input for adding tags to topic
 
         // Health
         healthWarning: null,
@@ -292,10 +304,10 @@ function app() {
         filterByTag(tag) {
             const normalized = tag.toLowerCase();
             if (this.tagFilter === normalized) {
-                // Clicking same tag clears filter
                 this.tagFilter = null;
             } else {
                 this.tagFilter = normalized;
+                this.selectedTopicId = null; // Mutually exclusive with topic filter
             }
             this.loadPosts(true);
         },
@@ -323,6 +335,300 @@ function app() {
             } catch (e) {
                 console.warn('Failed to load popular tags:', e);
             }
+        },
+
+        // Toggle Topics sidebar section and load on first expand
+        async toggleTopics() {
+            this.topicsExpanded = !this.topicsExpanded;
+            localStorage.setItem('rss_topics_expanded', this.topicsExpanded ? '1' : '0');
+            if (this.topicsExpanded && this.topics.length === 0) {
+                await this.loadTopics();
+            }
+        },
+
+        // Load topics from server
+        async loadTopics() {
+            try {
+                const data = await this.fetchApi('/topics');
+                this.topics = data || [];
+            } catch (e) {
+                console.warn('Failed to load topics:', e);
+            }
+        },
+
+        // Select a topic to filter posts
+        selectTopic(topicId) {
+            if (this.selectedTopicId === topicId) {
+                this.selectedTopicId = null;
+            } else {
+                this.selectedTopicId = topicId;
+                this.tagFilter = null; // Mutually exclusive with tag filter
+            }
+            this.loadPosts(true);
+        },
+
+        // Clear topic filter
+        clearTopicFilter() {
+            this.selectedTopicId = null;
+            this.loadPosts(true);
+        },
+
+        // Get current topic name for display
+        getSelectedTopicName() {
+            const topic = this.topics.find(t => t.id === this.selectedTopicId);
+            return topic ? topic.name : '';
+        },
+
+        // Create a new topic
+        async createTopic(name, tags = []) {
+            try {
+                const result = await this.fetchApi('/topics', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, tags }),
+                });
+                await this.loadTopics();
+                return result;
+            } catch (e) {
+                this.showToast(e.message, 'error');
+                return null;
+            }
+        },
+
+        // Delete a topic
+        async deleteTopic(topicId) {
+            const topic = this.topics.find(t => t.id === topicId);
+            const name = topic ? topic.name : 'this topic';
+            if (!await this.showConfirm(this.t('settings.topics.deleteConfirm').replace('{name}', name))) return;
+
+            this.confirmLoading(this.t('confirm.deleting'));
+            try {
+                await this.fetchApi(`/topics/${topicId}`, { method: 'DELETE' });
+                if (this.selectedTopicId === topicId) {
+                    this.selectedTopicId = null;
+                }
+                await this.loadTopics();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.confirmDone();
+            }
+        },
+
+        // Update topic name or position
+        async updateTopic(topicId, data) {
+            try {
+                await this.fetchApi(`/topics/${topicId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(data),
+                });
+                await this.loadTopics();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        // Add tags to a topic
+        async addTagsToTopic(topicId, tags) {
+            try {
+                await this.fetchApi(`/topics/${topicId}/tags`, {
+                    method: 'POST',
+                    body: JSON.stringify({ tags }),
+                });
+                await this.loadTopics();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        // Remove a tag from a topic
+        async removeTagFromTopic(topicId, tag) {
+            try {
+                await this.fetchApi(`/topics/${topicId}/tags/${encodeURIComponent(tag)}`, {
+                    method: 'DELETE',
+                });
+                await this.loadTopics();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        // Request AI topic suggestions
+        async suggestTopics() {
+            this.suggestingTopics = true;
+            this.topicSuggestions = null;
+            try {
+                const data = await this.fetchApi('/topics/suggest', { method: 'POST' });
+                this.topicSuggestions = data;
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.suggestingTopics = false;
+            }
+        },
+
+        // Accept a single AI topic suggestion
+        async acceptTopicSuggestion(suggestion) {
+            const result = await this.createTopic(suggestion.name, suggestion.tags);
+            if (result) {
+                // Remove from suggestions list
+                this.topicSuggestions.suggestions = this.topicSuggestions.suggestions.filter(
+                    s => s.name !== suggestion.name
+                );
+                this.showToast(`Topic "${suggestion.name}" created`, 'success');
+            }
+        },
+
+        // Accept all AI topic suggestions
+        async acceptAllTopicSuggestions() {
+            if (!this.topicSuggestions?.suggestions?.length) return;
+            for (const suggestion of [...this.topicSuggestions.suggestions]) {
+                await this.createTopic(suggestion.name, suggestion.tags);
+            }
+            this.topicSuggestions = null;
+            this.showToast('All topics created', 'success');
+        },
+
+        // Suggest tags for a specific topic using AI
+        suggestingTagsForTopicId: null,
+        async suggestTagsForTopic(topicId) {
+            if (this.suggestingTagsForTopicId) return;
+            this.suggestingTagsForTopicId = topicId;
+            try {
+                const data = await this.fetchApi(`/topics/${topicId}/suggest-tags`, { method: 'POST' });
+                if (data.tags && data.tags.length > 0) {
+                    await this.addTagsToTopic(topicId, data.tags);
+                    const topic = this.topics.find(t => t.id === topicId);
+                    this.showToast(`${data.tags.length} tags added to "${topic?.name || 'topic'}"`, 'success');
+                } else {
+                    this.showToast('No matching tags found', 'info');
+                }
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.suggestingTagsForTopicId = null;
+            }
+        },
+
+        // Add current tag filter to an existing topic
+        async addTagFilterToTopic(topicId) {
+            if (!this.tagFilter) return;
+            await this.addTagsToTopic(topicId, [this.tagFilter]);
+            this.showToast(`Tag "${this.tagFilter}" added to topic`, 'success');
+        },
+
+        // Run AI curation on starred posts
+        async curatePosts() {
+            this.curatingPosts = true;
+            this.curationResults = null;
+            this.curationSummary = '';
+            this.curationStats = { essential: 0, situational: 0, redundant: 0 };
+            try {
+                const body = {};
+                if (this.selectedTopicId) body.topic_id = this.selectedTopicId;
+                const data = await this.fetchApi('/posts/curate', {
+                    method: 'POST',
+                    body: JSON.stringify(body),
+                });
+                // Build lookup map: post_id -> { classification, reason }
+                const map = {};
+                let stats = { essential: 0, situational: 0, redundant: 0 };
+                for (const item of (data.analysis?.essential || [])) {
+                    map[item.post_id] = { classification: 'essential', reason: item.reason || '' };
+                    stats.essential++;
+                }
+                for (const item of (data.analysis?.redundant || [])) {
+                    map[item.post_id] = { classification: 'redundant', reason: item.reason || '', covered_by: item.covered_by };
+                    stats.redundant++;
+                }
+                for (const item of (data.analysis?.keep_if_interested || [])) {
+                    map[item.post_id] = { classification: 'keep_if_interested', reason: item.reason || '' };
+                    stats.situational++;
+                }
+                this.curationResults = map;
+                this.curationSummary = data.summary || '';
+                this.curationStats = stats;
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.curatingPosts = false;
+            }
+        },
+
+        // Get curation badge for a post
+        getCurationBadge(postId) {
+            if (!this.curationResults) return null;
+            return this.curationResults[postId] || null;
+        },
+
+        // Select all redundant posts
+        selectRedundantPosts() {
+            if (!this.curationResults) return;
+            this.selectMode = true;
+            this.selectedPosts = new Set();
+            for (const [postId, info] of Object.entries(this.curationResults)) {
+                if (info.classification === 'redundant') {
+                    this.selectedPosts.add(parseInt(postId));
+                }
+            }
+            // Force reactivity
+            this.selectedPosts = new Set(this.selectedPosts);
+        },
+
+        // Batch unstar selected posts
+        async batchUnstar() {
+            const ids = [...this.selectedPosts];
+            if (!ids.length) return;
+            if (!await this.showConfirm(this.t('curation.archiveConfirm'))) return;
+            this.confirmLoading(this.t('confirm.deleting'));
+            try {
+                const data = await this.fetchApi('/posts/batch-unstar', {
+                    method: 'POST',
+                    body: JSON.stringify({ post_ids: ids }),
+                });
+                this.showToast(`${data.count} posts unstarred`, 'success');
+                this.selectedPosts = new Set();
+                this.selectMode = false;
+                this.curationResults = null;
+                this.loadPosts(true);
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.confirmDone();
+            }
+        },
+
+        // Export selected posts as ZIP
+        async exportSelection() {
+            const ids = [...this.selectedPosts];
+            if (!ids.length) return;
+            try {
+                const response = await fetch(`${API_BASE}/posts/export-selection`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ post_ids: ids }),
+                });
+                if (!response.ok) throw new Error('Export failed');
+                const disposition = response.headers.get('Content-Disposition');
+                const filename = disposition?.match(/filename="(.+)"/)?.[1] || 'selection.zip';
+                const blob = await response.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                this.showToast(e.message || 'Export failed', 'error');
+            }
+        },
+
+        // Clear curation results
+        clearCuration() {
+            this.curationResults = null;
+            this.curationSummary = '';
+            this.curationStats = { essential: 0, situational: 0, redundant: 0 };
         },
 
         // Check if a tag is in the user's profile (matched)
@@ -823,6 +1129,7 @@ function app() {
                 await this.syncPreferences();
                 this.loadIgnoredTags();
                 if (this.topTagsExpanded) this.loadPopularTags();
+                if (this.topicsExpanded) this.loadTopics();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -1095,6 +1402,7 @@ function app() {
                 await this.syncPreferences();
                 this.loadIgnoredTags();
                 if (this.topTagsExpanded) this.loadPopularTags();
+                if (this.topicsExpanded) this.loadTopics();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -1205,8 +1513,10 @@ function app() {
                     params.set('category_id', this.filterId);
                 }
 
-                // Apply tag filter (composable with feed/category)
-                if (this.tagFilter) {
+                // Apply topic or tag filter (mutually exclusive)
+                if (this.selectedTopicId) {
+                    params.set('topic_id', this.selectedTopicId);
+                } else if (this.tagFilter) {
                     params.set('tag', this.tagFilter);
                 }
 
@@ -1281,6 +1591,7 @@ function app() {
             this.filter = type;
             this.filterId = id;
             this.tagFilter = null; // Clear tag filter on navigation
+            this.selectedTopicId = null; // Clear topic filter on navigation
             this.sidebarOpen = false; // Close sidebar on mobile
 
             // Update lastFeedNavIndex for navigable filters (so [/] works after clicking)
@@ -1431,6 +1742,9 @@ function app() {
                         this.suggestedCount++;
                     }
                 }
+
+                // Refresh topic unread counts
+                if (this.topicsExpanded) this.loadTopics();
             } catch (error) {
                 console.error('Failed to mark post read:', error);
             }
@@ -1525,6 +1839,7 @@ function app() {
 
                 // Reload data
                 await this.loadFeeds();
+                if (this.topicsExpanded) this.loadTopics();
                 await this.loadPosts(true);
             } catch (error) {
                 console.error('Failed to mark all read:', error);
@@ -1561,6 +1876,7 @@ function app() {
                 // Only reload UI if there are new posts
                 if (totalNew > 0) {
                     await this.loadFeeds();
+                    if (this.topicsExpanded) this.loadTopics();
                     await this.loadPosts(true);
                     this.showSuccess(this.t('refresh.newPosts').replace('{count}', totalNew));
 
@@ -1710,8 +2026,9 @@ function app() {
                     }
                 });
 
-                // Update feed unread counts
+                // Update feed and topic unread counts
                 await this.loadFeeds();
+                if (this.topicsExpanded) this.loadTopics();
 
                 // Clear selection
                 this.selectedPosts.clear();
@@ -2035,6 +2352,7 @@ function app() {
             try {
                 const result = await this.fetchApi(`/feeds/${feedId}/refresh`, { method: 'POST' });
                 await this.loadFeeds();
+                if (this.topicsExpanded) this.loadTopics();
                 await this.loadPosts(true);
                 const msg = this.t('feeds.refreshResult')
                     .replace('{new}', result.new_posts)
@@ -2223,9 +2541,10 @@ function app() {
                 return;
             }
 
-            // Refresh feed unread counts silently
+            // Refresh feed and topic unread counts silently
             try {
                 await this.loadFeeds();
+                if (this.topicsExpanded) this.loadTopics();
             } catch (e) {
                 // Ignore errors on idle refresh
             }

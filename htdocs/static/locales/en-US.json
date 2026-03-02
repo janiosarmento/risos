@@ -15,7 +15,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "login": "Login",
-    "loggingIn": "Logging in..."
+    "loggingIn": "Logging in...",
+    "mobileHint": "For the best experience, use a desktop or tablet."
   },
   "sidebar": {
     "openMenu": "Open menu",
@@ -31,7 +32,8 @@
     "noCategory": "Uncategorized",
     "settings": "Settings",
     "refresh": "Refresh",
-    "topTags": "Top Tags"
+    "topTags": "Top Tags",
+    "topics": "Topics"
   },
   "posts": {
     "noPosts": "No unread posts",
@@ -86,6 +88,7 @@
       "feeds": "Feeds",
       "opml": "OPML",
       "ai": "AI",
+      "topics": "Topics",
       "general": "General"
     },
     "close": "Close",
@@ -148,7 +151,23 @@
     "noIgnoredTags": "No ignored tags",
     "blockedTerms": "Blocked Terms",
     "blockedTermsDesc": "Posts matching these terms in the title will be highlighted. Use % as wildcard (e.g. best % to watch). One term per line.",
-    "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch"
+    "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch",
+    "topics": {
+      "title": "Topics",
+      "suggestWithAI": "Suggest with AI",
+      "aiSuggestions": "AI Suggestions",
+      "acceptAll": "Accept All",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
+      "orphanTags": "Unclassified tags",
+      "newTopicPlaceholder": "New topic name...",
+      "create": "Create",
+      "addTagPlaceholder": "Add tag...",
+      "delete": "Delete topic",
+      "deleteConfirm": "Delete topic \"{name}\"?",
+      "suggestTags": "Suggest tags",
+      "empty": "No topics yet. Create one manually or use AI suggestions."
+    }
   },
   "splitView": {
     "selectPost": "Select a post to read",
@@ -160,6 +179,19 @@
     "neutralTooltip": "Click to ignore",
     "filterTooltip": "Click to filter by this tag",
     "clearFilter": "Clear tag filter"
+  },
+  "topics": {
+    "clearFilter": "Clear topic filter",
+    "addToTopic": "Add tag to topic"
+  },
+  "curation": {
+    "curate": "Curate",
+    "results": "AI Curation:",
+    "selectRedundant": "Select redundant",
+    "downloadSelected": "Download selected",
+    "archiveSelected": "Archive selected",
+    "archiveConfirm": "Unstar the selected posts? They will remain in the database but leave the starred list.",
+    "clear": "Clear curation"
   },
   "categories": {
     "newPlaceholder": "New category name",

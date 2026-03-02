@@ -270,3 +270,29 @@ class CleanupLog(Base):
 
 
 Index("idx_cleanup_executed", CleanupLog.executed_at.desc())
+
+
+class Topic(Base):
+    """Named groups of tags for content organization."""
+
+    __tablename__ = "topics"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(Text, nullable=False, unique=True)
+    position = Column(Integer, default=0)
+    created_at = Column(Text, default=lambda: datetime.utcnow().isoformat())
+
+    tags = relationship("TopicTag", back_populates="topic", cascade="all, delete-orphan")
+
+
+class TopicTag(Base):
+    """Tags belonging to a topic."""
+
+    __tablename__ = "topic_tags"
+
+    topic_id = Column(
+        Integer, ForeignKey("topics.id", ondelete="CASCADE"), primary_key=True
+    )
+    tag = Column(Text, primary_key=True)
+
+    topic = relationship("Topic", back_populates="tags")

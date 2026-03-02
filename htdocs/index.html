@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260301b';</script>
+    <script>var APP_VERSION = '20260301j';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -190,6 +190,7 @@
                             <span x-show="logging" x-text="t('auth.loggingIn')"></span>
                         </button>
                     </form>
+                    <p class="mt-4 text-xs text-gray-400 text-center md:hidden" x-text="t('auth.mobileHint')"></p>
                 </div>
             </div>
         </template>
@@ -321,8 +322,8 @@
                         </div>
                     </div>
 
-                    <!-- Top Tags (collapsible) -->
-                    <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                    <!-- Top Tags (collapsible, desktop only) -->
+                    <div class="hidden md:block p-2 border-b border-gray-200 dark:border-gray-700">
                         <button
                             @click="toggleTopTags()"
                             class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -351,6 +352,48 @@
                                 >
                                     <span x-text="item.tag"></span>
                                     <span class="opacity-60" x-text="item.count"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Topics (collapsible, desktop only) -->
+                    <div class="hidden md:block p-2 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            @click="toggleTopics()"
+                            class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                            <svg class="w-3 h-3 transition-transform duration-200" :class="topicsExpanded ? 'rotate-90' : ''"><use href="#icon-chevron-right"/></svg>
+                            <svg class="w-4 h-4 text-purple-500 dark:text-purple-400"><use href="#icon-folder"/></svg>
+                            <span x-text="t('sidebar.topics')"></span>
+                        </button>
+                        <div
+                            x-show="topicsExpanded"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 -translate-y-2"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-2"
+                            class="mt-1 space-y-0.5"
+                        >
+                            <template x-for="topic in topics" :key="topic.id">
+                                <button
+                                    @click="selectTopic(topic.id)"
+                                    class="w-full text-left px-2 py-1 rounded text-sm flex items-center justify-between transition-colors"
+                                    :class="selectedTopicId === topic.id
+                                        ? 'bg-purple-600 text-white'
+                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                >
+                                    <span class="truncate" x-text="topic.name"></span>
+                                    <span
+                                        class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                        :class="selectedTopicId === topic.id
+                                            ? 'bg-purple-500 text-white'
+                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
+                                        x-text="topic.unread_count"
+                                        x-show="topic.unread_count > 0"
+                                    ></span>
                                 </button>
                             </template>
                         </div>
@@ -474,7 +517,30 @@
                                         <svg class="w-3 h-3"><use href="#icon-tag"/></svg>
                                         <span x-text="tagFilter"></span>
                                         <span class="opacity-60" x-text="'(' + tagFilterCount + ')'"></span>
+                                        <!-- Add to topic dropdown -->
+                                        <span x-show="topics.length > 0" class="relative" x-data="{ open: false }">
+                                            <button @click="open = !open" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :title="t('topics.addToTopic')">
+                                                <svg class="w-3 h-3"><use href="#icon-folder"/></svg>
+                                            </button>
+                                            <div x-show="open" @click.away="open = false" class="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 min-w-[160px]">
+                                                <template x-for="topic in topics" :key="topic.id">
+                                                    <button
+                                                        @click="addTagFilterToTopic(topic.id); open = false"
+                                                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+                                                        x-text="topic.name"
+                                                    ></button>
+                                                </template>
+                                            </div>
+                                        </span>
                                         <button @click="clearTagFilter()" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :title="t('tags.clearFilter')">&times;</button>
+                                    </span>
+                                </template>
+                                <!-- Topic filter indicator -->
+                                <template x-if="selectedTopicId">
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
+                                        <svg class="w-3 h-3"><use href="#icon-folder"/></svg>
+                                        <span x-text="getSelectedTopicName()"></span>
+                                        <button @click="clearTopicFilter()" class="hover:text-purple-900 dark:hover:text-white ml-0.5" :title="t('topics.clearFilter')">&times;</button>
                                     </span>
                                 </template>
                                 <!-- Refresh feed button -->
@@ -540,6 +606,18 @@
                                 >
                                     <svg class="w-4 h-4"><use href="#icon-download"/></svg>
                                 </button>
+                                <!-- Curate button -->
+                                <button
+                                    x-show="starredCount > 0 && postFilter === 'starred'"
+                                    @click="curatePosts()"
+                                    :disabled="curatingPosts"
+                                    class="px-1.5 py-0.5 text-xs text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 hidden md:flex items-center gap-1"
+                                    :title="t('curation.curate')"
+                                >
+                                    <svg x-show="curatingPosts" class="w-3 h-3 animate-spin"><use href="#icon-spinner"/></svg>
+                                    <svg x-show="!curatingPosts" class="w-3 h-3"><use href="#icon-lightbulb"/></svg>
+                                    <span x-text="t('curation.curate')"></span>
+                                </button>
                             </div>
                         </div>
                         <!-- Selection toolbar -->
@@ -561,6 +639,48 @@
                                 :disabled="selectedPosts.size === 0"
                                 :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
                             ><span x-text="t('posts.markAsRead')"></span><span class="hidden md:inline opacity-60"> (M)</span></button>
+                        </div>
+                        <!-- Curation results panel -->
+                        <div x-show="curationResults" class="mt-2 space-y-2">
+                            <!-- Summary -->
+                            <div x-show="curationSummary" class="p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded text-xs text-purple-800 dark:text-purple-200">
+                                <p x-text="curationSummary"></p>
+                            </div>
+                            <!-- Stats + actions -->
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
+                                    <span>★</span> <span x-text="curationStats.essential"></span>
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded">
+                                    <span>?</span> <span x-text="curationStats.situational"></span>
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
+                                    <span>✗</span> <span x-text="curationStats.redundant"></span>
+                                </span>
+                                <span class="text-gray-400 dark:text-gray-500">|</span>
+                                <button
+                                    @click="selectRedundantPosts()"
+                                    class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700 rounded hover:bg-red-200 dark:hover:bg-red-900/50"
+                                    x-text="t('curation.selectRedundant')"
+                                ></button>
+                                <button
+                                    @click="exportSelection()"
+                                    x-show="selectedPosts.size > 0"
+                                    class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                                    x-text="t('curation.downloadSelected')"
+                                ></button>
+                                <button
+                                    @click="batchUnstar()"
+                                    x-show="selectedPosts.size > 0"
+                                    class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                    x-text="t('curation.archiveSelected')"
+                                ></button>
+                                <button
+                                    @click="clearCuration()"
+                                    class="ml-auto px-2 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    x-text="t('curation.clear')"
+                                ></button>
+                            </div>
                         </div>
                     </div>
 
@@ -654,6 +774,18 @@
                                                 class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                                                 x-text="Math.round(post.suggestion_score) + '%'"
                                             ></span>
+                                            <!-- Curation badge -->
+                                            <span
+                                                x-show="getCurationBadge(post.id)"
+                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help"
+                                                :class="{
+                                                    'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': getCurationBadge(post.id)?.classification === 'essential',
+                                                    'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': getCurationBadge(post.id)?.classification === 'redundant',
+                                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': getCurationBadge(post.id)?.classification === 'keep_if_interested'
+                                                }"
+                                                :title="getCurationBadge(post.id)?.reason"
+                                                x-text="getCurationBadge(post.id)?.classification === 'essential' ? '★ essential' : getCurationBadge(post.id)?.classification === 'redundant' ? '✗ redundant' : '? situational'"
+                                            ></span>
                                             <span x-text="getFeedTitle(post.feed_id)"></span>
                                             <span>-</span>
                                             <span x-text="formatDate(post.published_at || post.fetched_at)"></span>
@@ -664,7 +796,7 @@
                                             x-text="post.one_line_summary"
                                         ></p>
                                         <template x-if="post.tags && post.tags.length > 0">
-                                            <div class="mt-1 flex flex-wrap gap-1">
+                                            <div class="mt-1 flex-wrap gap-1 hidden md:flex">
                                                 <template x-for="tag in post.tags" :key="tag">
                                                     <span
                                                         class="text-[10px] px-1 py-0 rounded border cursor-pointer transition-colors"
@@ -1117,6 +1249,12 @@
                             x-text="t('settings.tabs.ai')"
                         ></button>
                         <button
+                            @click="settingsTab = 'topics'; loadTopics()"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'topics' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.topics')"
+                        ></button>
+                        <button
                             @click="settingsTab = 'general'"
                             class="px-4 py-2 text-sm font-medium"
                             :class="settingsTab === 'general' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
@@ -1461,6 +1599,154 @@
                                     class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium transition-colors"
                                     x-text="t('settings.resetDefaults')"
                                 ></button>
+                            </div>
+                        </div>
+
+                        <!-- Topics Tab -->
+                        <div x-show="settingsTab === 'topics'" class="space-y-4">
+                            <!-- AI Suggestion -->
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-medium" x-text="t('settings.topics.title')"></h3>
+                                <button
+                                    @click="suggestTopics()"
+                                    :disabled="suggestingTopics"
+                                    class="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
+                                >
+                                    <svg x-show="suggestingTopics" class="w-3 h-3 animate-spin"><use href="#icon-spinner"/></svg>
+                                    <span x-text="t('settings.topics.suggestWithAI')"></span>
+                                </button>
+                            </div>
+
+                            <!-- AI Suggestion Review -->
+                            <template x-if="topicSuggestions">
+                                <div class="space-y-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-purple-700 dark:text-purple-300" x-text="t('settings.topics.aiSuggestions') + ' (' + (topicSuggestions.suggestions?.length || 0) + ')'"></span>
+                                        <div class="flex gap-2">
+                                            <button
+                                                @click="acceptAllTopicSuggestions()"
+                                                class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                x-text="t('settings.topics.acceptAll')"
+                                            ></button>
+                                            <button
+                                                @click="topicSuggestions = null"
+                                                class="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                                                x-text="t('settings.topics.dismiss')"
+                                            ></button>
+                                        </div>
+                                    </div>
+                                    <template x-for="(suggestion, idx) in topicSuggestions.suggestions" :key="idx">
+                                        <div class="bg-white dark:bg-gray-800 rounded p-3 border border-purple-200 dark:border-purple-600">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <input
+                                                    type="text"
+                                                    x-model="suggestion.name"
+                                                    class="text-sm font-medium bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-purple-500 outline-none px-1 py-0.5"
+                                                />
+                                                <button
+                                                    @click="acceptTopicSuggestion(suggestion)"
+                                                    class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                    x-text="t('settings.topics.accept')"
+                                                ></button>
+                                            </div>
+                                            <div class="flex flex-wrap gap-1">
+                                                <template x-for="(tag, tidx) in suggestion.tags" :key="tidx">
+                                                    <span class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                                                        <span x-text="tag"></span>
+                                                        <button @click="suggestion.tags.splice(tidx, 1)" class="hover:text-red-500">&times;</button>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="topicSuggestions.orphan_tags?.length > 0">
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            <span x-text="t('settings.topics.orphanTags') + ': '"></span>
+                                            <span x-text="topicSuggestions.orphan_tags.join(', ')"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Create new topic -->
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    x-model="newTopicName"
+                                    @keydown.enter="if (newTopicName.trim()) { createTopic(newTopicName.trim()); newTopicName = ''; }"
+                                    :placeholder="t('settings.topics.newTopicPlaceholder')"
+                                    class="flex-1 text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                />
+                                <button
+                                    @click="if (newTopicName.trim()) { createTopic(newTopicName.trim()); newTopicName = ''; }"
+                                    class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    x-text="t('settings.topics.create')"
+                                ></button>
+                            </div>
+
+                            <!-- Existing topics list -->
+                            <div class="space-y-2">
+                                <template x-for="topic in topics" :key="topic.id">
+                                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <template x-if="editingTopic === topic.id">
+                                                <input
+                                                    type="text"
+                                                    x-model="topic.name"
+                                                    @keydown.enter="updateTopic(topic.id, { name: topic.name }); editingTopic = null"
+                                                    @keydown.escape="editingTopic = null; loadTopics()"
+                                                    x-init="$nextTick(() => $el.focus())"
+                                                    class="text-sm font-medium bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-0.5"
+                                                />
+                                            </template>
+                                            <template x-if="editingTopic !== topic.id">
+                                                <span class="text-sm font-medium cursor-pointer" @dblclick="editingTopic = topic.id" x-text="topic.name"></span>
+                                            </template>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-gray-500 dark:text-gray-400" x-text="topic.post_count + ' posts'"></span>
+                                                <button
+                                                    @click="suggestTagsForTopic(topic.id)"
+                                                    :disabled="suggestingTagsForTopicId !== null"
+                                                    class="px-1.5 py-0.5 text-[10px] text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 flex items-center gap-0.5"
+                                                    :title="t('settings.topics.suggestTags')"
+                                                >
+                                                    <svg x-show="suggestingTagsForTopicId === topic.id" class="w-3 h-3 animate-spin"><use href="#icon-spinner"/></svg>
+                                                    <svg x-show="suggestingTagsForTopicId !== topic.id" class="w-3 h-3"><use href="#icon-lightbulb"/></svg>
+                                                    <span x-text="t('settings.topics.suggestTags')"></span>
+                                                </button>
+                                                <button
+                                                    @click="deleteTopic(topic.id)"
+                                                    class="text-red-500 hover:text-red-700 text-sm"
+                                                    :title="t('settings.topics.delete')"
+                                                >&times;</button>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-wrap gap-1 mb-2">
+                                            <template x-for="tag in topic.tags" :key="tag">
+                                                <span class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
+                                                    <span x-text="tag"></span>
+                                                    <button @click="removeTagFromTopic(topic.id, tag)" class="hover:text-red-500">&times;</button>
+                                                </span>
+                                            </template>
+                                        </div>
+                                        <div class="flex gap-1">
+                                            <input
+                                                type="text"
+                                                x-model="newTopicTagInput"
+                                                @keydown.enter="if (newTopicTagInput.trim()) { addTagsToTopic(topic.id, [newTopicTagInput.trim()]); newTopicTagInput = ''; }"
+                                                :placeholder="t('settings.topics.addTagPlaceholder')"
+                                                class="flex-1 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            />
+                                            <button
+                                                @click="if (newTopicTagInput.trim()) { addTagsToTopic(topic.id, [newTopicTagInput.trim()]); newTopicTagInput = ''; }"
+                                                class="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                                            >+</button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="topics.length === 0">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4" x-text="t('settings.topics.empty')"></p>
+                                </template>
                             </div>
                         </div>
 

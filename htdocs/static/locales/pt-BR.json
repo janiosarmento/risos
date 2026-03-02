@@ -15,7 +15,8 @@
     "showPassword": "Mostrar senha",
     "hidePassword": "Ocultar senha",
     "login": "Entrar",
-    "loggingIn": "Entrando..."
+    "loggingIn": "Entrando...",
+    "mobileHint": "Para todos os recursos, use um desktop ou tablet."
   },
   "sidebar": {
     "openMenu": "Abrir menu",
@@ -31,7 +32,8 @@
     "noCategory": "Sem categoria",
     "settings": "Configurações",
     "refresh": "Atualizar",
-    "topTags": "Tags Populares"
+    "topTags": "Tags Populares",
+    "topics": "Tópicos"
   },
   "posts": {
     "noPosts": "Nenhum post não lido",
@@ -86,6 +88,7 @@
       "feeds": "Feeds",
       "opml": "OPML",
       "ai": "IA",
+      "topics": "Tópicos",
       "general": "Geral"
     },
     "close": "Fechar",
@@ -148,7 +151,23 @@
     "noIgnoredTags": "Nenhuma tag ignorada",
     "blockedTerms": "Termos Bloqueados",
     "blockedTermsDesc": "Posts com esses termos no título serão destacados. Use % como curinga (ex: best % to watch). Um termo por linha.",
-    "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch"
+    "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch",
+    "topics": {
+      "title": "Tópicos",
+      "suggestWithAI": "Sugerir com IA",
+      "aiSuggestions": "Sugestões da IA",
+      "acceptAll": "Aceitar Todos",
+      "accept": "Aceitar",
+      "dismiss": "Descartar",
+      "orphanTags": "Tags não classificadas",
+      "newTopicPlaceholder": "Nome do novo tópico...",
+      "create": "Criar",
+      "addTagPlaceholder": "Adicionar tag...",
+      "delete": "Excluir tópico",
+      "deleteConfirm": "Excluir tópico \"{name}\"?",
+      "suggestTags": "Sugerir tags",
+      "empty": "Nenhum tópico ainda. Crie um manualmente ou use sugestões da IA."
+    }
   },
   "splitView": {
     "selectPost": "Selecione um post para ler",
@@ -160,6 +179,19 @@
     "neutralTooltip": "Clique para ignorar",
     "filterTooltip": "Clique para filtrar por esta tag",
     "clearFilter": "Limpar filtro de tag"
+  },
+  "topics": {
+    "clearFilter": "Limpar filtro de tópico",
+    "addToTopic": "Adicionar tag ao tópico"
+  },
+  "curation": {
+    "curate": "Curadoria",
+    "results": "Curadoria IA:",
+    "selectRedundant": "Selecionar redundantes",
+    "downloadSelected": "Baixar selecionados",
+    "archiveSelected": "Arquivar selecionados",
+    "archiveConfirm": "Desfavoritar os posts selecionados? Eles continuarão no banco mas sairão dos favoritos.",
+    "clear": "Limpar curadoria"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

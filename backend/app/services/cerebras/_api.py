@@ -434,3 +434,129 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
     # All models failed with model-specific errors
     circuit_breaker.record_failure()
     raise PermanentError(f"All models failed. Last error: {last_error}")
+
+
+async def call_llm_json(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int = 4096,
+    temperature: float = 0.3,
+) -> dict:
+    """
+    Generic LLM call expecting a JSON response.
+    Reuses circuit breaker, API key rotation, and model fallback.
+    Used for topic suggestions, curation, etc.
+
+    Returns:
+        Parsed JSON dict from the LLM response.
+
+    Raises:
+        TemporaryError: Temporary error (retry possible)
+        PermanentError: Permanent error
+    """
+    # Check circuit breaker
+    can_call, reason = circuit_breaker.can_call()
+    if not can_call:
+        raise TemporaryError(f"Circuit breaker: {reason}")
+
+    # Get next available API key
+    api_key, key_index = api_key_rotator.get_next_key()
+    if not api_key:
+        raise TemporaryError("All API keys are in cooldown")
+
+    # Get preferred model
+    from app.routes.preferences import (
+        get_effective_cerebras_model,
+        get_effective_model_cooldown,
+    )
+
+    db = SessionLocal()
+    try:
+        preferred_model = get_effective_cerebras_model(db)
+        cooldown_minutes = get_effective_model_cooldown(db)
+    finally:
+        db.close()
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    # Build model fallback list
+    models_to_try = [preferred_model]
+    try:
+        available = await get_available_models()
+        for m in available:
+            if m != preferred_model:
+                models_to_try.append(m)
+    except Exception:
+        pass
+
+    # Filter out models in cooldown
+    now = datetime.utcnow()
+    active_models = [
+        m for m in models_to_try if _model_cooldowns.get(m, now) <= now
+    ]
+    if not active_models:
+        logger.warning("All models in cooldown, clearing cooldowns")
+        _model_cooldowns.clear()
+        active_models = models_to_try
+
+    last_error = None
+    for model in active_models:
+        try:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+
+            async with httpx.AsyncClient(
+                timeout=settings.cerebras_timeout
+            ) as client:
+                response = await client.post(
+                    CEREBRAS_API_URL, headers=headers, json=payload
+                )
+
+                if response.status_code == 429:
+                    api_key_rotator.set_key_cooldown(
+                        api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
+                    )
+                    raise TemporaryError("Rate limit reached")
+
+                if response.status_code != 200:
+                    raise ModelSpecificError(
+                        f"HTTP {response.status_code}: {response.text[:200]}"
+                    )
+
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+
+            # Parse JSON from response
+            result = parse_json_response(content)
+            circuit_breaker.record_success()
+            logger.info(f"call_llm_json succeeded with model {model}")
+            return result
+
+        except ModelSpecificError as e:
+            _model_cooldowns[model] = now + timedelta(minutes=cooldown_minutes)
+            logger.warning(f"call_llm_json: model {model} failed: {e}")
+            last_error = e
+            continue
+
+        except (TemporaryError, PermanentError):
+            raise
+
+        except Exception as e:
+            _model_cooldowns[model] = now + timedelta(minutes=cooldown_minutes)
+            logger.warning(f"call_llm_json: model {model} error: {e}")
+            last_error = e
+            continue
+
+    circuit_breaker.record_failure()
+    raise PermanentError(f"call_llm_json: all models failed. Last error: {last_error}")
