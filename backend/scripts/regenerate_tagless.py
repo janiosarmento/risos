@@ -3,8 +3,15 @@
 Regenerate summaries for the N most recent posts without tags.
 Processes in batches with circuit breaker reset and key rotation.
 Skips posts marked as skip_summary.
+
+Usage:
+    python scripts/regenerate_tagless.py                    # Cerebras, all posts
+    python scripts/regenerate_tagless.py --local            # Ollama local model
+    python scripts/regenerate_tagless.py --unread --starred  # Only unread/starred
+    python scripts/regenerate_tagless.py --local --batch-size 500
 """
 
+import argparse
 import asyncio
 import hashlib
 import os
@@ -13,7 +20,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy import not_
+from sqlalchemy import not_, or_
 
 from app.database import SessionLocal
 from app.models import AISummary, Post, PostTag
@@ -24,7 +31,8 @@ from app.services.tags import save_post_tags
 
 BATCH_SIZE = 6
 TOTAL_POSTS = 100
-DELAY_BETWEEN_CALLS = 20  # seconds between calls to avoid rate limits
+DELAY_BETWEEN_CALLS = 20  # seconds between Cerebras calls to avoid rate limits
+DELAY_LOCAL = 1  # seconds between local calls (no rate limit, just breathing room)
 
 
 def log(msg):
@@ -45,7 +53,7 @@ def clear_rate_limits():
         api_key_rotator.clear_cooldown(key)
 
 
-async def regenerate_one(db, post):
+async def regenerate_one(db, post, use_local=False):
     """Regenerate summary for a single post. Returns True on success."""
     content = post.full_content or post.content
     if not content or len(content.strip()) < 100:
@@ -55,7 +63,12 @@ async def regenerate_one(db, post):
         return False
 
     try:
-        result = await generate_summary(content, title=post.title)
+        if use_local:
+            from app.services.ollama import generate_summary_local
+
+            result = await generate_summary_local(content, title=post.title, db=db)
+        else:
+            result = await generate_summary(content, title=post.title)
     except GarbageContentError as e:
         post.skip_summary = True
         db.commit()
@@ -104,26 +117,59 @@ async def regenerate_one(db, post):
     return True
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Regenerate summaries/tags for posts without tags.")
+    parser.add_argument("--batch-size", type=int, default=TOTAL_POSTS, help="Max posts to process")
+    parser.add_argument("--unread", action="store_true", help="Only unread posts")
+    parser.add_argument("--starred", action="store_true", help="Only starred posts")
+    parser.add_argument("--local", action="store_true", help="Use local Ollama model instead of Cerebras")
+    return parser.parse_args()
+
+
 async def main():
+    args = parse_args()
     db = SessionLocal()
 
     # Find posts without tags, excluding skipped, most recent first
     posts_with_tags = db.query(PostTag.post_id).distinct()
-    posts = (
-        db.query(Post)
-        .filter(
-            not_(Post.id.in_(posts_with_tags)),
-            Post.skip_summary == False,  # noqa: E712
-        )
-        .order_by(Post.id.desc())
-        .limit(TOTAL_POSTS)
-        .all()
+    query = db.query(Post).filter(
+        not_(Post.id.in_(posts_with_tags)),
+        Post.skip_summary == False,  # noqa: E712
     )
 
-    log(f"Found {len(posts)} posts without tags to process\n")
+    # Apply optional filters (OR logic: unread OR starred)
+    filters = []
+    if args.unread:
+        filters.append(Post.is_read == False)  # noqa: E712
+    if args.starred:
+        filters.append(Post.is_starred == True)  # noqa: E712
+    if filters:
+        query = query.filter(or_(*filters))
 
-    # Clear all rate limits at start
-    clear_rate_limits()
+    posts = query.order_by(Post.id.desc()).limit(args.batch_size).all()
+
+    parts = []
+    if args.local:
+        parts.append("local/Ollama")
+    if args.unread and args.starred:
+        parts.append("unread OR starred")
+    elif args.unread:
+        parts.append("unread only")
+    elif args.starred:
+        parts.append("starred only")
+    filter_desc = f" ({', '.join(parts)})" if parts else ""
+
+    log(f"Found {len(posts)} posts without tags to process{filter_desc}\n")
+
+    if not posts:
+        db.close()
+        return
+
+    delay = DELAY_LOCAL if args.local else DELAY_BETWEEN_CALLS
+
+    # Only reset Cerebras rate limits when using Cerebras
+    if not args.local:
+        clear_rate_limits()
 
     success_count = 0
     skip_count = 0
@@ -136,14 +182,15 @@ async def main():
         log(f"--- Batch {batch_num}/{total_batches} ---")
 
         for i, post in enumerate(batch):
-            # Reset circuit breaker before each call
-            circuit_breaker.last_call = None
-            circuit_breaker._save_state()
+            if not args.local:
+                # Reset circuit breaker before each Cerebras call
+                circuit_breaker.last_call = None
+                circuit_breaker._save_state()
 
             if i > 0:
-                await asyncio.sleep(DELAY_BETWEEN_CALLS)
+                await asyncio.sleep(delay)
 
-            ok = await regenerate_one(db, post)
+            ok = await regenerate_one(db, post, use_local=args.local)
             if ok:
                 success_count += 1
             elif post.skip_summary:
