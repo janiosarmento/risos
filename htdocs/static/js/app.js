@@ -4,6 +4,7 @@
 
 // APP_VERSION is defined in index.html (single source of truth for cache busting)
 const API_BASE = '/api';
+const CURATION_WARN_THRESHOLD = 50; // Posts beyond this trigger a confirmation before AI curation
 
 function app() {
     return {
@@ -520,6 +521,11 @@ function app() {
 
         // Run AI curation on starred posts
         async curatePosts() {
+            // Warn if too many posts for AI context window
+            if (this.starredCount > CURATION_WARN_THRESHOLD) {
+                if (!await this.showConfirm(this.t('curation.tooManyPosts', { count: this.starredCount }))) return;
+                this.confirmDone();
+            }
             this.curatingPosts = true;
             this.curationResults = null;
             this.curationSummary = '';

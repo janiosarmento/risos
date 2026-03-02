@@ -1005,10 +1005,18 @@ async def curate_starred(
         if cat_feed_ids:
             query = query.filter(Post.feed_id.in_(cat_feed_ids))
 
+    CURATION_MAX_POSTS = 100  # Hard limit — beyond this, prompt exceeds model context window
+
     posts = query.order_by(Post.starred_at.desc()).all()
 
     if not posts:
         return {"topic": context_name, "total_posts": 0, "analysis": {"essential": [], "redundant": [], "keep_if_interested": []}, "summary": "No starred posts found."}
+
+    if len(posts) > CURATION_MAX_POSTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Too many posts for curation ({len(posts)}). Maximum is {CURATION_MAX_POSTS}. Filter by feed or topic to narrow down.",
+        )
 
     # Fetch summaries
     content_hashes = [p.content_hash for p in posts if p.content_hash]

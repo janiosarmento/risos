@@ -442,7 +442,7 @@ journalctl -u rss-reader -f
 
 ### Curation
 - AI-powered analysis of starred posts to identify essential vs redundant articles
-- Can analyze all starred posts or filter by topic
+- Respects current view context: filters by feed, category, topic, or tag
 - Three classifications: essential (green), redundant (red), situational (yellow)
 - Inline badges on posts with hover-to-see-reason
 - Persistent summary panel with stats (replaces ephemeral toast)
@@ -450,6 +450,8 @@ journalctl -u rss-reader -f
 - "Download selected" exports as ZIP of markdown (backup before archiving)
 - "Archive selected" batch-unstars with confirmation dialog
 - All AI output (reasons, summary) respects user's summary language preference
+- Post limits: soft warning at 50 posts (`CURATION_WARN_THRESHOLD` in app.js), hard limit at 100 (`CURATION_MAX_POSTS` in posts.py) — beyond this, prompt exceeds model context window
+- Curation results auto-clear when switching feed, category, topic, or tag
 
 ### UI/UX
 - Fullscreen modal or split-view reading modes
@@ -674,7 +676,7 @@ git push
 
 ---
 
-*Last updated: 2026-03-01 (Topics, AI Curation, mobile cleanup)*
+*Last updated: 2026-03-01 (Topics, AI Curation, sparkles icon, curation limits)*
 
 ---
 

@@ -191,7 +191,8 @@
     "downloadSelected": "Baixar selecionados",
     "archiveSelected": "Arquivar selecionados",
     "archiveConfirm": "Desfavoritar os posts selecionados? Eles continuarão no banco mas sairão dos favoritos.",
-    "clear": "Limpar curadoria"
+    "clear": "Limpar curadoria",
+    "tooManyPosts": "Há {count} posts favoritos nesta visualização. A curadoria por IA funciona melhor com até 50 posts — tente filtrar por feed ou tópico para resultados melhores. Continuar mesmo assim?"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",
