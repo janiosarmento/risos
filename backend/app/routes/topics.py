@@ -266,10 +266,7 @@ Respond ONLY in JSON:
   "tags": ["tag1", "tag2", "tag3"]
 }}"""
 
-    try:
-        result = await call_llm_json(system_prompt, user_prompt)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI error: {e}")
+    result = await call_llm_json(system_prompt, user_prompt)
 
     # Validate: only return tags that actually exist in the unassigned pool
     available = {row.tag for row in rows}
@@ -330,10 +327,7 @@ Respond ONLY in JSON:
   "orphan_tags": ["tag1", "tag2"]
 }}"""
 
-    try:
-        result = await call_llm_json(system_prompt, user_prompt)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI error: {e}")
+    result = await call_llm_json(system_prompt, user_prompt)
 
     suggestions = []
     for item in result.get("topics", []):

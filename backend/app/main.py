@@ -17,9 +17,12 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 
+from fastapi.responses import JSONResponse
+
 from app.config import settings
 from app.database import engine
 from app.rate_limiter import limiter
+from app.services.cerebras._types import PermanentError, TemporaryError
 
 # Configure logging
 logging.basicConfig(
@@ -177,6 +180,17 @@ app = FastAPI(
 # Rate limiter setup
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# AI error handlers — convert Cerebras errors to 502 with descriptive detail
+@app.exception_handler(TemporaryError)
+async def handle_temporary_error(request: Request, exc: TemporaryError):
+    return JSONResponse(status_code=502, content={"detail": f"AI temporarily unavailable: {exc}"})
+
+
+@app.exception_handler(PermanentError)
+async def handle_permanent_error(request: Request, exc: PermanentError):
+    return JSONResponse(status_code=502, content={"detail": f"AI error: {exc}"})
 
 # CORS
 app.add_middleware(
