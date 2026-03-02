@@ -69,7 +69,7 @@ function app() {
         suggestingTopics: false, // Loading state for AI suggestion
         editingTopic: null, // Topic being edited in settings
         newTopicName: '', // New topic name input
-        newTopicTagInput: '', // Tag input for adding tags to topic
+
 
         // Health
         healthWarning: null,
@@ -379,6 +379,13 @@ function app() {
         getSelectedTopicName() {
             const topic = this.topics.find(t => t.id === this.selectedTopicId);
             return topic ? topic.name : '';
+        },
+
+        // Check if a tag belongs to the currently selected topic
+        isTopicTag(tag) {
+            if (!this.selectedTopicId) return false;
+            const topic = this.topics.find(t => t.id === this.selectedTopicId);
+            return topic ? topic.tags.includes(tag) : false;
         },
 
         // Create a new topic

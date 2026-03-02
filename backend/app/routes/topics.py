@@ -178,12 +178,28 @@ def add_tags_to_topic(
     if not topic:
         raise HTTPException(status_code=404, detail="Topic not found")
 
+    # Validate all tags exist in the database
+    normalized = [t.strip().lower() for t in body.tags if t.strip()]
+    if normalized:
+        valid_tags = {
+            row.tag
+            for row in db.query(PostTag.tag)
+            .filter(PostTag.tag.in_(normalized))
+            .distinct()
+            .all()
+        }
+        invalid = [t for t in normalized if t not in valid_tags]
+        if invalid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tags not found: {', '.join(invalid)}",
+            )
+
     existing_tags = {tt.tag for tt in topic.tags}
     added = []
 
-    for tag in body.tags:
-        tag = tag.strip().lower()
-        if tag and tag not in existing_tags:
+    for tag in normalized:
+        if tag not in existing_tags:
             db.add(TopicTag(topic_id=topic_id, tag=tag))
             added.append(tag)
             existing_tags.add(tag)

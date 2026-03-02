@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Feed, IgnoredTag, Post, PostTag
+from app.models import Feed, IgnoredTag, Post, PostTag, TopicTag
 from app.services.suggestions import clear_all_suggestions
 from app.services.user_profile import invalidate_user_profile
 
@@ -77,6 +77,34 @@ def get_popular_tags(
             break
 
     return {"tags": tags}
+
+
+@router.get("/search")
+def search_tags(
+    q: str = Query("", min_length=1, description="Tag prefix to search"),
+    limit: int = Query(15, ge=1, le=50),
+    exclude_topic_id: Optional[int] = Query(None, description="Exclude tags already in this topic"),
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Search tags by prefix, returning matches with post counts."""
+    prefix = q.strip().lower()
+    if not prefix:
+        return {"tags": []}
+
+    query = (
+        db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
+        .filter(PostTag.tag.like(f"{prefix}%"))
+        .group_by(PostTag.tag)
+        .order_by(func.count(PostTag.post_id).desc())
+    )
+
+    if exclude_topic_id is not None:
+        existing = db.query(TopicTag.tag).filter(TopicTag.topic_id == exclude_topic_id)
+        query = query.filter(~PostTag.tag.in_(existing))
+
+    rows = query.limit(limit).all()
+    return {"tags": [{"tag": row.tag, "count": row.count} for row in rows]}
 
 
 @router.get("/ignored")

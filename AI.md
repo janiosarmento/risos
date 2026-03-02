@@ -157,7 +157,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── posts.py            # List/read posts, mark read, skip summary, export starred, tag/topic filter, curation, batch-unstar
 │   │   │   ├── preferences.py      # User preferences API
 │   │   │   ├── suggestions.py      # Suggestion system admin endpoints
-│   │   │   ├── tags.py             # Tag management: popular tags + ignored tags API
+│   │   │   ├── tags.py             # Tag management: popular tags, tag search, ignored tags API
 │   │   │   ├── topics.py           # Topics CRUD, AI topic suggestion
 │   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
@@ -432,12 +432,14 @@ journalctl -u rss-reader -f
 ### Topics
 - Named groups of tags for organizing content (e.g., "Self-Hosting", "Machine Learning")
 - Full CRUD: create, rename, delete, reorder
-- Add/remove tags from topics (manual or AI-assisted)
+- Add/remove tags from topics (manual or AI-assisted); only existing tags allowed (validated server-side)
+- Tag autocomplete in topic editor: prefix search via `GET /tags/search?q=...`, excludes already-assigned tags, keyboard navigation
 - AI topic suggestion: analyzes top 150 unassigned tags and proposes 5-12 groupings
 - Per-topic AI tag suggestion: suggests which unassigned tags fit a specific topic
 - Sidebar section with unread count badges; click to filter posts by topic
 - Topic filter: OR across topic tags, composes with starred/unread/feed filters
 - Topic and tag filters are mutually exclusive
+- Post tags belonging to selected topic are highlighted in purple
 - "Add tag to topic" shortcut from tag filter indicator
 
 ### Curation
@@ -678,7 +680,7 @@ git push
 
 ---
 
-*Last updated: 2026-03-02 (Topics, AI Curation, sparkles icon, curation limits, client-side stats)*
+*Last updated: 2026-03-02 (Topics, AI Curation, sparkles icon, curation limits, client-side stats, tag autocomplete, topic tag highlighting)*
 
 ---
 

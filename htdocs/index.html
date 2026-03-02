@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260302k';</script>
+    <script>var APP_VERSION = '20260302n';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -804,7 +804,9 @@
                                                         class="text-[10px] px-1 py-0 rounded border cursor-pointer transition-colors"
                                                         :class="tagFilter === tag
                                                             ? 'bg-blue-600 text-white border-blue-600'
-                                                            : 'text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                                            : isTopicTag(tag)
+                                                                ? 'text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40'
+                                                                : 'text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'"
                                                         @click.stop="filterByTag(tag)"
                                                         x-text="tag"
                                                     ></span>
@@ -1732,18 +1734,32 @@
                                                 </span>
                                             </template>
                                         </div>
-                                        <div class="flex gap-1">
+                                        <div class="relative flex gap-1" x-data="{ val: '', suggestions: [], selIdx: -1, debounceTimer: null }" @click.away="suggestions = []">
                                             <input
                                                 type="text"
-                                                x-model="newTopicTagInput"
-                                                @keydown.enter="if (newTopicTagInput.trim()) { addTagsToTopic(topic.id, [newTopicTagInput.trim()]); newTopicTagInput = ''; }"
+                                                x-model="val"
+                                                @input="clearTimeout(debounceTimer); debounceTimer = setTimeout(async () => { if (val.trim().length >= 1) { try { const r = await fetchApi('/tags/search?q=' + encodeURIComponent(val.trim()) + '&exclude_topic_id=' + topic.id); suggestions = r.tags || []; selIdx = -1; } catch(e) { suggestions = []; } } else { suggestions = []; } }, 200)"
+                                                @keydown.arrow-down.prevent="if (suggestions.length) selIdx = (selIdx + 1) % suggestions.length"
+                                                @keydown.arrow-up.prevent="if (suggestions.length) selIdx = selIdx <= 0 ? suggestions.length - 1 : selIdx - 1"
+                                                @keydown.enter.prevent="if (selIdx >= 0 && suggestions[selIdx]) { addTagsToTopic(topic.id, [suggestions[selIdx].tag]); val = ''; suggestions = []; } else if (val.trim() && suggestions.length) { addTagsToTopic(topic.id, [suggestions[0].tag]); val = ''; suggestions = []; }"
+                                                @keydown.escape="suggestions = []"
                                                 :placeholder="t('settings.topics.addTagPlaceholder')"
                                                 class="flex-1 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                autocomplete="off"
                                             />
-                                            <button
-                                                @click="if (newTopicTagInput.trim()) { addTagsToTopic(topic.id, [newTopicTagInput.trim()]); newTopicTagInput = ''; }"
-                                                class="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
-                                            >+</button>
+                                            <!-- Autocomplete dropdown -->
+                                            <div x-show="suggestions.length > 0" class="absolute top-full left-0 right-8 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                                <template x-for="(s, idx) in suggestions" :key="s.tag">
+                                                    <button
+                                                        @click="addTagsToTopic(topic.id, [s.tag]); val = ''; suggestions = []"
+                                                        class="w-full text-left px-3 py-1.5 text-xs flex justify-between items-center"
+                                                        :class="idx === selIdx ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                                    >
+                                                        <span x-text="s.tag"></span>
+                                                        <span class="text-gray-400 text-[10px]" x-text="s.count + ' posts'"></span>
+                                                    </button>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                 </template>
