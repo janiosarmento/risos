@@ -42,8 +42,9 @@ function app() {
         lastNavMode: 'posts', // 'posts' (J/K) or 'sidebar' ([/])
         lastFeedNavIndex: 0, // Last position in feed navigation (for [/])
         tagFilter: null, // Current tag filter (composable with feed/category)
+        tagFilterCount: 0, // Total posts matching current tag filter
         popularTags: [], // [{tag, count}] loaded from /api/tags/popular
-        topTagsExpanded: false, // Sidebar "Top Tags" section collapsed by default
+        topTagsExpanded: localStorage.getItem('rss_top_tags_expanded') === '1', // Sidebar "Top Tags" section
 
         // Settings
         showSettings: false,
@@ -305,10 +306,19 @@ function app() {
             this.loadPosts(true);
         },
 
-        // Load popular tags from server
+        // Toggle Top Tags sidebar section and load on first expand
+        async toggleTopTags() {
+            this.topTagsExpanded = !this.topTagsExpanded;
+            localStorage.setItem('rss_top_tags_expanded', this.topTagsExpanded ? '1' : '0');
+            if (this.topTagsExpanded && this.popularTags.length === 0) {
+                await this.loadPopularTags();
+            }
+        },
+
+        // Load popular tags from server (unread posts only)
         async loadPopularTags() {
             try {
-                const data = await this.fetchApi('/tags/popular?limit=10');
+                const data = await this.fetchApi('/tags/popular?limit=10&unread_only=true');
                 this.popularTags = data.tags || [];
             } catch (e) {
                 console.warn('Failed to load popular tags:', e);
@@ -812,7 +822,7 @@ function app() {
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
-                this.loadPopularTags();
+                if (this.topTagsExpanded) this.loadPopularTags();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -1084,7 +1094,7 @@ function app() {
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
-                this.loadPopularTags();
+                if (this.topTagsExpanded) this.loadPopularTags();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -1225,6 +1235,11 @@ function app() {
 
                 this.hasMore = data.has_more || false;
                 this.offset += data.posts.length;
+
+                // Update tag filter count when tag filter is active
+                if (this.tagFilter && reset) {
+                    this.tagFilterCount = data.total || 0;
+                }
 
                 // Update feed unread counts if provided by the API
                 if (data.feed_unread_counts) {

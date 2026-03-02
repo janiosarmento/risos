@@ -3,6 +3,8 @@ Tag management routes.
 Includes popular tags listing and ignored tags management.
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func
@@ -10,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import IgnoredTag, PostTag
+from app.models import Feed, IgnoredTag, Post, PostTag
 from app.services.suggestions import clear_all_suggestions
 from app.services.user_profile import invalidate_user_profile
 
@@ -31,15 +33,37 @@ def _normalize_tag(tag: str) -> str:
 @router.get("/popular")
 def get_popular_tags(
     limit: int = Query(10, ge=1, le=50, description="Number of tags to return"),
+    min_count: int = Query(1, ge=1, description="Minimum post count to include"),
+    unread_only: bool = Query(False, description="Only count unread posts"),
+    starred_only: bool = Query(False, description="Only count starred posts"),
+    feed_id: Optional[int] = Query(None, description="Scope to a specific feed"),
+    category_id: Optional[int] = Query(None, description="Scope to a category"),
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     """Get most popular tags by post count, excluding ignored tags."""
     ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
 
-    rows = (
+    query = (
         db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
-        .group_by(PostTag.tag)
+        .join(Post, Post.id == PostTag.post_id)
+    )
+
+    if unread_only:
+        query = query.filter(Post.is_read == False)  # noqa: E712
+    if starred_only:
+        query = query.filter(Post.is_starred == True)  # noqa: E712
+    if feed_id is not None:
+        query = query.filter(Post.feed_id == feed_id)
+    elif category_id is not None:
+        feed_ids = (
+            db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
+        )
+        query = query.filter(Post.feed_id.in_(feed_ids))
+
+    rows = (
+        query.group_by(PostTag.tag)
+        .having(func.count(PostTag.post_id) >= min_count)
         .order_by(func.count(PostTag.post_id).desc())
         .all()
     )
