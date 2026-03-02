@@ -309,6 +309,7 @@ function app() {
                 this.tagFilter = normalized;
                 this.selectedTopicId = null; // Mutually exclusive with topic filter
             }
+            this.clearCuration();
             this.loadPosts(true);
         },
 
@@ -364,6 +365,7 @@ function app() {
                 this.selectedTopicId = topicId;
                 this.tagFilter = null; // Mutually exclusive with tag filter
             }
+            this.clearCuration();
             this.loadPosts(true);
         },
 
@@ -1600,6 +1602,7 @@ function app() {
             this.filterId = id;
             this.tagFilter = null; // Clear tag filter on navigation
             this.selectedTopicId = null; // Clear topic filter on navigation
+            this.clearCuration();
             this.sidebarOpen = false; // Close sidebar on mobile
 
             // Update lastFeedNavIndex for navigable filters (so [/] works after clicking)

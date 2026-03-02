@@ -456,7 +456,7 @@ journalctl -u rss-reader -f
 - Resizable split view (20-80% ratio)
 - Dark/light theme (system preference or manual)
 - Keyboard navigation (J/K/Enter, [/] for feeds)
-- SVG sprite sheet — all icons defined once as `<symbol>`, referenced via `<use href="#icon-name"/>`
+- SVG sprite sheet — all icons defined once as `<symbol>`, referenced via `<use href="#icon-name"/>`; `icon-sparkles` (✨) used consistently for all AI actions
 - Blocked post indicator — red left border on posts matching blocked terms
 - Split dropdown "Mark as read" — option to dismiss all or only blocked posts
 - Date separators in post list (visual grouping by relative date)
