@@ -446,7 +446,7 @@ journalctl -u rss-reader -f
 - Three classifications: essential (green), redundant (red), situational (yellow)
 - Inline badges on posts with hover-to-see-reason
 - Persistent summary panel with stats (replaces ephemeral toast)
-- "Select redundant" auto-selects red-classified posts
+- User manually selects posts to archive (badges are advisory, not prescriptive)
 - "Download selected" exports as ZIP of markdown (backup before archiving)
 - "Archive selected" batch-unstars with confirmation dialog
 - All AI output (reasons, summary) respects user's summary language preference
