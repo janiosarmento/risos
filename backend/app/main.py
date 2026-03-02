@@ -182,15 +182,31 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-# AI error handlers — convert Cerebras errors to 502 with descriptive detail
+# AI error handlers — log technical detail, return user-friendly message
 @app.exception_handler(TemporaryError)
 async def handle_temporary_error(request: Request, exc: TemporaryError):
-    return JSONResponse(status_code=502, content={"detail": f"AI temporarily unavailable: {exc}"})
+    logger.warning(f"AI TemporaryError on {request.url.path}: {exc}")
+    msg = str(exc)
+    if "circuit breaker" in msg.lower():
+        detail = "AI is temporarily paused after repeated errors. Try again in a few minutes."
+    elif "cooldown" in msg.lower() or "rate limit" in msg.lower():
+        detail = "AI rate limit reached. Try again in a few minutes."
+    else:
+        detail = "AI temporarily unavailable. Try again shortly."
+    return JSONResponse(status_code=502, content={"detail": detail})
 
 
 @app.exception_handler(PermanentError)
 async def handle_permanent_error(request: Request, exc: PermanentError):
-    return JSONResponse(status_code=502, content={"detail": f"AI error: {exc}"})
+    logger.error(f"AI PermanentError on {request.url.path}: {exc}")
+    msg = str(exc)
+    if "model_not_found" in msg or "does not exist" in msg:
+        detail = "The configured AI model is unavailable. Check Settings > AI."
+    elif "all models failed" in msg.lower():
+        detail = "All AI models failed. Try again later or check Settings > AI."
+    else:
+        detail = "AI could not process this request."
+    return JSONResponse(status_code=502, content={"detail": detail})
 
 # CORS
 app.add_middleware(
