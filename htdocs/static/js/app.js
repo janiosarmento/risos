@@ -1160,6 +1160,20 @@ function app() {
 
             // Setup back button handler for modals
             this.setupBackButtonHandler();
+
+            // Custom tooltips: edge detection + tap dismiss
+            document.addEventListener('mouseenter', (e) => {
+                const el = e.target.closest('.tip');
+                if (!el || !el.dataset.tip) return;
+                const r = el.getBoundingClientRect();
+                el.classList.toggle('tip-right', r.left < 140);
+                el.classList.toggle('tip-left', r.right > window.innerWidth - 140);
+            }, true);
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.tip-visible')) {
+                    document.querySelectorAll('.tip-visible').forEach(el => el.classList.remove('tip-visible'));
+                }
+            });
         },
 
         setupBackButtonHandler() {

@@ -48,7 +48,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260302f';</script>
+    <script>var APP_VERSION = '20260302h';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -175,9 +175,9 @@
                                 <button
                                     type="button"
                                     @click="showPw = !showPw"
-                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    class="tip absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                     tabindex="-1"
-                                    :title="showPw ? t('auth.hidePassword') : t('auth.showPassword')"
+                                    :data-tip="showPw ? t('auth.hidePassword') : t('auth.showPassword')"
                                 >
                                     <svg x-show="!showPw" class="w-5 h-5"><use href="#icon-eye"/></svg>
                                     <svg x-show="showPw" class="w-5 h-5"><use href="#icon-eye-off"/></svg>
@@ -225,12 +225,12 @@
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <h1 class="font-bold text-lg" x-text="t('app.title')"></h1>
                         <div class="flex items-center gap-2">
-                            <button @click="openSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :title="t('sidebar.settings')">
+                            <button @click="openSettings()" class="tip tip-bottom text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.settings')">
                                 <svg class="w-5 h-5"><use href="#icon-settings"/></svg>
                             </button>
                             <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm hidden md:block" x-text="t('app.logout')"></button>
                             <!-- Mobile close button -->
-                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :title="t('sidebar.closeMenu')">
+                            <button @click="sidebarOpen = false" class="tip tip-bottom md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.closeMenu')">
                                 <svg class="w-6 h-6"><use href="#icon-x-close"/></svg>
                             </button>
                         </div>
@@ -276,9 +276,9 @@
                         </div>
                         <button
                             @click="refreshFeeds()"
-                            class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
+                            class="tip tip-bottom text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
                             :disabled="refreshing"
-                            :title="t('sidebar.refresh') + ' (R)'"
+                            :data-tip="t('sidebar.refresh') + ' (R)'"
                         >
                             <svg x-show="!refreshing" class="w-4 h-4"><use href="#icon-refresh"/></svg>
                             <svg x-show="refreshing" class="w-4 h-4 animate-spin"><use href="#icon-spinner"/></svg>
@@ -318,8 +318,8 @@
                             <button
                                 @click.stop="regenerateSuggestions()"
                                 :disabled="regeneratingSuggestions"
-                                class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                                :title="regeneratingSuggestions ? t('sidebar.regenerating') : t('sidebar.regenerateSuggestions')"
+                                class="tip p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                :data-tip="regeneratingSuggestions ? t('sidebar.regenerating') : t('sidebar.regenerateSuggestions')"
                             >
                                 <svg class="w-4 h-4" :class="regeneratingSuggestions ? 'animate-spin' : ''"><use href="#icon-refresh"/></svg>
                             </button>
@@ -415,9 +415,9 @@
                                     <!-- Chevron toggle -->
                                     <button
                                         @click.stop="toggleCategoryCollapse(category.id)"
-                                        class="p-0.5 -ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-transform"
+                                        class="tip p-0.5 -ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-transform"
                                         :class="filter === 'category' && filterId === category.id ? 'hover:bg-blue-500' : ''"
-                                        :title="t('sidebar.toggleCategory')"
+                                        :data-tip="t('sidebar.toggleCategory')"
                                     >
                                         <svg class="w-3 h-3 transition-transform duration-200" :class="isCategoryCollapsed(category.id) ? '' : 'rotate-90'"><use href="#icon-chevron-right"/></svg>
                                     </button>
@@ -462,8 +462,8 @@
                                             ></span>
                                             <span
                                                 x-show="feed.error_count > 0"
-                                                class="text-red-400 text-xs flex-shrink-0"
-                                                title="Feed com erros"
+                                                class="tip text-red-400 text-xs flex-shrink-0"
+                                                data-tip="Feed com erros"
                                             >!</span>
                                         </button>
                                     </template>
@@ -496,8 +496,8 @@
                                 <!-- Hamburger menu button (mobile only) -->
                                 <button
                                     @click="sidebarOpen = true"
-                                    class="md:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                    :title="t('sidebar.openMenu')"
+                                    class="tip tip-bottom md:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    :data-tip="t('sidebar.openMenu')"
                                 >
                                     <svg class="w-6 h-6"><use href="#icon-hamburger"/></svg>
                                 </button>
@@ -523,7 +523,7 @@
                                         <span class="opacity-60" x-text="'(' + tagFilterCount + ')'"></span>
                                         <!-- Add to topic dropdown -->
                                         <span x-show="topics.length > 0" class="relative" x-data="{ open: false }">
-                                            <button @click="open = !open" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :title="t('topics.addToTopic')">
+                                            <button @click="open = !open" class="tip hover:text-blue-900 dark:hover:text-white ml-0.5" :data-tip="t('topics.addToTopic')">
                                                 <svg class="w-3 h-3"><use href="#icon-folder"/></svg>
                                             </button>
                                             <div x-show="open" @click.away="open = false" class="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 min-w-[160px]">
@@ -536,7 +536,7 @@
                                                 </template>
                                             </div>
                                         </span>
-                                        <button @click="clearTagFilter()" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :title="t('tags.clearFilter')">&times;</button>
+                                        <button @click="clearTagFilter()" class="tip hover:text-blue-900 dark:hover:text-white ml-0.5" :data-tip="t('tags.clearFilter')">&times;</button>
                                     </span>
                                 </template>
                                 <!-- Topic filter indicator -->
@@ -544,7 +544,7 @@
                                     <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
                                         <svg class="w-3 h-3"><use href="#icon-folder"/></svg>
                                         <span x-text="getSelectedTopicName()"></span>
-                                        <button @click="clearTopicFilter()" class="hover:text-purple-900 dark:hover:text-white ml-0.5" :title="t('topics.clearFilter')">&times;</button>
+                                        <button @click="clearTopicFilter()" class="tip hover:text-purple-900 dark:hover:text-white ml-0.5" :data-tip="t('topics.clearFilter')">&times;</button>
                                     </span>
                                 </template>
                                 <!-- Refresh feed button -->
@@ -552,8 +552,8 @@
                                     x-show="filter === 'feed'"
                                     @click="refreshFeed(filterId)"
                                     :disabled="refreshingFeed"
-                                    class="p-1 text-gray-400 hover:text-blue-500 disabled:opacity-50"
-                                    :title="t('feeds.refresh')"
+                                    class="tip tip-bottom p-1 text-gray-400 hover:text-blue-500 disabled:opacity-50"
+                                    :data-tip="t('feeds.refresh')"
                                 >
                                     <svg class="w-4 h-4" :class="refreshingFeed && 'animate-spin'"><use href="#icon-refresh"/></svg>
                                 </button>
@@ -568,9 +568,9 @@
                                 <!-- Post filter: Unread -->
                                 <button
                                     @click="clearCuration(); postFilter = 'unread'; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
+                                    class="tip tip-bottom px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
                                     :class="postFilter === 'unread' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                    :title="t('sidebar.unread')"
+                                    :data-tip="t('sidebar.unread')"
                                 >
                                     <!-- Circle icon (unread) - mobile only -->
                                     <svg class="w-4 h-4 md:hidden"><use href="#icon-circle"/></svg>
@@ -579,9 +579,9 @@
                                 <!-- Post filter: All -->
                                 <button
                                     @click="clearCuration(); postFilter = 'all'; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
+                                    class="tip tip-bottom px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
                                     :class="postFilter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                    :title="t('sidebar.all')"
+                                    :data-tip="t('sidebar.all')"
                                 >
                                     <!-- List icon (all) - mobile only -->
                                     <svg class="w-4 h-4 md:hidden"><use href="#icon-hamburger"/></svg>
@@ -590,9 +590,9 @@
                                 <!-- Post filter: Starred -->
                                 <button
                                     @click="postFilter = 'starred'; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
+                                    class="tip tip-bottom px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
                                     :class="postFilter === 'starred' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                    :title="t('sidebar.starred')"
+                                    :data-tip="t('sidebar.starred')"
                                 >
                                     <!-- Star icon (starred) - mobile only -->
                                     <svg class="w-4 h-4 md:hidden"><use href="#icon-star-24"/></svg>
@@ -605,8 +605,8 @@
                                 <button
                                     x-show="starredCount > 0 && postFilter === 'starred'"
                                     @click="exportStarred()"
-                                    class="px-1 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                                    :title="t('posts.exportStarred')"
+                                    class="tip tip-bottom px-1 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    :data-tip="t('posts.exportStarred')"
                                 >
                                     <svg class="w-4 h-4"><use href="#icon-download"/></svg>
                                 </button>
@@ -615,8 +615,8 @@
                                     x-show="starredCount > 0 && postFilter === 'starred'"
                                     @click="curatePosts()"
                                     :disabled="curatingPosts"
-                                    class="px-1.5 py-0.5 text-xs text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 hidden md:flex items-center gap-1"
-                                    :title="t('curation.curate')"
+                                    class="tip tip-bottom px-1.5 py-0.5 text-xs text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 hidden md:flex items-center gap-1"
+                                    :data-tip="t('curation.curate')"
                                 >
                                     <svg x-show="curatingPosts" class="w-3 h-3 animate-spin"><use href="#icon-spinner"/></svg>
                                     <svg x-show="!curatingPosts" class="w-3 h-3"><use href="#icon-sparkles"/></svg>
@@ -660,7 +660,7 @@
                                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
                                     <span>✗</span> <span x-text="curationStats.redundant"></span>
                                 </span>
-                                <span x-show="curationStats.unclassified > 0" class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-400 rounded" :title="t('curation.unclassifiedReason')">
+                                <span x-show="curationStats.unclassified > 0" class="tip inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-400 rounded" :data-tip="t('curation.unclassifiedReason')">
                                     <span>—</span> <span x-text="curationStats.unclassified"></span>
                                 </span>
                                 <span class="text-gray-400 dark:text-gray-500">|</span>
@@ -757,16 +757,16 @@
                                             <!-- Star icon -->
                                             <button
                                                 @click.stop="toggleStar(post)"
-                                                class="flex-shrink-0 hover:scale-110 transition-transform"
-                                                :title="post.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
+                                                class="tip flex-shrink-0 hover:scale-110 transition-transform"
+                                                :data-tip="post.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
                                             >
                                                 <svg class="w-4 h-4" :class="post.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" :fill="post.is_starred ? 'currentColor' : 'none'" :stroke="post.is_starred ? 'none' : 'currentColor'" :stroke-width="post.is_starred ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-star"/></svg>
                                             </button>
                                             <!-- Like icon (heart) -->
                                             <button
                                                 @click.stop="toggleLike(post)"
-                                                class="flex-shrink-0 hover:scale-110 transition-transform"
-                                                :title="post.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
+                                                class="tip flex-shrink-0 hover:scale-110 transition-transform"
+                                                :data-tip="post.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                                             >
                                                 <svg class="w-4 h-4" :class="post.is_liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'" :fill="post.is_liked ? 'currentColor' : 'none'" :stroke="post.is_liked ? 'none' : 'currentColor'" :stroke-width="post.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
                                             </button>
@@ -775,16 +775,17 @@
                                                 class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                                                 x-text="Math.round(post.suggestion_score) + '%'"
                                             ></span>
-                                            <!-- Curation badge -->
+                                            <!-- Curation badge with custom tooltip -->
                                             <span
                                                 x-show="getCurationBadge(post.id)"
-                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help"
+                                                class="tip inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help"
                                                 :class="{
                                                     'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': getCurationBadge(post.id)?.classification === 'essential',
                                                     'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': getCurationBadge(post.id)?.classification === 'redundant',
                                                     'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': getCurationBadge(post.id)?.classification === 'keep_if_interested'
                                                 }"
-                                                :title="getCurationBadge(post.id)?.reason"
+                                                :data-tip="getCurationBadge(post.id)?.reason"
+                                                @click.stop="$el.classList.toggle('tip-visible')"
                                                 x-text="getCurationBadge(post.id)?.classification === 'essential' ? '★ essential' : getCurationBadge(post.id)?.classification === 'redundant' ? '✗ redundant' : '? situational'"
                                             ></span>
                                             <span x-text="getFeedTitle(post.feed_id)"></span>
@@ -877,30 +878,30 @@
                                         <!-- Action buttons -->
                                         <div class="flex items-center gap-1 flex-shrink-0">
                                             <!-- Nav buttons -->
-                                            <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :title="t('modal.prevPost')">
+                                            <button @click="prevPost()" :disabled="!canGoPrev()" class="tip tip-bottom p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.prevPost')">
                                                 <svg class="w-4 h-4"><use href="#icon-chevron-left"/></svg>
                                             </button>
-                                            <button @click="nextPost()" :disabled="!canGoNext()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :title="t('modal.nextPost')">
+                                            <button @click="nextPost()" :disabled="!canGoNext()" class="tip tip-bottom p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.nextPost')">
                                                 <svg class="w-4 h-4"><use href="#icon-chevron-right"/></svg>
                                             </button>
                                             <!-- Star -->
-                                            <button @click="toggleStar(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :title="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')">
+                                            <button @click="toggleStar(currentPost)" class="tip tip-bottom p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20"><use href="#icon-star"/></svg>
                                             </button>
                                             <!-- Like -->
-                                            <button @click="toggleLike(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :title="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')">
+                                            <button @click="toggleLike(currentPost)" class="tip tip-bottom p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
                                             </button>
                                             <!-- Read/Unread -->
-                                            <button @click="toggleRead(currentPost)" class="p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" :title="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')">
+                                            <button @click="toggleRead(currentPost)" class="tip tip-bottom p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" :data-tip="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')">
                                                 <svg class="w-4 h-4"><use href="#icon-check"/></svg>
                                             </button>
                                             <!-- Original link -->
-                                            <a :href="currentPost.url" target="_blank" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :title="t('modal.original')">
+                                            <a :href="currentPost.url" target="_blank" class="tip tip-bottom p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="t('modal.original')">
                                                 <svg class="w-4 h-4"><use href="#icon-external-link"/></svg>
                                             </a>
                                             <!-- Close -->
-                                            <button @click="currentPost = null" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl" :title="t('modal.closeEsc')">&times;</button>
+                                            <button @click="currentPost = null" class="tip tip-bottom p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl" :data-tip="t('modal.closeEsc')">&times;</button>
                                         </div>
                                     </div>
 
@@ -926,12 +927,12 @@
                                             <div class="px-3 py-1.5 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between">
                                                 <h3 class="text-xs font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
                                                 <div class="flex items-center gap-1">
-                                                    <button @click="toggleSkipSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :title="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')">
+                                                    <button @click="toggleSkipSummary()" class="tip text-xs px-2 py-0.5 rounded transition-colors" :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')">
                                                         <span class="flex items-center gap-1">
                                                             <svg class="w-3 h-3"><use href="#icon-prohibition"/></svg>
                                                         </span>
                                                     </button>
-                                                    <button @click="regenerateSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="regeneratingSummary ? 'bg-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :disabled="regeneratingSummary" :title="t('modal.regenerate')">
+                                                    <button @click="regenerateSummary()" class="tip text-xs px-2 py-0.5 rounded transition-colors" :class="regeneratingSummary ? 'bg-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :disabled="regeneratingSummary" :data-tip="t('modal.regenerate')">
                                                         <span x-show="!regeneratingSummary" class="flex items-center gap-1">
                                                             <svg class="w-3 h-3"><use href="#icon-refresh"/></svg>
                                                         </span>
@@ -946,13 +947,13 @@
                                                         <template x-if="currentPost.tags && currentPost.tags.length > 0">
                                                             <div class="mt-3 flex flex-wrap gap-1">
                                                                 <template x-for="tag in currentPost.tags" :key="tag">
-                                                                    <span class="text-xs cursor-pointer px-1.5 py-0.5 rounded-full border transition-colors"
+                                                                    <span class="tip text-xs cursor-pointer px-1.5 py-0.5 rounded-full border transition-colors"
                                                                         :class="isTagIgnored(tag)
                                                                             ? 'line-through text-gray-400 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800'
                                                                             : isTagMatched(tag, currentPost.matched_tags)
                                                                                 ? 'font-bold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30'
                                                                                 : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                                                                        :title="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
+                                                                        :data-tip="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
                                                                             isTagMatched(tag, currentPost.matched_tags)
                                                                                 ? t('tags.profileTooltip') : t('tags.neutralTooltip')"
                                                                         @click.stop="toggleTagIgnored(tag)"
@@ -1033,17 +1034,17 @@
                         <div class="flex items-center">
                             <button
                                 @click="prevPost()"
-                                class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                class="tip tip-bottom p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 :disabled="!canGoPrev()"
-                                :title="t('modal.prevPost')"
+                                :data-tip="t('modal.prevPost')"
                             >
                                 <svg class="w-5 h-5"><use href="#icon-chevron-left"/></svg>
                             </button>
                             <button
                                 @click="nextPost()"
-                                class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                class="tip tip-bottom p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 :disabled="!canGoNext()"
-                                :title="t('modal.nextPost')"
+                                :data-tip="t('modal.nextPost')"
                             >
                                 <svg class="w-5 h-5"><use href="#icon-chevron-right"/></svg>
                             </button>
@@ -1051,25 +1052,25 @@
                         <!-- Star button -->
                         <button
                             @click="toggleStar(currentPost)"
-                            class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            :title="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
+                            class="tip tip-bottom p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            :data-tip="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
                         >
                             <svg class="w-5 h-5" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" :fill="currentPost.is_starred ? 'currentColor' : 'none'" :stroke="currentPost.is_starred ? 'none' : 'currentColor'" :stroke-width="currentPost.is_starred ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-star"/></svg>
                         </button>
                         <!-- Like button -->
                         <button
                             @click="toggleLike(currentPost)"
-                            class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            :title="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
+                            class="tip tip-bottom p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                         >
                             <svg class="w-5 h-5" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'" :fill="currentPost.is_liked ? 'currentColor' : 'none'" :stroke="currentPost.is_liked ? 'none' : 'currentColor'" :stroke-width="currentPost.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
                         </button>
                         <!-- Read/Unread button - icon only on mobile -->
                         <button
                             @click="toggleRead(currentPost)"
-                            class="p-1.5 md:px-3 md:py-1 rounded text-white"
+                            class="tip tip-bottom p-1.5 md:px-3 md:py-1 rounded text-white"
                             :class="currentPost.is_read ? 'bg-gray-500 dark:bg-gray-700 hover:bg-gray-600 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'"
-                            :title="currentPost.is_read ? t('modal.unread') : t('modal.read')"
+                            :data-tip="currentPost.is_read ? t('modal.unread') : t('modal.read')"
                         >
                             <svg class="w-5 h-5 md:hidden"><use href="#icon-check"/></svg>
                             <span class="hidden md:inline text-sm" x-text="currentPost.is_read ? t('modal.unread') : t('modal.read')"></span>
@@ -1078,13 +1079,13 @@
                         <a
                             :href="currentPost.url"
                             target="_blank"
-                            class="p-1.5 md:px-3 md:py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
-                            :title="t('modal.original')"
+                            class="tip tip-bottom p-1.5 md:px-3 md:py-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
+                            :data-tip="t('modal.original')"
                         >
                             <svg class="w-5 h-5 md:hidden"><use href="#icon-external-link"/></svg>
                             <span class="hidden md:inline text-sm" x-text="t('modal.original')"></span>
                         </a>
-                        <button @click="closePost()" class="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl" :title="t('modal.close')">&times;</button>
+                        <button @click="closePost()" class="tip tip-bottom p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl" :data-tip="t('modal.close')">&times;</button>
                     </div>
                 </div>
 
@@ -1115,9 +1116,9 @@
                             <div class="flex items-center gap-1">
                                 <button
                                     @click="toggleSkipSummary()"
-                                    class="text-xs px-2 py-1 rounded transition-colors"
+                                    class="tip text-xs px-2 py-1 rounded transition-colors"
                                     :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
-                                    :title="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')"
+                                    :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')"
                                 >
                                     <span class="flex items-center gap-1">
                                         <svg class="w-3 h-3"><use href="#icon-prohibition"/></svg>
@@ -1126,10 +1127,10 @@
                                 </button>
                                 <button
                                     @click="regenerateSummary()"
-                                    class="text-xs px-2 py-1 rounded transition-colors"
+                                    class="tip text-xs px-2 py-1 rounded transition-colors"
                                     :class="regeneratingSummary ? 'bg-gray-400 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-wait' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'"
                                     :disabled="regeneratingSummary"
-                                    :title="t('modal.regenerate')"
+                                    :data-tip="t('modal.regenerate')"
                                 >
                                     <span x-show="!regeneratingSummary" class="flex items-center gap-1">
                                         <svg class="w-3 h-3"><use href="#icon-refresh"/></svg>
@@ -1150,13 +1151,13 @@
                                     <template x-if="currentPost.tags && currentPost.tags.length > 0">
                                         <div class="mt-3 flex flex-wrap gap-1">
                                             <template x-for="tag in currentPost.tags" :key="tag">
-                                                <span class="text-xs cursor-pointer px-1.5 py-0.5 rounded-full border transition-colors"
+                                                <span class="tip text-xs cursor-pointer px-1.5 py-0.5 rounded-full border transition-colors"
                                                     :class="isTagIgnored(tag)
                                                         ? 'line-through text-gray-400 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800'
                                                         : isTagMatched(tag, currentPost.matched_tags)
                                                             ? 'font-bold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30'
                                                             : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                                                    :title="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
+                                                    :data-tip="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
                                                         isTagMatched(tag, currentPost.matched_tags)
                                                             ? t('tags.profileTooltip') : t('tags.neutralTooltip')"
                                                     @click.stop="toggleTagIgnored(tag)"
@@ -1402,8 +1403,8 @@
                                                     ></button>
                                                     <span
                                                         x-show="feed.starred_count > 0"
-                                                        class="text-amber-500 dark:text-amber-400"
-                                                        :title="t('feeds.hasStarredPosts')"
+                                                        class="tip text-amber-500 dark:text-amber-400"
+                                                        :data-tip="t('feeds.hasStarredPosts')"
                                                     >&#9733;</span>
                                                 </div>
                                             </div>
@@ -1709,8 +1710,8 @@
                                                 <button
                                                     @click="suggestTagsForTopic(topic.id)"
                                                     :disabled="suggestingTagsForTopicId !== null"
-                                                    class="px-1.5 py-0.5 text-[10px] text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 flex items-center gap-0.5"
-                                                    :title="t('settings.topics.suggestTags')"
+                                                    class="tip px-1.5 py-0.5 text-[10px] text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 flex items-center gap-0.5"
+                                                    :data-tip="t('settings.topics.suggestTags')"
                                                 >
                                                     <svg x-show="suggestingTagsForTopicId === topic.id" class="w-3 h-3 animate-spin"><use href="#icon-spinner"/></svg>
                                                     <svg x-show="suggestingTagsForTopicId !== topic.id" class="w-3 h-3"><use href="#icon-sparkles"/></svg>
@@ -1718,8 +1719,8 @@
                                                 </button>
                                                 <button
                                                     @click="deleteTopic(topic.id)"
-                                                    class="text-red-500 hover:text-red-700 text-sm"
-                                                    :title="t('settings.topics.delete')"
+                                                    class="tip text-red-500 hover:text-red-700 text-sm"
+                                                    :data-tip="t('settings.topics.delete')"
                                                 >&times;</button>
                                             </div>
                                         </div>
@@ -1958,7 +1959,7 @@
                                             <template x-for="tag in [...ignoredTags].sort()" :key="tag">
                                                 <span class="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
                                                     <span x-text="tag"></span>
-                                                    <button @click="toggleTagIgnored(tag)" class="hover:text-red-500" :title="t('tags.clearFilter')">&times;</button>
+                                                    <button @click="toggleTagIgnored(tag)" class="tip hover:text-red-500" :data-tip="t('tags.clearFilter')">&times;</button>
                                                 </span>
                                             </template>
                                         </div>
@@ -2039,7 +2040,7 @@
                     <svg x-show="toast.type === 'info'" class="w-5 h-5 flex-shrink-0"><use href="#icon-info"/></svg>
                     <span x-text="toast.message"></span>
                 </div>
-                <button @click="hideToast()" class="text-white/80 hover:text-white flex-shrink-0" :title="t('modal.dismiss')">
+                <button @click="hideToast()" class="tip text-white/80 hover:text-white flex-shrink-0" :data-tip="t('modal.dismiss')">
                     <svg class="w-5 h-5"><use href="#icon-x-close"/></svg>
                 </button>
             </div>
