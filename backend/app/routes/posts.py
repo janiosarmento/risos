@@ -126,6 +126,7 @@ def get_summary_status(db: Session, post: Post) -> str:
 def list_posts(
     feed_id: Optional[int] = Query(None, description="Filter by feed"),
     category_id: Optional[int] = Query(None, description="Filter by category"),
+    tag: Optional[str] = Query(None, description="Filter by tag"),
     unread_only: bool = Query(False, description="Only unread"),
     starred_only: bool = Query(False, description="Only starred"),
     suggested_only: bool = Query(False, description="Only AI-suggested"),
@@ -139,10 +140,14 @@ def list_posts(
     Ordered by sort_date DESC (newest first).
     Also returns updated unread counts for relevant feeds.
     """
-    query = db.query(Post)
+    query = db.query(Post).options(subqueryload(Post.tags))
 
     # Track which feeds to return unread counts for
     relevant_feed_ids = set()
+
+    # Apply tag filter (composable with feed/category)
+    if tag:
+        query = query.join(PostTag).filter(PostTag.tag == tag.strip().lower())
 
     # Apply feed/category filter first
     if feed_id is not None:
@@ -259,6 +264,7 @@ def list_posts(
                 _title_matches_term((post.title or "").lower(), term)
                 for term in blocked_terms
             ),
+            "tags": [pt.tag for pt in post.tags],
         }
         result.append(PostResponse(**post_dict))
 

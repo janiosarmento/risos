@@ -154,10 +154,10 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── auth.py             # Login/logout
 │   │   │   ├── categories.py       # CRUD for categories
 │   │   │   ├── feeds.py            # CRUD + refresh + OPML
-│   │   │   ├── posts.py            # List/read posts, mark read, skip summary, export starred
+│   │   │   ├── posts.py            # List/read posts, mark read, skip summary, export starred, tag filter
 │   │   │   ├── preferences.py      # User preferences API
 │   │   │   ├── suggestions.py      # Suggestion system admin endpoints
-│   │   │   ├── tags.py             # Ignored tags management API
+│   │   │   ├── tags.py             # Tag management: popular tags + ignored tags API
 │   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/

@@ -1,15 +1,16 @@
 """
-Ignored tags management routes.
-Allows user to mark tags as irrelevant for the suggestion system.
+Tag management routes.
+Includes popular tags listing and ignored tags management.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import IgnoredTag
+from app.models import IgnoredTag, PostTag
 from app.services.suggestions import clear_all_suggestions
 from app.services.user_profile import invalidate_user_profile
 
@@ -25,6 +26,33 @@ def _normalize_tag(tag: str) -> str:
     tag = tag.strip().lower()
     tag = tag.replace(" ", "-").replace("_", "-")
     return tag[:50]
+
+
+@router.get("/popular")
+def get_popular_tags(
+    limit: int = Query(10, ge=1, le=50, description="Number of tags to return"),
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Get most popular tags by post count, excluding ignored tags."""
+    ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
+
+    rows = (
+        db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
+        .group_by(PostTag.tag)
+        .order_by(func.count(PostTag.post_id).desc())
+        .all()
+    )
+
+    tags = []
+    for row in rows:
+        if row.tag in ignored:
+            continue
+        tags.append({"tag": row.tag, "count": row.count})
+        if len(tags) >= limit:
+            break
+
+    return {"tags": tags}
 
 
 @router.get("/ignored")

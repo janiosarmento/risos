@@ -30,7 +30,8 @@
     "toggleCategory": "Expandir/recolher categoria",
     "noCategory": "Sem categoria",
     "settings": "Configurações",
-    "refresh": "Atualizar"
+    "refresh": "Atualizar",
+    "topTags": "Tags Populares"
   },
   "posts": {
     "noPosts": "Nenhum post não lido",
@@ -142,6 +143,9 @@
     "clearCache": "Limpar cache",
     "resetCircuitBreaker": "Resetar IA",
     "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso",
+    "ignoredTags": "Tags Ignoradas",
+    "ignoredTagsDesc": "Tags excluídas das sugestões e do perfil. Clique no x para restaurar.",
+    "noIgnoredTags": "Nenhuma tag ignorada",
     "blockedTerms": "Termos Bloqueados",
     "blockedTermsDesc": "Posts com esses termos no título serão destacados. Use % como curinga (ex: best % to watch). Um termo por linha.",
     "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch"
@@ -153,7 +157,9 @@
   "tags": {
     "ignoredTooltip": "Ignorada — clique para restaurar",
     "profileTooltip": "No seu perfil — clique para ignorar",
-    "neutralTooltip": "Clique para ignorar"
+    "neutralTooltip": "Clique para ignorar",
+    "filterTooltip": "Clique para filtrar por esta tag",
+    "clearFilter": "Limpar filtro de tag"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

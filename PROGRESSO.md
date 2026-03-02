@@ -1,13 +1,13 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-02-28
+**Última atualização:** 2026-03-01
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, exportação de favoritos como ZIP, SVG sprite sheet, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, exportação de favoritos como ZIP, navegação por tags, SVG sprite sheet, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,33 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-03-01 — Navegação por Tags (Fase 1)
+
+### Backend
+- Novo endpoint `GET /api/tags/popular` — retorna top N tags por contagem de posts, excluindo tags ignoradas
+- Parâmetro `tag` adicionado a `GET /api/posts` — filtra posts por tag via JOIN com `post_tags`
+  - Composável com `feed_id`, `category_id`, `starred_only`, `unread_only`
+- Tags incluídas em `PostResponse` (listagem) via `subqueryload(Post.tags)`
+  - Antes as tags só apareciam no detalhe do post
+
+### Frontend
+- **Lista de posts**: tags exibidas como mini-chips clicáveis (max 5 + overflow)
+  - Clique filtra posts por essa tag
+  - Chip ativo destacado em azul quando o filtro de tag está ativo
+- **Detalhe do post**: tags continuam como antes — clique alterna entre ignorada/não ignorada
+- **Sidebar**: nova secção colapsável "Tags Populares" com as 10 tags mais frequentes
+  - Cada tag clicável como filtro
+  - Inicia colapsada
+- **Header**: indicador de filtro de tag ativo (`#tagname` com botão x para limpar)
+- **Settings > General**: nova secção "Tags Ignoradas" mostrando tags com botão de remoção
+- Ícone SVG `#icon-tag` adicionado ao sprite sheet
+
+### Traduções
+- Novas chaves em en-US e pt-BR: `sidebar.topTags`, `tags.filterTooltip`, `tags.clearFilter`, `settings.ignoredTags`, `settings.ignoredTagsDesc`, `settings.noIgnoredTags`
+- Cache buster: `20260301a`
 
 ---
 

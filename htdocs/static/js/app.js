@@ -41,6 +41,9 @@ function app() {
         sidebarOpen: false,
         lastNavMode: 'posts', // 'posts' (J/K) or 'sidebar' ([/])
         lastFeedNavIndex: 0, // Last position in feed navigation (for [/])
+        tagFilter: null, // Current tag filter (composable with feed/category)
+        popularTags: [], // [{tag, count}] loaded from /api/tags/popular
+        topTagsExpanded: false, // Sidebar "Top Tags" section collapsed by default
 
         // Settings
         showSettings: false,
@@ -263,7 +266,7 @@ function app() {
             }
         },
 
-        // Toggle a tag's ignored state
+        // Toggle a tag's ignored state (used from settings)
         async toggleTagIgnored(tag) {
             const normalized = tag.toLowerCase();
             try {
@@ -281,6 +284,34 @@ function app() {
                 this.ignoredTags = new Set(this.ignoredTags);
             } catch (e) {
                 console.warn('Failed to toggle ignored tag:', e);
+            }
+        },
+
+        // Filter posts by tag (composable with feed/category)
+        filterByTag(tag) {
+            const normalized = tag.toLowerCase();
+            if (this.tagFilter === normalized) {
+                // Clicking same tag clears filter
+                this.tagFilter = null;
+            } else {
+                this.tagFilter = normalized;
+            }
+            this.loadPosts(true);
+        },
+
+        // Clear the active tag filter
+        clearTagFilter() {
+            this.tagFilter = null;
+            this.loadPosts(true);
+        },
+
+        // Load popular tags from server
+        async loadPopularTags() {
+            try {
+                const data = await this.fetchApi('/tags/popular?limit=10');
+                this.popularTags = data.tags || [];
+            } catch (e) {
+                console.warn('Failed to load popular tags:', e);
             }
         },
 
@@ -781,6 +812,7 @@ function app() {
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
+                this.loadPopularTags();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -1052,6 +1084,7 @@ function app() {
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
+                this.loadPopularTags();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
@@ -1162,6 +1195,11 @@ function app() {
                     params.set('category_id', this.filterId);
                 }
 
+                // Apply tag filter (composable with feed/category)
+                if (this.tagFilter) {
+                    params.set('tag', this.tagFilter);
+                }
+
                 // Apply post filter (unread/all/starred/suggested within current context)
                 // When sidebar filter is 'starred', always show starred posts
                 if (this.filter === 'starred' || this.postFilter === 'starred') {
@@ -1227,6 +1265,7 @@ function app() {
         setFilter(type, id = null) {
             this.filter = type;
             this.filterId = id;
+            this.tagFilter = null; // Clear tag filter on navigation
             this.sidebarOpen = false; // Close sidebar on mobile
 
             // Update lastFeedNavIndex for navigable filters (so [/] works after clicking)

@@ -30,7 +30,8 @@
     "toggleCategory": "Expand/collapse category",
     "noCategory": "Uncategorized",
     "settings": "Settings",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "topTags": "Top Tags"
   },
   "posts": {
     "noPosts": "No unread posts",
@@ -142,6 +143,9 @@
     "clearCache": "Clear cache",
     "resetCircuitBreaker": "Reset AI",
     "circuitBreakerReset": "AI circuit breaker reset successfully",
+    "ignoredTags": "Ignored Tags",
+    "ignoredTagsDesc": "Tags excluded from suggestions and profile. Click x to restore.",
+    "noIgnoredTags": "No ignored tags",
     "blockedTerms": "Blocked Terms",
     "blockedTermsDesc": "Posts matching these terms in the title will be highlighted. Use % as wildcard (e.g. best % to watch). One term per line.",
     "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch"
@@ -153,7 +157,9 @@
   "tags": {
     "ignoredTooltip": "Ignored — click to restore",
     "profileTooltip": "In your profile — click to ignore",
-    "neutralTooltip": "Click to ignore"
+    "neutralTooltip": "Click to ignore",
+    "filterTooltip": "Click to filter by this tag",
+    "clearFilter": "Clear tag filter"
   },
   "categories": {
     "newPlaceholder": "New category name",

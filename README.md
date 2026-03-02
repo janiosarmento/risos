@@ -25,6 +25,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
 - **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
+- **Tag Navigation** — Filter posts by clicking tags in the post list; collapsible "Top Tags" sidebar section; tag filter composes with feed/category views
 - **Blocked Terms** — Define terms to flag noisy posts with a visual indicator; bulk-dismiss with one click
 - **Skip Summary Indicator** — Posts marked to skip AI summary show a visual icon in the list
 - **Configurable Settings** — AI model, data retention, interface behavior
