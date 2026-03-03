@@ -1985,6 +1985,18 @@ function app() {
         },
 
         async toggleStar(post) {
+            // Warn if starring into a feed that already has many starred posts
+            if (!post.is_starred) {
+                const feed = this.feeds.find(f => f.id === post.feed_id);
+                if (feed && (feed.starred_count || 0) >= CURATION_WARN_THRESHOLD) {
+                    if (!await this.showConfirm(
+                        this.t('starring.tooManyStarred')
+                            .replace('{count}', feed.starred_count)
+                            .replace('{feed}', feed.title)
+                    )) return;
+                    this.confirmDone();
+                }
+            }
             try {
                 const data = await this.fetchApi(`/posts/${post.id}/star`, {
                     method: 'PATCH',

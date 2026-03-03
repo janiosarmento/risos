@@ -157,7 +157,7 @@
       "desc": "Use IA para encontrar e unificar tags duplicadas (ex: career-advice / career-tips). Revise as sugestões antes de aplicar.",
       "offset": "Início:",
       "batchSize": "Lote:",
-      "analyze": "Analisar lote",
+      "analyze": "Analisar",
       "analyzing": "Analisando...",
       "apply": "Aplicar selecionados",
       "applying": "Aplicando...",
@@ -224,6 +224,9 @@
     "tooManyPosts": "Há {count} posts favoritos nesta visualização. A curadoria por IA funciona melhor com até 50 posts — tente filtrar por feed ou tópico para resultados melhores. Continuar mesmo assim?",
     "disclaimer": "Os badges são estimativas da IA — passe o mouse para ver os detalhes. Use seu próprio critério ao arquivar.",
     "unclassifiedReason": "Não analisado pela IA — pode ter sido ignorado devido ao tamanho da lista"
+  },
+  "starring": {
+    "tooManyStarred": "Este feed ({feed}) já tem {count} posts favoritos. Tem certeza que deseja favoritar mais um?"
   },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",

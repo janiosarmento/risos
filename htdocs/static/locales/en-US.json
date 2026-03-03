@@ -157,7 +157,7 @@
       "desc": "Use AI to find and merge near-duplicate tags (e.g. career-advice / career-tips). Review suggestions before applying.",
       "offset": "Offset:",
       "batchSize": "Batch:",
-      "analyze": "Analyze batch",
+      "analyze": "Analyze",
       "analyzing": "Analyzing...",
       "apply": "Apply selected",
       "applying": "Applying...",
@@ -224,6 +224,9 @@
     "tooManyPosts": "You have {count} starred posts in this view. AI curation works best with up to 50 posts — try filtering by feed or topic first for better results. Continue anyway?",
     "disclaimer": "Badges are AI estimates — hover for details. Use your own judgment when archiving.",
     "unclassifiedReason": "Not analyzed by AI — may have been skipped due to list size"
+  },
+  "starring": {
+    "tooManyStarred": "This feed ({feed}) already has {count} starred posts. Are you sure you want to star another one?"
   },
   "categories": {
     "newPlaceholder": "New category name",

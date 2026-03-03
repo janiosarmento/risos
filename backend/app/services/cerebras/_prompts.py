@@ -81,6 +81,11 @@ def get_user_prompt(content: str, title: str = "", language: str = None, db=None
         "\n\nIMPORTANT: All tags MUST be in English, using lowercase hyphens "
         "(e.g. \"open-source\", \"artificial-intelligence\"). "
         "NEVER use tags in other languages."
+        "\n\nStrongly prefer SHORT, broad tags (1-2 words) over long compound tags. "
+        "For example, use \"ai\" instead of \"artificial-intelligence-ethics\", "
+        "\"privacy\" instead of \"data-privacy-regulations\", "
+        "\"security\" instead of \"cybersecurity-vulnerabilities\". "
+        "Only use multi-word tags when a single word would be too ambiguous."
     )
 
     # Inject popular existing tags to encourage reuse
