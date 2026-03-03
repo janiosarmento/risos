@@ -54,7 +54,8 @@ SYSTEM_PROMPT = (
 
 
 def log(msg):
-    print(msg, flush=True)
+    ts = time.strftime("%H:%M:%S")
+    print(f"[{ts}] {msg}", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -104,12 +105,31 @@ async def call_ollama_json(system_prompt: str, user_prompt: str) -> dict:
     return parse_json_response(data["message"]["content"])
 
 
+MAX_RETRIES = 3
+RETRY_WAIT = 60  # seconds to wait on rate limit before retry
+
+
 async def call_llm(system_prompt: str, user_prompt: str, use_local: bool = False) -> dict:
     if use_local:
         return await call_ollama_json(system_prompt, user_prompt)
     from app.services.cerebras._api import call_llm_json
 
     return await call_llm_json(system_prompt, user_prompt)
+
+
+async def call_llm_with_retry(system_prompt: str, user_prompt: str, use_local: bool = False) -> dict:
+    """Call LLM with retry on rate limit / temporary errors."""
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            return await call_llm(system_prompt, user_prompt, use_local)
+        except Exception as e:
+            err = str(e).lower()
+            is_retryable = "rate limit" in err or "cooldown" in err or "429" in err or "timeout" in err or "temporary" in err
+            if is_retryable and attempt < MAX_RETRIES:
+                log(f"    Retry {attempt}/{MAX_RETRIES} after error: {e} (waiting {RETRY_WAIT}s)")
+                await asyncio.sleep(RETRY_WAIT)
+            else:
+                raise
 
 
 # ---------------------------------------------------------------------------
@@ -249,14 +269,21 @@ async def refine_clusters_with_llm(clusters: list, tag_counts: dict, use_local: 
             all_tags_in_batch.update(c)
 
         prompt = build_cluster_prompt(batch_clusters, tag_counts)
+        sample = list(all_tags_in_batch)[:5]
+        log(f"  Batch {i}/{len(batches)}: sending {len(batch_clusters)} clusters, "
+            f"{len(all_tags_in_batch)} tags to LLM (e.g. {', '.join(sample)})...")
 
         try:
-            result = await call_llm(SYSTEM_PROMPT, prompt, use_local)
+            t0 = time.monotonic()
+            result = await call_llm_with_retry(SYSTEM_PROMPT, prompt, use_local)
+            elapsed = time.monotonic() - t0
             groups = validate_groups(result.get("groups", []), all_tags_in_batch)
             all_groups.extend(groups)
             found = sum(len(g["merge"]) for g in groups)
-            log(f"  Batch {i}/{len(batches)}: {len(batch_clusters)} clusters, "
-                f"{len(all_tags_in_batch)} tags → {len(groups)} merge groups ({found} tags to merge)")
+            log(f"  Batch {i}/{len(batches)}: done in {elapsed:.1f}s → "
+                f"{len(groups)} merge groups ({found} tags to merge)")
+            for g in groups:
+                log(f"    {g['merge']} → {g['canonical']}")
         except Exception as e:
             log(f"  Batch {i}/{len(batches)}: ERROR ({e})")
             errors += 1
@@ -301,12 +328,20 @@ async def catch_all_ungrouped(ungrouped: list, tag_counts: dict, use_local: bool
         )
 
         valid_tags = set(batch)
+        sample = batch[:5]
+        log(f"  Batch {i}/{len(batches)}: sending {len(batch)} tags to LLM (e.g. {', '.join(sample)})...")
+
         try:
-            result = await call_llm(SYSTEM_PROMPT, prompt, use_local)
+            t0 = time.monotonic()
+            result = await call_llm_with_retry(SYSTEM_PROMPT, prompt, use_local)
+            elapsed = time.monotonic() - t0
             groups = validate_groups(result.get("groups", []), valid_tags)
             all_groups.extend(groups)
             found = sum(len(g["merge"]) for g in groups)
-            log(f"  Batch {i}/{len(batches)}: {len(batch)} tags → {len(groups)} merge groups ({found} tags to merge)")
+            log(f"  Batch {i}/{len(batches)}: done in {elapsed:.1f}s → "
+                f"{len(groups)} merge groups ({found} tags to merge)")
+            for g in groups:
+                log(f"    {g['merge']} → {g['canonical']}")
         except Exception as e:
             log(f"  Batch {i}/{len(batches)}: ERROR ({e})")
             errors += 1
