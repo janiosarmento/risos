@@ -29,13 +29,10 @@ from sqlalchemy import func, text
 from app.database import SessionLocal
 from app.models import PostTag
 from app.services.cerebras._parsing import normalize_tag, parse_json_response
+from app.services.ollama._api import OLLAMA_MODEL, OLLAMA_TIMEOUT, OLLAMA_URL
 from app.services.suggestions import clear_all_suggestions
 from app.services.user_profile import invalidate_user_profile
-
-# Ollama settings (reuse from ollama module)
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-OLLAMA_MODEL = "qwen2.5:7b-instruct-q4_K_M"
-OLLAMA_TIMEOUT = 600
+from scripts.lib import log as _log
 
 # Tuning
 MIN_SEGMENT_LEN = 3
@@ -54,8 +51,7 @@ SYSTEM_PROMPT = (
 
 
 def log(msg):
-    ts = time.strftime("%H:%M:%S")
-    print(f"[{ts}] {msg}", flush=True)
+    _log(msg, timestamp=True)
 
 
 # ---------------------------------------------------------------------------
