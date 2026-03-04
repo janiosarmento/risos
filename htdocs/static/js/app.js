@@ -1818,10 +1818,12 @@ function app() {
                 if (this._pendingPostId) {
                     let idx = this.posts.findIndex(p => p.id === this._pendingPostId);
                     if (idx === -1 && this._pendingPost) {
-                        // Post not in list (already read with unread filter) — inject it
-                        this.posts.unshift(this._pendingPost);
+                        // Post not in list (already read with unread filter) — inject at chronological position
+                        const postDate = this._pendingPost.published_at || this._pendingPost.fetched_at || '';
+                        idx = this.posts.findIndex(p => (p.published_at || p.fetched_at || '') < postDate);
+                        if (idx === -1) idx = this.posts.length;
+                        this.posts.splice(idx, 0, this._pendingPost);
                         this.offset += 1;
-                        idx = 0;
                     }
                     if (idx !== -1) {
                         this.selectedIndex = idx;
