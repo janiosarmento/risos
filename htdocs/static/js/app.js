@@ -1816,12 +1816,19 @@ function app() {
 
                 // Select pending post after feed navigation
                 if (this._pendingPostId) {
-                    const idx = this.posts.findIndex(p => p.id === this._pendingPostId);
+                    let idx = this.posts.findIndex(p => p.id === this._pendingPostId);
+                    if (idx === -1 && this._pendingPost) {
+                        // Post not in list (already read with unread filter) — inject it
+                        this.posts.unshift(this._pendingPost);
+                        this.offset += 1;
+                        idx = 0;
+                    }
                     if (idx !== -1) {
                         this.selectedIndex = idx;
                         this.$nextTick(() => this.scrollToSelected());
                     }
                     this._pendingPostId = null;
+                    this._pendingPost = null;
                 }
             } catch (error) {
                 console.error('Failed to load posts:', error);
@@ -1843,6 +1850,7 @@ function app() {
         navigateToFeed(feedId, postId) {
             if (this.filter === 'feed' && this.filterId === feedId) return;
             this._pendingPostId = postId;
+            this._pendingPost = this.posts.find(p => p.id === postId) || null;
             this.setFilter('feed', feedId);
         },
 
