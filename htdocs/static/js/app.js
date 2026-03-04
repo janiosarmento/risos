@@ -91,27 +91,32 @@ function app() {
 
         // Idle detection
         idleTimeoutId: null,
-        idleRefreshSeconds: 180, // Default 3 minutes, loaded from config
+        get idleRefreshSeconds() { return Alpine.store('prefs').idleRefreshSeconds; },
+        set idleRefreshSeconds(v) { Alpine.store('prefs').idleRefreshSeconds = v; },
 
         // Suggestions
         regeneratingSuggestions: false,
-        suggestionMinTags: 3, // Default 3 tags overlap required
-        profileMinTagFreq: 2, // Default 2 liked posts for a tag to enter profile
-        tagsPerPost: 7, // Default 7 tags per AI summary
-        modelCooldownMinutes: 30, // Default 30min grace period for failed models
+        get suggestionMinTags() { return Alpine.store('prefs').suggestionMinTags; },
+        set suggestionMinTags(v) { Alpine.store('prefs').suggestionMinTags = v; },
+        get profileMinTagFreq() { return Alpine.store('prefs').profileMinTagFreq; },
+        set profileMinTagFreq(v) { Alpine.store('prefs').profileMinTagFreq = v; },
         ignoredTags: new Set(), // Tags ignored for suggestions (loaded from server)
-        blockedTerms: '', // Newline-separated blocked terms (loaded from server)
+        get blockedTerms() { return Alpine.store('prefs').blockedTerms; },
+        set blockedTerms(v) { Alpine.store('prefs').blockedTerms = v; },
 
         // Reading mode
-        readingMode: 'fullscreen', // 'fullscreen' or 'split', loaded from server
-        splitRatio: 40, // percentage for posts panel (20-80), loaded from server
+        get readingMode() { return Alpine.store('prefs').readingMode; },
+        set readingMode(v) { Alpine.store('prefs').readingMode = v; },
+        get splitRatio() { return Alpine.store('prefs').splitRatio; },
+        set splitRatio(v) { Alpine.store('prefs').splitRatio = v; },
         resizing: false, // true while dragging the resize handle
 
         // Toast
         // UI state (delegates to Alpine.store('ui'))
         get toast() { return Alpine.store('ui').toast; },
         get confirmModal() { return Alpine.store('ui').confirmModal; },
-        toastTimeoutSeconds: 2, // Default, will be loaded from config
+        get toastTimeoutSeconds() { return Alpine.store('prefs').toastTimeoutSeconds; },
+        set toastTimeoutSeconds(v) { Alpine.store('prefs').toastTimeoutSeconds = v; },
 
         // i18n
         // I18n (delegates to Alpine.store('i18n'))
@@ -125,22 +130,37 @@ function app() {
         set theme(v) { Alpine.store('ui').theme = v; },
         get availableThemes() { return Alpine.store('ui').availableThemes; },
 
-        // AI Settings
-        summaryLanguage: null, // Loaded from server preferences
-        cerebrasModel: null,   // Loaded from server preferences
-        availableSummaryLanguages: [], // Loaded from server
-        availableModels: [], // Loaded from server (requires auth)
-        cerebrasApiKeys: '',     // raw text from textarea (masked on load)
-        systemPrompt: '',
-        userPrompt: '',
-        defaultSystemPrompt: '', // for Reset to defaults
-        defaultUserPrompt: '',
-
-        // Data Settings
-        feedUpdateInterval: 30,  // Loaded from server preferences
-        maxPostsPerFeed: 500,
-        maxPostAgeDays: 365,
-        maxUnreadDays: 90,
+        // Preferences (delegates to Alpine.store('prefs'))
+        get summaryLanguage() { return Alpine.store('prefs').summaryLanguage; },
+        set summaryLanguage(v) { Alpine.store('prefs').summaryLanguage = v; },
+        get cerebrasModel() { return Alpine.store('prefs').cerebrasModel; },
+        set cerebrasModel(v) { Alpine.store('prefs').cerebrasModel = v; },
+        get availableSummaryLanguages() { return Alpine.store('prefs').availableSummaryLanguages; },
+        set availableSummaryLanguages(v) { Alpine.store('prefs').availableSummaryLanguages = v; },
+        get availableModels() { return Alpine.store('prefs').availableModels; },
+        set availableModels(v) { Alpine.store('prefs').availableModels = v; },
+        get cerebrasApiKeys() { return Alpine.store('prefs').cerebrasApiKeys; },
+        set cerebrasApiKeys(v) { Alpine.store('prefs').cerebrasApiKeys = v; },
+        get systemPrompt() { return Alpine.store('prefs').systemPrompt; },
+        set systemPrompt(v) { Alpine.store('prefs').systemPrompt = v; },
+        get userPrompt() { return Alpine.store('prefs').userPrompt; },
+        set userPrompt(v) { Alpine.store('prefs').userPrompt = v; },
+        get defaultSystemPrompt() { return Alpine.store('prefs').defaultSystemPrompt; },
+        set defaultSystemPrompt(v) { Alpine.store('prefs').defaultSystemPrompt = v; },
+        get defaultUserPrompt() { return Alpine.store('prefs').defaultUserPrompt; },
+        set defaultUserPrompt(v) { Alpine.store('prefs').defaultUserPrompt = v; },
+        get tagsPerPost() { return Alpine.store('prefs').tagsPerPost; },
+        set tagsPerPost(v) { Alpine.store('prefs').tagsPerPost = v; },
+        get modelCooldownMinutes() { return Alpine.store('prefs').modelCooldownMinutes; },
+        set modelCooldownMinutes(v) { Alpine.store('prefs').modelCooldownMinutes = v; },
+        get feedUpdateInterval() { return Alpine.store('prefs').feedUpdateInterval; },
+        set feedUpdateInterval(v) { Alpine.store('prefs').feedUpdateInterval = v; },
+        get maxPostsPerFeed() { return Alpine.store('prefs').maxPostsPerFeed; },
+        set maxPostsPerFeed(v) { Alpine.store('prefs').maxPostsPerFeed = v; },
+        get maxPostAgeDays() { return Alpine.store('prefs').maxPostAgeDays; },
+        set maxPostAgeDays(v) { Alpine.store('prefs').maxPostAgeDays = v; },
+        get maxUnreadDays() { return Alpine.store('prefs').maxUnreadDays; },
+        set maxUnreadDays(v) { Alpine.store('prefs').maxUnreadDays = v; },
 
         // Computed
         get totalUnread() {
