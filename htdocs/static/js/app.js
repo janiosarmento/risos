@@ -125,42 +125,11 @@ function app() {
         },
 
         // i18n
-        locale: localStorage.getItem('rss_locale') || null, // Will be detected in init()
-        translations: {},
-        availableLocales: [], // Loaded from server
-
-        // Load available locales from server
-        async loadAvailableLocales() {
-            try {
-                const response = await fetch(`${API_BASE}/admin/locales`);
-                if (response.ok) {
-                    this.availableLocales = await response.json();
-                }
-            } catch (e) {
-                console.warn('Failed to load available locales:', e);
-                // Fallback to hardcoded list
-                this.availableLocales = [
-                    { code: 'en-US', name: 'English (US)' },
-                    { code: 'pt-BR', name: 'Português (Brasil)' }
-                ];
-            }
-            const saved = this.locale;
-            this.$nextTick(() => { this.locale = saved; });
-        },
-
-        // Detect browser language and return matching locale or fallback
-        detectBrowserLocale() {
-            const browserLang = navigator.language || navigator.userLanguage || 'en-US';
-            // Check if we have an exact match
-            const exact = this.availableLocales.find(l => l.code === browserLang);
-            if (exact) return exact.code;
-            // Check for partial match (e.g., 'pt' matches 'pt-BR')
-            const lang = browserLang.split('-')[0];
-            const partial = this.availableLocales.find(l => l.code.startsWith(lang));
-            if (partial) return partial.code;
-            // Fallback to first available or English
-            return this.availableLocales[0]?.code || 'en-US';
-        },
+        // I18n (delegates to Alpine.store('i18n'))
+        get locale() { return Alpine.store('i18n').locale; },
+        set locale(v) { Alpine.store('i18n').locale = v; },
+        get translations() { return Alpine.store('i18n').translations; },
+        get availableLocales() { return Alpine.store('i18n').availableLocales; },
 
         // Theme
         theme: localStorage.getItem('rss_theme') || 'system',
@@ -239,32 +208,9 @@ function app() {
             return e.key.toLowerCase() === key.toLowerCase();
         },
 
-        // Translation function
-        t(key, fallback = null) {
-            const keys = key.split('.');
-            let value = this.translations;
-            for (const k of keys) {
-                if (value && typeof value === 'object' && k in value) {
-                    value = value[k];
-                } else {
-                    return fallback || key;
-                }
-            }
-            return value || fallback || key;
-        },
-
-        async loadLocale(locale) {
-            try {
-                const response = await fetch(`/static/locales/${locale}.json?v=${APP_VERSION}`);
-                if (response.ok) {
-                    this.translations = await response.json();
-                    this.locale = locale;
-                    localStorage.setItem('rss_locale', locale);
-                }
-            } catch (e) {
-                console.error('Failed to load locale:', locale, e);
-            }
-        },
+        // I18n wrappers (delegate to I18nStore — keeps HTML using t() unchanged)
+        t(key, fallback = null) { return Alpine.store('i18n').t(key, fallback); },
+        async loadLocale(locale) { return Alpine.store('i18n').loadLocale(locale); },
 
         // Render markdown to HTML
         renderMarkdown(text) {
@@ -1291,14 +1237,15 @@ function app() {
         // Initialize
         async init() {
             // Load available locales and summary languages from server first (no auth)
+            const i18n = Alpine.store('i18n');
             await Promise.all([
-                this.loadAvailableLocales(),
+                i18n.loadAvailableLocales(),
                 this.loadSummaryLanguages(),
             ]);
 
             // Detect locale if not in localStorage
-            if (!this.locale) {
-                this.locale = this.detectBrowserLocale();
+            if (!i18n.locale) {
+                i18n.locale = i18n.detectBrowserLocale();
             }
 
             // Load config and translations in parallel
