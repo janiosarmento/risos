@@ -27,7 +27,7 @@ A self-hosted RSS reader with AI-powered summaries.
 - **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
   - Short, broad tags preferred (1-2 words) with reuse of existing tags encouraged via prompt injection
   - Tag consolidation: purge rare tags, AI-assisted merge of near-duplicates, smart stem-based batch merge
-- **Tag Navigation** — Filter posts by clicking tags in the post list; collapsible "Top Tags" sidebar section; tag filter composes with feed/category views
+- **Tag Navigation** — Filter posts by clicking tags in the post list; collapsible "Top Tags" sidebar section; tag filter composes with feed/category views; click feed name on any post to jump to that feed's context
 - **Topics** — Named groups of tags for content organization (e.g., "Self-Hosting", "Machine Learning"); AI-assisted topic creation from popular tags; per-topic AI tag suggestions; sidebar filtering by topic with unread badges
 - **AI Curation** — Analyze starred posts to identify essential vs redundant articles; inline color-coded badges with reasons; client-side computed stats (always accurate); batch archive with ZIP export safety net; respects user's summary language
 - **Blocked Terms** — Define terms to flag noisy posts with a visual indicator; bulk-dismiss with one click

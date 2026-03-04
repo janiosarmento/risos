@@ -1813,6 +1813,16 @@ function app() {
                 if (data.suggested_count !== undefined) {
                     this.suggestedCount = data.suggested_count;
                 }
+
+                // Select pending post after feed navigation
+                if (this._pendingPostId) {
+                    const idx = this.posts.findIndex(p => p.id === this._pendingPostId);
+                    if (idx !== -1) {
+                        this.selectedIndex = idx;
+                        this.$nextTick(() => this.scrollToSelected());
+                    }
+                    this._pendingPostId = null;
+                }
             } catch (error) {
                 console.error('Failed to load posts:', error);
             } finally {
@@ -1830,6 +1840,12 @@ function app() {
         },
 
         // Filters
+        navigateToFeed(feedId, postId) {
+            if (this.filter === 'feed' && this.filterId === feedId) return;
+            this._pendingPostId = postId;
+            this.setFilter('feed', feedId);
+        },
+
         setFilter(type, id = null) {
             this.filter = type;
             this.filterId = id;
@@ -2072,6 +2088,10 @@ function app() {
             } else if (this.filter === 'category') {
                 const category = this.categories.find(c => c.id === this.filterId);
                 contextName = category?.name || this.t('settings.tabs.categories');
+            } else if (this.filter === 'suggested') {
+                contextName = this.t('sidebar.suggested');
+            } else if (this.filter === 'starred') {
+                contextName = this.t('sidebar.starred');
             } else {
                 contextName = this.t('confirm.allPosts');
             }

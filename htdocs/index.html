@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260304a';</script>
+    <script>var APP_VERSION = '20260304d';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -244,18 +244,13 @@
                     <!-- Actions -->
                     <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex gap-2">
                         <div class="flex-1 relative" x-data="{ markOpen: false }">
-                            <div class="flex">
-                                <button
-                                    @click="markAllRead()"
-                                    class="flex-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded-l"
-                                ><span x-text="t('posts.markAsRead')"></span><span class="hidden md:inline opacity-60"> (A)</span></button>
-                                <button
-                                    @click="markOpen = !markOpen"
-                                    class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-1.5 py-1 rounded-r border-l border-gray-300 dark:border-gray-600"
-                                >
-                                    <svg class="w-3 h-3"><use href="#icon-chevron-down"/></svg>
-                                </button>
-                            </div>
+                            <button
+                                @click="markOpen = !markOpen"
+                                class="w-full text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded flex items-center justify-between"
+                            >
+                                <span x-text="t('posts.markAsRead')"></span>
+                                <svg class="w-3 h-3 ml-1"><use href="#icon-chevron-down"/></svg>
+                            </button>
                             <div
                                 x-show="markOpen"
                                 @click.away="markOpen = false"
@@ -265,8 +260,10 @@
                                 <button
                                     @click="markAllRead(); markOpen = false"
                                     class="w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t"
-                                    x-text="t('posts.markAllRead') + ' (A)'"
-                                ></button>
+                                >
+                                    <span x-text="t('posts.markAllRead')"></span>
+                                    <span class="opacity-60"> (A)</span>
+                                </button>
                                 <button
                                     @click="markAllRead(true); markOpen = false"
                                     class="w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b border-t border-gray-100 dark:border-gray-700"
@@ -791,7 +788,7 @@
                                                 :data-tip="getCurationBadge(post.id)?.reason"
                                                 x-text="getCurationBadge(post.id)?.classification === 'essential' ? '★ essential' : getCurationBadge(post.id)?.classification === 'redundant' ? '✗ redundant' : '? situational'"
                                             ></span>
-                                            <span x-text="getFeedTitle(post.feed_id)"></span>
+                                            <span x-text="getFeedTitle(post.feed_id)" @click.stop="navigateToFeed(post.feed_id, post.id)" class="cursor-pointer hover:underline"></span>
                                             <span>-</span>
                                             <span x-text="formatDate(post.published_at || post.fetched_at)"></span>
                                         </div>

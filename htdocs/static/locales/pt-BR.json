@@ -37,8 +37,8 @@
   },
   "posts": {
     "noPosts": "Nenhum post não lido",
-    "markAllRead": "Marcar todos lidos",
-    "markBlockedRead": "Marcar bloqueados lidos",
+    "markAllRead": "Todos",
+    "markBlockedRead": "Bloqueados",
     "markAsRead": "Marcar como lidos",
     "exportStarred": "Exportar favoritos como ZIP",
     "select": "Selecionar",
