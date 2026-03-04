@@ -79,7 +79,8 @@
     "navShortcuts": "J/K navegar posts",
     "read": "Lido",
     "unread": "Não lido",
-    "noContent": "Sem conteúdo disponível"
+    "noContent": "Sem conteúdo disponível",
+    "exportMarkdown": "Exportar"
   },
   "settings": {
     "title": "Configurações",

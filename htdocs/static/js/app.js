@@ -2756,6 +2756,36 @@ function app() {
             }
         },
 
+        exportPostAsMarkdown() {
+            const post = this.currentPost;
+            if (!post) return;
+
+            const esc = s => (s || '').replace(/"/g, '\\"');
+            const meta = [];
+            meta.push(`title: "${esc(post.title || 'Untitled')}"`);
+            if (post.translated_title && post.translated_title !== post.title) {
+                meta.push(`translated_title: "${esc(post.translated_title)}"`);
+            }
+            meta.push(`feed: "${esc(this.getFeedTitle(post.feed_id))}"`);
+            const date = post.published_at || post.fetched_at;
+            if (date) meta.push(`date: ${date.slice(0, 16).replace('T', ' ')}`);
+            if (post.url) meta.push(`url: ${post.url}`);
+            const tags = (post.tags || []);
+            if (tags.length) meta.push(`tags: [${tags.join(', ')}]`);
+
+            const lines = ['---', ...meta, '---', ''];
+            if (post.one_line_summary) lines.push('## Summary', '', post.one_line_summary, '');
+            if (post.summary_pt) lines.push(post.summary_pt, '');
+            if (post.content) lines.push('## Original Content', '', post.content, '');
+
+            const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = (post.title || 'post').replace(/[^a-zA-Z0-9\-_ ]/g, '').replace(/\s+/g, '-').slice(0, 80) + '.md';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        },
+
         openSettings() {
             this.showSettings = true;
             history.pushState({ modal: 'settings' }, '');
