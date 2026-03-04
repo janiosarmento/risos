@@ -108,21 +108,10 @@ function app() {
         resizing: false, // true while dragging the resize handle
 
         // Toast
-        toast: {
-            show: false,
-            message: '',
-            type: 'info', // 'success', 'error', 'info'
-            timeoutId: null,
-        },
+        // UI state (delegates to Alpine.store('ui'))
+        get toast() { return Alpine.store('ui').toast; },
+        get confirmModal() { return Alpine.store('ui').confirmModal; },
         toastTimeoutSeconds: 2, // Default, will be loaded from config
-
-        // Confirm modal
-        confirmModal: {
-            show: false,
-            message: '',
-            resolve: null,
-            loading: false,
-        },
 
         // i18n
         // I18n (delegates to Alpine.store('i18n'))
@@ -131,13 +120,10 @@ function app() {
         get translations() { return Alpine.store('i18n').translations; },
         get availableLocales() { return Alpine.store('i18n').availableLocales; },
 
-        // Theme
-        theme: localStorage.getItem('rss_theme') || 'system',
-        availableThemes: [
-            { value: 'system', labelKey: 'settings.themeSystem' },
-            { value: 'light', labelKey: 'settings.themeLight' },
-            { value: 'dark', labelKey: 'settings.themeDark' }
-        ],
+        // Theme (delegates to Alpine.store('ui'))
+        get theme() { return Alpine.store('ui').theme; },
+        set theme(v) { Alpine.store('ui').theme = v; },
+        get availableThemes() { return Alpine.store('ui').availableThemes; },
 
         // AI Settings
         summaryLanguage: null, // Loaded from server preferences
@@ -1118,55 +1104,15 @@ function app() {
             }
         },
 
-        applyTheme() {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const shouldBeDark = this.theme === 'dark' || (this.theme === 'system' && prefersDark);
-
-            if (shouldBeDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        },
-
-        // Toast notifications
+        // UI wrappers (delegate to UIStore — keeps existing method calls unchanged)
+        applyTheme() { Alpine.store('ui').applyTheme(); },
         showToast(message, type = 'info', autoClose = true) {
-            // Clear any existing timeout
-            if (this.toast.timeoutId) {
-                clearTimeout(this.toast.timeoutId);
-            }
-
-            this.toast.message = message;
-            this.toast.type = type;
-            this.toast.show = true;
-
-            // Errors stay visible longer (3x) so user can read the message
-            const duration = type === 'error'
-                ? Math.max(this.toastTimeoutSeconds * 3, 10) * 1000
-                : this.toastTimeoutSeconds * 1000;
-
-            if (autoClose && this.toastTimeoutSeconds > 0) {
-                this.toast.timeoutId = setTimeout(() => {
-                    this.hideToast();
-                }, duration);
-            }
+            Alpine.store('ui').showToast(message, type, autoClose, this.toastTimeoutSeconds);
         },
-
-        showSuccess(message) {
-            this.showToast(message, 'success');
-        },
-
-        showError(message) {
-            this.showToast(message, 'error');
-        },
-
-        showInfo(message) {
-            this.showToast(message, 'info');
-        },
-
-        hideToast() {
-            this.toast.show = false;
-        },
+        showSuccess(message) { this.showToast(message, 'success'); },
+        showError(message) { this.showToast(message, 'error'); },
+        showInfo(message) { this.showToast(message, 'info'); },
+        hideToast() { Alpine.store('ui').hideToast(); },
 
         // Translate backend error messages
         translateError(message) {
@@ -1176,45 +1122,11 @@ function app() {
             return translated !== key ? translated : message;
         },
 
-        // Custom confirm modal
-        showConfirm(message) {
-            return new Promise((resolve) => {
-                this.confirmModal.message = message;
-                this.confirmModal.resolve = resolve;
-                this.confirmModal.show = true;
-                // Focus OK button after modal renders
-                this.$nextTick(() => {
-                    const btn = document.getElementById('confirm-ok-btn');
-                    if (btn) btn.focus();
-                });
-            });
-        },
-
-        confirmOk() {
-            // Don't close modal here - caller manages it via confirmDone()
-            if (this.confirmModal.resolve) {
-                this.confirmModal.resolve(true);
-                this.confirmModal.resolve = null;
-            }
-        },
-
-        confirmCancel() {
-            this.confirmModal.show = false;
-            if (this.confirmModal.resolve) {
-                this.confirmModal.resolve(false);
-                this.confirmModal.resolve = null;
-            }
-        },
-
-        confirmLoading(message) {
-            this.confirmModal.loading = true;
-            this.confirmModal.message = message;
-        },
-
-        confirmDone() {
-            this.confirmModal.show = false;
-            this.confirmModal.loading = false;
-        },
+        showConfirm(message) { return Alpine.store('ui').showConfirm(message); },
+        confirmOk() { Alpine.store('ui').confirmOk(); },
+        confirmCancel() { Alpine.store('ui').confirmCancel(); },
+        confirmLoading(message) { Alpine.store('ui').confirmLoading(message); },
+        confirmDone() { Alpine.store('ui').confirmDone(); },
 
         async loadConfig() {
             try {
