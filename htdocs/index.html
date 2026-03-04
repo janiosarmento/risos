@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260304i';</script>
+    <script>var APP_VERSION = '20260304j';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -162,7 +162,7 @@
         </div>
 
         <!-- Login Screen -->
-        <template x-if="!token">
+        <template x-if="!$store.auth.token">
             <div class="flex-1 flex items-center justify-center">
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
                     <h1 class="text-2xl font-bold mb-6 text-center" x-text="t('app.title')"></h1>
@@ -205,7 +205,7 @@
         </template>
 
         <!-- Main App -->
-        <template x-if="token">
+        <template x-if="$store.auth.token">
             <div class="flex-1 flex overflow-hidden relative">
 
                 <!-- Mobile Sidebar Overlay -->

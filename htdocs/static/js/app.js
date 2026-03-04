@@ -11,8 +11,9 @@ function app() {
         // App info
         appVersion: APP_VERSION,
 
-        // Authentication
-        token: null,
+        // Authentication (token lives in Alpine.store('auth'))
+        get token() { return Alpine.store('auth').token; },
+        set token(v) { Alpine.store('auth').token = v; },
         password: '',
         logging: false,
         loginError: null,
@@ -1314,10 +1315,8 @@ function app() {
                 }
             });
 
-            // Check for stored token
-            const storedToken = sessionStorage.getItem('rss_token');
-            if (storedToken) {
-                this.token = storedToken;
+            // Check for stored token (initialized by AuthStore from sessionStorage)
+            if (this.token) {
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
@@ -1671,38 +1670,21 @@ function app() {
             this.currentPost = null;
         },
 
-        // API helper
+        // API helper (delegates to AuthStore)
         async fetchApi(endpoint, options = {}) {
-            const headers = {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            };
-
-            if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
+            try {
+                return await Alpine.store('auth').fetchApi(endpoint, options);
+            } catch (error) {
+                // Handle 401 — store already cleared token
+                if (!Alpine.store('auth').token && error.message === 'Session expired') {
+                    this.feeds = [];
+                    this.categories = [];
+                    this.posts = [];
+                    this.currentPost = null;
+                    throw new Error(this.t('errors.sessionExpired'));
+                }
+                throw error;
             }
-
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                ...options,
-                headers,
-            });
-
-            if (response.status === 401) {
-                this.logout();
-                throw new Error(this.t('errors.sessionExpired'));
-            }
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.detail || this.t('errors.requestFailed'));
-            }
-
-            // Handle 204 No Content
-            if (response.status === 204) {
-                return null;
-            }
-
-            return response.json();
         },
 
         // Data loading
