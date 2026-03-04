@@ -25,6 +25,8 @@ A self-hosted RSS reader with AI-powered summaries.
 - **Dark/Light Theme** — System preference or manual
 - **Multi-language UI** — English and Portuguese
 - **AI Tags** — Clickable topic tags on every post, with visual states (profile/neutral/ignored)
+  - Short, broad tags preferred (1-2 words) with reuse of existing tags encouraged via prompt injection
+  - Tag consolidation: purge rare tags, AI-assisted merge of near-duplicates, smart stem-based batch merge
 - **Tag Navigation** — Filter posts by clicking tags in the post list; collapsible "Top Tags" sidebar section; tag filter composes with feed/category views
 - **Topics** — Named groups of tags for content organization (e.g., "Self-Hosting", "Machine Learning"); AI-assisted topic creation from popular tags; per-topic AI tag suggestions; sidebar filtering by topic with unread badges
 - **AI Curation** — Analyze starred posts to identify essential vs redundant articles; inline color-coded badges with reasons; client-side computed stats (always accurate); batch archive with ZIP export safety net; respects user's summary language
@@ -120,6 +122,7 @@ The app learns what you like and suggests similar posts — no extra AI calls ne
 
 Suggestions appear in the sidebar (purple "Suggested" button) with a purple percentage badge showing the match score. Click the refresh icon next to it to regenerate suggestions on demand. You can adjust:
 - **Suggestion Sensitivity** in Settings > General (1 to tags_per_post, default 3) — minimum tag overlap to suggest a post. Changing this value automatically clears suggestions that no longer meet the threshold.
+- **Profile Tag Threshold** in Settings > General (1-20, default 2) — a tag must appear in at least this many liked posts to enter your profile. Prevents generic tags from inflating match scores.
 - **Tags per Post** in Settings > AI (3-15, default 7) — number of tags the AI generates per summary, also used as the denominator for score calculation and upper bound for suggestion sensitivity
 - **Ignored Tags** — Click any tag on a post to mark it as ignored. Ignored tags are excluded from both profile generation and suggestion scoring, preventing irrelevant tags from polluting recommendations. Tags show three visual states: purple (in your profile), gray (neutral), and strikethrough (ignored).
 
@@ -230,7 +233,7 @@ Edit `htdocs/static/locales/en-US.json` or `pt-BR.json`.
 
 - **Backend**: Python, FastAPI, SQLAlchemy, SQLite (WAL mode), APScheduler
 - **Frontend**: Alpine.js, Tailwind CSS (CDN)
-- **AI**: Cerebras API (multiple models with automatic fallback)
+- **AI**: Cerebras API (multiple models with automatic fallback), optional Ollama for local batch processing
 
 ## Development
 
@@ -242,6 +245,32 @@ uvicorn app.main:app --reload --port 8100
 ```
 
 Frontend needs no build — just edit files in `htdocs/`.
+
+### CLI Scripts
+
+Batch operations for tag management and summary regeneration (run from `backend/`):
+
+```bash
+source venv/bin/activate
+
+# Regenerate summaries/tags for posts without tags
+python scripts/regenerate.py --batch-size 100
+
+# Force re-generate ALL starred posts
+python scripts/regenerate.py --starred
+
+# Use local Ollama model instead of Cerebras
+python scripts/regenerate.py --local --batch-size 50
+
+# Smart tag merge: stem clustering + LLM refinement (dry run)
+python scripts/smart_merge_tags.py
+
+# Apply merges after review
+python scripts/smart_merge_tags.py --apply
+
+# Translate non-English tags to English
+python scripts/translate_all_tags.py
+```
 
 ---
 
