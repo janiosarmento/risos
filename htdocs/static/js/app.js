@@ -95,6 +95,7 @@ function app() {
         // Suggestions
         regeneratingSuggestions: false,
         suggestionMinTags: 3, // Default 3 tags overlap required
+        profileMinTagFreq: 2, // Default 2 liked posts for a tag to enter profile
         tagsPerPost: 7, // Default 7 tags per AI summary
         modelCooldownMinutes: 30, // Default 30min grace period for failed models
         ignoredTags: new Set(), // Tags ignored for suggestions (loaded from server)
@@ -965,6 +966,11 @@ function app() {
             if (this.token) this.savePreferencesToServer();
         },
 
+        setProfileMinTagFreq(value) {
+            this.profileMinTagFreq = Math.max(1, Math.min(20, parseInt(value) || 2));
+            if (this.token) this.savePreferencesToServer();
+        },
+
         setTagsPerPost(value) {
             this.tagsPerPost = Math.max(3, Math.min(15, parseInt(value) || 7));
             if (this.token) this.savePreferencesToServer();
@@ -1067,6 +1073,7 @@ function app() {
                         reading_mode: this.readingMode,
                         split_ratio: this.splitRatio,
                         suggestion_min_tags: this.suggestionMinTags,
+                        profile_min_tag_freq: this.profileMinTagFreq,
                         tags_per_post: this.tagsPerPost,
                         model_cooldown_minutes: this.modelCooldownMinutes,
                         blocked_terms: this.blockedTerms,
@@ -1129,6 +1136,9 @@ function app() {
                 }
                 if (serverPrefs.suggestion_min_tags !== null && serverPrefs.suggestion_min_tags !== undefined) {
                     this.suggestionMinTags = serverPrefs.suggestion_min_tags;
+                }
+                if (serverPrefs.profile_min_tag_freq !== null && serverPrefs.profile_min_tag_freq !== undefined) {
+                    this.profileMinTagFreq = serverPrefs.profile_min_tag_freq;
                 }
                 if (serverPrefs.tags_per_post !== null && serverPrefs.tags_per_post !== undefined) {
                     this.tagsPerPost = serverPrefs.tags_per_post;

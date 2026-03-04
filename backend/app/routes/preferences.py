@@ -32,6 +32,7 @@ PREF_READING_MODE = "pref_reading_mode"
 PREF_SPLIT_RATIO = "pref_split_ratio"
 # Suggestions settings
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
+PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
 # AI keys and prompts
 PREF_CEREBRAS_API_KEYS = "pref_cerebras_api_keys"
 PREF_TAGS_PER_POST = "pref_tags_per_post"
@@ -59,6 +60,7 @@ class PreferencesResponse(BaseModel):
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions
+    profile_min_tag_freq: Optional[int] = None  # min liked posts for a tag to enter profile
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
@@ -86,6 +88,7 @@ class PreferencesUpdate(BaseModel):
     split_ratio: Optional[int] = None
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None
+    profile_min_tag_freq: Optional[int] = None
     # AI keys and prompts
     cerebras_api_keys: Optional[str] = None
     tags_per_post: Optional[int] = None
@@ -133,6 +136,7 @@ def get_preferences(
         PREF_READING_MODE,
         PREF_SPLIT_RATIO,
         PREF_SUGGESTION_MIN_TAGS,
+        PREF_PROFILE_MIN_TAG_FREQ,
         PREF_CEREBRAS_API_KEYS,
         PREF_TAGS_PER_POST,
         PREF_MODEL_COOLDOWN,
@@ -191,6 +195,7 @@ def get_preferences(
         split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
         # Suggestions
         suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
+        profile_min_tag_freq=int_or_default(prefs[PREF_PROFILE_MIN_TAG_FREQ], 2),
         # AI keys and prompts
         cerebras_api_keys=_mask_keys(
             prefs[PREF_CEREBRAS_API_KEYS] or env_settings.cerebras_api_key
@@ -264,6 +269,15 @@ def update_preferences(
         # Clear all suggestions so they get re-evaluated with the new threshold
         from app.services.suggestions import clear_all_suggestions
         clear_all_suggestions(db)
+
+    if prefs.profile_min_tag_freq is not None:
+        freq = max(1, min(20, prefs.profile_min_tag_freq))
+        _set_setting(db, PREF_PROFILE_MIN_TAG_FREQ, str(freq))
+        # Rebuild profile and re-evaluate suggestions
+        from app.services.suggestions import clear_all_suggestions
+        from app.services.user_profile import invalidate_user_profile
+        clear_all_suggestions(db)
+        invalidate_user_profile(db)
 
     # AI keys and prompts
     if prefs.cerebras_api_keys is not None and prefs.cerebras_api_keys.strip():
@@ -465,6 +479,17 @@ def get_effective_suggestion_min_tags(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 3  # Default: 3 tags minimum
+
+
+def get_effective_profile_min_tag_freq(db: Session) -> int:
+    """Get minimum tag frequency for profile inclusion from app_settings or default (2)."""
+    saved = _get_setting(db, PREF_PROFILE_MIN_TAG_FREQ)
+    if saved:
+        try:
+            return max(1, min(20, int(saved)))
+        except (ValueError, TypeError):
+            pass
+    return 2  # Default: tag must appear in at least 2 liked posts
 
 
 def get_effective_blocked_terms(db: Session) -> list:

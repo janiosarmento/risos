@@ -113,8 +113,13 @@ def generate_user_profile(db: Session) -> Optional[Dict]:
     ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
     tag_counts = [row for row in tag_counts if row.tag.lower() not in ignored]
 
+    # Filter by minimum frequency threshold
+    from app.routes.preferences import get_effective_profile_min_tag_freq
+    min_freq = get_effective_profile_min_tag_freq(db)
+    tag_counts = [row for row in tag_counts if row.cnt >= min_freq]
+
     if not tag_counts:
-        logger.info("All liked post tags are ignored")
+        logger.info("No tags meet minimum frequency threshold (%d)", min_freq)
         return None
 
     tags = [row.tag.lower() for row in tag_counts]
