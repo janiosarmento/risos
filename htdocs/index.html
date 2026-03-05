@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260305g';</script>
+    <script>var APP_VERSION = '20260305i';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -746,13 +746,13 @@
                                                 <svg class="w-3.5 h-3.5 flex-shrink-0 text-red-400 mt-0.5"><use href="#icon-prohibition"/></svg>
                                             </template>
                                             <h3
-                                                class="font-medium line-clamp-2 flex-1"
-                                                :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'"
+                                                class="line-clamp-2 flex-1"
+                                                :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : (post.translated_title ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white')"
                                                 x-html="highlightBlockedTitle(post.title)"
                                             ></h3>
                                         </div>
                                         <template x-if="post.translated_title">
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-1 mb-1" x-text="post.translated_title"></p>
+                                            <p class="text-xs font-semibold italic line-clamp-1 mb-1" :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'" x-text="post.translated_title"></p>
                                         </template>
                                         <div class="text-sm text-gray-500 flex items-center gap-2" :class="{'mt-1': !post.translated_title}">
                                             <!-- Star icon -->
