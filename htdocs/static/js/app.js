@@ -286,6 +286,69 @@ function app() {
             return this.posts.filter(p => !p.is_read && p.is_blocked).length;
         },
 
+        highlightBlockedTitle(title) {
+            if (!title || !this.blockedTerms) return this._escHtml(title || '');
+            const terms = this.blockedTerms.split('\n').filter(l => l.trim());
+            const escaped = this._escHtml(title);
+            const lower = title.toLowerCase();
+            // Collect all matched spans [start, end]
+            const spans = [];
+            for (const term of terms) {
+                if (term.includes('%')) {
+                    const parts = term.split('%').filter(p => p);
+                    if (!parts.length) continue;
+                    let pos = 0;
+                    const matched = [];
+                    let ok = true;
+                    for (const part of parts) {
+                        const idx = lower.indexOf(part, pos);
+                        if (idx === -1) { ok = false; break; }
+                        matched.push([idx, idx + part.length]);
+                        pos = idx + part.length;
+                    }
+                    if (ok) spans.push(...matched);
+                } else {
+                    let pos = 0;
+                    while (true) {
+                        const idx = lower.indexOf(term, pos);
+                        if (idx === -1) break;
+                        spans.push([idx, idx + term.length]);
+                        pos = idx + term.length;
+                    }
+                }
+            }
+            if (!spans.length) return escaped;
+            // Merge overlapping spans
+            spans.sort((a, b) => a[0] - b[0]);
+            const merged = [spans[0]];
+            for (let i = 1; i < spans.length; i++) {
+                const last = merged[merged.length - 1];
+                if (spans[i][0] <= last[1]) {
+                    last[1] = Math.max(last[1], spans[i][1]);
+                } else {
+                    merged.push(spans[i]);
+                }
+            }
+            // Build HTML from the escaped version (char-by-char mapping is 1:1 for non-special chars)
+            // Re-escape per segment to keep it safe
+            let result = '';
+            let prev = 0;
+            for (const [s, e] of merged) {
+                result += this._escHtml(title.substring(prev, s));
+                result += '<mark class="bg-transparent text-red-500 dark:text-red-400 font-semibold">'
+                    + this._escHtml(title.substring(s, e)) + '</mark>';
+                prev = e;
+            }
+            result += this._escHtml(title.substring(prev));
+            return result;
+        },
+
+        _escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        },
+
         // UI wrappers (delegate to UIStore — keeps existing method calls unchanged)
         applyTheme() { Alpine.store('ui').applyTheme(); },
         showToast(message, type = 'info', autoClose = true) {
