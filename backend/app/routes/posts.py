@@ -53,17 +53,19 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 def _title_matches_term(title_lower: str, term: str) -> bool:
-    """Check if a title matches a blocked term. Supports % as wildcard."""
+    """
+    Check if a title matches a blocked term.
+
+    Without %: whole-word match ("ford" won't match "affordable").
+    With %: substring match per segment, joined by .*?
+    """
     if "%" not in term:
-        return term in title_lower
-    parts = [p for p in term.split("%") if p]
-    pos = 0
-    for part in parts:
-        idx = title_lower.find(part, pos)
-        if idx == -1:
-            return False
-        pos = idx + len(part)
-    return True
+        pattern = r"\b" + re.escape(term) + r"\b"
+        return bool(re.search(pattern, title_lower))
+    parts = [re.escape(seg) for seg in term.split("%") if seg]
+    if not parts:
+        return False
+    return bool(re.search(".*?".join(parts), title_lower))
 
 
 def get_post_or_404(db: Session, post_id: int) -> Post:

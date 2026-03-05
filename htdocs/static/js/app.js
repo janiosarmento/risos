@@ -289,13 +289,14 @@ function app() {
         highlightBlockedTitle(title) {
             if (!title || !this.blockedTerms) return this._escHtml(title || '');
             const terms = this.blockedTerms.split('\n').filter(l => l.trim());
-            const escaped = this._escHtml(title);
             const lower = title.toLowerCase();
+            const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             // Collect all matched spans [start, end]
             const spans = [];
             for (const term of terms) {
                 if (term.includes('%')) {
-                    const parts = term.split('%').filter(p => p);
+                    // With %: substring match per segment
+                    const parts = term.split('%').filter(s => s);
                     if (!parts.length) continue;
                     let pos = 0;
                     const matched = [];
@@ -308,16 +309,15 @@ function app() {
                     }
                     if (ok) spans.push(...matched);
                 } else {
-                    let pos = 0;
-                    while (true) {
-                        const idx = lower.indexOf(term, pos);
-                        if (idx === -1) break;
-                        spans.push([idx, idx + term.length]);
-                        pos = idx + term.length;
+                    // Without %: whole word match
+                    const rx = new RegExp('\\b' + esc(term) + '\\b', 'gi');
+                    let m;
+                    while ((m = rx.exec(lower)) !== null) {
+                        spans.push([m.index, m.index + m[0].length]);
                     }
                 }
             }
-            if (!spans.length) return escaped;
+            if (!spans.length) return this._escHtml(title);
             // Merge overlapping spans
             spans.sort((a, b) => a[0] - b[0]);
             const merged = [spans[0]];
@@ -329,8 +329,6 @@ function app() {
                     merged.push(spans[i]);
                 }
             }
-            // Build HTML from the escaped version (char-by-char mapping is 1:1 for non-special chars)
-            // Re-escape per segment to keep it safe
             let result = '';
             let prev = 0;
             for (const [s, e] of merged) {
