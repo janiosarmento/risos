@@ -125,7 +125,9 @@ class ApiKeyRotator:
             # All keys in cooldown
             return None, None
 
-    def set_key_cooldown(self, key: str, seconds: int = DEFAULT_KEY_COOLDOWN_SECONDS):
+    def set_key_cooldown(
+        self, key: str, seconds: int = DEFAULT_KEY_COOLDOWN_SECONDS
+    ):
         """Put a key in cooldown after rate limit."""
         with self._lock:
             self._key_cooldowns[key] = datetime.utcnow() + timedelta(

@@ -7,10 +7,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
-
 from sqlalchemy import or_, text
-from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import SessionLocal
@@ -71,7 +68,9 @@ class Scheduler:
             timeout = now - timedelta(seconds=LOCK_TIMEOUT)
 
             # Check existing lock
-            existing = db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
+            existing = (
+                db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
+            )
 
             if existing:
                 # Check if expired
@@ -90,7 +89,9 @@ class Scheduler:
                     self.is_leader = True
                 else:
                     # Another process is leader
-                    logger.info(f"Another instance is leader: {existing.locked_by}")
+                    logger.info(
+                        f"Another instance is leader: {existing.locked_by}"
+                    )
                     self.is_leader = False
             else:
                 # Create lock
@@ -105,7 +106,7 @@ class Scheduler:
                 self.is_leader = True
 
             if self.is_leader:
-                logger.info(f"Lock acquired. This instance is the leader.")
+                logger.info("Lock acquired. This instance is the leader.")
 
             return self.is_leader
 
@@ -202,10 +203,14 @@ class Scheduler:
         self._tasks.append(asyncio.create_task(self._job_process_summaries()))
 
         # Job: update_user_profile (every 6 hours, if stale)
-        self._tasks.append(asyncio.create_task(self._job_update_user_profile()))
+        self._tasks.append(
+            asyncio.create_task(self._job_update_user_profile())
+        )
 
         # Job: process_suggestions (every hour)
-        self._tasks.append(asyncio.create_task(self._job_process_suggestions()))
+        self._tasks.append(
+            asyncio.create_task(self._job_process_suggestions())
+        )
 
     async def _job_update_feeds(self):
         """Job to update feeds periodically."""
@@ -237,7 +242,9 @@ class Scheduler:
                         .all()
                     )
 
-                    logger.info(f"Job update_feeds: {len(feeds)} feeds to update")
+                    logger.info(
+                        f"Job update_feeds: {len(feeds)} feeds to update"
+                    )
 
                     for feed in feeds:
                         if not self._running or not self.is_leader:
@@ -291,8 +298,10 @@ class Scheduler:
                 db.query(Post)
                 .filter(
                     Post.content_hash.isnot(None),
-                    or_(Post.is_read == False, Post.is_starred == True),  # noqa: E712
-                    ~Post.content_hash.in_(db.query(SummaryQueue.content_hash)),
+                    or_(Post.is_read.is_(False), Post.is_starred.is_(True)),
+                    ~Post.content_hash.in_(
+                        db.query(SummaryQueue.content_hash)
+                    ),
                     ~Post.content_hash.in_(db.query(AISummary.content_hash)),
                 )
                 .order_by(Post.published_at.desc())  # Newer posts first
@@ -303,7 +312,9 @@ class Scheduler:
             if not orphaned_posts:
                 return
 
-            logger.info(f"Backfill: found {len(orphaned_posts)} orphaned posts")
+            logger.info(
+                f"Backfill: found {len(orphaned_posts)} orphaned posts"
+            )
 
             added = 0
             for post in orphaned_posts:
@@ -367,13 +378,16 @@ class Scheduler:
 
                     # 1. Remove posts read more than MAX_POST_AGE_DAYS ago
                     # (except favorites which are never removed)
-                    cutoff_read = now - timedelta(days=settings.max_post_age_days)
+                    cutoff_read = now - timedelta(
+                        days=settings.max_post_age_days
+                    )
                     result = (
                         db.query(Post)
                         .filter(
-                            Post.is_read == True,
+                            Post.is_read.is_(True),
                             Post.read_at < cutoff_read,
-                            (Post.is_starred == False) | (Post.is_starred.is_(None)),
+                            (Post.is_starred.is_(False))
+                            | (Post.is_starred.is_(None)),
                         )
                         .delete(synchronize_session=False)
                     )
@@ -381,13 +395,16 @@ class Scheduler:
 
                     # 2. Remove unread posts older than MAX_UNREAD_DAYS
                     # (except favorites which are never removed)
-                    cutoff_unread = now - timedelta(days=settings.max_unread_days)
+                    cutoff_unread = now - timedelta(
+                        days=settings.max_unread_days
+                    )
                     result = (
                         db.query(Post)
                         .filter(
-                            Post.is_read == False,
+                            Post.is_read.is_(False),
                             Post.fetched_at < cutoff_unread,
-                            (Post.is_starred == False) | (Post.is_starred.is_(None)),
+                            (Post.is_starred.is_(False))
+                            | (Post.is_starred.is_(None)),
                         )
                         .delete(synchronize_session=False)
                     )
@@ -399,12 +416,15 @@ class Scheduler:
                     result = (
                         db.query(Post)
                         .filter(
-                            Post.is_read == True,
+                            Post.is_read.is_(True),
                             Post.read_at < cutoff_full,
                             Post.full_content.isnot(None),
-                            (Post.is_starred == False) | (Post.is_starred.is_(None)),
+                            (Post.is_starred.is_(False))
+                            | (Post.is_starred.is_(None)),
                         )
-                        .update({"full_content": None}, synchronize_session=False)
+                        .update(
+                            {"full_content": None}, synchronize_session=False
+                        )
                     )
                     full_content_cleared += result
 
@@ -428,7 +448,7 @@ class Scheduler:
                         f"full_content cleared: {full_content_cleared}"
                     )
 
-                except Exception as e:
+                except Exception:
                     db.rollback()
                     raise
                 finally:
@@ -463,7 +483,9 @@ class Scheduler:
 
                     # 2. Check disk space
                     statvfs = os.statvfs(".")
-                    free_mb = (statvfs.f_frsize * statvfs.f_bavail) / (1024 * 1024)
+                    free_mb = (statvfs.f_frsize * statvfs.f_bavail) / (
+                        1024 * 1024
+                    )
                     if free_mb < 100:
                         warnings.append(f"Low disk space: {free_mb:.0f}MB")
 
@@ -472,12 +494,16 @@ class Scheduler:
                     if os.path.exists(db_path):
                         db_size_mb = os.path.getsize(db_path) / (1024 * 1024)
                         if db_size_mb > settings.max_db_size_mb:
-                            warnings.append(f"Database too large: {db_size_mb:.0f}MB")
+                            warnings.append(
+                                f"Database too large: {db_size_mb:.0f}MB"
+                            )
 
                     # Update app_settings
                     if warnings:
                         warning_text = "; ".join(warnings)
-                        logger.warning(f"Health check warnings: {warning_text}")
+                        logger.warning(
+                            f"Health check warnings: {warning_text}"
+                        )
                         existing = (
                             db.query(AppSettings)
                             .filter(AppSettings.key == "health_warning")
@@ -487,7 +513,9 @@ class Scheduler:
                             existing.value = warning_text
                         else:
                             db.add(
-                                AppSettings(key="health_warning", value=warning_text)
+                                AppSettings(
+                                    key="health_warning", value=warning_text
+                                )
                             )
                     else:
                         db.query(AppSettings).filter(
@@ -541,7 +569,9 @@ class Scheduler:
                     logger.debug(
                         "Job process_summaries: all API keys in cooldown, waiting..."
                     )
-                    await asyncio.sleep(30)  # Wait longer when all keys are blocked
+                    await asyncio.sleep(
+                        30
+                    )  # Wait longer when all keys are blocked
                     continue
 
                 db = SessionLocal()
@@ -593,7 +623,9 @@ class Scheduler:
                     # Check if summary already exists for this hash
                     existing_summary = (
                         db.query(AISummary)
-                        .filter(AISummary.content_hash == candidate.content_hash)
+                        .filter(
+                            AISummary.content_hash == candidate.content_hash
+                        )
                         .first()
                     )
 
@@ -609,7 +641,11 @@ class Scheduler:
                         continue
 
                     # Get post for content
-                    post = db.query(Post).filter(Post.id == candidate.post_id).first()
+                    post = (
+                        db.query(Post)
+                        .filter(Post.id == candidate.post_id)
+                        .first()
+                    )
                     if not post:
                         # Post was deleted, remove from queue
                         db.query(SummaryQueue).filter(
@@ -637,20 +673,26 @@ class Scheduler:
                             SummaryQueue.id == candidate.id
                         ).delete()
                         db.commit()
-                        logger.debug(f"Post {post.id} already read, skipping summary")
+                        logger.debug(
+                            f"Post {post.id} already read, skipping summary"
+                        )
                         continue
 
                     # Fetch full_content if not available
                     content = post.full_content
                     if not content and post.url:
                         try:
-                            logger.info(f"Fetching full content for post {post.id}...")
+                            logger.info(
+                                f"Fetching full content for post {post.id}..."
+                            )
                             result = await extract_full_content(post.url)
                             if result.success and result.content:
                                 content = result.content
                                 post.full_content = content
                                 db.commit()
-                                logger.info(f"Full content saved for post {post.id}")
+                                logger.info(
+                                    f"Full content saved for post {post.id}"
+                                )
                             # Delay to avoid rate limit (429)
                             await asyncio.sleep(2)
                         except Exception as e:
@@ -684,7 +726,9 @@ class Scheduler:
 
                     # Call API
                     try:
-                        logger.info(f"Generating summary for post {post.id}...")
+                        logger.info(
+                            f"Generating summary for post {post.id}..."
+                        )
                         summary_result = await generate_summary(
                             content, title=post.title, title_only=title_only
                         )
@@ -705,8 +749,12 @@ class Scheduler:
 
                         # Save tags for recommendations
                         if summary_result.tags:
-                            tag_count = save_post_tags(db, post.id, summary_result.tags)
-                            logger.debug(f"Saved {tag_count} tags for post {post.id}")
+                            tag_count = save_post_tags(
+                                db, post.id, summary_result.tags
+                            )
+                            logger.debug(
+                                f"Saved {tag_count} tags for post {post.id}"
+                            )
 
                         # Remove from queue
                         db.query(SummaryQueue).filter(
@@ -725,7 +773,9 @@ class Scheduler:
                             SummaryQueue.id == candidate.id
                         ).delete()
                         db.commit()
-                        logger.info(f"Post {post.id}: {e}, marked skip_summary")
+                        logger.info(
+                            f"Post {post.id}: {e}, marked skip_summary"
+                        )
 
                     except TemporaryError as e:
                         error_msg = str(e)
@@ -748,9 +798,13 @@ class Scheduler:
 
                         if candidate.attempts >= 5:
                             # 24h cooldown
-                            candidate.cooldown_until = now + timedelta(hours=24)
+                            candidate.cooldown_until = now + timedelta(
+                                hours=24
+                            )
                             candidate.attempts = 0
-                            logger.warning(f"Post {post.id}: 5 errors, 24h cooldown")
+                            logger.warning(
+                                f"Post {post.id}: 5 errors, 24h cooldown"
+                            )
 
                         candidate.locked_at = None
                         db.commit()
@@ -827,7 +881,9 @@ class Scheduler:
                                 f"({liked_count}/{MIN_LIKED_POSTS})"
                             )
                     else:
-                        logger.debug("Job update_user_profile: profile is fresh")
+                        logger.debug(
+                            "Job update_user_profile: profile is fresh"
+                        )
                 finally:
                     db.close()
 

@@ -13,20 +13,30 @@ from typing import List, Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import load_prompts, settings
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import SummaryQueue, SummaryFailure, AISummary, Post, AppSettings
+from app.models import (
+    SummaryQueue,
+    SummaryFailure,
+    AISummary,
+    Post,
+    AppSettings,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 # Path to locales directory (relative to backend)
-LOCALES_DIR = Path(__file__).parent.parent.parent.parent / "htdocs" / "static" / "locales"
+LOCALES_DIR = (
+    Path(__file__).parent.parent.parent.parent
+    / "htdocs"
+    / "static"
+    / "locales"
+)
 
 
 class ReprocessRequest(BaseModel):
@@ -200,7 +210,7 @@ def get_status(
     # Counters
     feeds_count = db.query(Feed).count()
     posts_count = db.query(Post).count()
-    unread_count = db.query(Post).filter(Post.is_read == False).count()
+    unread_count = db.query(Post).filter(Post.is_read.is_(False)).count()
     queue_size = db.query(SummaryQueue).count()
     summaries_count = db.query(AISummary).count()
     failures_count = db.query(SummaryFailure).count()
@@ -336,17 +346,19 @@ def reset_circuit_breaker(
     """
     Reset circuit breaker, API key cooldowns, and queue cooldowns.
     """
-    from app.services.cerebras import circuit_breaker, api_key_rotator
+    from app.services.cerebras import circuit_breaker
 
     # Reset circuit breaker in DB
     db.query(AppSettings).filter(
-        AppSettings.key.in_([
-            "cerebras_state",
-            "cerebras_failures",
-            "cerebras_half_successes",
-            "cerebras_last_failure",
-            "cerebras_last_call",
-        ])
+        AppSettings.key.in_(
+            [
+                "cerebras_state",
+                "cerebras_failures",
+                "cerebras_half_successes",
+                "cerebras_last_failure",
+                "cerebras_last_call",
+            ]
+        )
     ).delete()
 
     # Reset queue cooldowns
@@ -399,6 +411,7 @@ async def get_available_models(user: dict = Depends(get_current_user)):
 
     # Get API key from DB settings or env fallback
     from app.routes.preferences import get_effective_cerebras_api_keys
+
     db_session = next(get_db())
     try:
         api_keys = get_effective_cerebras_api_keys(db_session)
@@ -421,7 +434,9 @@ async def get_available_models(user: dict = Depends(get_current_user)):
             )
 
             if response.status_code != 200:
-                logger.error(f"Cerebras models API error: {response.status_code}")
+                logger.error(
+                    f"Cerebras models API error: {response.status_code}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
                     detail="Failed to fetch models from Cerebras",

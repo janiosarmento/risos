@@ -15,7 +15,9 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Configuration
-USER_AGENT = "Risos/1.0 (+https://github.com/janiosarmento/risos; like Miniflux)"
+USER_AGENT = (
+    "Risos/1.0 (+https://github.com/janiosarmento/risos; like Miniflux)"
+)
 TIMEOUT_SECONDS = 10
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_REDIRECTS = 3
@@ -145,7 +147,9 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
                 if response.status_code in (301, 302, 303, 307, 308):
                     redirect_url = response.headers.get("location")
                     if not redirect_url:
-                        raise FeedFetchError("Redirect without Location header")
+                        raise FeedFetchError(
+                            "Redirect without Location header"
+                        )
 
                     # Validate redirect
                     is_safe = _is_http_to_https(

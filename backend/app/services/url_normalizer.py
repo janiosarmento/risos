@@ -4,7 +4,6 @@ Applies consistent rules to compare URLs.
 """
 
 import logging
-import re
 from typing import Optional
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 

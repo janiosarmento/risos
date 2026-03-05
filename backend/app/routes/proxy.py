@@ -8,9 +8,7 @@ from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
-from fastapi.responses import StreamingResponse
 
-from app.config import settings
 from app.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -58,7 +56,9 @@ def is_valid_image_url(url: str) -> bool:
 
 @router.get("/image")
 @limiter.limit("60/minute")
-async def proxy_image(request: Request, url: str = Query(..., description="Image URL to proxy")):
+async def proxy_image(
+    request: Request, url: str = Query(..., description="Image URL to proxy")
+):
     """
     Proxy external images.
 

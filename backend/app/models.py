@@ -7,7 +7,6 @@ from datetime import datetime
 from sqlalchemy import (
     Column,
     Integer,
-    String,
     Text,
     DateTime,
     Boolean,
@@ -27,7 +26,9 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(Text, nullable=False)
-    parent_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"))
+    parent_id = Column(
+        Integer, ForeignKey("categories.id", ondelete="SET NULL")
+    )
     position = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -39,7 +40,9 @@ class Feed(Base):
     __tablename__ = "feeds"
 
     id = Column(Integer, primary_key=True)
-    category_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"))
+    category_id = Column(
+        Integer, ForeignKey("categories.id", ondelete="SET NULL")
+    )
     title = Column(Text, nullable=False)
     url = Column(Text, unique=True, nullable=False)
     site_url = Column(Text)
@@ -65,7 +68,9 @@ class Feed(Base):
 
     # Relationships
     category = relationship("Category", back_populates="feeds")
-    posts = relationship("Post", back_populates="feed", cascade="all, delete-orphan")
+    posts = relationship(
+        "Post", back_populates="feed", cascade="all, delete-orphan"
+    )
 
 
 class Post(Base):
@@ -105,7 +110,9 @@ class Post(Base):
     summary_queue_entry = relationship(
         "SummaryQueue", back_populates="post", cascade="all, delete-orphan"
     )
-    tags = relationship("PostTag", back_populates="post", cascade="all, delete-orphan")
+    tags = relationship(
+        "PostTag", back_populates="post", cascade="all, delete-orphan"
+    )
 
 
 # Post indexes (partial for deduplication)
@@ -138,10 +145,18 @@ Index("idx_posts_feed", Post.feed_id)
 Index("idx_posts_read", Post.is_read)
 Index("idx_posts_sort", Post.sort_date.desc())
 Index("idx_posts_hash", Post.content_hash)
-Index("idx_posts_read_at", Post.read_at, sqlite_where=Post.is_read == True)
-Index("idx_posts_starred", Post.is_starred, sqlite_where=Post.is_starred == True)
+Index("idx_posts_read_at", Post.read_at, sqlite_where=Post.is_read.is_(True))
+Index(
+    "idx_posts_starred",
+    Post.is_starred,
+    sqlite_where=Post.is_starred.is_(True),
+)
 Index("idx_posts_liked", Post.is_liked, sqlite_where=Post.is_liked == 1)
-Index("idx_posts_suggested", Post.is_suggested, sqlite_where=Post.is_suggested == 1)
+Index(
+    "idx_posts_suggested",
+    Post.is_suggested,
+    sqlite_where=Post.is_suggested == 1,
+)
 
 
 class PostTag(Base):
@@ -211,7 +226,9 @@ class SummaryQueue(Base):
     post = relationship("Post", back_populates="summary_queue_entry")
 
 
-Index("idx_queue_priority", SummaryQueue.priority.desc(), SummaryQueue.created_at)
+Index(
+    "idx_queue_priority", SummaryQueue.priority.desc(), SummaryQueue.created_at
+)
 Index("idx_queue_pending", SummaryQueue.locked_at, SummaryQueue.cooldown_until)
 
 
@@ -232,7 +249,9 @@ class AppSettings(Base):
 
     key = Column(Text, primary_key=True)
     value = Column(Text, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
 class TokenBlacklist(Base):
@@ -282,7 +301,9 @@ class Topic(Base):
     position = Column(Integer, default=0)
     created_at = Column(Text, default=lambda: datetime.utcnow().isoformat())
 
-    tags = relationship("TopicTag", back_populates="topic", cascade="all, delete-orphan")
+    tags = relationship(
+        "TopicTag", back_populates="topic", cascade="all, delete-orphan"
+    )
 
 
 class TopicTag(Base):

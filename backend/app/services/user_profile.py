@@ -115,6 +115,7 @@ def generate_user_profile(db: Session) -> Optional[Dict]:
 
     # Filter by minimum frequency threshold
     from app.routes.preferences import get_effective_profile_min_tag_freq
+
     min_freq = get_effective_profile_min_tag_freq(db)
     tag_counts = [row for row in tag_counts if row.cnt >= min_freq]
 

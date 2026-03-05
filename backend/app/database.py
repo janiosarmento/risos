@@ -3,12 +3,11 @@ SQLite database configuration with SQLAlchemy.
 WAL mode enabled for better concurrency.
 """
 
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.engine import Engine
 
 from app.config import settings
-
 
 # Build database URL
 DATABASE_URL = f"sqlite:///{settings.database_path}"

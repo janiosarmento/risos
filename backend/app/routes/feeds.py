@@ -5,7 +5,6 @@ CRUD + refresh + OPML import/export.
 
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from io import BytesIO
 from typing import List, Optional
 from urllib.parse import urlparse, urljoin
 import re
@@ -27,7 +26,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Feed, Post, Category
-from app.schemas import FeedCreate, FeedUpdate, FeedResponse, MAX_CATEGORY_NAME_LENGTH
+from app.schemas import (
+    FeedCreate,
+    FeedUpdate,
+    FeedResponse,
+    MAX_CATEGORY_NAME_LENGTH,
+)
 from app.services.feed_ingestion import ingest_feed
 
 router = APIRouter(prefix="/feeds", tags=["feeds"])
@@ -52,7 +56,7 @@ def list_feeds(
     # Subquery to count unread posts per feed
     unread_count_subq = (
         db.query(Post.feed_id, func.count(Post.id).label("unread_count"))
-        .filter(Post.is_read == False)
+        .filter(Post.is_read.is_(False))
         .group_by(Post.feed_id)
         .subquery()
     )
@@ -60,7 +64,7 @@ def list_feeds(
     # Subquery to count starred posts per feed
     starred_count_subq = (
         db.query(Post.feed_id, func.count(Post.id).label("starred_count"))
-        .filter(Post.is_starred == True)
+        .filter(Post.is_starred.is_(True))
         .group_by(Post.feed_id)
         .subquery()
     )
@@ -68,8 +72,12 @@ def list_feeds(
     query = (
         db.query(
             Feed,
-            func.coalesce(unread_count_subq.c.unread_count, 0).label("unread_count"),
-            func.coalesce(starred_count_subq.c.starred_count, 0).label("starred_count"),
+            func.coalesce(unread_count_subq.c.unread_count, 0).label(
+                "unread_count"
+            ),
+            func.coalesce(starred_count_subq.c.starred_count, 0).label(
+                "starred_count"
+            ),
         )
         .outerjoin(unread_count_subq, Feed.id == unread_count_subq.c.feed_id)
         .outerjoin(starred_count_subq, Feed.id == starred_count_subq.c.feed_id)
@@ -117,42 +125,44 @@ async def discover_feed(
     Returns the feed URL if found, or error if not.
     """
     # Normalize URL
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
 
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)'
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; RSSReader/1.0)"}
 
-    async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as client:
+    async with httpx.AsyncClient(
+        follow_redirects=True, timeout=15.0
+    ) as client:
         # First, check if the URL itself is a feed
         try:
             resp = await client.get(url, headers=headers)
-            content_type = resp.headers.get('content-type', '').lower()
+            content_type = resp.headers.get("content-type", "").lower()
 
-            if any(t in content_type for t in ['xml', 'rss', 'atom']):
+            if any(t in content_type for t in ["xml", "rss", "atom"]):
                 return {"feed_url": str(resp.url), "method": "direct"}
 
             # Check if content looks like a feed
             text = resp.text[:1000]
-            if '<rss' in text or '<feed' in text or '<rdf:RDF' in text:
+            if "<rss" in text or "<feed" in text or "<rdf:RDF" in text:
                 return {"feed_url": str(resp.url), "method": "direct"}
 
         except httpx.RequestError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not fetch URL"
+                detail="Could not fetch URL",
             )
 
         # Parse HTML and look for feed links
         html = resp.text
         feed_pattern = re.compile(
-            r'<link[^>]+rel=["\']alternate["\'][^>]+>',
-            re.IGNORECASE
+            r'<link[^>]+rel=["\']alternate["\'][^>]+>', re.IGNORECASE
         )
 
         for match in feed_pattern.findall(html):
-            if 'application/rss+xml' in match or 'application/atom+xml' in match:
+            if (
+                "application/rss+xml" in match
+                or "application/atom+xml" in match
+            ):
                 href_match = re.search(r'href=["\']([^"\']+)["\']', match)
                 if href_match:
                     feed_url = urljoin(str(resp.url), href_match.group(1))
@@ -160,9 +170,17 @@ async def discover_feed(
 
         # Try common feed paths
         common_paths = [
-            '/feed', '/feeds', '/rss', '/rss.xml', '/feed.xml',
-            '/atom.xml', '/index.xml', '/feed/rss', '/blog/feed',
-            '/.rss', '/rss/index.xml'
+            "/feed",
+            "/feeds",
+            "/rss",
+            "/rss.xml",
+            "/feed.xml",
+            "/atom.xml",
+            "/index.xml",
+            "/feed/rss",
+            "/blog/feed",
+            "/.rss",
+            "/rss/index.xml",
         ]
 
         base_url = f"{urlparse(str(resp.url)).scheme}://{urlparse(str(resp.url)).netloc}"
@@ -172,18 +190,25 @@ async def discover_feed(
                 test_url = base_url + path
                 test_resp = await client.get(test_url, headers=headers)
                 if test_resp.status_code == 200:
-                    ct = test_resp.headers.get('content-type', '').lower()
+                    ct = test_resp.headers.get("content-type", "").lower()
                     text = test_resp.text[:1000]
-                    if any(t in ct for t in ['xml', 'rss', 'atom']) or \
-                       '<rss' in text or '<feed' in text or '<rdf:RDF' in text:
-                        return {"feed_url": str(test_resp.url), "method": "common_path"}
+                    if (
+                        any(t in ct for t in ["xml", "rss", "atom"])
+                        or "<rss" in text
+                        or "<feed" in text
+                        or "<rdf:RDF" in text
+                    ):
+                        return {
+                            "feed_url": str(test_resp.url),
+                            "method": "common_path",
+                        }
             except httpx.RequestError:
                 continue
 
         # No feed found
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No RSS/Atom feed found for this site"
+            detail="No RSS/Atom feed found for this site",
         )
 
 
@@ -246,7 +271,7 @@ async def create_feed(
     # Count unread posts after ingestion
     unread_count = (
         db.query(func.count(Post.id))
-        .filter(Post.feed_id == db_feed.id, Post.is_read == False)
+        .filter(Post.feed_id == db_feed.id, Post.is_read.is_(False))
         .scalar()
         or 0
     )
@@ -314,7 +339,7 @@ async def import_opml(
         )
 
     def process_outline(outline, category_id=None):
-        nonlocal imported, skipped, errors
+        nonlocal imported, skipped
 
         xml_url = outline.get("xmlUrl")
         title = outline.get("title") or outline.get("text")
@@ -469,7 +494,7 @@ def get_feed(
 
     unread_count = (
         db.query(func.count(Post.id))
-        .filter(Post.feed_id == feed_id, Post.is_read == False)
+        .filter(Post.feed_id == feed_id, Post.is_read.is_(False))
         .scalar()
     )
 
@@ -540,7 +565,7 @@ def update_feed(
 
     unread_count = (
         db.query(func.count(Post.id))
-        .filter(Post.feed_id == feed_id, Post.is_read == False)
+        .filter(Post.feed_id == feed_id, Post.is_read.is_(False))
         .scalar()
     )
 
@@ -579,7 +604,7 @@ def delete_feed(
     # Check for starred posts
     starred_count = (
         db.query(func.count(Post.id))
-        .filter(Post.feed_id == feed_id, Post.is_starred == True)
+        .filter(Post.feed_id == feed_id, Post.is_starred.is_(True))
         .scalar()
     )
     if starred_count > 0:

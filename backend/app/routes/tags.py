@@ -56,32 +56,41 @@ def _normalize_tag(tag: str) -> str:
 
 @router.get("/popular")
 def get_popular_tags(
-    limit: int = Query(10, ge=1, le=50, description="Number of tags to return"),
-    min_count: int = Query(1, ge=1, description="Minimum post count to include"),
+    limit: int = Query(
+        10, ge=1, le=50, description="Number of tags to return"
+    ),
+    min_count: int = Query(
+        1, ge=1, description="Minimum post count to include"
+    ),
     unread_only: bool = Query(False, description="Only count unread posts"),
     starred_only: bool = Query(False, description="Only count starred posts"),
-    feed_id: Optional[int] = Query(None, description="Scope to a specific feed"),
-    category_id: Optional[int] = Query(None, description="Scope to a category"),
+    feed_id: Optional[int] = Query(
+        None, description="Scope to a specific feed"
+    ),
+    category_id: Optional[int] = Query(
+        None, description="Scope to a category"
+    ),
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     """Get most popular tags by post count, excluding ignored tags."""
     ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
 
-    query = (
-        db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
-        .join(Post, Post.id == PostTag.post_id)
-    )
+    query = db.query(
+        PostTag.tag, func.count(PostTag.post_id).label("count")
+    ).join(Post, Post.id == PostTag.post_id)
 
     if unread_only:
-        query = query.filter(Post.is_read == False)  # noqa: E712
+        query = query.filter(Post.is_read.is_(False))
     if starred_only:
-        query = query.filter(Post.is_starred == True)  # noqa: E712
+        query = query.filter(Post.is_starred.is_(True))
     if feed_id is not None:
         query = query.filter(Post.feed_id == feed_id)
     elif category_id is not None:
         feed_ids = (
-            db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
+            db.query(Feed.id)
+            .filter(Feed.category_id == category_id)
+            .subquery()
         )
         query = query.filter(Post.feed_id.in_(feed_ids))
 
@@ -107,7 +116,9 @@ def get_popular_tags(
 def search_tags(
     q: str = Query("", min_length=1, description="Tag prefix to search"),
     limit: int = Query(15, ge=1, le=50),
-    exclude_topic_id: Optional[int] = Query(None, description="Exclude tags already in this topic"),
+    exclude_topic_id: Optional[int] = Query(
+        None, description="Exclude tags already in this topic"
+    ),
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -124,7 +135,9 @@ def search_tags(
     )
 
     if exclude_topic_id is not None:
-        existing = db.query(TopicTag.tag).filter(TopicTag.topic_id == exclude_topic_id)
+        existing = db.query(TopicTag.tag).filter(
+            TopicTag.topic_id == exclude_topic_id
+        )
         query = query.filter(~PostTag.tag.in_(existing))
 
     rows = query.limit(limit).all()
@@ -243,7 +256,11 @@ If no duplicates are found, return {{"groups": []}}"""
     groups = []
     for g in result.get("groups", []):
         canonical = g.get("canonical", "")
-        merge = [t for t in g.get("merge", []) if isinstance(t, str) and t in available]
+        merge = [
+            t
+            for t in g.get("merge", [])
+            if isinstance(t, str) and t in available
+        ]
         if canonical in available and merge:
             groups.append({"canonical": canonical, "merge": merge})
 
@@ -288,7 +305,9 @@ def apply_merges(
             )
             # Rename remaining source → canonical
             result = db.execute(
-                text("UPDATE post_tags SET tag = :canonical WHERE tag = :source"),
+                text(
+                    "UPDATE post_tags SET tag = :canonical WHERE tag = :source"
+                ),
                 {"source": source, "canonical": canonical},
             )
             posts_affected += result.rowcount
@@ -304,7 +323,9 @@ def apply_merges(
                 {"source": source, "canonical": canonical},
             )
             db.execute(
-                text("UPDATE topic_tags SET tag = :canonical WHERE tag = :source"),
+                text(
+                    "UPDATE topic_tags SET tag = :canonical WHERE tag = :source"
+                ),
                 {"source": source, "canonical": canonical},
             )
 
@@ -322,7 +343,11 @@ def apply_merges(
         clear_all_suggestions(db)
         invalidate_user_profile(db)
 
-    logger.info("Tag merge applied: %d tags removed, %d posts affected", tags_removed, posts_affected)
+    logger.info(
+        "Tag merge applied: %d tags removed, %d posts affected",
+        tags_removed,
+        posts_affected,
+    )
 
     return {
         "success": True,
@@ -333,7 +358,9 @@ def apply_merges(
 
 @router.get("/rare-preview")
 def preview_rare_tags(
-    max_count: int = Query(1, ge=1, le=10, description="Max post count to consider rare"),
+    max_count: int = Query(
+        1, ge=1, le=10, description="Max post count to consider rare"
+    ),
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -398,7 +425,9 @@ def purge_rare_tags(
     def generate():
         try:
             if total == 0:
-                yield json_line({"type": "done", "tags_removed": 0, "rows_deleted": 0})
+                yield json_line(
+                    {"type": "done", "tags_removed": 0, "rows_deleted": 0}
+                )
                 return
 
             yield json_line({"type": "start", "total_tags": total})
@@ -435,12 +464,14 @@ def purge_rare_tags(
 
                 db.commit()
                 deleted += len(batch)
-                yield json_line({
-                    "type": "progress",
-                    "deleted": deleted,
-                    "total": total,
-                    "rows": total_rows,
-                })
+                yield json_line(
+                    {
+                        "type": "progress",
+                        "deleted": deleted,
+                        "total": total,
+                        "rows": total_rows,
+                    }
+                )
 
             clear_all_suggestions(db)
             invalidate_user_profile(db)
@@ -452,11 +483,13 @@ def purge_rare_tags(
                 total_rows,
             )
 
-            yield json_line({
-                "type": "done",
-                "tags_removed": deleted,
-                "rows_deleted": total_rows,
-            })
+            yield json_line(
+                {
+                    "type": "done",
+                    "tags_removed": deleted,
+                    "rows_deleted": total_rows,
+                }
+            )
         finally:
             db.close()
 

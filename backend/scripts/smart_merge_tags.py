@@ -105,7 +105,9 @@ MAX_RETRIES = 3
 RETRY_WAIT = 60  # seconds to wait on rate limit before retry
 
 
-async def call_llm(system_prompt: str, user_prompt: str, use_local: bool = False) -> dict:
+async def call_llm(
+    system_prompt: str, user_prompt: str, use_local: bool = False
+) -> dict:
     if use_local:
         return await call_ollama_json(system_prompt, user_prompt)
     from app.services.cerebras._api import call_llm_json
@@ -113,16 +115,26 @@ async def call_llm(system_prompt: str, user_prompt: str, use_local: bool = False
     return await call_llm_json(system_prompt, user_prompt)
 
 
-async def call_llm_with_retry(system_prompt: str, user_prompt: str, use_local: bool = False) -> dict:
+async def call_llm_with_retry(
+    system_prompt: str, user_prompt: str, use_local: bool = False
+) -> dict:
     """Call LLM with retry on rate limit / temporary errors."""
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             return await call_llm(system_prompt, user_prompt, use_local)
         except Exception as e:
             err = str(e).lower()
-            is_retryable = "rate limit" in err or "cooldown" in err or "429" in err or "timeout" in err or "temporary" in err
+            is_retryable = (
+                "rate limit" in err
+                or "cooldown" in err
+                or "429" in err
+                or "timeout" in err
+                or "temporary" in err
+            )
             if is_retryable and attempt < MAX_RETRIES:
-                log(f"    Retry {attempt}/{MAX_RETRIES} after error: {e} (waiting {RETRY_WAIT}s)")
+                log(
+                    f"    Retry {attempt}/{MAX_RETRIES} after error: {e} (waiting {RETRY_WAIT}s)"
+                )
                 await asyncio.sleep(RETRY_WAIT)
             else:
                 raise
@@ -147,10 +159,19 @@ def build_stem_clusters(tag_counts: dict, max_fan_out: int) -> tuple:
                 index[seg].add(tag)
 
     # Filter high-fan-out and singleton segments
-    filtered = {seg: tags for seg, tags in index.items() if len(tags) > max_fan_out}
+    filtered = {
+        seg: tags for seg, tags in index.items() if len(tags) > max_fan_out
+    }
     if filtered:
-        log(f"Filtered {len(filtered)} high-fan-out segments: "
-            + ", ".join(f"{s}({len(t)})" for s, t in sorted(filtered.items(), key=lambda x: -len(x[1]))[:10]))
+        log(
+            f"Filtered {len(filtered)} high-fan-out segments: "
+            + ", ".join(
+                f"{s}({len(t)})"
+                for s, t in sorted(filtered.items(), key=lambda x: -len(x[1]))[
+                    :10
+                ]
+            )
+        )
 
     # Each qualifying stem is a cluster
     raw_clusters = []
@@ -205,7 +226,10 @@ def build_stem_clusters(tag_counts: dict, max_fan_out: int) -> tuple:
 def build_cluster_prompt(clusters: list, tag_counts: dict) -> str:
     parts = []
     for i, cluster in enumerate(clusters, 1):
-        lines = [f"- {tag} ({tag_counts[tag]} posts)" for tag in sorted(cluster, key=lambda t: -tag_counts[t])]
+        lines = [
+            f"- {tag} ({tag_counts[tag]} posts)"
+            for tag in sorted(cluster, key=lambda t: -tag_counts[t])
+        ]
         parts.append(f"Group {i}:\n" + "\n".join(lines))
 
     return (
@@ -216,7 +240,7 @@ def build_cluster_prompt(clusters: list, tag_counts: dict) -> str:
         "(e.g. 'data-science' and 'data-privacy' are different)\n"
         "- A group may have NO true duplicates — skip it entirely\n\n"
         + "\n\n".join(parts)
-        + '\n\nRespond ONLY in JSON:\n'
+        + "\n\nRespond ONLY in JSON:\n"
         '{"groups": [{"canonical": "best-tag", "merge": ["synonym1", "synonym2"]}]}\n'
         'If no true duplicates exist in any group, return {"groups": []}'
     )
@@ -227,13 +251,19 @@ def validate_groups(raw_groups: list, valid_tags: set) -> list:
     groups = []
     for g in raw_groups:
         canonical = g.get("canonical", "")
-        merge = [t for t in g.get("merge", []) if isinstance(t, str) and t in valid_tags and t != canonical]
+        merge = [
+            t
+            for t in g.get("merge", [])
+            if isinstance(t, str) and t in valid_tags and t != canonical
+        ]
         if canonical in valid_tags and merge:
             groups.append({"canonical": canonical, "merge": merge})
     return groups
 
 
-async def refine_clusters_with_llm(clusters: list, tag_counts: dict, use_local: bool, delay: float) -> list:
+async def refine_clusters_with_llm(
+    clusters: list, tag_counts: dict, use_local: bool, delay: float
+) -> list:
     # Split into small (≤5 tags) and large (>5)
     small = [c for c in clusters if len(c) <= 5]
     large = [c for c in clusters if len(c) > 5]
@@ -254,7 +284,9 @@ async def refine_clusters_with_llm(clusters: list, tag_counts: dict, use_local: 
     for cluster in large:
         batches.append([cluster])
 
-    log(f"Phase 2: {len(batches)} LLM batches ({len(small)} small clusters, {len(large)} large clusters)")
+    log(
+        f"Phase 2: {len(batches)} LLM batches ({len(small)} small clusters, {len(large)} large clusters)"
+    )
 
     all_groups = []
     errors = 0
@@ -266,18 +298,26 @@ async def refine_clusters_with_llm(clusters: list, tag_counts: dict, use_local: 
 
         prompt = build_cluster_prompt(batch_clusters, tag_counts)
         sample = list(all_tags_in_batch)[:5]
-        log(f"  Batch {i}/{len(batches)}: sending {len(batch_clusters)} clusters, "
-            f"{len(all_tags_in_batch)} tags to LLM (e.g. {', '.join(sample)})...")
+        log(
+            f"  Batch {i}/{len(batches)}: sending {len(batch_clusters)} clusters, "
+            f"{len(all_tags_in_batch)} tags to LLM (e.g. {', '.join(sample)})..."
+        )
 
         try:
             t0 = time.monotonic()
-            result = await call_llm_with_retry(SYSTEM_PROMPT, prompt, use_local)
+            result = await call_llm_with_retry(
+                SYSTEM_PROMPT, prompt, use_local
+            )
             elapsed = time.monotonic() - t0
-            groups = validate_groups(result.get("groups", []), all_tags_in_batch)
+            groups = validate_groups(
+                result.get("groups", []), all_tags_in_batch
+            )
             all_groups.extend(groups)
             found = sum(len(g["merge"]) for g in groups)
-            log(f"  Batch {i}/{len(batches)}: done in {elapsed:.1f}s → "
-                f"{len(groups)} merge groups ({found} tags to merge)")
+            log(
+                f"  Batch {i}/{len(batches)}: done in {elapsed:.1f}s → "
+                f"{len(groups)} merge groups ({found} tags to merge)"
+            )
             for g in groups:
                 log(f"    {g['merge']} → {g['canonical']}")
         except Exception as e:
@@ -296,18 +336,31 @@ async def refine_clusters_with_llm(clusters: list, tag_counts: dict, use_local: 
 # ---------------------------------------------------------------------------
 # Phase 3: Catch-all for ungrouped tags
 # ---------------------------------------------------------------------------
-async def catch_all_ungrouped(ungrouped: list, tag_counts: dict, use_local: bool, delay: float, batch_size: int) -> list:
+async def catch_all_ungrouped(
+    ungrouped: list,
+    tag_counts: dict,
+    use_local: bool,
+    delay: float,
+    batch_size: int,
+) -> list:
     if not ungrouped:
         return []
 
-    batches = [ungrouped[i:i + batch_size] for i in range(0, len(ungrouped), batch_size)]
-    log(f"Phase 3: {len(batches)} LLM batches ({len(ungrouped)} ungrouped tags)")
+    batches = [
+        ungrouped[i : i + batch_size]
+        for i in range(0, len(ungrouped), batch_size)
+    ]
+    log(
+        f"Phase 3: {len(batches)} LLM batches ({len(ungrouped)} ungrouped tags)"
+    )
 
     all_groups = []
     errors = 0
 
     for i, batch in enumerate(batches, 1):
-        tags_list = "\n".join(f"- {tag} ({tag_counts[tag]} posts)" for tag in batch)
+        tags_list = "\n".join(
+            f"- {tag} ({tag_counts[tag]} posts)" for tag in batch
+        )
         prompt = (
             f"Here are {len(batch)} tags that had no obvious word-stem overlap with other tags.\n"
             "Look especially for:\n"
@@ -318,24 +371,30 @@ async def catch_all_ungrouped(ungrouped: list, tag_counts: dict, use_local: bool
             "Group any tags that are synonyms or near-duplicates.\n"
             "Pick the most descriptive, commonly-used tag as canonical (prefer higher post counts).\n"
             "Tags that are distinct concepts should NOT be grouped.\n\n"
-            'Respond ONLY in JSON:\n'
+            "Respond ONLY in JSON:\n"
             '{"groups": [{"canonical": "best-tag", "merge": ["synonym1", "synonym2"]}]}\n'
             'If no duplicates are found, return {"groups": []}'
         )
 
         valid_tags = set(batch)
         sample = batch[:5]
-        log(f"  Batch {i}/{len(batches)}: sending {len(batch)} tags to LLM (e.g. {', '.join(sample)})...")
+        log(
+            f"  Batch {i}/{len(batches)}: sending {len(batch)} tags to LLM (e.g. {', '.join(sample)})..."
+        )
 
         try:
             t0 = time.monotonic()
-            result = await call_llm_with_retry(SYSTEM_PROMPT, prompt, use_local)
+            result = await call_llm_with_retry(
+                SYSTEM_PROMPT, prompt, use_local
+            )
             elapsed = time.monotonic() - t0
             groups = validate_groups(result.get("groups", []), valid_tags)
             all_groups.extend(groups)
             found = sum(len(g["merge"]) for g in groups)
-            log(f"  Batch {i}/{len(batches)}: done in {elapsed:.1f}s → "
-                f"{len(groups)} merge groups ({found} tags to merge)")
+            log(
+                f"  Batch {i}/{len(batches)}: done in {elapsed:.1f}s → "
+                f"{len(groups)} merge groups ({found} tags to merge)"
+            )
             for g in groups:
                 log(f"    {g['merge']} → {g['canonical']}")
         except Exception as e:
@@ -378,7 +437,9 @@ def apply_merges_to_db(db, merge_groups: list) -> tuple:
                 {"source": source, "canonical": canonical},
             )
             result = db.execute(
-                text("UPDATE post_tags SET tag = :canonical WHERE tag = :source"),
+                text(
+                    "UPDATE post_tags SET tag = :canonical WHERE tag = :source"
+                ),
                 {"source": source, "canonical": canonical},
             )
             posts_affected += result.rowcount
@@ -394,7 +455,9 @@ def apply_merges_to_db(db, merge_groups: list) -> tuple:
                 {"source": source, "canonical": canonical},
             )
             db.execute(
-                text("UPDATE topic_tags SET tag = :canonical WHERE tag = :source"),
+                text(
+                    "UPDATE topic_tags SET tag = :canonical WHERE tag = :source"
+                ),
                 {"source": source, "canonical": canonical},
             )
 
@@ -418,12 +481,36 @@ def apply_merges_to_db(db, merge_groups: list) -> tuple:
 # CLI
 # ---------------------------------------------------------------------------
 def parse_args():
-    parser = argparse.ArgumentParser(description="Smart tag merge: stem clustering + LLM refinement.")
-    parser.add_argument("--apply", action="store_true", help="Execute merges (default: dry run)")
-    parser.add_argument("--local", action="store_true", help="Use Ollama instead of Cerebras")
-    parser.add_argument("--phase", type=int, default=3, choices=[1, 2, 3], help="Stop after phase N")
-    parser.add_argument("--max-fan-out", type=int, default=DEFAULT_MAX_FAN_OUT, help="Max tags per stem segment")
-    parser.add_argument("--catch-all-batch", type=int, default=CATCH_ALL_BATCH, help="Batch size for phase 3")
+    parser = argparse.ArgumentParser(
+        description="Smart tag merge: stem clustering + LLM refinement."
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Execute merges (default: dry run)",
+    )
+    parser.add_argument(
+        "--local", action="store_true", help="Use Ollama instead of Cerebras"
+    )
+    parser.add_argument(
+        "--phase",
+        type=int,
+        default=3,
+        choices=[1, 2, 3],
+        help="Stop after phase N",
+    )
+    parser.add_argument(
+        "--max-fan-out",
+        type=int,
+        default=DEFAULT_MAX_FAN_OUT,
+        help="Max tags per stem segment",
+    )
+    parser.add_argument(
+        "--catch-all-batch",
+        type=int,
+        default=CATCH_ALL_BATCH,
+        help="Batch size for phase 3",
+    )
     return parser.parse_args()
 
 
@@ -447,32 +534,45 @@ async def main():
     log("=== Phase 1: Stem Clustering ===")
     clusters, ungrouped = build_stem_clusters(tag_counts, args.max_fan_out)
     clustered_count = sum(len(c) for c in clusters)
-    log(f"Found {len(clusters)} clusters ({clustered_count} tags), {len(ungrouped)} ungrouped\n")
+    log(
+        f"Found {len(clusters)} clusters ({clustered_count} tags), {len(ungrouped)} ungrouped\n"
+    )
 
     if args.phase == 1:
         # Output clusters for inspection
-        for i, cluster in enumerate(sorted(clusters, key=len, reverse=True), 1):
-            tags_str = ", ".join(f"{t}({tag_counts[t]})" for t in sorted(cluster, key=lambda t: -tag_counts[t]))
+        for i, cluster in enumerate(
+            sorted(clusters, key=len, reverse=True), 1
+        ):
+            tags_str = ", ".join(
+                f"{t}({tag_counts[t]})"
+                for t in sorted(cluster, key=lambda t: -tag_counts[t])
+            )
             log(f"  Cluster {i} [{len(cluster)} tags]: {tags_str}")
         db.close()
         return
 
     # --- Phase 2 ---
     log("=== Phase 2: LLM Refinement ===")
-    all_groups = await refine_clusters_with_llm(clusters, tag_counts, args.local, delay)
+    all_groups = await refine_clusters_with_llm(
+        clusters, tag_counts, args.local, delay
+    )
     log(f"Phase 2 complete: {len(all_groups)} merge groups\n")
 
     # --- Phase 3 ---
     if args.phase >= 3:
         log("=== Phase 3: Catch-All ===")
-        phase3_groups = await catch_all_ungrouped(ungrouped, tag_counts, args.local, delay, args.catch_all_batch)
+        phase3_groups = await catch_all_ungrouped(
+            ungrouped, tag_counts, args.local, delay, args.catch_all_batch
+        )
         log(f"Phase 3 complete: {len(phase3_groups)} merge groups\n")
         all_groups.extend(phase3_groups)
 
     # --- Summary ---
     total_to_merge = sum(len(g["merge"]) for g in all_groups)
-    log(f"=== Summary ===")
-    log(f"Total merge groups: {len(all_groups)} ({total_to_merge} tags to remove)")
+    log("=== Summary ===")
+    log(
+        f"Total merge groups: {len(all_groups)} ({total_to_merge} tags to remove)"
+    )
 
     if all_groups:
         log("\nMerge plan:")
@@ -486,7 +586,9 @@ async def main():
     if args.apply and all_groups:
         log(f"\nApplying {len(all_groups)} merge groups...")
         tags_removed, posts_affected = apply_merges_to_db(db, all_groups)
-        log(f"Applied: {tags_removed} tags merged, {posts_affected} posts affected")
+        log(
+            f"Applied: {tags_removed} tags merged, {posts_affected} posts affected"
+        )
     elif all_groups and not args.apply:
         log("\nDry run — use --apply to execute merges")
 

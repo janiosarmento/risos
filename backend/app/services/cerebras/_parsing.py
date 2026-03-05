@@ -93,7 +93,11 @@ def normalize_tags(raw_tags: list, max_tags: int = 15) -> List[str]:
         for tag in raw_tags:
             if isinstance(tag, str):
                 normalized = normalize_tag(tag)
-                if normalized and len(normalized) > 1 and normalized not in GENERIC_TAGS:
+                if (
+                    normalized
+                    and len(normalized) > 1
+                    and normalized not in GENERIC_TAGS
+                ):
                     tags.append(normalized)
     return tags[:max_tags]
 

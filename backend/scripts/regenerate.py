@@ -34,20 +34,25 @@ def parse_args():
         description="Regenerate summaries/tags for posts."
     )
     parser.add_argument(
-        "--batch-size", type=int, default=DEFAULT_BATCH_SIZE,
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
         help="Max posts to process (default: 100)",
     )
     parser.add_argument(
-        "--unread", action="store_true",
+        "--unread",
+        action="store_true",
         help="Only unread posts (without tags)",
     )
     parser.add_argument(
-        "--starred", action="store_true",
+        "--starred",
+        action="store_true",
         help="Only starred posts (alone = force re-gen ALL starred; "
-             "with --unread = starred OR unread without tags)",
+        "with --unread = starred OR unread without tags)",
     )
     parser.add_argument(
-        "--local", action="store_true",
+        "--local",
+        action="store_true",
         help="Use local Ollama model instead of Cerebras",
     )
     return parser.parse_args()
@@ -108,7 +113,8 @@ async def main():
         clear_rate_limits()
 
     success, skipped, errors = await run_batch_loop(
-        db, posts,
+        db,
+        posts,
         use_local=args.local,
         delay=delay,
         delete_existing_tags=delete_existing_tags,

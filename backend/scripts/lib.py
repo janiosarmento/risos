@@ -14,7 +14,11 @@ import time
 from datetime import datetime
 
 from app.models import AISummary, PostTag
-from app.services.cerebras import circuit_breaker, generate_summary, GarbageContentError
+from app.services.cerebras import (
+    circuit_breaker,
+    generate_summary,
+    GarbageContentError,
+)
 from app.services.cerebras._infrastructure import api_key_rotator
 from app.services.tags import save_post_tags
 
@@ -53,7 +57,9 @@ def clear_rate_limits():
 # ---------------------------------------------------------------------------
 # Single post regeneration
 # ---------------------------------------------------------------------------
-async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
+async def regenerate_one(
+    db, post, use_local=False, delete_existing_tags=False
+):
     """
     Regenerate summary and tags for a single post.
 
@@ -82,7 +88,9 @@ async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
         if use_local:
             from app.services.ollama import generate_summary_local
 
-            result = await generate_summary_local(content, title=post.title, db=db)
+            result = await generate_summary_local(
+                content, title=post.title, db=db
+            )
         else:
             result = await generate_summary(content, title=post.title)
     except GarbageContentError as e:
@@ -141,8 +149,9 @@ async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
 INTERNAL_BATCH_SIZE = 6  # Posts per visual batch group
 
 
-async def run_batch_loop(db, posts, use_local=False, delay=20,
-                         delete_existing_tags=False):
+async def run_batch_loop(
+    db, posts, use_local=False, delay=20, delete_existing_tags=False
+):
     """
     Process a list of posts in batches, with delay between API calls.
 
@@ -157,10 +166,14 @@ async def run_batch_loop(db, posts, use_local=False, delay=20,
     error_count = 0
 
     for batch_start in range(0, total, INTERNAL_BATCH_SIZE):
-        batch = posts[batch_start: batch_start + INTERNAL_BATCH_SIZE]
+        batch = posts[batch_start : batch_start + INTERNAL_BATCH_SIZE]
         batch_num = batch_start // INTERNAL_BATCH_SIZE + 1
-        total_batches = (total + INTERNAL_BATCH_SIZE - 1) // INTERNAL_BATCH_SIZE
-        log(f"--- Batch {batch_num}/{total_batches} ({success_count} OK so far) ---")
+        total_batches = (
+            total + INTERNAL_BATCH_SIZE - 1
+        ) // INTERNAL_BATCH_SIZE
+        log(
+            f"--- Batch {batch_num}/{total_batches} ({success_count} OK so far) ---"
+        )
 
         last_called_api = False
         for post in batch:
@@ -172,7 +185,9 @@ async def run_batch_loop(db, posts, use_local=False, delay=20,
                 await asyncio.sleep(delay)
 
             ok, called_api = await regenerate_one(
-                db, post, use_local=use_local,
+                db,
+                post,
+                use_local=use_local,
                 delete_existing_tags=delete_existing_tags,
             )
             last_called_api = called_api

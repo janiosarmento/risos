@@ -54,7 +54,9 @@ class CategoryCreate(BaseModel):
 class CategoryUpdate(BaseModel):
     """Request para atualizar categoria"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=MAX_CATEGORY_NAME_LENGTH)
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=MAX_CATEGORY_NAME_LENGTH
+    )
     parent_id: Optional[int] = None
     position: Optional[int] = None
 
@@ -140,7 +142,9 @@ class PostResponse(BaseModel):
     liked_at: Optional[str] = None
     is_suggested: bool = False
     suggestion_score: Optional[float] = None
-    summary_status: str = "not_configured"  # not_configured, pending, ready, failed
+    summary_status: str = (
+        "not_configured"  # not_configured, pending, ready, failed
+    )
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
     skip_summary: bool = False
@@ -178,8 +182,12 @@ class PostListResponse(BaseModel):
     posts: List[PostResponse]
     total: int
     has_more: bool
-    feed_unread_counts: Optional[Dict[int, int]] = None  # {feed_id: unread_count}
-    starred_count: Optional[int] = None  # Starred posts count for current context
+    feed_unread_counts: Optional[Dict[int, int]] = (
+        None  # {feed_id: unread_count}
+    )
+    starred_count: Optional[int] = (
+        None  # Starred posts count for current context
+    )
     suggested_count: Optional[int] = None  # AI-suggested posts count
 
 

@@ -3,7 +3,6 @@ Application configuration using pydantic-settings.
 Loads environment variables from .env file.
 """
 
-import os
 from pathlib import Path
 
 import yaml
@@ -39,7 +38,9 @@ class Settings(BaseSettings):
         """Returns list of API keys (supports comma-separated values)."""
         if not self.cerebras_api_key:
             return []
-        return [k.strip() for k in self.cerebras_api_key.split(",") if k.strip()]
+        return [
+            k.strip() for k in self.cerebras_api_key.split(",") if k.strip()
+        ]
 
     cerebras_max_rpm: int = 20
     cerebras_timeout: int = 30

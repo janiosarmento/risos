@@ -13,7 +13,6 @@ import httpx
 from app.config import settings
 from app.database import SessionLocal
 from app.services.cerebras._types import (
-    CerebrasError,
     TemporaryError,
     PermanentError,
     ModelSpecificError,
@@ -47,7 +46,10 @@ from app.services.cerebras._infrastructure import (  # noqa: F401
 )
 
 
-from app.services.cerebras._prompts import get_system_prompt, get_user_prompt  # noqa: F401
+from app.services.cerebras._prompts import (
+    get_system_prompt,
+    get_user_prompt,
+)  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +103,14 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
 
     tags_str = ", ".join(tags)
     messages = [
-        {"role": "system", "content": "You translate tags to English. Reply with ONLY the comma-separated translated tags, nothing else."},
-        {"role": "user", "content": f"Translate these tags to English (keep brand names, proper nouns, and already-English tags exactly as-is; use lowercase hyphens): {tags_str}"},
+        {
+            "role": "system",
+            "content": "You translate tags to English. Reply with ONLY the comma-separated translated tags, nothing else.",
+        },
+        {
+            "role": "user",
+            "content": f"Translate these tags to English (keep brand names, proper nouns, and already-English tags exactly as-is; use lowercase hyphens): {tags_str}",
+        },
     ]
 
     headers = {
@@ -117,10 +125,16 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=TAG_TRANSLATION_TIMEOUT) as client:
-            response = await client.post(CEREBRAS_API_URL, headers=headers, json=payload)
+        async with httpx.AsyncClient(
+            timeout=TAG_TRANSLATION_TIMEOUT
+        ) as client:
+            response = await client.post(
+                CEREBRAS_API_URL, headers=headers, json=payload
+            )
             if response.status_code != 200:
-                logger.warning(f"Tag translation failed: HTTP {response.status_code}")
+                logger.warning(
+                    f"Tag translation failed: HTTP {response.status_code}"
+                )
                 return tags
 
             data = response.json()
@@ -129,10 +143,14 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
             # Basic validation: similar count, no empty
             translated = [t for t in translated if t]
             if len(translated) >= len(tags) // 2:
-                logger.info(f"Tags translated: [{tags_str}] -> [{', '.join(translated)}]")
+                logger.info(
+                    f"Tags translated: [{tags_str}] -> [{', '.join(translated)}]"
+                )
                 return translated
             else:
-                logger.warning(f"Tag translation gave too few results: {len(translated)} from {len(tags)}")
+                logger.warning(
+                    f"Tag translation gave too few results: {len(translated)} from {len(tags)}"
+                )
                 return tags
     except Exception as e:
         logger.warning(f"Tag translation error: {e}")
@@ -184,7 +202,9 @@ async def _call_model(
                     f"retry-after={retry_after}, "
                     f"headers={dict(response.headers)}"
                 )
-                api_key_rotator.set_key_cooldown(api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS)
+                api_key_rotator.set_key_cooldown(
+                    api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
+                )
                 raise TemporaryError(
                     f"Rate limit reached on key {key_index + 1}"
                 )
@@ -270,11 +290,13 @@ async def _call_model(
 
                 # Truncate one_line if needed
                 if len(one_line) > MAX_ONE_LINE_LENGTH:
-                    one_line = one_line[:MAX_ONE_LINE_LENGTH - 3] + "..."
+                    one_line = one_line[: MAX_ONE_LINE_LENGTH - 3] + "..."
 
                 # Detect incomplete/truncated summaries
                 if summary_pt:
-                    last_char = summary_pt.rstrip()[-1] if summary_pt.strip() else ""
+                    last_char = (
+                        summary_pt.rstrip()[-1] if summary_pt.strip() else ""
+                    )
                     ends_properly = last_char in ".!?:;)\"'»"
                     if was_truncated or (not ends_properly and not tags):
                         raise ModelSpecificError(
@@ -308,7 +330,9 @@ async def _call_model(
         raise TemporaryError(f"Connection error: {e}")
 
 
-async def generate_summary(content: str, title: str = "", title_only: bool = False) -> SummaryResult:
+async def generate_summary(
+    content: str, title: str = "", title_only: bool = False
+) -> SummaryResult:
     """
     Generate summary using Cerebras API with model fallback.
 
@@ -364,7 +388,12 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
         # Build message list (reused across model attempts)
         messages = [
             {"role": "system", "content": get_system_prompt(db)},
-            {"role": "user", "content": get_user_prompt(content, title, effective_language, db)},
+            {
+                "role": "user",
+                "content": get_user_prompt(
+                    content, title, effective_language, db
+                ),
+            },
         ]
     finally:
         db.close()
@@ -392,7 +421,9 @@ async def generate_summary(content: str, title: str = "", title_only: bool = Fal
 
     skipped = set(models_to_try) - set(active_models)
     if skipped:
-        logger.info(f"Models in cooldown (skipped): {', '.join(sorted(skipped))}")
+        logger.info(
+            f"Models in cooldown (skipped): {', '.join(sorted(skipped))}"
+        )
 
     last_error = None
     for model in active_models:

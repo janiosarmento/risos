@@ -59,12 +59,20 @@ class PreferencesResponse(BaseModel):
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
     # Suggestions settings
-    suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions
-    profile_min_tag_freq: Optional[int] = None  # min liked posts for a tag to enter profile
+    suggestion_min_tags: Optional[int] = (
+        None  # minimum tag overlap for suggestions
+    )
+    profile_min_tag_freq: Optional[int] = (
+        None  # min liked posts for a tag to enter profile
+    )
     # AI keys and prompts
-    cerebras_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
+    cerebras_api_keys: Optional[str] = (
+        None  # masked: "cbrk-****1234, cbrk-****5678"
+    )
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
-    model_cooldown_minutes: Optional[int] = None  # grace period for failed models (5-120)
+    model_cooldown_minutes: Optional[int] = (
+        None  # grace period for failed models (5-120)
+    )
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
     # Blocked terms (newline-separated)
@@ -147,11 +155,7 @@ def get_preferences(
 
     prefs = {k: None for k in all_keys}
 
-    rows = (
-        db.query(AppSettings)
-        .filter(AppSettings.key.in_(all_keys))
-        .all()
-    )
+    rows = db.query(AppSettings).filter(AppSettings.key.in_(all_keys)).all()
 
     for row in rows:
         prefs[row.key] = row.value
@@ -169,11 +173,14 @@ def get_preferences(
         locale=prefs[PREF_LOCALE],
         theme=prefs[PREF_THEME],
         # AI settings
-        summary_language=prefs[PREF_SUMMARY_LANGUAGE] or env_settings.summary_language,
-        cerebras_model=prefs[PREF_CEREBRAS_MODEL] or env_settings.cerebras_model,
+        summary_language=prefs[PREF_SUMMARY_LANGUAGE]
+        or env_settings.summary_language,
+        cerebras_model=prefs[PREF_CEREBRAS_MODEL]
+        or env_settings.cerebras_model,
         # Data settings
         feed_update_interval=int_or_default(
-            prefs[PREF_FEED_UPDATE_INTERVAL], env_settings.feed_update_interval_minutes
+            prefs[PREF_FEED_UPDATE_INTERVAL],
+            env_settings.feed_update_interval_minutes,
         ),
         max_posts_per_feed=int_or_default(
             prefs[PREF_MAX_POSTS_PER_FEED], env_settings.max_posts_per_feed
@@ -195,7 +202,9 @@ def get_preferences(
         split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
         # Suggestions
         suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
-        profile_min_tag_freq=int_or_default(prefs[PREF_PROFILE_MIN_TAG_FREQ], 2),
+        profile_min_tag_freq=int_or_default(
+            prefs[PREF_PROFILE_MIN_TAG_FREQ], 2
+        ),
         # AI keys and prompts
         cerebras_api_keys=_mask_keys(
             prefs[PREF_CEREBRAS_API_KEYS] or env_settings.cerebras_api_key
@@ -204,8 +213,10 @@ def get_preferences(
         model_cooldown_minutes=int_or_default(
             prefs[PREF_MODEL_COOLDOWN], env_settings.model_cooldown_minutes
         ),
-        system_prompt=prefs[PREF_SYSTEM_PROMPT] or load_prompts().get("system_prompt", ""),
-        user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
+        system_prompt=prefs[PREF_SYSTEM_PROMPT]
+        or load_prompts().get("system_prompt", ""),
+        user_prompt=prefs[PREF_USER_PROMPT]
+        or load_prompts().get("user_prompt", ""),
         blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
     )
 
@@ -234,10 +245,14 @@ def update_preferences(
 
     # Data settings (store as string)
     if prefs.feed_update_interval is not None:
-        _set_setting(db, PREF_FEED_UPDATE_INTERVAL, str(prefs.feed_update_interval))
+        _set_setting(
+            db, PREF_FEED_UPDATE_INTERVAL, str(prefs.feed_update_interval)
+        )
 
     if prefs.max_posts_per_feed is not None:
-        _set_setting(db, PREF_MAX_POSTS_PER_FEED, str(prefs.max_posts_per_feed))
+        _set_setting(
+            db, PREF_MAX_POSTS_PER_FEED, str(prefs.max_posts_per_feed)
+        )
 
     if prefs.max_post_age_days is not None:
         _set_setting(db, PREF_MAX_POST_AGE_DAYS, str(prefs.max_post_age_days))
@@ -268,6 +283,7 @@ def update_preferences(
         _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(min_tags))
         # Clear all suggestions so they get re-evaluated with the new threshold
         from app.services.suggestions import clear_all_suggestions
+
         clear_all_suggestions(db)
 
     if prefs.profile_min_tag_freq is not None:
@@ -276,6 +292,7 @@ def update_preferences(
         # Rebuild profile and re-evaluate suggestions
         from app.services.suggestions import clear_all_suggestions
         from app.services.user_profile import invalidate_user_profile
+
         clear_all_suggestions(db)
         invalidate_user_profile(db)
 
@@ -283,7 +300,9 @@ def update_preferences(
     if prefs.cerebras_api_keys is not None and prefs.cerebras_api_keys.strip():
         # Only save if not masked (contains actual keys, not "****")
         if "****" not in prefs.cerebras_api_keys:
-            _set_setting(db, PREF_CEREBRAS_API_KEYS, prefs.cerebras_api_keys.strip())
+            _set_setting(
+                db, PREF_CEREBRAS_API_KEYS, prefs.cerebras_api_keys.strip()
+            )
 
     if prefs.tags_per_post is not None:
         tags_per_post = max(3, min(15, prefs.tags_per_post))
@@ -301,7 +320,11 @@ def update_preferences(
 
     if prefs.blocked_terms is not None:
         # Clean, sort, and store
-        lines = [line.strip().lower() for line in prefs.blocked_terms.splitlines() if line.strip()]
+        lines = [
+            line.strip().lower()
+            for line in prefs.blocked_terms.splitlines()
+            if line.strip()
+        ]
         cleaned = "\n".join(sorted(set(lines)))
         _set_setting(db, PREF_BLOCKED_TERMS, cleaned)
 
@@ -314,6 +337,7 @@ def update_preferences(
 # =============================================================================
 # Helper for other modules to get settings
 # =============================================================================
+
 
 def _mask_keys(raw: str) -> str:
     """Mask API keys for display: show first 5 and last 4 chars."""

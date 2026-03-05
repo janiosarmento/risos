@@ -5,7 +5,7 @@ Topics are named groups of tags for content organization.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -59,7 +59,7 @@ def list_topics(
             unread_count = (
                 db.query(func.count(func.distinct(PostTag.post_id)))
                 .join(Post, Post.id == PostTag.post_id)
-                .filter(PostTag.tag.in_(tag_names), Post.is_read == False)  # noqa: E712
+                .filter(PostTag.tag.in_(tag_names), Post.is_read.is_(False))
                 .scalar()
             ) or 0
 
@@ -86,11 +86,15 @@ def create_topic(
     """Create a new topic with optional tags."""
     name = body.name.strip()
     if not name:
-        raise HTTPException(status_code=400, detail="Topic name cannot be empty")
+        raise HTTPException(
+            status_code=400, detail="Topic name cannot be empty"
+        )
 
     existing = db.query(Topic).filter(Topic.name == name).first()
     if existing:
-        raise HTTPException(status_code=409, detail="Topic with this name already exists")
+        raise HTTPException(
+            status_code=409, detail="Topic with this name already exists"
+        )
 
     # Get max position
     max_pos = db.query(func.max(Topic.position)).scalar() or 0
@@ -130,10 +134,18 @@ def update_topic(
     if body.name is not None:
         name = body.name.strip()
         if not name:
-            raise HTTPException(status_code=400, detail="Topic name cannot be empty")
-        existing = db.query(Topic).filter(Topic.name == name, Topic.id != topic_id).first()
+            raise HTTPException(
+                status_code=400, detail="Topic name cannot be empty"
+            )
+        existing = (
+            db.query(Topic)
+            .filter(Topic.name == name, Topic.id != topic_id)
+            .first()
+        )
         if existing:
-            raise HTTPException(status_code=409, detail="Topic with this name already exists")
+            raise HTTPException(
+                status_code=409, detail="Topic with this name already exists"
+            )
         topic.name = name
 
     if body.position is not None:
@@ -286,7 +298,11 @@ Respond ONLY in JSON:
 
     # Validate: only return tags that actually exist in the unassigned pool
     available = {row.tag for row in rows}
-    suggested = [t for t in result.get("tags", []) if isinstance(t, str) and t in available]
+    suggested = [
+        t
+        for t in result.get("tags", [])
+        if isinstance(t, str) and t in available
+    ]
 
     return {"tags": suggested, "topic_name": topic.name}
 
@@ -316,7 +332,9 @@ async def suggest_topics(
     if not rows:
         return {"suggestions": [], "orphan_tags": [], "total_tags_analyzed": 0}
 
-    tags_with_counts = "\n".join(f"- {row.tag} ({row.count} posts)" for row in rows)
+    tags_with_counts = "\n".join(
+        f"- {row.tag} ({row.count} posts)" for row in rows
+    )
 
     system_prompt = (
         "You organize article tags into topic groups for a personal RSS reader. "
@@ -348,10 +366,12 @@ Respond ONLY in JSON:
     suggestions = []
     for item in result.get("topics", []):
         if isinstance(item, dict) and "name" in item and "tags" in item:
-            suggestions.append({
-                "name": item["name"],
-                "tags": [t for t in item["tags"] if isinstance(t, str)],
-            })
+            suggestions.append(
+                {
+                    "name": item["name"],
+                    "tags": [t for t in item["tags"] if isinstance(t, str)],
+                }
+            )
 
     return {
         "suggestions": suggestions,

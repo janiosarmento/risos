@@ -28,12 +28,11 @@ from app.services.cerebras._infrastructure import api_key_rotator
 import httpx
 import json
 
-
 # Portuguese patterns to detect non-English tags (even without accents)
 PT_PATTERNS = [
-    re.compile(r'-(de|do|da|dos|das|em|no|na|nos|nas|para|por|com|sem)-'),
-    re.compile(r'-(de|do|da|dos|das|em|no|na|nos|nas|para|por|com|sem)$'),
-    re.compile(r'^(de|do|da|dos|das|em|no|na|nos|nas|para|por|com|sem)-'),
+    re.compile(r"-(de|do|da|dos|das|em|no|na|nos|nas|para|por|com|sem)-"),
+    re.compile(r"-(de|do|da|dos|das|em|no|na|nos|nas|para|por|com|sem)$"),
+    re.compile(r"^(de|do|da|dos|das|em|no|na|nos|nas|para|por|com|sem)-"),
 ]
 
 
@@ -78,7 +77,9 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
     }
 
     async with httpx.AsyncClient(timeout=TAG_TRANSLATION_TIMEOUT) as client:
-        response = await client.post(CEREBRAS_API_URL, headers=headers, json=payload)
+        response = await client.post(
+            CEREBRAS_API_URL, headers=headers, json=payload
+        )
 
         if response.status_code == 429:
             # This key is rate-limited; caller will switch to next key
@@ -94,7 +95,9 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
         translated = [t for t in translated if t]
 
         if len(translated) != len(tags):
-            print(f"  WARNING [{key_label}]: sent {len(tags)} tags, got {len(translated)} back")
+            print(
+                f"  WARNING [{key_label}]: sent {len(tags)} tags, got {len(translated)} back"
+            )
             if len(translated) < len(tags) // 2:
                 return {}
 
@@ -109,7 +112,9 @@ async def main():
     db = SessionLocal()
 
     # Get all distinct tags
-    all_tags = sorted(set(t[0] for t in db.query(PostTag.tag).distinct().all()))
+    all_tags = sorted(
+        set(t[0] for t in db.query(PostTag.tag).distinct().all())
+    )
     non_english = [t for t in all_tags if is_likely_non_english(t)]
     print(f"Total distinct tags: {len(all_tags)}")
     print(f"Non-English tags to translate: {len(non_english)}")
@@ -142,7 +147,9 @@ async def main():
 
         api_key = keys[key_index % len(keys)]
         key_label = f"key {key_index % len(keys) + 1}/{len(keys)}"
-        print(f"\nBatch {batch_num}/{total_batches} ({len(batch)} tags) [{key_label}]...")
+        print(
+            f"\nBatch {batch_num}/{total_batches} ({len(batch)} tags) [{key_label}]..."
+        )
 
         try:
             mapping = await translate_batch(batch, api_key, key_label)
@@ -158,7 +165,7 @@ async def main():
             key_index += 1
             # If we've tried all keys, wait before retrying
             if key_index % len(keys) == 0:
-                print(f"  All keys rate limited, waiting 30s...")
+                print("  All keys rate limited, waiting 30s...")
                 await asyncio.sleep(30)
             continue
 
@@ -171,7 +178,10 @@ async def main():
                     # Check for duplicate (post already has new_tag)
                     existing = (
                         db.query(PostTag)
-                        .filter(PostTag.post_id == row.post_id, PostTag.tag == new_tag)
+                        .filter(
+                            PostTag.post_id == row.post_id,
+                            PostTag.tag == new_tag,
+                        )
                         .first()
                     )
                     if existing:
@@ -184,7 +194,9 @@ async def main():
 
             db.commit()
             total_translated += len(mapping)
-            print(f"  Translated {len(mapping)} tags, {total_rows_updated} rows updated so far")
+            print(
+                f"  Translated {len(mapping)} tags, {total_rows_updated} rows updated so far"
+            )
             for old, new in sorted(mapping.items()):
                 print(f"    {old} -> {new}")
 
@@ -195,8 +207,10 @@ async def main():
         await asyncio.sleep(0.3)
 
     # Also update user profile tags
-    print(f"\nUpdating user profile tags...")
-    profile_row = db.query(AppSettings).filter(AppSettings.key == "user_profile").first()
+    print("\nUpdating user profile tags...")
+    profile_row = (
+        db.query(AppSettings).filter(AppSettings.key == "user_profile").first()
+    )
     if profile_row:
         profile = json.loads(profile_row.value)
         if profile.get("tags"):
@@ -204,7 +218,9 @@ async def main():
             new_profile_tags = []
             for t in old_profile_tags:
                 normalized = normalize_tag(t)
-                new_profile_tags.append(full_mapping.get(normalized, normalized))
+                new_profile_tags.append(
+                    full_mapping.get(normalized, normalized)
+                )
             # Deduplicate
             new_profile_tags = list(dict.fromkeys(new_profile_tags))
             profile["tags"] = new_profile_tags
@@ -220,7 +236,9 @@ async def main():
                 print(f"    {c}")
 
     db.close()
-    print(f"\nDone! Translated {total_translated} distinct tags, {total_rows_updated} total rows.")
+    print(
+        f"\nDone! Translated {total_translated} distinct tags, {total_rows_updated} total rows."
+    )
 
 
 if __name__ == "__main__":

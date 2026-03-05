@@ -4,15 +4,18 @@ Includes status endpoint and admin controls.
 """
 
 import logging
-from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.routes.auth import get_current_user
-from app.services.suggestions import clear_all_suggestions, get_suggestion_stats, process_suggestion_candidates
+from app.services.suggestions import (
+    clear_all_suggestions,
+    get_suggestion_stats,
+    process_suggestion_candidates,
+)
 from app.services.user_profile import (
     generate_user_profile,
     invalidate_user_profile,

@@ -75,7 +75,9 @@ async def generate_summary_local(
     tags = normalize_tags(result.get("tags", []), MAX_TAGS)
 
     if not summary_pt and not one_line:
-        raise GarbageContentError("Model returned empty result (unusable content)")
+        raise GarbageContentError(
+            "Model returned empty result (unusable content)"
+        )
 
     return SummaryResult(
         summary_pt=summary_pt,

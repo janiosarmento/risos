@@ -20,7 +20,10 @@ def _get_popular_tags(db, limit: int = 200) -> List[str]:
     global _popular_tags_cache, _popular_tags_cache_time
 
     now = time.monotonic()
-    if _popular_tags_cache is not None and (now - _popular_tags_cache_time) < _POPULAR_TAGS_TTL:
+    if (
+        _popular_tags_cache is not None
+        and (now - _popular_tags_cache_time) < _POPULAR_TAGS_TTL
+    ):
         return _popular_tags_cache
 
     from sqlalchemy import func
@@ -44,6 +47,7 @@ def get_system_prompt(db=None) -> str:
     """Returns the system prompt from DB settings or prompts.yaml fallback."""
     if db:
         from app.routes.preferences import get_effective_system_prompt
+
         return get_effective_system_prompt(db)
     prompts = load_prompts()
     return prompts.get(
@@ -52,14 +56,20 @@ def get_system_prompt(db=None) -> str:
     )
 
 
-def get_user_prompt(content: str, title: str = "", language: str = None, db=None) -> str:
+def get_user_prompt(
+    content: str, title: str = "", language: str = None, db=None
+) -> str:
     """
     Returns the user prompt with content, title, language, and date interpolated.
     Reads template from DB settings or prompts.yaml fallback.
     If language is not provided, uses settings.summary_language as fallback.
     """
     if db:
-        from app.routes.preferences import get_effective_user_prompt, get_effective_tags_per_post
+        from app.routes.preferences import (
+            get_effective_user_prompt,
+            get_effective_tags_per_post,
+        )
+
         template = get_effective_user_prompt(db)
         tags_count = get_effective_tags_per_post(db)
     else:
@@ -79,12 +89,12 @@ def get_user_prompt(content: str, title: str = "", language: str = None, db=None
     # Always append tag language enforcement (models ignore it when buried in system prompt)
     prompt += (
         "\n\nIMPORTANT: All tags MUST be in English, using lowercase hyphens "
-        "(e.g. \"open-source\", \"artificial-intelligence\"). "
+        '(e.g. "open-source", "artificial-intelligence"). '
         "NEVER use tags in other languages."
         "\n\nStrongly prefer SHORT, broad tags (1-2 words) over long compound tags. "
-        "For example, use \"ai\" instead of \"artificial-intelligence-ethics\", "
-        "\"privacy\" instead of \"data-privacy-regulations\", "
-        "\"security\" instead of \"cybersecurity-vulnerabilities\". "
+        'For example, use "ai" instead of "artificial-intelligence-ethics", '
+        '"privacy" instead of "data-privacy-regulations", '
+        '"security" instead of "cybersecurity-vulnerabilities". '
         "Only use multi-word tags when a single word would be too ambiguous."
     )
 

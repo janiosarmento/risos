@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from app.models import Feed, Post, SummaryQueue
 from app.services.feed_parser import (
     fetch_and_parse,
-    ParsedFeed,
     ParsedEntry,
     FeedFetchError,
     FeedParseError,

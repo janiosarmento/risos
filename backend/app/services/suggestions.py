@@ -122,7 +122,9 @@ def process_suggestion_candidates(db: Session) -> int:
     # Get user profile
     profile = get_user_profile(db)
     if not profile or not profile.get("tags"):
-        logger.info("No user profile available, skipping suggestion processing")
+        logger.info(
+            "No user profile available, skipping suggestion processing"
+        )
         return 0
 
     tags_per_post = get_effective_tags_per_post(db)
@@ -186,11 +188,16 @@ def get_suggestion_stats(db: Session) -> dict:
     Returns:
         Dict with suggestion system statistics
     """
-    from app.services.user_profile import get_liked_posts_count, is_profile_stale
+    from app.services.user_profile import (
+        get_liked_posts_count,
+        is_profile_stale,
+    )
 
     # Count suggested posts (not read)
     suggested_unread = (
-        db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).count()
+        db.query(Post)
+        .filter(Post.is_suggested == 1, Post.is_read == 0)
+        .count()
     )
 
     # Total suggested posts
