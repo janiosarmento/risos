@@ -188,7 +188,8 @@ const postDetailMixin = {
         const lines = ['---', ...meta, '---', ''];
         if (post.one_line_summary) lines.push('## Summary', '', post.one_line_summary, '');
         if (post.summary_pt) lines.push(post.summary_pt, '');
-        if (post.content) lines.push('## Original Content', '', post.content, '');
+        const originalContent = post.full_content || post.content;
+        if (originalContent) lines.push('## Original Content', '', originalContent, '');
 
         const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
         const a = document.createElement('a');

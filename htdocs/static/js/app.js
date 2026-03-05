@@ -874,6 +874,14 @@ function app() {
         // Filters
         navigateToFeed(feedId, postId) {
             if (this.filter === 'feed' && this.filterId === feedId) return;
+            // Expand the feed's category if it's collapsed
+            const feed = this.feeds.find(f => f.id === feedId);
+            if (feed && this.collapsedCategories.has(feed.category_id)) {
+                this.collapsedCategories.delete(feed.category_id);
+                localStorage.setItem('rss_collapsed_categories', JSON.stringify([...this.collapsedCategories]));
+                // Force Alpine reactivity
+                this.collapsedCategories = new Set(this.collapsedCategories);
+            }
             this._pendingPostId = postId;
             this._pendingPost = this.posts.find(p => p.id === postId) || null;
             this.setFilter('feed', feedId);
