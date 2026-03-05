@@ -55,7 +55,7 @@ const settingsMixin = {
     purgingTags: false,
 
     // --- Computed ---
-    get opmlResultText() {
+    opmlResultText() {
         if (!this.opmlResult) return '';
         const { imported, skipped, errors } = this.opmlResult;
         let text = `${imported} ${this.t('opml.imported')}`;
@@ -64,7 +64,7 @@ const settingsMixin = {
         return text;
     },
 
-    get blockedTermsSorted() {
+    blockedTermsSorted() {
         if (!this.blockedTerms) return '';
         const lines = this.blockedTerms.split('\n').filter(l => l.trim());
         return lines.sort().join('\n');
