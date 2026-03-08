@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
 from starlette.responses import Response
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, subqueryload
 
 from app.database import get_db
@@ -150,6 +150,7 @@ def list_posts(
     unread_only: bool = Query(False, description="Only unread"),
     starred_only: bool = Query(False, description="Only starred"),
     suggested_only: bool = Query(False, description="Only AI-suggested"),
+    search: Optional[str] = Query(None, description="Search titles and summaries"),
     limit: int = Query(20, ge=1, le=100, description="Post limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     db: Session = Depends(get_db),
@@ -211,6 +212,20 @@ def list_posts(
     if unread_only:
         query = query.filter(Post.is_read.is_(False))
 
+    # Apply search filter (title + AI summary fields)
+    if search and search.strip():
+        term = f"%{search.strip().lower()}%"
+        query = query.outerjoin(
+            AISummary, Post.content_hash == AISummary.content_hash
+        ).filter(
+            or_(
+                func.lower(Post.title).like(term),
+                func.lower(AISummary.translated_title).like(term),
+                func.lower(AISummary.one_line_summary).like(term),
+                func.lower(AISummary.summary_pt).like(term),
+            )
+        )
+
     # Count total
     total = query.count()
 
@@ -263,6 +278,18 @@ def list_posts(
         starred_query = starred_query.filter(Post.feed_id == feed_id)
     elif category_id is not None:
         starred_query = starred_query.filter(Post.feed_id.in_(feed_ids_list))
+    if search and search.strip():
+        term = f"%{search.strip().lower()}%"
+        starred_query = starred_query.outerjoin(
+            AISummary, Post.content_hash == AISummary.content_hash
+        ).filter(
+            or_(
+                func.lower(Post.title).like(term),
+                func.lower(AISummary.translated_title).like(term),
+                func.lower(AISummary.one_line_summary).like(term),
+                func.lower(AISummary.summary_pt).like(term),
+            )
+        )
     starred_count = starred_query.scalar()
 
     # Get suggested unread count (global - not filtered by feed/category)

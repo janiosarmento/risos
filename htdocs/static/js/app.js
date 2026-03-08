@@ -56,6 +56,8 @@ function app() {
         topics: [], // [{id, name, tags, post_count, unread_count}]
         selectedTopicId: null, // Currently active topic filter
         topicsExpanded: localStorage.getItem('rss_topics_expanded') === '1', // Sidebar "Topics" section
+        searchQuery: '',
+        _searchTimeout: null,
         // Health
         healthWarning: null,
 
@@ -510,8 +512,12 @@ function app() {
                 // Ignore key repeat (holding key down)
                 if (e.repeat) return;
 
-                // Ignore if in input
+                // Ignore if in input (except Escape in search)
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                    if (e.key === 'Escape' && e.target.id === 'search-input') {
+                        e.target.blur();
+                        this.clearSearch();
+                    }
                     return;
                 }
 
@@ -611,6 +617,10 @@ function app() {
                 } else if (e.key === ']') {
                     this.lastNavMode = 'sidebar';
                     this.nextFeed();
+                } else if (e.key === '/') {
+                    e.preventDefault();
+                    const si = document.getElementById('search-input');
+                    if (si) si.focus();
                 }
             });
         },
@@ -863,6 +873,10 @@ function app() {
                     params.set('unread_only', 'true');
                 }
                 // postFilter === 'all' doesn't add any filter
+
+                if (this.searchQuery.trim()) {
+                    params.set('search', this.searchQuery.trim());
+                }
 
                 const data = await this.fetchApi(`/posts?${params}`);
 
@@ -1476,6 +1490,20 @@ function app() {
 
             // Restart timer for next idle check
             this.resetIdleTimer();
+        },
+
+        // ── Search ──
+
+        onSearchInput() {
+            clearTimeout(this._searchTimeout);
+            this._searchTimeout = setTimeout(() => {
+                this.loadPosts(true);
+            }, 300);
+        },
+
+        clearSearch() {
+            this.searchQuery = '';
+            this.loadPosts(true);
         },
 
         // ── Drag-and-drop: move feed between categories ──

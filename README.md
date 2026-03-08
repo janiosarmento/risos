@@ -20,6 +20,7 @@ A self-hosted RSS reader with AI-powered summaries.
   - Dynamic sensitivity threshold (1 to tags_per_post)
   - Ignored tags — click any tag to exclude it from suggestion scoring
   - Auto-clear suggestions when threshold or ignored tags change
+- **Search** — Search posts by title and AI summary content, composable with all filters, keyboard shortcut `/`
 - **Keyboard-first** — Full navigation with J/K/Enter, batch operations with X
 - **Split View Mode** — Gmail-style reading pane with resizable divider (desktop)
 - **Dark/Light Theme** — System preference or manual
@@ -214,7 +215,8 @@ Each has its own database, config, and service.
 | `Space` | Toggle checkbox (in select mode) |
 | `R` | Refresh feeds |
 | `Shift+R` | Regenerate AI summary (when post is open) |
-| `Escape` | Close modal |
+| `/` | Focus search |
+| `Escape` | Close modal / clear search |
 
 Shortcuts are shown on buttons in desktop view.
 

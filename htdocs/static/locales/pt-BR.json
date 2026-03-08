@@ -2,6 +2,9 @@
   "meta": {
     "languageName": "Português (Brasil)"
   },
+  "search": {
+    "placeholder": "Pesquisar… (/)"
+  },
   "app": {
     "title": "Risos",
     "loading": "Carregando...",

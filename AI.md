@@ -467,6 +467,7 @@ journalctl -u rss-reader -f
 - Dark/light theme (system preference or manual)
 - Keyboard navigation (J/K/Enter, [/] for feeds)
 - SVG sprite sheet — all icons defined once as `<symbol>`, referenced via `<use href="#icon-name"/>`; `icon-sparkles` (✨) used consistently for all AI actions
+- Post search — search titles and AI summaries with 300ms debounce, `/` shortcut to focus
 - Blocked post indicator — red left border on posts matching blocked terms
 - Split dropdown "Mark as read" — option to dismiss all or only blocked posts
 - Date separators in post list (visual grouping by relative date)
@@ -685,7 +686,7 @@ git push
 
 ---
 
-*Last updated: 2026-03-08 (Drag-and-drop feeds between categories)*
+*Last updated: 2026-03-08 (Post search, drag-and-drop feeds)*
 
 ---
 

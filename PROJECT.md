@@ -1325,7 +1325,7 @@ slowapi>=0.1.9
 - Single-user (no multi-tenancy)
 - No multi-worker (1 uvicorn process)
 - No HA (high availability)
-- No advanced full-text search (only LIKE on title)
+- No full-text search index (uses LIKE on title + AI summary fields)
 - AI failures don't block the app
 - External images are not cached/proxied
 - No push notifications

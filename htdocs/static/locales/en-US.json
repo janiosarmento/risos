@@ -2,6 +2,9 @@
   "meta": {
     "languageName": "English (US)"
   },
+  "search": {
+    "placeholder": "Search… (/)"
+  },
   "app": {
     "title": "Risos",
     "loading": "Loading...",

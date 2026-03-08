@@ -26,7 +26,7 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 
 ---
 
-## Sessão 2026-03-08 — Drag-and-Drop de Feeds entre Categorias
+## Sessão 2026-03-08 — Busca de Posts, Drag-and-Drop de Feeds
 
 ### Drag-and-Drop na Sidebar (Desktop Only)
 - Arrastar feeds entre categorias na sidebar com HTML5 nativo (sem bibliotecas externas)
@@ -36,6 +36,16 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
 - Reutiliza endpoint existente `PUT /api/feeds/{id}` com `{ category_id }`
 - Toast de sucesso/erro traduzido (EN + PT)
 - Cache buster: `20260308a`
+
+### Busca de Posts
+- Campo de pesquisa na barra de ferramentas com debounce de 300ms
+- Busca no título do post + campos do resumo IA (translated_title, one_line_summary, summary_pt)
+- Backend: parâmetro `search` em `GET /api/posts` com `LIKE` case-insensitive via `outerjoin(AISummary)`
+- Composável com todos os filtros existentes (feed, categoria, tag, topic, starred, unread)
+- Atalho `/` para focar no campo, `Escape` para limpar e desfocar
+- Ícone SVG `#icon-search` no sprite sheet
+- Traduções EN + PT
+- Cache buster: `20260308c`
 
 ---
 

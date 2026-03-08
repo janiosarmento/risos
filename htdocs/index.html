@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260308b';</script>
+    <script>var APP_VERSION = '20260308c';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -150,6 +150,9 @@
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </symbol>
     </svg>
 
@@ -571,6 +574,25 @@
                                 </button>
                             </div>
                             <div class="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                                <!-- Search -->
+                                <div class="relative flex items-center">
+                                    <svg class="w-3.5 h-3.5 absolute left-2 text-gray-400 pointer-events-none"><use href="#icon-search"/></svg>
+                                    <input
+                                        id="search-input"
+                                        type="text"
+                                        x-model="searchQuery"
+                                        @input="onSearchInput()"
+                                        @keydown.escape="$el.blur(); clearSearch()"
+                                        :placeholder="t('search.placeholder')"
+                                        class="w-24 md:w-40 pl-7 pr-6 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-400"
+                                    />
+                                    <button
+                                        x-show="searchQuery"
+                                        @click="clearSearch()"
+                                        class="absolute right-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                    >&times;</button>
+                                </div>
+                                <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
                                 <button
                                     @click="toggleSelectMode()"
                                     class="px-1.5 md:px-2 py-1 rounded"
