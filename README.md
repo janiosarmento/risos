@@ -125,6 +125,7 @@ Suggestions appear in the sidebar (purple "Suggested" button) with a purple perc
 - **Profile Tag Threshold** in Settings > General (1-20, default 2) — a tag must appear in at least this many liked posts to enter your profile. Prevents generic tags from inflating match scores.
 - **Tags per Post** in Settings > AI (3-15, default 7) — number of tags the AI generates per summary, also used as the denominator for score calculation and upper bound for suggestion sensitivity
 - **Ignored Tags** — Click any tag on a post to mark it as ignored. Ignored tags are excluded from both profile generation and suggestion scoring, preventing irrelevant tags from polluting recommendations. Tags show three visual states: purple (in your profile), gray (neutral), and strikethrough (ignored).
+- **Blocked Terms** — Posts matching blocked terms (Settings > Others) are automatically excluded from suggestions, even if their tags match your profile.
 
 **Why tags instead of embeddings or AI scoring?**
 

@@ -186,7 +186,10 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   ├── data/
 │   │   └── reader.db               # SQLite database
 │   ├── scripts/
-│   │   └── regenerate_tagless.py   # Batch regenerate posts without tags
+│   │   ├── lib.py                  # Shared utilities (log, compute_content_hash, etc.)
+│   │   ├── regenerate.py           # Unified regeneration (--starred, --unread, --local)
+│   │   ├── smart_merge_tags.py     # 3-phase tag dedup (stem + LLM)
+│   │   └── translate_all_tags.py   # Batch tag translation to English
 │   ├── prompts.yaml                # AI prompts (gitignored)
 │   └── .env                        # Config (gitignored)
 │
@@ -382,7 +385,7 @@ curl -s "http://127.0.0.1:8100/api/preferences" \
 ### Frontend Testing
 
 1. **Hard refresh**: Ctrl+Shift+R (bypasses cache)
-2. **Cache busting**: Update `APP_VERSION` in app.js
+2. **Cache busting**: Update `APP_VERSION` in the inline `<script>` in `index.html`
 3. **Browser console**: Check for errors, use `Alpine.$data(document.querySelector('[x-data]'))` to inspect state
 
 ### Service Restart
@@ -427,6 +430,7 @@ journalctl -u rss-reader -f
 - Dynamic sensitivity threshold (1 to tags_per_post)
 - Auto-clear suggestions when threshold changes
 - Ignored tags — user can click any tag to exclude it from scoring and profile
+- Blocked posts excluded — posts matching blocked terms are never suggested
 - Hourly automatic processing + manual regeneration
 
 ### Topics
@@ -680,7 +684,7 @@ git push
 
 ---
 
-*Last updated: 2026-03-02 (Topics, AI Curation, sparkles icon, curation limits, client-side stats, tag autocomplete, topic tag highlighting)*
+*Last updated: 2026-03-07 (Blocked posts excluded from suggestions)*
 
 ---
 

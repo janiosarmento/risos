@@ -1,13 +1,13 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-03-01
+**Última atualização:** 2026-03-07
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
 
 ## Estado Atual
 
-Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score %, tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, exportação de favoritos como ZIP, navegação por tags, SVG sprite sheet, e múltiplas instâncias.
+Projeto em produção com IA (Cerebras), tradução automática de títulos, fallback de modelos, atribuição de modelo nos resumos, sugestões com score % (posts bloqueados excluídos), tags ignoradas para controlo granular, termos bloqueados para filtrar ruído, exportação de favoritos como ZIP, navegação por tags, SVG sprite sheet, e múltiplas instâncias.
 
 ### Instâncias
 
@@ -23,6 +23,16 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-03-07 — Posts Bloqueados Excluídos das Sugestões
+
+### Alteração no Algoritmo de Sugestões
+- Posts cujo título corresponde a termos bloqueados (`pref_blocked_terms`) são agora excluídos dos candidatos a sugestão
+- Filtro aplicado em `get_suggestion_candidates()` (suggestions.py) após carregar posts não lidos, antes do scoring por tags
+- Ao actualizar blocked terms via Settings, sugestões existentes de posts agora bloqueados são removidas imediatamente (`_unsuggest_blocked_posts()` em preferences.py)
+- Função `_title_matches_term` renomeada para `title_matches_term` (pública) em posts.py para reutilização
 
 ---
 

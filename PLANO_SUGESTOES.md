@@ -545,7 +545,11 @@ POST /api/admin/process-suggestions
    - Alterar tags ignoradas limpa sugestões e invalida perfil
    - API: `GET/POST/DELETE /api/tags/ignored`
 
-7. **Expiração de sugestões**: Não expira
+7. **Posts bloqueados**: Posts cujo título corresponde a termos bloqueados são excluídos das sugestões
+   - Filtro aplicado em `get_suggestion_candidates()` antes do scoring
+   - Ao actualizar blocked terms, sugestões existentes de posts agora bloqueados são removidas imediatamente
+
+8. **Expiração de sugestões**: Não expira
    - Processos de limpeza existentes já removem posts antigos
    - Sugestões são removidas junto com os posts
 

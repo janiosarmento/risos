@@ -517,8 +517,8 @@ Benefit: posts with identical content share the same summary without additional 
 To avoid wasting API calls, the scheduler skips posts that are already read — unless they are favorited. Favorited posts always get summaries to ensure proper tag generation for the suggestion system.
 
 This applies in two places:
-- **Backfill job**: only enqueues unread posts or favorited posts (`is_read == False OR is_favorite == True`)
-- **Queue processing**: before calling the API, re-checks if the post was read since enqueue; skips it unless favorited
+- **Backfill job**: only enqueues unread posts or starred posts (`is_read == False OR is_starred == True`)
+- **Queue processing**: before calling the API, re-checks if the post was read since enqueue; skips it unless starred
 
 ### Persistent Queue (by post)
 
