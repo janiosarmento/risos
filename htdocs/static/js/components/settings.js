@@ -462,6 +462,7 @@ const settingsMixin = {
                 selected: true,
             }));
             if (this.mergeGroups.length === 0) {
+                this.mergeOffset += this.mergeBatchSize;
                 this.showToast(this.t('settings.tagMerge.noGroups'), 'info');
             }
         } catch (e) {
