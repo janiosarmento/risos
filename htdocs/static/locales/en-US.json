@@ -298,6 +298,8 @@
     "markAllRead": "Mark {count} posts as read in \"{context}\"?",
     "markBlockedRead": "Mark {count} blocked posts as read in \"{context}\"?",
     "allPosts": "all feeds",
+    "searchResults": "search",
+    "topic": "topic",
     "markingAsRead": "Marking as read...",
     "deleting": "Deleting..."
   },

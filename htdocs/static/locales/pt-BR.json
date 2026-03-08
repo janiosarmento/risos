@@ -298,6 +298,8 @@
     "markAllRead": "Marcar {count} posts como lidos em \"{context}\"?",
     "markBlockedRead": "Marcar {count} posts bloqueados como lidos em \"{context}\"?",
     "allPosts": "todos os feeds",
+    "searchResults": "busca",
+    "topic": "tópico",
     "markingAsRead": "Marcando como lidos...",
     "deleting": "Excluindo..."
   },

@@ -1150,6 +1150,17 @@ function app() {
             } else {
                 contextName = this.t('confirm.allPosts');
             }
+            // Append active filter qualifiers
+            if (this.searchQuery.trim()) {
+                contextName += ` — ${this.t('confirm.searchResults')}: "${this.searchQuery.trim()}"`;
+            }
+            if (this.tagFilter) {
+                contextName += ` — tag: #${this.tagFilter}`;
+            }
+            if (this.selectedTopicId) {
+                const topic = this.topics.find(t => t.id === this.selectedTopicId);
+                if (topic) contextName += ` — ${this.t('confirm.topic')}: ${topic.name}`;
+            }
 
             // Ask for confirmation
             const msgKey = blockedOnly ? 'confirm.markBlockedRead' : 'confirm.markAllRead';
