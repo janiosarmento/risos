@@ -1152,7 +1152,7 @@ function app() {
             }
             // Append active filter qualifiers
             if (this.searchQuery.trim()) {
-                contextName += ` — ${this.t('confirm.searchResults')}: "${this.searchQuery.trim()}"`;
+                contextName += ` — ${this.t('confirm.searchResults')}: '${this.searchQuery.trim()}'`;
             }
             if (this.tagFilter) {
                 contextName += ` — tag: #${this.tagFilter}`;
