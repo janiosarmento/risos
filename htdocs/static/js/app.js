@@ -45,6 +45,8 @@ function app() {
         selectMode: false,
         collapsedCategories: new Set(JSON.parse(localStorage.getItem('rss_collapsed_categories') || '[]')),
         sidebarOpen: false,
+        dragFeedId: null,
+        dragOverCategoryId: null,
         lastNavMode: 'posts', // 'posts' (J/K) or 'sidebar' ([/])
         lastFeedNavIndex: 0, // Last position in feed navigation (for [/])
         tagFilter: null, // Current tag filter (composable with feed/category)
@@ -1474,6 +1476,62 @@ function app() {
 
             // Restart timer for next idle check
             this.resetIdleTimer();
+        },
+
+        // ── Drag-and-drop: move feed between categories ──
+
+        onFeedDragStart(event, feedId) {
+            this.dragFeedId = feedId;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(feedId));
+            event.target.style.opacity = '0.5';
+        },
+
+        onFeedDragEnd(event) {
+            event.target.style.opacity = '';
+            this.dragFeedId = null;
+            this.dragOverCategoryId = null;
+        },
+
+        onCategoryDragOver(event, categoryId) {
+            if (this.dragFeedId === null) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            this.dragOverCategoryId = categoryId;
+        },
+
+        onCategoryDragLeave(event, categoryId) {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+                if (this.dragOverCategoryId === categoryId) {
+                    this.dragOverCategoryId = null;
+                }
+            }
+        },
+
+        async onCategoryDrop(event, categoryId) {
+            event.preventDefault();
+            const feedId = this.dragFeedId;
+            this.dragOverCategoryId = null;
+            this.dragFeedId = null;
+
+            if (!feedId) return;
+
+            const feed = this.feeds.find(f => f.id === feedId);
+            if (!feed || feed.category_id === categoryId) return;
+
+            const oldCategoryId = feed.category_id;
+            feed.category_id = categoryId;
+
+            try {
+                await this.fetchApi(`/feeds/${feedId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ category_id: categoryId }),
+                });
+                this.showSuccess(this.t('feeds.moved'));
+            } catch (error) {
+                feed.category_id = oldCategoryId;
+                this.showError(this.t('errors.moveFeed'));
+            }
         },
     };
 }

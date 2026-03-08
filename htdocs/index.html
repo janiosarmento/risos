@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260305j';</script>
+    <script>var APP_VERSION = '20260308a';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -411,8 +411,15 @@
                             <div class="mb-1">
                                 <!-- Category header -->
                                 <div
-                                    class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1"
-                                    :class="filter === 'category' && filterId === category.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                    class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-colors duration-150"
+                                    :class="{
+                                        'bg-blue-600 text-white': filter === 'category' && filterId === category.id,
+                                        'hover:bg-gray-200 dark:hover:bg-gray-700': !(filter === 'category' && filterId === category.id),
+                                        'ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/30': dragOverCategoryId === category.id
+                                    }"
+                                    @dragover.prevent="onCategoryDragOver($event, category.id)"
+                                    @dragleave="onCategoryDragLeave($event, category.id)"
+                                    @drop="onCategoryDrop($event, category.id)"
                                 >
                                     <!-- Chevron toggle -->
                                     <button
@@ -454,6 +461,9 @@
                                             @click="setFilter('feed', feed.id)"
                                             class="w-full text-left px-2 py-1 rounded text-sm truncate text-gray-700 dark:text-gray-300 flex items-center gap-2"
                                             :class="filter === 'feed' && filterId === feed.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                            :draggable="window.innerWidth >= 1024 ? 'true' : 'false'"
+                                            @dragstart="window.innerWidth >= 1024 && onFeedDragStart($event, feed.id)"
+                                            @dragend="onFeedDragEnd($event)"
                                         >
                                             <svg class="w-3 h-3 text-gray-500 flex-shrink-0"><use href="#icon-rss"/></svg>
                                             <span class="flex-1 truncate" x-text="feed.title"></span>

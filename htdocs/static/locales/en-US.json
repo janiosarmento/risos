@@ -255,7 +255,8 @@
     "unreadCount": "unread",
     "refresh": "Refresh feed now",
     "refreshResult": "{new} new posts, {skipped} skipped",
-    "hasStarredPosts": "Has starred posts - unstar to delete"
+    "hasStarredPosts": "Has starred posts - unstar to delete",
+    "moved": "Feed moved successfully"
   },
   "opml": {
     "importTitle": "Import OPML",
@@ -278,6 +279,7 @@
     "createFeed": "Error creating feed",
     "noFeedFound": "No RSS/Atom feed found for this site",
     "saveFeed": "Error saving feed",
+    "moveFeed": "Error moving feed",
     "deleteFeed": "Error deleting feed",
     "refreshFeed": "Error refreshing feed",
     "importOpml": "Error importing OPML",

@@ -470,7 +470,8 @@ journalctl -u rss-reader -f
 - Blocked post indicator — red left border on posts matching blocked terms
 - Split dropdown "Mark as read" — option to dismiss all or only blocked posts
 - Date separators in post list (visual grouping by relative date)
-- Mobile responsive (Top Tags, Topics, post tags, and Curate hidden on mobile for cleaner UX)
+- Drag-and-drop feeds between categories in sidebar (desktop only, native HTML5)
+- Mobile responsive (Top Tags, Topics, post tags, Curate, and drag-and-drop hidden on mobile for cleaner UX)
 - Login screen mobile hint for desktop/tablet recommendation
 - Bilingual (EN/PT)
 
@@ -684,7 +685,7 @@ git push
 
 ---
 
-*Last updated: 2026-03-07 (Blocked posts excluded from suggestions)*
+*Last updated: 2026-03-08 (Drag-and-drop feeds between categories)*
 
 ---
 

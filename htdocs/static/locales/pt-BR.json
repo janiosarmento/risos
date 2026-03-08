@@ -255,7 +255,8 @@
     "unreadCount": "não lidos",
     "refresh": "Atualizar feed agora",
     "refreshResult": "{new} posts novos, {skipped} ignorados",
-    "hasStarredPosts": "Tem posts favoritos - desfavorite para excluir"
+    "hasStarredPosts": "Tem posts favoritos - desfavorite para excluir",
+    "moved": "Feed movido com sucesso"
   },
   "opml": {
     "importTitle": "Importar OPML",
@@ -278,6 +279,7 @@
     "createFeed": "Erro ao criar feed",
     "noFeedFound": "Nenhum feed RSS/Atom encontrado neste site",
     "saveFeed": "Erro ao salvar feed",
+    "moveFeed": "Erro ao mover feed",
     "deleteFeed": "Erro ao excluir feed",
     "refreshFeed": "Erro ao atualizar feed",
     "importOpml": "Erro ao importar OPML",

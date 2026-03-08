@@ -1,6 +1,6 @@
 # Progresso da Implementação — Risos
 
-**Última atualização:** 2026-03-07
+**Última atualização:** 2026-03-08
 **Repositório:** https://github.com/janiosarmento/risos
 
 ---
@@ -23,6 +23,19 @@ Projeto em produção com IA (Cerebras), tradução automática de títulos, fal
 gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:PORT \
     --workers 1 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 ```
+
+---
+
+## Sessão 2026-03-08 — Drag-and-Drop de Feeds entre Categorias
+
+### Drag-and-Drop na Sidebar (Desktop Only)
+- Arrastar feeds entre categorias na sidebar com HTML5 nativo (sem bibliotecas externas)
+- Activado apenas em telas ≥ 1024px (`:draggable` condicional)
+- Highlight visual na categoria alvo (ring azul + fundo claro/escuro)
+- Update optimista com rollback em caso de erro
+- Reutiliza endpoint existente `PUT /api/feeds/{id}` com `{ category_id }`
+- Toast de sucesso/erro traduzido (EN + PT)
+- Cache buster: `20260308a`
 
 ---
 

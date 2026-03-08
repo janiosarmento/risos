@@ -14,7 +14,7 @@ A self-hosted RSS reader with AI-powered summaries.
   - Model attribution on each summary (shows which model generated it)
   - Smart skip of paywalls and error pages (auto-marks `skip_summary`)
   - Configurable model cooldown for failed models
-- **Organization** — Categories, starred posts, read/unread tracking
+- **Organization** — Categories, starred posts, read/unread tracking, drag-and-drop feeds between categories (desktop)
 - **AI Suggestions** — Personalized post recommendations based on your likes
   - Tag overlap scoring (no extra AI calls)
   - Dynamic sensitivity threshold (1 to tags_per_post)
