@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-def _title_matches_term(title_lower: str, term: str) -> bool:
+def title_matches_term(title_lower: str, term: str) -> bool:
     """
     Check if a title matches a blocked term.
 
@@ -307,7 +307,7 @@ def list_posts(
             "translated_title": summary.translated_title if summary else None,
             "skip_summary": bool(post.skip_summary),
             "is_blocked": any(
-                _title_matches_term((post.title or "").lower(), term)
+                title_matches_term((post.title or "").lower(), term)
                 for term in blocked_terms
             ),
             "tags": [pt.tag for pt in post.tags],

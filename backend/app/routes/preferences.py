@@ -327,11 +327,44 @@ def update_preferences(
         ]
         cleaned = "\n".join(sorted(set(lines)))
         _set_setting(db, PREF_BLOCKED_TERMS, cleaned)
+        # Remove existing suggestions for newly-blocked posts
+        _unsuggest_blocked_posts(db, lines)
 
     db.commit()
 
     # Return updated preferences
     return get_preferences(db, user)
+
+
+def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
+    """Remove suggestion status from posts matching blocked terms."""
+    if not blocked_terms:
+        return
+    from app.models import Post
+    from app.routes.posts import title_matches_term
+
+    suggested = (
+        db.query(Post)
+        .filter(Post.is_suggested == 1, Post.is_read == 0)
+        .all()
+    )
+    count = 0
+    for post in suggested:
+        title_lower = (post.title or "").lower()
+        if any(
+            title_matches_term(title_lower, term)
+            for term in blocked_terms
+        ):
+            post.is_suggested = 0
+            post.suggestion_score = None
+            post.suggested_at = None
+            count += 1
+    if count:
+        import logging
+
+        logging.getLogger(__name__).info(
+            f"Removed {count} suggestions matching blocked terms"
+        )
 
 
 # =============================================================================

@@ -10,6 +10,8 @@ from typing import List, Tuple
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import Post, AISummary, IgnoredTag
+from app.routes.posts import title_matches_term
+from app.routes.preferences import get_effective_blocked_terms
 from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
@@ -82,6 +84,21 @@ def get_suggestion_candidates(
     )
 
     logger.debug(f"Found {len(unread_posts)} unread posts to check")
+
+    # Filter out posts matching blocked terms
+    blocked_terms = get_effective_blocked_terms(db)
+    if blocked_terms:
+        unread_posts = [
+            p
+            for p in unread_posts
+            if not any(
+                title_matches_term((p.title or "").lower(), term)
+                for term in blocked_terms
+            )
+        ]
+        logger.debug(
+            f"{len(unread_posts)} posts remaining after blocked terms filter"
+        )
 
     # Find posts with sufficient tag overlap
     candidates = []
