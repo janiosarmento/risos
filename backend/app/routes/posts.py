@@ -220,6 +220,7 @@ def list_posts(
         ).filter(
             or_(
                 func.lower(Post.title).like(term),
+                func.lower(Post.content).like(term),
                 func.lower(AISummary.translated_title).like(term),
                 func.lower(AISummary.one_line_summary).like(term),
                 func.lower(AISummary.summary_pt).like(term),
@@ -285,6 +286,7 @@ def list_posts(
         ).filter(
             or_(
                 func.lower(Post.title).like(term),
+                func.lower(Post.content).like(term),
                 func.lower(AISummary.translated_title).like(term),
                 func.lower(AISummary.one_line_summary).like(term),
                 func.lower(AISummary.summary_pt).like(term),
