@@ -52,15 +52,39 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
+def _word_boundary(escaped: str, side: str) -> str:
+    """Return appropriate boundary anchor for start/end of an escaped pattern.
+
+    \b only works between \w and \W chars.  If the pattern edge is a
+    non-word char (like '['), \b would require the *other* side to be \w,
+    which fails at string boundaries or next to spaces.  In that case we
+    use a zero-width assertion that matches a non-word char or edge.
+    """
+    if side == "start":
+        ch = re.sub(r"\\(.)", r"\1", escaped[:1])  # un-escape first char
+        if re.match(r"\w", ch):
+            return r"\b"
+        return r"(?<!\w)"
+    else:
+        ch = re.sub(r"\\(.)", r"\1", escaped[-1:])  # un-escape last char
+        if re.match(r"\w", ch):
+            return r"\b"
+        return r"(?!\w)"
+
+
 def title_matches_term(title_lower: str, term: str) -> bool:
     """
     Check if a title matches a blocked term.
 
     Without %: whole-word match ("ford" won't match "affordable").
     With %: substring match per segment, joined by .*?
+    Handles terms with non-word chars like [review].
     """
     if "%" not in term:
-        pattern = r"\b" + re.escape(term) + r"\b"
+        escaped = re.escape(term)
+        lb = _word_boundary(escaped, "start")
+        rb = _word_boundary(escaped, "end")
+        pattern = lb + escaped + rb
         return bool(re.search(pattern, title_lower))
     parts = [re.escape(seg) for seg in term.split("%") if seg]
     if not parts:
