@@ -313,8 +313,11 @@ function app() {
                     }
                     if (ok) spans.push(...matched);
                 } else {
-                    // Without %: whole word match
-                    const rx = new RegExp('\\b' + esc(term) + '\\b', 'gi');
+                    // Without %: whole word match (adaptive boundaries for non-word chars)
+                    const escaped = esc(term);
+                    const lb = /\w/.test(term[0]) ? '\\b' : '(?<!\\w)';
+                    const rb = /\w/.test(term[term.length - 1]) ? '\\b' : '(?!\\w)';
+                    const rx = new RegExp(lb + escaped + rb, 'gi');
                     let m;
                     while ((m = rx.exec(lower)) !== null) {
                         spans.push([m.index, m.index + m[0].length]);
