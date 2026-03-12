@@ -221,10 +221,43 @@ function app() {
             }
         },
 
-        // Load popular tags from server (unread posts only)
+        // Load popular tags scoped to current context
         async loadPopularTags() {
+            if (!this.topTagsExpanded) return;
+            // Hide tags during search
+            if (this.searchQuery.trim()) {
+                this.popularTags = [];
+                return;
+            }
+            this.popularTags = [];
             try {
-                const data = await this.fetchApi('/tags/popular?limit=10&unread_only=true');
+                const params = new URLSearchParams({ limit: '10' });
+
+                // Scope: feed or category
+                if (this.filter === 'feed') {
+                    params.set('feed_id', this.filterId);
+                } else if (this.filter === 'category') {
+                    params.set('category_id', this.filterId);
+                }
+
+                // Scope: topic
+                if (this.selectedTopicId) {
+                    params.set('topic_id', this.selectedTopicId);
+                }
+
+                // Scope: unread/starred/suggested
+                if (this.filter === 'starred' || this.postFilter === 'starred') {
+                    params.set('starred_only', 'true');
+                } else if (this.filter === 'suggested') {
+                    params.set('suggested_only', 'true');
+                    if (this.postFilter === 'unread') {
+                        params.set('unread_only', 'true');
+                    }
+                } else if (this.postFilter === 'unread') {
+                    params.set('unread_only', 'true');
+                }
+
+                const data = await this.fetchApi(`/tags/popular?${params}`);
                 this.popularTags = data.tags || [];
             } catch (e) {
                 console.warn('Failed to load popular tags:', e);
@@ -298,9 +331,9 @@ function app() {
             // Collect all matched spans [start, end]
             const spans = [];
             for (const term of terms) {
-                if (term.includes('%')) {
-                    // With %: substring match per segment
-                    const parts = term.split('%').filter(s => s);
+                if (term.includes('*')) {
+                    // With *: substring match per segment
+                    const parts = term.split('*').filter(s => s);
                     if (!parts.length) continue;
                     let pos = 0;
                     const matched = [];
@@ -313,7 +346,7 @@ function app() {
                     }
                     if (ok) spans.push(...matched);
                 } else {
-                    // Without %: whole word match (adaptive boundaries for non-word chars)
+                    // Without *: whole word match (adaptive boundaries for non-word chars)
                     const escaped = esc(term);
                     const lb = /\w/.test(term[0]) ? '\\b' : '(?<!\\w)';
                     const rb = /\w/.test(term[term.length - 1]) ? '\\b' : '(?!\\w)';
@@ -916,6 +949,9 @@ function app() {
                 if (data.suggested_count !== undefined) {
                     this.suggestedCount = data.suggested_count;
                 }
+
+                // Refresh top tags when context changes
+                if (reset) this.loadPopularTags();
 
                 // Select pending post after feed navigation
                 if (this._pendingPostId) {

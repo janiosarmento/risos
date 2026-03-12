@@ -64,11 +64,17 @@ def get_popular_tags(
     ),
     unread_only: bool = Query(False, description="Only count unread posts"),
     starred_only: bool = Query(False, description="Only count starred posts"),
+    suggested_only: bool = Query(
+        False, description="Only count suggested posts"
+    ),
     feed_id: Optional[int] = Query(
         None, description="Scope to a specific feed"
     ),
     category_id: Optional[int] = Query(
         None, description="Scope to a category"
+    ),
+    topic_id: Optional[int] = Query(
+        None, description="Scope to posts matching a topic's tags"
     ),
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
@@ -84,6 +90,8 @@ def get_popular_tags(
         query = query.filter(Post.is_read.is_(False))
     if starred_only:
         query = query.filter(Post.is_starred.is_(True))
+    if suggested_only:
+        query = query.filter(Post.is_suggested.is_(True))
     if feed_id is not None:
         query = query.filter(Post.feed_id == feed_id)
     elif category_id is not None:
@@ -93,6 +101,23 @@ def get_popular_tags(
             .subquery()
         )
         query = query.filter(Post.feed_id.in_(feed_ids))
+
+    # Scope to posts that have at least one of the topic's tags
+    if topic_id is not None:
+        topic_tags = [
+            row.tag
+            for row in db.query(TopicTag.tag)
+            .filter(TopicTag.topic_id == topic_id)
+            .all()
+        ]
+        if topic_tags:
+            topic_post_ids = (
+                db.query(PostTag.post_id)
+                .filter(PostTag.tag.in_(topic_tags))
+                .distinct()
+                .subquery()
+            )
+            query = query.filter(Post.id.in_(topic_post_ids))
 
     rows = (
         query.group_by(PostTag.tag)

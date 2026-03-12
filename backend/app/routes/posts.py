@@ -76,17 +76,17 @@ def title_matches_term(title_lower: str, term: str) -> bool:
     """
     Check if a title matches a blocked term.
 
-    Without %: whole-word match ("ford" won't match "affordable").
-    With %: substring match per segment, joined by .*?
+    Without *: whole-word match ("ford" won't match "affordable").
+    With *: substring match per segment, joined by .*?
     Handles terms with non-word chars like [review].
     """
-    if "%" not in term:
+    if "*" not in term:
         escaped = re.escape(term)
         lb = _word_boundary(escaped, "start")
         rb = _word_boundary(escaped, "end")
         pattern = lb + escaped + rb
         return bool(re.search(pattern, title_lower))
-    parts = [re.escape(seg) for seg in term.split("%") if seg]
+    parts = [re.escape(seg) for seg in term.split("*") if seg]
     if not parts:
         return False
     return bool(re.search(".*?".join(parts), title_lower))
