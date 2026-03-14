@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260311a';</script>
+    <script>var APP_VERSION = '20260314b';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -265,14 +265,14 @@
                                     class="w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t"
                                 >
                                     <span x-text="t('posts.markAllRead')"></span>
-                                    <span class="hidden md:inline opacity-60"> (A)</span>
+                                    <span class="hidden lg:inline opacity-60"> (A)</span>
                                 </button>
                                 <button
                                     @click="markAllRead(true); markOpen = false"
                                     class="w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b border-t border-gray-100 dark:border-gray-700"
                                 >
                                     <span x-text="t('posts.markBlockedRead')"></span>
-                                    <span class="hidden md:inline opacity-60"> (N)</span>
+                                    <span class="hidden lg:inline opacity-60"> (N)</span>
                                     <template x-if="blockedUnreadCount > 0">
                                         <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full" x-text="blockedUnreadCount"></span>
                                     </template>
@@ -598,7 +598,7 @@
                                     @click="toggleSelectMode()"
                                     class="px-1.5 md:px-2 py-1 rounded"
                                     :class="selectMode ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                                ><span x-text="t('posts.select')"></span><span class="hidden md:inline opacity-60"> (X)</span></button>
+                                ><span x-text="t('posts.select')"></span><span class="hidden lg:inline opacity-60"> (X)</span></button>
                                 <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
                                 <!-- Post filter: Unread -->
                                 <button
@@ -677,7 +677,7 @@
                                 class="ml-auto px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white"
                                 :disabled="selectedPosts.size === 0"
                                 :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
-                            ><span x-text="t('posts.markAsRead')"></span><span class="hidden md:inline opacity-60"> (M)</span></button>
+                            ><span x-text="t('posts.markAsRead')"></span><span class="hidden lg:inline opacity-60"> (M)</span></button>
                         </div>
                         <!-- Curation results panel -->
                         <div x-show="curationResults" class="mt-2 space-y-2">
