@@ -35,8 +35,14 @@ const settingsMixin = {
     topicSuggestions: null,
     suggestingTopics: false,
     editingTopic: null,
+    editingTopicName: '',
     newTopicName: '',
     suggestingTagsForTopicId: null,
+    // Tag drag-and-drop between topics
+    dragTagName: null,
+    dragTagFromTopicId: null,
+    dragOverTopicId: null,
+    dragTagCopy: false,
 
     // Tag merge
     mergeOffset: 0,
@@ -571,15 +577,28 @@ const settingsMixin = {
         }
     },
 
-    async updateTopic(topicId, data) {
+    async renameTopic(topicId) {
+        if (this.editingTopic !== topicId) return; // guard against double-fire (blur + enter)
+        const name = this.editingTopicName.trim();
+        if (!name) {
+            this.editingTopic = null;
+            return;
+        }
+        const topic = this.topics.find(t => t.id === topicId);
+        if (topic && name === topic.name) {
+            this.editingTopic = null;
+            return;
+        }
+        this.editingTopic = null; // exit edit mode immediately
         try {
             await this.fetchApi(`/topics/${topicId}`, {
                 method: 'PUT',
-                body: JSON.stringify(data),
+                body: JSON.stringify({ name }),
             });
             await this.loadTopics();
         } catch (e) {
             this.showToast(e.message, 'error');
+            await this.loadTopics(); // reload to restore correct state
         }
     },
 
@@ -603,6 +622,77 @@ const settingsMixin = {
             await this.loadTopics();
         } catch (e) {
             this.showToast(e.message, 'error');
+        }
+    },
+
+    // --- Tag drag-and-drop between topics ---
+    // Option/Alt + drag = copy; plain drag = move
+    onTagDragStart(event, tag, topicId) {
+        this.dragTagName = tag;
+        this.dragTagFromTopicId = topicId;
+        this.dragTagCopy = false;
+        event.dataTransfer.effectAllowed = 'all';
+        event.dataTransfer.setData('text/plain', tag);
+        event.target.style.opacity = '0.5';
+    },
+
+    onTagDragEnd(event) {
+        event.target.style.opacity = '';
+        setTimeout(() => {
+            this.dragTagName = null;
+            this.dragTagFromTopicId = null;
+            this.dragOverTopicId = null;
+            this.dragTagCopy = false;
+        }, 0);
+    },
+
+    onTopicDragOver(event, topicId) {
+        if (this.dragTagName === null) return;
+        event.preventDefault();
+        this.dragTagCopy = event.altKey;
+        this.dragOverTopicId = topicId;
+    },
+
+    onTopicDragLeave(event, topicId) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            if (this.dragOverTopicId === topicId) {
+                this.dragOverTopicId = null;
+            }
+        }
+    },
+
+    async onTopicDrop(event, topicId) {
+        event.preventDefault();
+        const tag = this.dragTagName;
+        const fromTopicId = this.dragTagFromTopicId;
+        const isCopy = this.dragTagCopy || event.altKey;
+
+        this.dragOverTopicId = null;
+        this.dragTagName = null;
+        this.dragTagFromTopicId = null;
+
+        if (!tag || !fromTopicId || fromTopicId === topicId) return;
+
+        // Check if target topic already has this tag
+        const targetTopic = this.topics.find(t => t.id === topicId);
+        if (targetTopic && targetTopic.tags.includes(tag)) return;
+
+        try {
+            // Add to target
+            await this.fetchApi(`/topics/${topicId}/tags`, {
+                method: 'POST',
+                body: JSON.stringify({ tags: [tag] }),
+            });
+            // Remove from source (move only)
+            if (!isCopy) {
+                await this.fetchApi(`/topics/${fromTopicId}/tags/${encodeURIComponent(tag)}`, {
+                    method: 'DELETE',
+                });
+            }
+            await this.loadTopics();
+        } catch (e) {
+            this.showToast(e.message, 'error');
+            await this.loadTopics();
         }
     },
 

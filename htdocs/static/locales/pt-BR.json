@@ -202,6 +202,8 @@
       "delete": "Excluir tópico",
       "deleteConfirm": "Excluir tópico \"{name}\"?",
       "suggestTags": "Sugerir tags",
+      "move": "mover",
+      "copy": "copiar",
       "empty": "Nenhum tópico ainda. Crie um manualmente ou use sugestões da IA."
     }
   },

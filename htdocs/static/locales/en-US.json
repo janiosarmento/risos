@@ -202,6 +202,8 @@
       "delete": "Delete topic",
       "deleteConfirm": "Delete topic \"{name}\"?",
       "suggestTags": "Suggest tags",
+      "move": "move",
+      "copy": "copy",
       "empty": "No topics yet. Create one manually or use AI suggestions."
     }
   },

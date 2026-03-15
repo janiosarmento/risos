@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260314b';</script>
+    <script>var APP_VERSION = '20260314o';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -1312,7 +1312,15 @@
                     </div>
 
                     <!-- Content -->
-                    <div class="flex-1 overflow-y-auto p-4">
+                    <div id="settings-content" class="flex-1 overflow-y-auto p-4"
+                        @dragover="if (dragTagName) {
+                            const rect = $el.getBoundingClientRect();
+                            const y = $event.clientY;
+                            const edge = 40;
+                            if (y - rect.top < edge) $el.scrollBy(0, -8);
+                            else if (rect.bottom - y < edge) $el.scrollBy(0, 8);
+                        }"
+                    >
                         <!-- Categories Tab -->
                         <div x-show="settingsTab === 'categories'">
                             <!-- Add Category -->
@@ -1737,25 +1745,46 @@
                             <!-- Existing topics list -->
                             <div class="space-y-2">
                                 <template x-for="topic in topics" :key="topic.id">
-                                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                                    <div
+                                        class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border-2 transition-colors"
+                                        :class="dragOverTopicId === topic.id
+                                            ? (dragTagCopy
+                                                ? 'border-green-400 bg-green-50 dark:bg-green-900/20'
+                                                : 'border-blue-400 bg-blue-50 dark:bg-blue-900/20')
+                                            : 'border-gray-200 dark:border-gray-600'"
+                                        @dragover="onTopicDragOver($event, topic.id)"
+                                        @dragleave="onTopicDragLeave($event, topic.id)"
+                                        @drop="onTopicDrop($event, topic.id)"
+                                    >
                                         <div class="flex items-center justify-between mb-2">
                                             <template x-if="editingTopic === topic.id">
                                                 <input
                                                     type="text"
-                                                    x-model="topic.name"
-                                                    @keydown.enter="updateTopic(topic.id, { name: topic.name }); editingTopic = null"
-                                                    @keydown.escape="editingTopic = null; loadTopics()"
+                                                    x-model="editingTopicName"
+                                                    @keydown.enter="renameTopic(topic.id)"
+                                                    @keydown.escape="editingTopic = null"
+                                                    @blur="renameTopic(topic.id)"
                                                     x-init="$nextTick(() => $el.focus())"
                                                     class="text-sm font-medium bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-0.5"
                                                 />
                                             </template>
                                             <template x-if="editingTopic !== topic.id">
-                                                <span class="text-sm font-medium" x-text="topic.name"></span>
+                                                <span class="text-sm font-medium flex items-center gap-1.5">
+                                                    <span x-text="topic.name"></span>
+                                                    <span
+                                                        x-show="dragOverTopicId === topic.id"
+                                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-normal"
+                                                        :class="dragTagCopy
+                                                            ? 'bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300'
+                                                            : 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300'"
+                                                        x-text="dragTagCopy ? t('settings.topics.copy') : t('settings.topics.move')"
+                                                    ></span>
+                                                </span>
                                             </template>
                                             <div class="flex items-center gap-2">
                                                 <span class="text-xs text-gray-500 dark:text-gray-400" x-text="topic.post_count + ' posts'"></span>
                                                 <button
-                                                    @click="editingTopic = topic.id"
+                                                    @click="editingTopicName = topic.name; editingTopic = topic.id"
                                                     class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                                                     :data-tip="t('settings.topics.rename')"
                                                 >
@@ -1780,7 +1809,12 @@
                                         </div>
                                         <div class="flex flex-wrap gap-1 mb-2">
                                             <template x-for="tag in topic.tags" :key="tag">
-                                                <span class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
+                                                <span
+                                                    draggable="true"
+                                                    @dragstart="onTagDragStart($event, tag, topic.id)"
+                                                    @dragend="onTagDragEnd($event)"
+                                                    class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 cursor-grab active:cursor-grabbing"
+                                                >
                                                     <span x-text="tag"></span>
                                                     <button @click="removeTagFromTopic(topic.id, tag)" class="hover:text-red-500">&times;</button>
                                                 </span>

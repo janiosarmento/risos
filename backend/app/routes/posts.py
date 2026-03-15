@@ -89,7 +89,13 @@ def title_matches_term(title_lower: str, term: str) -> bool:
     parts = [re.escape(seg) for seg in term.split("*") if seg]
     if not parts:
         return False
-    return bool(re.search(".*?".join(parts), title_lower))
+    # Add word boundaries to first/last segments
+    pattern = ".*?".join(parts)
+    if not term.startswith("*"):
+        pattern = _word_boundary(parts[0], "start") + pattern
+    if not term.endswith("*"):
+        pattern = pattern + _word_boundary(parts[-1], "end")
+    return bool(re.search(pattern, title_lower))
 
 
 def get_post_or_404(db: Session, post_id: int) -> Post:

@@ -332,19 +332,24 @@ function app() {
             const spans = [];
             for (const term of terms) {
                 if (term.includes('*')) {
-                    // With *: substring match per segment
+                    // With *: regex match with word boundaries on edges
                     const parts = term.split('*').filter(s => s);
                     if (!parts.length) continue;
-                    let pos = 0;
-                    const matched = [];
-                    let ok = true;
-                    for (const part of parts) {
-                        const idx = lower.indexOf(part, pos);
-                        if (idx === -1) { ok = false; break; }
-                        matched.push([idx, idx + part.length]);
-                        pos = idx + part.length;
+                    const wb = '(?<![\\p{L}\\p{N}_])';
+                    const we = '(?![\\p{L}\\p{N}_])';
+                    let pat = parts.map(p => '(' + esc(p) + ')').join('.*?');
+                    if (!term.startsWith('*')) pat = wb + pat;
+                    if (!term.endsWith('*')) pat = pat + we;
+                    const rx = new RegExp(pat, 'giu');
+                    let m;
+                    while ((m = rx.exec(lower)) !== null) {
+                        // Capture groups are 1..parts.length
+                        let offset = m.index;
+                        for (let g = 1; g <= parts.length; g++) {
+                            const gStart = m[0].indexOf(m[g], offset - m.index);
+                            spans.push([m.index + gStart, m.index + gStart + m[g].length]);
+                        }
                     }
-                    if (ok) spans.push(...matched);
                 } else {
                     // Without *: whole word match (Unicode-aware boundaries)
                     const escaped = esc(term);
