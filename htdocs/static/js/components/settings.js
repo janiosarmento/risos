@@ -893,7 +893,11 @@ const settingsMixin = {
         const lines = value.split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
         const unique = [...new Set(lines)].sort();
         this.blockedTerms = unique.join('\n');
-        if (this.token) this.savePreferencesToServer();
+        if (this.token) {
+            this.savePreferencesToServer();
+            // Reload posts so is_blocked is recalculated by backend
+            this.loadPosts(true);
+        }
     },
 
     setReadingMode(mode) {
