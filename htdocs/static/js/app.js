@@ -353,7 +353,9 @@ function app() {
                 } else {
                     // Without *: whole word match (Unicode-aware boundaries)
                     const escaped = esc(term);
-                    const rx = new RegExp('(?<![\\p{L}\\p{N}_])' + escaped + '(?![\\p{L}\\p{N}_])', 'giu');
+                    const lb = /[\p{L}\p{N}_]/u.test(term[0]) ? '(?<![\\p{L}\\p{N}_])' : '(?<![\\p{L}\\p{N}_])';
+                    const rb = /[\p{L}\p{N}_]/u.test(term[term.length - 1]) ? '(?![\\p{L}\\p{N}_])' : '';
+                    const rx = new RegExp(lb + escaped + rb, 'giu');
                     let m;
                     while ((m = rx.exec(lower)) !== null) {
                         spans.push([m.index, m.index + m[0].length]);

@@ -56,9 +56,9 @@ def _word_boundary(escaped: str, side: str) -> str:
     """Return appropriate boundary anchor for start/end of an escaped pattern.
 
     \b only works between \w and \W chars.  If the pattern edge is a
-    non-word char (like '['), \b would require the *other* side to be \w,
-    which fails at string boundaries or next to spaces.  In that case we
-    use a zero-width assertion that matches a non-word char or edge.
+    non-word char (like '[' or '$'), we only need a boundary on the
+    word-char side to prevent partial word matches.  The non-word char
+    itself already breaks any word, so no boundary needed on that side.
     """
     if side == "start":
         ch = re.sub(r"\\(.)", r"\1", escaped[:1])  # un-escape first char
@@ -69,7 +69,7 @@ def _word_boundary(escaped: str, side: str) -> str:
         ch = re.sub(r"\\(.)", r"\1", escaped[-1:])  # un-escape last char
         if re.match(r"\w", ch):
             return r"\b"
-        return r"(?!\w)"
+        return ""  # non-word char at end — no boundary needed
 
 
 def title_matches_term(title_lower: str, term: str) -> bool:
