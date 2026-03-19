@@ -148,6 +148,7 @@ class PostResponse(BaseModel):
     one_line_summary: Optional[str] = None
     translated_title: Optional[str] = None
     skip_summary: bool = False
+    keep_unread: bool = False
     is_blocked: bool = False
     tags: List[str] = []
 

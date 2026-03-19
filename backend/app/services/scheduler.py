@@ -388,13 +388,14 @@ class Scheduler:
                             Post.read_at < cutoff_read,
                             (Post.is_starred.is_(False))
                             | (Post.is_starred.is_(None)),
+                            Post.keep_unread.is_(False),
                         )
                         .delete(synchronize_session=False)
                     )
                     posts_removed += result
 
                     # 2. Remove unread posts older than MAX_UNREAD_DAYS
-                    # (except favorites which are never removed)
+                    # (except favorites and keep_unread which are never removed)
                     cutoff_unread = now - timedelta(
                         days=settings.max_unread_days
                     )
@@ -405,13 +406,14 @@ class Scheduler:
                             Post.fetched_at < cutoff_unread,
                             (Post.is_starred.is_(False))
                             | (Post.is_starred.is_(None)),
+                            Post.keep_unread.is_(False),
                         )
                         .delete(synchronize_session=False)
                     )
                     unread_removed += result
 
                     # 3. Clear full_content from posts read more than 30 days ago
-                    # (except favorites which keep content)
+                    # (except favorites and keep_unread which keep content)
                     cutoff_full = now - timedelta(days=30)
                     result = (
                         db.query(Post)
@@ -421,6 +423,7 @@ class Scheduler:
                             Post.full_content.isnot(None),
                             (Post.is_starred.is_(False))
                             | (Post.is_starred.is_(None)),
+                            Post.keep_unread.is_(False),
                         )
                         .update(
                             {"full_content": None}, synchronize_session=False

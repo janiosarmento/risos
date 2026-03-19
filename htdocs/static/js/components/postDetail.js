@@ -51,8 +51,8 @@ const postDetailMixin = {
             this.selectedIndex = index;
         }
 
-        // Mark as read
-        if (!post.is_read) {
+        // Mark as read (skip if protected)
+        if (!post.is_read && !post.keep_unread) {
             await this.markPostRead(post, true);
         }
 

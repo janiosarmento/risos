@@ -237,6 +237,11 @@
   "starring": {
     "tooManyStarred": "This feed ({feed}) already has {count} starred posts. Are you sure you want to star another one?"
   },
+  "keepUnread": {
+    "lock": "Keep unread",
+    "unlock": "Remove keep unread",
+    "protected": "This post is protected. Remove keep-unread first."
+  },
   "categories": {
     "newPlaceholder": "New category name",
     "create": "Create",

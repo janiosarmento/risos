@@ -592,6 +592,9 @@ function app() {
                     } else if (this.isKey(e, 'l')) {
                         this.toggleLike(this.currentPost);
                         return;
+                    } else if (this.isKey(e, 'c')) {
+                        this.toggleKeepUnread(this.currentPost);
+                        return;
                     } else if (this.isKey(e, 'r') && e.shiftKey) {
                         this.regenerateSummary();
                         return;
@@ -636,6 +639,10 @@ function app() {
                 } else if (this.isKey(e, 's')) {
                     if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
                         this.toggleStar(this.posts[this.selectedIndex]);
+                    }
+                } else if (this.isKey(e, 'c')) {
+                    if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
+                        this.toggleKeepUnread(this.posts[this.selectedIndex]);
                     }
                 } else if (this.isKey(e, 'r')) {
                     this.refreshFeeds();
@@ -1072,6 +1079,10 @@ function app() {
         },
 
         async toggleRead(post) {
+            if (post.keep_unread && !post.is_read) {
+                this.showToast(this.t('keepUnread.protected'), 'error');
+                return;
+            }
             const newState = !post.is_read;
             await this.markPostRead(post, newState);
         },
@@ -1084,24 +1095,7 @@ function app() {
                 });
 
                 this.updatePost(post.id, { is_read: isRead });
-
-                // Update feed unread count
-                const feed = this.feeds.find(f => f.id === post.feed_id);
-                if (feed) {
-                    feed.unread_count = Math.max(0, (feed.unread_count || 0) + (isRead ? -1 : 1));
-                }
-
-                // Update suggested count if this was a suggested post
-                if (post.is_suggested) {
-                    if (isRead) {
-                        this.suggestedCount = Math.max(0, this.suggestedCount - 1);
-                    } else {
-                        this.suggestedCount++;
-                    }
-                }
-
-                // Refresh topic unread counts
-                if (this.topicsExpanded) this.loadTopics();
+                this._adjustUnreadCounters(post, isRead);
             } catch (error) {
                 console.error('Failed to mark post read:', error);
             }
@@ -1167,12 +1161,50 @@ function app() {
             }
         },
 
+        async toggleKeepUnread(post) {
+            const wasRead = post.is_read;
+            try {
+                const data = await this.fetchApi(`/posts/${post.id}/keep-unread`, {
+                    method: 'PATCH',
+                });
+
+                this.updatePost(post.id, {
+                    keep_unread: data.keep_unread,
+                    is_read: data.is_read,
+                    read_at: data.read_at,
+                });
+
+                // If post was forced back to unread, update counters
+                if (wasRead && !data.is_read) {
+                    this._adjustUnreadCounters(post, false);
+                }
+            } catch (error) {
+                console.error('Failed to toggle keep unread:', error);
+            }
+        },
+
+        // Shared helper for adjusting unread counters after read-state change
+        _adjustUnreadCounters(post, isRead) {
+            const feed = this.feeds.find(f => f.id === post.feed_id);
+            if (feed) {
+                feed.unread_count = Math.max(0, (feed.unread_count || 0) + (isRead ? -1 : 1));
+            }
+            if (post.is_suggested) {
+                if (isRead) {
+                    this.suggestedCount = Math.max(0, this.suggestedCount - 1);
+                } else {
+                    this.suggestedCount++;
+                }
+            }
+            if (this.topicsExpanded) this.loadTopics();
+        },
+
         async markAllRead(blockedOnly = false) {
             // Get unread posts currently visible in the interface
             // This ensures we only mark posts the user has seen, not new ones
             // that may have arrived via background refresh
             const visibleUnreadIds = this.posts
-                .filter(p => !p.is_read && (!blockedOnly || p.is_blocked))
+                .filter(p => !p.is_read && !p.keep_unread && (!blockedOnly || p.is_blocked))
                 .map(p => p.id);
 
             if (visibleUnreadIds.length === 0) return;
@@ -1366,7 +1398,11 @@ function app() {
         async markSelectedAsRead() {
             if (this.selectedPosts.size === 0) return;
 
-            const postIds = Array.from(this.selectedPosts);
+            const postIds = Array.from(this.selectedPosts).filter(id => {
+                const p = this.posts.find(post => post.id === id);
+                return p && !p.keep_unread;
+            });
+            if (postIds.length === 0) return;
 
             try {
                 await this.fetchApi('/posts/mark-read', {
@@ -1374,9 +1410,9 @@ function app() {
                     body: JSON.stringify({ post_ids: postIds }),
                 });
 
-                // Update local state
+                // Update local state (only non-protected posts)
                 this.posts.forEach(p => {
-                    if (this.selectedPosts.has(p.id)) {
+                    if (postIds.includes(p.id)) {
                         p.is_read = true;
                     }
                 });

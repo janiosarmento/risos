@@ -237,6 +237,11 @@
   "starring": {
     "tooManyStarred": "Este feed ({feed}) já tem {count} posts favoritos. Tem certeza que deseja favoritar mais um?"
   },
+  "keepUnread": {
+    "lock": "Manter não lido",
+    "unlock": "Remover proteção",
+    "protected": "Este post está protegido. Remova a proteção primeiro."
+  },
   "categories": {
     "newPlaceholder": "Nome da nova categoria",
     "create": "Criar",

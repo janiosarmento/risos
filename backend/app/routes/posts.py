@@ -365,6 +365,7 @@ def list_posts(
             "one_line_summary": summary.one_line_summary if summary else None,
             "translated_title": summary.translated_title if summary else None,
             "skip_summary": bool(post.skip_summary),
+            "keep_unread": bool(post.keep_unread),
             "is_blocked": any(
                 title_matches_term((post.title or "").lower(), term)
                 for term in blocked_terms
@@ -676,6 +677,7 @@ async def get_post(
         matched_tags=matched_tags,
         ignored_tags=ignored_tags,
         skip_summary=bool(post.skip_summary),
+        keep_unread=bool(post.keep_unread),
     )
 
 
@@ -690,6 +692,13 @@ def toggle_read(
     If read, marks as unread. If unread, marks as read.
     """
     post = get_post_or_404(db, post_id)
+
+    # Protected posts cannot be marked as read
+    if post.keep_unread and not post.is_read:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Post is protected by keep_unread",
+        )
 
     if post.is_read:
         post.is_read = False
@@ -778,6 +787,34 @@ def toggle_like(
     }
 
 
+@router.patch("/{post_id}/keep-unread")
+def toggle_keep_unread(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Toggle keep_unread protection. Enabling forces post to unread."""
+    post = get_post_or_404(db, post_id)
+
+    if post.keep_unread:
+        post.keep_unread = False
+    else:
+        post.keep_unread = True
+        # Invariant: keep_unread=True + is_read=True is invalid
+        if post.is_read:
+            post.is_read = False
+            post.read_at = None
+
+    db.commit()
+
+    return {
+        "id": post_id,
+        "keep_unread": post.keep_unread,
+        "is_read": post.is_read,
+        "read_at": post.read_at,
+    }
+
+
 @router.post("/mark-read")
 def mark_read_batch(
     request: MarkReadRequest,
@@ -792,7 +829,10 @@ def mark_read_batch(
     - all: marks all posts
     """
     now = datetime.utcnow()
-    query = db.query(Post).filter(Post.is_read.is_(False))
+    query = db.query(Post).filter(
+        Post.is_read.is_(False),
+        Post.keep_unread.is_(False),
+    )
 
     if request.post_ids:
         # Mark specific posts by ID
@@ -898,8 +938,8 @@ def redirect_to_post(
             detail="Invalid or unsafe URL",
         )
 
-    # Mark as read
-    if not post.is_read:
+    # Mark as read (skip if protected)
+    if not post.is_read and not post.keep_unread:
         post.is_read = True
         post.read_at = datetime.utcnow()
         db.commit()

@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260314o';</script>
+    <script>var APP_VERSION = '20260319a';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -153,6 +153,10 @@
         </symbol>
         <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0110 0v4"/>
         </symbol>
     </svg>
 
@@ -779,13 +783,15 @@
                                                 <svg class="w-3.5 h-3.5 flex-shrink-0 text-red-400 mt-0.5"><use href="#icon-prohibition"/></svg>
                                             </template>
                                             <h3
-                                                class="line-clamp-2 flex-1"
-                                                :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : (post.translated_title ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white')"
+                                                class="flex-1"
+                                                :class="post.translated_title
+                                                    ? 'text-xs line-clamp-1 ' + (post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400')
+                                                    : 'line-clamp-2 ' + (post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white')"
                                                 x-html="highlightBlockedTitle(post.title)"
                                             ></h3>
                                         </div>
                                         <template x-if="post.translated_title">
-                                            <p class="text-xs font-semibold italic line-clamp-1 mb-1" :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'" x-text="post.translated_title"></p>
+                                            <p class="font-semibold italic line-clamp-2 mb-1" :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'" x-text="post.translated_title"></p>
                                         </template>
                                         <div class="text-sm text-gray-500 flex items-center gap-2" :class="{'mt-1': !post.translated_title}">
                                             <!-- Star icon -->
@@ -803,6 +809,14 @@
                                                 :data-tip="post.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                                             >
                                                 <svg class="w-4 h-4" :class="post.is_liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'" :fill="post.is_liked ? 'currentColor' : 'none'" :stroke="post.is_liked ? 'none' : 'currentColor'" :stroke-width="post.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
+                                            </button>
+                                            <!-- Keep unread (lock) -->
+                                            <button
+                                                @click.stop="toggleKeepUnread(post)"
+                                                class="flex-shrink-0 hover:scale-110 transition-transform"
+                                                :data-tip="post.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')"
+                                            >
+                                                <svg class="w-4 h-4" :class="post.keep_unread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-blue-400'" :fill="post.keep_unread ? 'currentColor' : 'none'" :stroke="post.keep_unread ? 'none' : 'currentColor'" :stroke-width="post.keep_unread ? '0' : '1.5'" viewBox="0 0 24 24"><use href="#icon-lock"/></svg>
                                             </button>
                                             <span
                                                 x-show="post.is_suggested && post.suggestion_score != null"
@@ -926,6 +940,10 @@
                                             <!-- Like -->
                                             <button @click="toggleLike(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
+                                            </button>
+                                            <!-- Keep unread -->
+                                            <button @click="toggleKeepUnread(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')">
+                                                <svg class="w-4 h-4" :class="currentPost.keep_unread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'" :fill="currentPost.keep_unread ? 'currentColor' : 'none'" :stroke="currentPost.keep_unread ? 'none' : 'currentColor'" :stroke-width="currentPost.keep_unread ? '0' : '1.5'" viewBox="0 0 24 24"><use href="#icon-lock"/></svg>
                                             </button>
                                             <!-- Read/Unread -->
                                             <button @click="toggleRead(currentPost)" class="p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" :data-tip="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')">
@@ -1103,6 +1121,14 @@
                             :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                         >
                             <svg class="w-5 h-5" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'" :fill="currentPost.is_liked ? 'currentColor' : 'none'" :stroke="currentPost.is_liked ? 'none' : 'currentColor'" :stroke-width="currentPost.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
+                        </button>
+                        <!-- Keep unread button -->
+                        <button
+                            @click="toggleKeepUnread(currentPost)"
+                            class="p-1.5 md:p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            :data-tip="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')"
+                        >
+                            <svg class="w-5 h-5" :class="currentPost.keep_unread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-blue-400'" :fill="currentPost.keep_unread ? 'currentColor' : 'none'" :stroke="currentPost.keep_unread ? 'none' : 'currentColor'" :stroke-width="currentPost.keep_unread ? '0' : '1.5'" viewBox="0 0 24 24"><use href="#icon-lock"/></svg>
                         </button>
                         <!-- Read/Unread button - icon only on mobile -->
                         <button
