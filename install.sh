@@ -32,6 +32,67 @@ HTDOCS_DIR="$SCRIPT_DIR/htdocs"
 echo_info "Installing Risos from: $SCRIPT_DIR"
 
 # =============================================================================
+# System Dependencies
+# =============================================================================
+
+echo_info "Checking system dependencies..."
+
+# Detect package manager
+if command -v apt-get &> /dev/null; then
+    PKG_MGR="apt"
+elif command -v dnf &> /dev/null; then
+    PKG_MGR="dnf"
+elif command -v yum &> /dev/null; then
+    PKG_MGR="yum"
+else
+    echo_warn "Could not detect package manager. Skipping system dependency install."
+    PKG_MGR="unknown"
+fi
+
+# Required system packages
+# python3-venv: virtual environments
+# python3-dev:  C headers for compiling native extensions (lxml, etc.)
+# libxml2-dev, libxslt1-dev: required by lxml/readability-lxml
+# build-essential: gcc/make for native extensions
+# libffi-dev: required by cryptography (python-jose dependency)
+if [ "$PKG_MGR" = "apt" ]; then
+    REQUIRED_PKGS=(python3 python3-venv python3-dev build-essential libxml2-dev libxslt1-dev libffi-dev)
+    MISSING_PKGS=()
+
+    for pkg in "${REQUIRED_PKGS[@]}"; do
+        if ! dpkg -s "$pkg" &> /dev/null; then
+            MISSING_PKGS+=("$pkg")
+        fi
+    done
+
+    if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+        echo_info "Installing missing packages: ${MISSING_PKGS[*]}"
+        apt-get update -qq
+        apt-get install -y -qq "${MISSING_PKGS[@]}"
+        echo_info "System packages installed"
+    else
+        echo_info "All system dependencies already installed"
+    fi
+elif [ "$PKG_MGR" = "dnf" ] || [ "$PKG_MGR" = "yum" ]; then
+    REQUIRED_PKGS=(python3 python3-devel gcc make libxml2-devel libxslt-devel libffi-devel)
+    MISSING_PKGS=()
+
+    for pkg in "${REQUIRED_PKGS[@]}"; do
+        if ! rpm -q "$pkg" &> /dev/null; then
+            MISSING_PKGS+=("$pkg")
+        fi
+    done
+
+    if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+        echo_info "Installing missing packages: ${MISSING_PKGS[*]}"
+        $PKG_MGR install -y -q "${MISSING_PKGS[@]}"
+        echo_info "System packages installed"
+    else
+        echo_info "All system dependencies already installed"
+    fi
+fi
+
+# =============================================================================
 # Configuration
 # =============================================================================
 
@@ -67,6 +128,23 @@ RUN_USER=${RUN_USER:-www-data}
 
 read -p "Group to run as [www-data]: " RUN_GROUP
 RUN_GROUP=${RUN_GROUP:-www-data}
+
+# =============================================================================
+# Webroot Validation
+# =============================================================================
+
+# Check that htdocs exists in the expected location
+if [ ! -d "$HTDOCS_DIR" ] || [ ! -f "$HTDOCS_DIR/index.html" ]; then
+    echo_error "htdocs/index.html not found at $HTDOCS_DIR"
+    echo_error "Make sure you cloned the full repository"
+    exit 1
+fi
+
+# Try to detect domain from the install path (e.g. /var/www/rss.example.com)
+DETECTED_DOMAIN=""
+if [[ "$SCRIPT_DIR" =~ ^/var/www/([^/]+)$ ]]; then
+    DETECTED_DOMAIN="${BASH_REMATCH[1]}"
+fi
 
 # =============================================================================
 # Python Virtual Environment
@@ -140,8 +218,14 @@ echo_info "Dependencies installed successfully"
 if [ ! -f "$BACKEND_DIR/.env" ]; then
     if [ -f "$BACKEND_DIR/.env.example" ]; then
         cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
+
+        # Generate a random JWT secret
+        JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))")
+        sed -i "s|your_secret_key_minimum_32_characters_long|$JWT_SECRET|" "$BACKEND_DIR/.env"
+
         echo_warn ".env created from .env.example - please edit it with your settings!"
-        echo_warn "At minimum, set APP_PASSWORD, JWT_SECRET, and CEREBRAS_API_KEY"
+        echo_warn "At minimum, set APP_PASSWORD and CEREBRAS_API_KEY"
+        echo_warn "JWT_SECRET has been auto-generated."
     else
         echo_error ".env.example not found!"
         exit 1
@@ -239,6 +323,42 @@ echo_info "Systemd service created and enabled"
 if command -v wo &> /dev/null; then
     echo_info "WordOps detected - configuring nginx automatically"
 
+    # Determine the domain for the vhost
+    if [ -n "$DETECTED_DOMAIN" ]; then
+        echo_info "Detected domain from path: $DETECTED_DOMAIN"
+        read -p "Domain for nginx vhost [$DETECTED_DOMAIN]: " DOMAIN
+        DOMAIN=${DOMAIN:-$DETECTED_DOMAIN}
+    else
+        read -p "Domain for nginx vhost: " DOMAIN
+        if [ -z "$DOMAIN" ]; then
+            echo_error "Domain is required for nginx vhost configuration"
+            exit 1
+        fi
+    fi
+
+    # Check if the WordOps site exists
+    SITE_CONF="/etc/nginx/sites-available/$DOMAIN"
+    if [ ! -f "$SITE_CONF" ]; then
+        echo_warn "WordOps site '$DOMAIN' does not exist yet"
+        read -p "Create it now with 'wo site create $DOMAIN --html'? [Y/n]: " CREATE_SITE
+        CREATE_SITE=${CREATE_SITE:-Y}
+        if [[ "$CREATE_SITE" =~ ^[Yy]$ ]]; then
+            wo site create "$DOMAIN" --html
+            echo_info "WordOps site created"
+        else
+            echo_warn "Skipping site creation. You'll need to create it manually."
+        fi
+    else
+        echo_info "WordOps site '$DOMAIN' already exists"
+    fi
+
+    # Verify the webroot matches
+    WO_WEBROOT="/var/www/$DOMAIN/htdocs"
+    if [ -d "$WO_WEBROOT" ] && [ "$HTDOCS_DIR" != "$WO_WEBROOT" ]; then
+        echo_warn "WordOps webroot is $WO_WEBROOT but Risos htdocs is at $HTDOCS_DIR"
+        echo_warn "You may need to symlink or move files"
+    fi
+
     NGINX_CONF_DIR="$SCRIPT_DIR/conf/nginx"
     NGINX_CUSTOM_CONF="$NGINX_CONF_DIR/custom.conf"
 
@@ -268,6 +388,12 @@ location /static/ {
     add_header Cache-Control "public, must-revalidate";
 }
 
+# Locale files - short cache for language switching
+location /static/locales/ {
+    expires 1h;
+    add_header Cache-Control "public, must-revalidate";
+}
+
 NGINXEOF
 
     # Add API proxy with the correct port
@@ -281,19 +407,21 @@ location /api/ {
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto \$scheme;
     proxy_connect_timeout 30s;
-    proxy_read_timeout 60s;
+    proxy_read_timeout 120s;
 }
 NGINXEOF
 
     chown "$RUN_USER:$RUN_GROUP" "$NGINX_CUSTOM_CONF"
 
     echo_info "Nginx configuration created"
-    echo_info "Reloading nginx..."
+    echo_info "Testing and reloading nginx..."
 
-    if nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null; then
+    if nginx -t 2>&1; then
+        systemctl reload nginx 2>/dev/null
         echo_info "Nginx reloaded successfully"
     else
-        echo_warn "Could not reload nginx. Run: nginx -t && systemctl reload nginx"
+        echo_error "Nginx configuration test failed! Fix the errors above before proceeding."
+        echo_warn "Configuration file: $NGINX_CUSTOM_CONF"
     fi
 
     WORDOPS_DETECTED=true
@@ -314,6 +442,16 @@ if [[ "$START_NOW" =~ ^[Yy]$ ]]; then
     sleep 2
     if systemctl is-active --quiet "$SERVICE_NAME"; then
         echo_info "Service started successfully!"
+
+        # Quick health check
+        if command -v curl &> /dev/null; then
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/api/admin/status" 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ]; then
+                echo_info "Backend API is responding (HTTP $HTTP_CODE)"
+            else
+                echo_warn "Backend API returned HTTP $HTTP_CODE — check logs: journalctl -u $SERVICE_NAME"
+            fi
+        fi
     else
         echo_error "Service failed to start. Check: journalctl -u $SERVICE_NAME"
         exit 1
@@ -341,7 +479,7 @@ echo ""
 if [ "$WORDOPS_DETECTED" = true ]; then
     echo "Next steps:"
     echo "  1. Edit $BACKEND_DIR/.env with your settings"
-    echo "     - Set APP_PASSWORD, JWT_SECRET, and CEREBRAS_API_KEY"
+    echo "     - Set APP_PASSWORD and CEREBRAS_API_KEY"
     echo "  2. Restart the service: systemctl restart $SERVICE_NAME"
     echo ""
     echo "Nginx has been configured automatically at:"
@@ -350,7 +488,7 @@ if [ "$WORDOPS_DETECTED" = true ]; then
 else
     echo "Next steps:"
     echo "  1. Edit $BACKEND_DIR/.env with your settings"
-    echo "     - Set APP_PASSWORD, JWT_SECRET, and CEREBRAS_API_KEY"
+    echo "     - Set APP_PASSWORD and CEREBRAS_API_KEY"
     echo "  2. Configure nginx (see example below)"
     echo "  3. Restart the service: systemctl restart $SERVICE_NAME"
     echo ""
