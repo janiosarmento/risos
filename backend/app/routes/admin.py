@@ -410,11 +410,15 @@ async def get_available_models(user: dict = Depends(get_current_user)):
             return _models_cache
 
     # Get API key from DB settings or env fallback
-    from app.routes.preferences import get_effective_cerebras_api_keys
+    from app.routes.preferences import (
+        get_effective_cerebras_api_keys,
+        get_effective_api_base_url,
+    )
 
     db_session = next(get_db())
     try:
         api_keys = get_effective_cerebras_api_keys(db_session)
+        api_base_url = get_effective_api_base_url(db_session)
     finally:
         db_session.close()
 
@@ -425,10 +429,6 @@ async def get_available_models(user: dict = Depends(get_current_user)):
         )
 
     api_key = api_keys[0]  # Use first key for metadata requests
-
-    from app.routes.preferences import get_effective_api_base_url
-
-    api_base_url = get_effective_api_base_url(db_session)
 
     try:
         async with httpx.AsyncClient(
