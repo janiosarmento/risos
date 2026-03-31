@@ -326,12 +326,20 @@ async def _call_model(
 
                 circuit_breaker.record_success()
 
+                # Use actual model from response (proxy may fallback)
+                actual_model = data.get("model", model)
+                if "oxit_model" in data:
+                    logger.info(
+                        f"Proxy fallback: requested {model}, "
+                        f"used {data['oxit_model']}"
+                    )
+
                 return SummaryResult(
                     summary_pt=summary_pt,
                     one_line_summary=one_line,
                     translated_title=translated_title,
                     tags=tags,
-                    model=model,  # Use requested model (API response field is unreliable)
+                    model=actual_model,
                 )
 
             except (json.JSONDecodeError, ValueError) as e:
@@ -592,7 +600,13 @@ async def call_llm_json(
             # Parse JSON from response
             result = parse_json_response(content)
             circuit_breaker.record_success()
-            logger.info(f"call_llm_json succeeded with model {model}")
+            actual_model = data.get("model", model)
+            if "oxit_model" in data:
+                logger.info(
+                    f"Proxy fallback: requested {model}, "
+                    f"used {data['oxit_model']}"
+                )
+            logger.info(f"call_llm_json succeeded with model {actual_model}")
             return result
 
         except ModelSpecificError as e:
