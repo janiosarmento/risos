@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.config import load_prompts, settings as env_settings
+from app.services.cerebras._constants import DEFAULT_API_BASE_URL
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import AppSettings
@@ -41,6 +42,8 @@ PREF_SYSTEM_PROMPT = "pref_system_prompt"
 PREF_USER_PROMPT = "pref_user_prompt"
 # Blocked terms
 PREF_BLOCKED_TERMS = "pref_blocked_terms"
+# API base URL
+PREF_API_BASE_URL = "pref_api_base_url"
 
 
 class PreferencesResponse(BaseModel):
@@ -77,6 +80,8 @@ class PreferencesResponse(BaseModel):
     user_prompt: Optional[str] = None
     # Blocked terms (newline-separated)
     blocked_terms: Optional[str] = None
+    # API base URL
+    api_base_url: Optional[str] = None
 
 
 class PreferencesUpdate(BaseModel):
@@ -104,6 +109,7 @@ class PreferencesUpdate(BaseModel):
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
     blocked_terms: Optional[str] = None
+    api_base_url: Optional[str] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -151,6 +157,7 @@ def get_preferences(
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
         PREF_BLOCKED_TERMS,
+        PREF_API_BASE_URL,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -218,6 +225,7 @@ def get_preferences(
         user_prompt=prefs[PREF_USER_PROMPT]
         or load_prompts().get("user_prompt", ""),
         blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
+        api_base_url=prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
     )
 
 
@@ -318,6 +326,10 @@ def update_preferences(
     if prefs.user_prompt is not None:
         _set_setting(db, PREF_USER_PROMPT, prefs.user_prompt)
 
+    if prefs.api_base_url is not None:
+        cleaned_url = prefs.api_base_url.strip().rstrip("/")
+        _set_setting(db, PREF_API_BASE_URL, cleaned_url)
+
     if prefs.blocked_terms is not None:
         # Clean, sort, and store
         lines = [
@@ -344,16 +356,13 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
     from app.routes.posts import title_matches_term
 
     suggested = (
-        db.query(Post)
-        .filter(Post.is_suggested == 1, Post.is_read == 0)
-        .all()
+        db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).all()
     )
     count = 0
     for post in suggested:
         title_lower = (post.title or "").lower()
         if any(
-            title_matches_term(title_lower, term)
-            for term in blocked_terms
+            title_matches_term(title_lower, term) for term in blocked_terms
         ):
             post.is_suggested = 0
             post.suggestion_score = None
@@ -547,6 +556,18 @@ def get_effective_profile_min_tag_freq(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 2  # Default: tag must appear in at least 2 liked posts
+
+
+def get_effective_api_base_url(db: Session) -> str:
+    """Get API base URL from app_settings or default."""
+    row = (
+        db.query(AppSettings)
+        .filter(AppSettings.key == PREF_API_BASE_URL)
+        .first()
+    )
+    return (row.value if row and row.value else DEFAULT_API_BASE_URL).rstrip(
+        "/"
+    )
 
 
 def get_effective_blocked_terms(db: Session) -> list:

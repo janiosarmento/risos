@@ -20,7 +20,6 @@ from app.services.cerebras._types import (
     SummaryResult,
 )
 from app.services.cerebras._constants import (
-    CEREBRAS_API_URL,
     MODELS_CACHE_TTL,
     MODELS_FETCH_TIMEOUT,
     TAG_TRANSLATION_MODEL,
@@ -53,6 +52,18 @@ from app.services.cerebras._prompts import (
 
 logger = logging.getLogger(__name__)
 
+
+def _get_api_base_url() -> str:
+    """Get the effective API base URL from preferences."""
+    from app.routes.preferences import get_effective_api_base_url
+
+    db = SessionLocal()
+    try:
+        return get_effective_api_base_url(db)
+    finally:
+        db.close()
+
+
 # Model cooldown: models that returned errors are paused for a grace period
 _model_cooldowns: Dict[str, datetime] = {}  # model_id -> cooldown_until
 
@@ -78,7 +89,7 @@ async def get_available_models() -> List[str]:
     try:
         async with httpx.AsyncClient(timeout=MODELS_FETCH_TIMEOUT) as client:
             response = await client.get(
-                "https://api.cerebras.ai/v1/models",
+                f"{_get_api_base_url()}/models",
                 headers={"Authorization": f"Bearer {api_keys[0]}"},
             )
             if response.status_code == 200:
@@ -129,7 +140,9 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
             timeout=TAG_TRANSLATION_TIMEOUT
         ) as client:
             response = await client.post(
-                CEREBRAS_API_URL, headers=headers, json=payload
+                f"{_get_api_base_url()}/chat/completions",
+                headers=headers,
+                json=payload,
             )
             if response.status_code != 200:
                 logger.warning(
@@ -189,7 +202,7 @@ async def _call_model(
             timeout=settings.cerebras_timeout
         ) as client:
             response = await client.post(
-                CEREBRAS_API_URL,
+                f"{_get_api_base_url()}/chat/completions",
                 headers=headers,
                 json=payload,
             )
@@ -551,7 +564,9 @@ async def call_llm_json(
                 timeout=settings.cerebras_timeout
             ) as client:
                 response = await client.post(
-                    CEREBRAS_API_URL, headers=headers, json=payload
+                    f"{_get_api_base_url()}/chat/completions",
+                    headers=headers,
+                    json=payload,
                 )
 
                 if response.status_code == 429:

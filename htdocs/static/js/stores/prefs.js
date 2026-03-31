@@ -11,6 +11,7 @@ document.addEventListener('alpine:init', () => {
         availableSummaryLanguages: [],
         availableModels: [],
         cerebrasApiKeys: '',
+        apiBaseUrl: 'https://api.cerebras.ai/v1',
         systemPrompt: '',
         userPrompt: '',
         defaultSystemPrompt: '',

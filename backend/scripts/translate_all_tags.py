@@ -16,7 +16,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.database import SessionLocal
 from app.models import PostTag, AppSettings
 from app.services.cerebras._constants import (
-    CEREBRAS_API_URL,
     TAG_TRANSLATION_MODEL,
     TAG_TRANSLATION_TEMPERATURE,
     TAG_TRANSLATION_MAX_TOKENS,
@@ -76,9 +75,19 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
         "max_tokens": TAG_TRANSLATION_MAX_TOKENS,
     }
 
+    from app.routes.preferences import get_effective_api_base_url
+
+    db = SessionLocal()
+    try:
+        api_base_url = get_effective_api_base_url(db)
+    finally:
+        db.close()
+
     async with httpx.AsyncClient(timeout=TAG_TRANSLATION_TIMEOUT) as client:
         response = await client.post(
-            CEREBRAS_API_URL, headers=headers, json=payload
+            f"{api_base_url}/chat/completions",
+            headers=headers,
+            json=payload,
         )
 
         if response.status_code == 429:

@@ -813,6 +813,7 @@ const settingsMixin = {
             if (this.cerebrasApiKeys && !this.cerebrasApiKeys.includes('****')) {
                 payload.cerebras_api_keys = this.cerebrasApiKeys;
             }
+            payload.api_base_url = this.apiBaseUrl;
             await this.fetchApi('/preferences', {
                 method: 'PUT',
                 body: JSON.stringify(payload),
@@ -968,6 +969,7 @@ const settingsMixin = {
                     tags_per_post: this.tagsPerPost,
                     model_cooldown_minutes: this.modelCooldownMinutes,
                     blocked_terms: this.blockedTerms,
+                    api_base_url: this.apiBaseUrl,
                 }),
             });
         } catch (e) {
@@ -1030,6 +1032,7 @@ const settingsMixin = {
 
             // AI keys and prompts
             if (serverPrefs.cerebras_api_keys) this.cerebrasApiKeys = serverPrefs.cerebras_api_keys;
+            if (serverPrefs.api_base_url) this.apiBaseUrl = serverPrefs.api_base_url;
             if (serverPrefs.system_prompt) this.systemPrompt = serverPrefs.system_prompt;
             if (serverPrefs.user_prompt) this.userPrompt = serverPrefs.user_prompt;
             if (serverPrefs.blocked_terms !== null && serverPrefs.blocked_terms !== undefined) {

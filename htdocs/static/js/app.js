@@ -110,6 +110,8 @@ function app() {
         set availableModels(v) { Alpine.store('prefs').availableModels = v; },
         get cerebrasApiKeys() { return Alpine.store('prefs').cerebrasApiKeys; },
         set cerebrasApiKeys(v) { Alpine.store('prefs').cerebrasApiKeys = v; },
+        get apiBaseUrl() { return Alpine.store('prefs').apiBaseUrl; },
+        set apiBaseUrl(v) { Alpine.store('prefs').apiBaseUrl = v; },
         get systemPrompt() { return Alpine.store('prefs').systemPrompt; },
         set systemPrompt(v) { Alpine.store('prefs').systemPrompt = v; },
         get userPrompt() { return Alpine.store('prefs').userPrompt; },

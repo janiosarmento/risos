@@ -426,10 +426,14 @@ async def get_available_models(user: dict = Depends(get_current_user)):
 
     api_key = api_keys[0]  # Use first key for metadata requests
 
+    from app.routes.preferences import get_effective_api_base_url
+
+    api_base_url = get_effective_api_base_url(db_session)
+
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(
-                "https://api.cerebras.ai/v1/models",
+                f"{api_base_url}/models",
                 headers={"Authorization": f"Bearer {api_key}"},
             )
 

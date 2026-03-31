@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 # API endpoints
-CEREBRAS_API_URL = "https://api.cerebras.ai/v1/chat/completions"
+DEFAULT_API_BASE_URL = "https://api.cerebras.ai/v1"
 
 # Model cache
 MODELS_CACHE_TTL = timedelta(minutes=30)

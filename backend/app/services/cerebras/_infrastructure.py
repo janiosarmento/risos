@@ -86,8 +86,7 @@ class ApiKeyRotator:
 
     def get_next_key(self) -> Tuple[Optional[str], Optional[int]]:
         """
-        Return the next available API key (round-robin).
-        Skips keys in cooldown.
+        Return the first available API key.
 
         Returns:
             Tuple of (api_key, key_index) or (None, None) if none available
@@ -95,35 +94,7 @@ class ApiKeyRotator:
         keys = self._get_keys()
         if not keys:
             return None, None
-
-        now = datetime.utcnow()
-
-        with self._lock:
-            # Try to find an available key
-            for _ in range(len(keys)):
-                key_index = self._current_index
-                key = keys[key_index]
-
-                # Advance to next (round-robin)
-                self._current_index = (self._current_index + 1) % len(keys)
-
-                # Check cooldown
-                cooldown_until = self._key_cooldowns.get(key)
-                if cooldown_until and now < cooldown_until:
-                    remaining = (cooldown_until - now).total_seconds()
-                    logger.debug(
-                        f"Key {key_index + 1}/{len(keys)} in cooldown"
-                        f"({remaining:.0f}s)"
-                    )
-                    continue
-
-                # Key available
-                self._save_state()
-                logger.info(f"Using API key {key_index + 1}/{len(keys)}")
-                return key, key_index
-
-            # All keys in cooldown
-            return None, None
+        return keys[0], 0
 
     def set_key_cooldown(
         self, key: str, seconds: int = DEFAULT_KEY_COOLDOWN_SECONDS
