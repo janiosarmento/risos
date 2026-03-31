@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.config import load_prompts, settings
+from app.config import load_prompts, settings, USER_AGENT
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import (
@@ -431,7 +431,10 @@ async def get_available_models(user: dict = Depends(get_current_user)):
     api_base_url = get_effective_api_base_url(db_session)
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(
+            timeout=10,
+            headers={"User-Agent": USER_AGENT},
+        ) as client:
             response = await client.get(
                 f"{api_base_url}/models",
                 headers={"Authorization": f"Bearer {api_key}"},

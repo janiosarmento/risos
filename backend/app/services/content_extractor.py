@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 import httpx
 from readability import Document
 
+from app.config import USER_AGENT
 from app.services.html_sanitizer import sanitize_html
 
 logger = logging.getLogger(__name__)
@@ -258,6 +259,7 @@ async def extract_full_content(url: str) -> ExtractedContent:
             timeout=TIMEOUT,
             follow_redirects=True,
             max_redirects=5,
+            headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.get(
                 url,

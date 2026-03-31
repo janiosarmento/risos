@@ -10,6 +10,7 @@ from urllib.parse import urlparse, urljoin
 import re
 import httpx
 
+from app.config import USER_AGENT
 from fastapi import (
     APIRouter,
     Depends,
@@ -128,10 +129,12 @@ async def discover_feed(
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
 
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; RSSReader/1.0)"}
+    headers = {"User-Agent": USER_AGENT}
 
     async with httpx.AsyncClient(
-        follow_redirects=True, timeout=15.0
+        follow_redirects=True,
+        timeout=15.0,
+        headers={"User-Agent": USER_AGENT},
     ) as client:
         # First, check if the URL itself is a feed
         try:

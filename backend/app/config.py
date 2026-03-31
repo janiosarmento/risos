@@ -104,3 +104,6 @@ class Settings(BaseSettings):
 
 # Global configuration instance
 settings = Settings()
+
+# HTTP client identity
+USER_AGENT = "Risos/1.0 (+https://rss.sarmento.org)"

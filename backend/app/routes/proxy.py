@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
+from app.config import USER_AGENT
 from app.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,7 @@ async def proxy_image(
             timeout=TIMEOUT,
             follow_redirects=True,
             max_redirects=3,
+            headers={"User-Agent": USER_AGENT},
         ) as client:
             # Make request with appropriate headers
             response = await client.get(

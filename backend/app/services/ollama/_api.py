@@ -4,6 +4,7 @@ import logging
 
 import httpx
 
+from app.config import USER_AGENT
 from app.services.cerebras._constants import MAX_CONTENT_LENGTH, MAX_TAGS
 from app.services.cerebras._parsing import (
     is_garbage_content,
@@ -45,7 +46,10 @@ async def generate_summary_local(
         },
     }
 
-    async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+    async with httpx.AsyncClient(
+        timeout=OLLAMA_TIMEOUT,
+        headers={"User-Agent": USER_AGENT},
+    ) as client:
         response = await client.post(OLLAMA_URL, json=payload)
         response.raise_for_status()
 

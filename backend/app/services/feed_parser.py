@@ -15,9 +15,8 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Configuration
-USER_AGENT = (
-    "Risos/1.0 (+https://github.com/janiosarmento/risos; like Miniflux)"
-)
+from app.config import USER_AGENT
+
 TIMEOUT_SECONDS = 10
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_REDIRECTS = 3
@@ -133,15 +132,13 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
     async with httpx.AsyncClient(
         timeout=TIMEOUT_SECONDS,
         follow_redirects=False,  # Manual redirect control
+        headers={"User-Agent": USER_AGENT},
     ) as client:
         current_url = url
 
         while redirects_followed <= MAX_REDIRECTS:
             try:
-                response = await client.get(
-                    current_url,
-                    headers={"User-Agent": USER_AGENT},
-                )
+                response = await client.get(current_url)
 
                 # Check redirect
                 if response.status_code in (301, 302, 303, 307, 308):

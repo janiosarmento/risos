@@ -22,6 +22,7 @@ from app.services.cerebras._constants import (
     TAG_TRANSLATION_TIMEOUT,
 )
 from app.services.cerebras._parsing import normalize_tag
+from app.config import USER_AGENT
 from app.services.cerebras._infrastructure import api_key_rotator
 
 import httpx
@@ -83,7 +84,10 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
     finally:
         db.close()
 
-    async with httpx.AsyncClient(timeout=TAG_TRANSLATION_TIMEOUT) as client:
+    async with httpx.AsyncClient(
+        timeout=TAG_TRANSLATION_TIMEOUT,
+        headers={"User-Agent": USER_AGENT},
+    ) as client:
         response = await client.post(
             f"{api_base_url}/chat/completions",
             headers=headers,

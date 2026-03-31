@@ -10,7 +10,7 @@ from typing import Dict, Optional, List
 
 import httpx
 
-from app.config import settings
+from app.config import settings, USER_AGENT
 from app.database import SessionLocal
 from app.services.cerebras._types import (
     TemporaryError,
@@ -87,7 +87,10 @@ async def get_available_models() -> List[str]:
         return []
 
     try:
-        async with httpx.AsyncClient(timeout=MODELS_FETCH_TIMEOUT) as client:
+        async with httpx.AsyncClient(
+            timeout=MODELS_FETCH_TIMEOUT,
+            headers={"User-Agent": USER_AGENT},
+        ) as client:
             response = await client.get(
                 f"{_get_api_base_url()}/models",
                 headers={"Authorization": f"Bearer {api_keys[0]}"},
@@ -137,7 +140,8 @@ async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
 
     try:
         async with httpx.AsyncClient(
-            timeout=TAG_TRANSLATION_TIMEOUT
+            timeout=TAG_TRANSLATION_TIMEOUT,
+            headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.post(
                 f"{_get_api_base_url()}/chat/completions",
@@ -199,7 +203,8 @@ async def _call_model(
 
     try:
         async with httpx.AsyncClient(
-            timeout=settings.cerebras_timeout
+            timeout=settings.cerebras_timeout,
+            headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.post(
                 f"{_get_api_base_url()}/chat/completions",
@@ -561,7 +566,8 @@ async def call_llm_json(
             }
 
             async with httpx.AsyncClient(
-                timeout=settings.cerebras_timeout
+                timeout=settings.cerebras_timeout,
+                headers={"User-Agent": USER_AGENT},
             ) as client:
                 response = await client.post(
                     f"{_get_api_base_url()}/chat/completions",

@@ -24,6 +24,8 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import httpx
+
+from app.config import USER_AGENT
 from sqlalchemy import func, text
 
 from app.database import SessionLocal
@@ -94,7 +96,10 @@ async def call_ollama_json(system_prompt: str, user_prompt: str) -> dict:
         "stream": False,
         "options": {"temperature": 0.3, "num_predict": 4096},
     }
-    async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+    async with httpx.AsyncClient(
+        timeout=OLLAMA_TIMEOUT,
+        headers={"User-Agent": USER_AGENT},
+    ) as client:
         response = await client.post(OLLAMA_URL, json=payload)
         response.raise_for_status()
     data = response.json()
