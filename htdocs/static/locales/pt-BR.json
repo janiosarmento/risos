@@ -156,6 +156,8 @@
     "clearCache": "Limpar cache",
     "resetCircuitBreaker": "Resetar IA",
     "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso",
+    "refreshModels": "Recarregar lista de modelos",
+    "modelsCacheCleared": "Cache de modelos limpo",
     "ignoredTags": "Tags Ignoradas",
     "ignoredTagsDesc": "Tags excluídas das sugestões e do perfil. Clique no x para restaurar.",
     "noIgnoredTags": "Nenhuma tag ignorada",

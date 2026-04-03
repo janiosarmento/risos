@@ -5,7 +5,7 @@ API calls, tag translation, model fallback, and orchestration.
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Optional, List
 
 import httpx
@@ -71,6 +71,15 @@ _model_cooldowns: Dict[str, datetime] = {}  # model_id -> cooldown_until
 # Cache for available models (shared with admin routes)
 _available_models_cache: Optional[List[str]] = None
 _available_models_cache_time: Optional[datetime] = None
+
+
+def clear_models_cache():
+    """Clear the models cache and all model cooldowns."""
+    global _available_models_cache, _available_models_cache_time
+    _available_models_cache = None
+    _available_models_cache_time = None
+    _model_cooldowns.clear()
+    logger.info("Models cache and cooldowns cleared")
 
 
 async def get_available_models() -> List[str]:
@@ -402,14 +411,12 @@ async def generate_summary(
     from app.routes.preferences import (
         get_effective_summary_language,
         get_effective_cerebras_model,
-        get_effective_model_cooldown,
     )
 
     db = SessionLocal()
     try:
         preferred_model = get_effective_cerebras_model(db)
         effective_language = get_effective_summary_language(db)
-        cooldown_minutes = get_effective_model_cooldown(db)
 
         # Build message list (reused across model attempts)
         messages = [
@@ -424,73 +431,16 @@ async def generate_summary(
     finally:
         db.close()
 
-    # Build model list: preferred first, then others as fallback
-    models_to_try = [preferred_model]
-    try:
-        available = await get_available_models()
-        for m in available:
-            if m != preferred_model:
-                models_to_try.append(m)
-    except Exception:
-        pass  # If we can't fetch models, just try the preferred one
+    # Use preferred model only (proxy handles fallback)
+    result = await _call_model(preferred_model, api_key, key_index, messages)
 
-    # Filter out models in cooldown (grace period after errors)
-    now = datetime.utcnow()
-    active_models = [
-        m for m in models_to_try if _model_cooldowns.get(m, now) <= now
-    ]
-    if not active_models:
-        # All models paused — clear cooldowns and try all
-        logger.warning("All models in cooldown, clearing cooldowns")
-        _model_cooldowns.clear()
-        active_models = models_to_try
-
-    skipped = set(models_to_try) - set(active_models)
-    if skipped:
-        logger.info(
-            f"Models in cooldown (skipped): {', '.join(sorted(skipped))}"
+    # Empty result means the model deemed the content unusable
+    if not result.summary_pt and not result.tags:
+        raise GarbageContentError(
+            "Model returned empty result (unusable content)"
         )
 
-    last_error = None
-    for model in active_models:
-        try:
-            result = await _call_model(model, api_key, key_index, messages)
-
-            # Empty result means the model deemed the content unusable
-            if not result.summary_pt and not result.tags:
-                raise GarbageContentError(
-                    "Model returned empty result (unusable content)"
-                )
-
-            if model != preferred_model:
-                logger.info(
-                    f"Fallback model {result.model} succeeded "
-                    f"(preferred {preferred_model} failed)"
-                )
-            return result
-
-        except ModelSpecificError as e:
-            # Pause this model for the configured grace period
-            _model_cooldowns[model] = now + timedelta(minutes=cooldown_minutes)
-            logger.warning(
-                f"Model {model} failed: {e}, "
-                f"paused for {cooldown_minutes}min"
-                + (
-                    ", trying next model..."
-                    if model != active_models[-1]
-                    else ""
-                )
-            )
-            last_error = e
-            continue
-
-        except (TemporaryError, PermanentError):
-            # Infrastructure errors — don't try other models
-            raise
-
-    # All models failed with model-specific errors
-    circuit_breaker.record_failure()
-    raise PermanentError(f"All models failed. Last error: {last_error}")
+    return result
 
 
 async def call_llm_json(
@@ -521,16 +471,12 @@ async def call_llm_json(
     if not api_key:
         raise TemporaryError("All API keys are in cooldown")
 
-    # Get preferred model
-    from app.routes.preferences import (
-        get_effective_cerebras_model,
-        get_effective_model_cooldown,
-    )
+    # Get preferred model (proxy handles fallback)
+    from app.routes.preferences import get_effective_cerebras_model
 
     db = SessionLocal()
     try:
-        preferred_model = get_effective_cerebras_model(db)
-        cooldown_minutes = get_effective_model_cooldown(db)
+        model = get_effective_cerebras_model(db)
     finally:
         db.close()
 
@@ -539,90 +485,55 @@ async def call_llm_json(
         {"role": "user", "content": user_prompt},
     ]
 
-    # Build model fallback list
-    models_to_try = [preferred_model]
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+
     try:
-        available = await get_available_models()
-        for m in available:
-            if m != preferred_model:
-                models_to_try.append(m)
-    except Exception:
-        pass
+        async with httpx.AsyncClient(
+            timeout=settings.cerebras_timeout,
+            headers={"User-Agent": USER_AGENT},
+        ) as client:
+            response = await client.post(
+                f"{_get_api_base_url()}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
 
-    # Filter out models in cooldown
-    now = datetime.utcnow()
-    active_models = [
-        m for m in models_to_try if _model_cooldowns.get(m, now) <= now
-    ]
-    if not active_models:
-        logger.warning("All models in cooldown, clearing cooldowns")
-        _model_cooldowns.clear()
-        active_models = models_to_try
+            if response.status_code == 429:
+                api_key_rotator.set_key_cooldown(
+                    api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
+                )
+                raise TemporaryError("Rate limit reached")
 
-    last_error = None
-    for model in active_models:
-        try:
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-
-            async with httpx.AsyncClient(
-                timeout=settings.cerebras_timeout,
-                headers={"User-Agent": USER_AGENT},
-            ) as client:
-                response = await client.post(
-                    f"{_get_api_base_url()}/chat/completions",
-                    headers=headers,
-                    json=payload,
+            if response.status_code != 200:
+                raise PermanentError(
+                    f"HTTP {response.status_code}: " f"{response.text[:200]}"
                 )
 
-                if response.status_code == 429:
-                    api_key_rotator.set_key_cooldown(
-                        api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
-                    )
-                    raise TemporaryError("Rate limit reached")
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
 
-                if response.status_code != 200:
-                    raise ModelSpecificError(
-                        f"HTTP {response.status_code}: {response.text[:200]}"
-                    )
+        result = parse_json_response(content)
+        circuit_breaker.record_success()
+        actual_model = data.get("model", model)
+        if "oxit_model" in data:
+            logger.info(
+                f"Proxy fallback: requested {model}, "
+                f"used {data['oxit_model']}"
+            )
+        logger.info(f"call_llm_json succeeded with model {actual_model}")
+        return result
 
-                data = response.json()
-                content = data["choices"][0]["message"]["content"]
-
-            # Parse JSON from response
-            result = parse_json_response(content)
-            circuit_breaker.record_success()
-            actual_model = data.get("model", model)
-            if "oxit_model" in data:
-                logger.info(
-                    f"Proxy fallback: requested {model}, "
-                    f"used {data['oxit_model']}"
-                )
-            logger.info(f"call_llm_json succeeded with model {actual_model}")
-            return result
-
-        except ModelSpecificError as e:
-            _model_cooldowns[model] = now + timedelta(minutes=cooldown_minutes)
-            logger.warning(f"call_llm_json: model {model} failed: {e}")
-            last_error = e
-            continue
-
-        except (TemporaryError, PermanentError):
-            raise
-
-        except Exception as e:
-            _model_cooldowns[model] = now + timedelta(minutes=cooldown_minutes)
-            logger.warning(f"call_llm_json: model {model} error: {e}")
-            last_error = e
-            continue
-
-    circuit_breaker.record_failure()
-    raise PermanentError(f"All AI models failed. Last error: {last_error}")
+    except (TemporaryError, PermanentError):
+        raise
+    except Exception as e:
+        circuit_breaker.record_failure()
+        raise PermanentError(f"LLM call failed: {e}")

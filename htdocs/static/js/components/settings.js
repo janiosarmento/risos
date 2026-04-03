@@ -1053,6 +1053,17 @@ const settingsMixin = {
         }
     },
 
+    async clearModelsCache() {
+        try {
+            await this.fetchApi('/admin/clear-models-cache', { method: 'POST' });
+            this.availableModels = [];
+            await this.loadAvailableModels();
+            this.showToast(this.t('settings.modelsCacheCleared'));
+        } catch (error) {
+            console.error('Failed to clear models cache:', error);
+        }
+    },
+
     clearCacheAndReload() {
         localStorage.clear();
         window.location.href = window.location.pathname + '?_=' + Date.now();

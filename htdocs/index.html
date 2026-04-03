@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260331a';</script>
+    <script>var APP_VERSION = '20260403a';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -1604,18 +1604,27 @@
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
-                                <select
-                                    @change="setCerebrasModel($event.target.value)"
-                                    class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                    :disabled="availableModels.length === 0"
-                                >
-                                    <template x-if="availableModels.length === 0">
-                                        <option x-text="t('settings.loadingModels')"></option>
-                                    </template>
-                                    <template x-for="model in availableModels" :key="model.id">
-                                        <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
-                                    </template>
-                                </select>
+                                <div class="flex items-center gap-2">
+                                    <select
+                                        @change="setCerebrasModel($event.target.value)"
+                                        class="flex-1 max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        :disabled="availableModels.length === 0"
+                                    >
+                                        <template x-if="availableModels.length === 0">
+                                            <option x-text="t('settings.loadingModels')"></option>
+                                        </template>
+                                        <template x-for="model in availableModels" :key="model.id">
+                                            <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
+                                        </template>
+                                    </select>
+                                    <button
+                                        @click="clearModelsCache()"
+                                        class="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-sm transition-colors"
+                                        :data-tip="t('settings.refreshModels')"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0 1 15.36-4.36M20 15a9 9 0 0 1-15.36 4.36"/></svg>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Summary Language -->

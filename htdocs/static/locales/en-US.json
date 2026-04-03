@@ -156,6 +156,8 @@
     "clearCache": "Clear cache",
     "resetCircuitBreaker": "Reset AI",
     "circuitBreakerReset": "AI circuit breaker reset successfully",
+    "refreshModels": "Refresh model list",
+    "modelsCacheCleared": "Models cache cleared",
     "ignoredTags": "Ignored Tags",
     "ignoredTagsDesc": "Tags excluded from suggestions and profile. Click x to restore.",
     "noIgnoredTags": "No ignored tags",

@@ -24,11 +24,13 @@ from app.services.cerebras._infrastructure import (  # noqa: F401
 from app.services.cerebras._api import (  # noqa: F401
     generate_summary,
     get_available_models,
+    clear_models_cache,
 )
 
 __all__ = [
     "generate_summary",
     "get_available_models",
+    "clear_models_cache",
     "circuit_breaker",
     "api_key_rotator",
     "CerebrasError",

@@ -379,6 +379,23 @@ def reset_circuit_breaker(
     return {"ok": True, "queue_cooldowns_cleared": in_cooldown}
 
 
+@router.post("/clear-models-cache")
+def clear_models_cache_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Clear models cache and model cooldowns."""
+    global _models_cache, _models_cache_time
+    from app.services.cerebras import clear_models_cache
+
+    # Clear API-level cache + cooldowns
+    clear_models_cache()
+    # Clear admin-level cache
+    _models_cache = None
+    _models_cache_time = None
+
+    return {"ok": True}
+
+
 # =============================================================================
 # AI Models and Languages
 # =============================================================================
