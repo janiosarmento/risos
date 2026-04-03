@@ -41,7 +41,6 @@ from app.services.cerebras._parsing import (
 )
 from app.services.cerebras._infrastructure import (  # noqa: F401
     api_key_rotator,
-    circuit_breaker,
 )
 
 
@@ -234,7 +233,6 @@ async def _call_model(
 
             # Handle server errors
             if response.status_code >= 500:
-                circuit_breaker.record_failure()
                 raise TemporaryError(
                     f"Server error: HTTP {response.status_code}"
                 )
@@ -242,6 +240,7 @@ async def _call_model(
             # Handle client errors
             if response.status_code >= 400:
                 import sys
+
                 print(
                     f"[API] HTTP {response.status_code} "
                     f"from {_get_api_base_url()}: "
@@ -336,8 +335,6 @@ async def _call_model(
                             f"ends_with='{last_char}'"
                         )
 
-                circuit_breaker.record_success()
-
                 # Use actual model from response (proxy may fallback)
                 actual_model = data.get("model", model)
                 if "oxit_model" in data:
@@ -360,11 +357,9 @@ async def _call_model(
                 raise ModelSpecificError(f"Invalid response: {e}")
 
     except httpx.TimeoutException:
-        circuit_breaker.record_failure()
         raise TemporaryError(f"Timeout after {settings.cerebras_timeout}s")
 
     except httpx.RequestError as e:
-        circuit_breaker.record_failure()
         raise TemporaryError(f"Connection error: {e}")
 
 
@@ -395,12 +390,7 @@ async def generate_summary(
     if not title_only and is_garbage_content(content):
         raise GarbageContentError("Content detected as error/session page")
 
-    # Check circuit breaker
-    can_call, reason = circuit_breaker.can_call()
-    if not can_call:
-        raise TemporaryError(f"Circuit breaker: {reason}")
-
-    # Get next available API key (load balancing)
+    # Get API key
     api_key, key_index = api_key_rotator.get_next_key()
     if not api_key:
         raise TemporaryError("All API keys are in cooldown")
@@ -464,15 +454,10 @@ async def call_llm_json(
         TemporaryError: Temporary error (retry possible)
         PermanentError: Permanent error
     """
-    # Check circuit breaker
-    can_call, reason = circuit_breaker.can_call()
-    if not can_call:
-        raise TemporaryError(f"Circuit breaker: {reason}")
-
-    # Get next available API key
+    # Get API key
     api_key, key_index = api_key_rotator.get_next_key()
     if not api_key:
-        raise TemporaryError("All API keys are in cooldown")
+        raise TemporaryError("No API key configured")
 
     # Get preferred model (proxy handles fallback)
     from app.routes.preferences import get_effective_cerebras_model
@@ -525,7 +510,6 @@ async def call_llm_json(
             content = data["choices"][0]["message"]["content"]
 
         result = parse_json_response(content)
-        circuit_breaker.record_success()
         actual_model = data.get("model", model)
         if "oxit_model" in data:
             logger.info(
@@ -538,5 +522,4 @@ async def call_llm_json(
     except (TemporaryError, PermanentError):
         raise
     except Exception as e:
-        circuit_breaker.record_failure()
         raise PermanentError(f"LLM call failed: {e}")
