@@ -1045,17 +1045,13 @@ async def regenerate_summary(
         }
 
     except CerebrasError as e:
-        logger.error(
-            f"Cerebras error regenerating summary for post {post_id}: {e}"
-        )
+        print(f"[REGEN] CerebrasError: {e}", flush=True, file=sys.stderr)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"AI service error: {str(e)}",
         )
     except Exception as e:
-        logger.error(
-            f"Unexpected error regenerating summary for post {post_id}: {e}"
-        )
+        print(f"[REGEN] Exception: {type(e).__name__}: {e}", flush=True, file=sys.stderr)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to regenerate summary: {str(e)}",
