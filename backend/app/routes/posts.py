@@ -961,6 +961,9 @@ async def regenerate_summary(
     - Updates or inserts into ai_summaries table
     - Returns the new summary
     """
+    import sys
+    print(f"[REGEN] Request received for post {post_id}", flush=True, file=sys.stderr)
+
     post = get_post_or_404(db, post_id)
 
     # Get content for summary
