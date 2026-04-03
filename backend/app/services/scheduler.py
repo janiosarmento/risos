@@ -814,28 +814,22 @@ class Scheduler:
                         logger.warning(f"Temporary error post {post.id}: {e}")
 
                     except PermanentError as e:
-                        # Permanent error
+                        # API/infrastructure error — not the content's fault
                         candidate.attempts = (candidate.attempts or 0) + 1
                         candidate.last_error = str(e)
                         candidate.error_type = "permanent"
+                        candidate.locked_at = None
 
                         if candidate.attempts >= 5:
-                            # Move to failures and mark post as skip
-                            failure = SummaryFailure(
-                                content_hash=candidate.content_hash,
-                                last_error=str(e),
-                            )
-                            db.add(failure)
-                            post.skip_summary = True
+                            # Too many failures — remove from queue but
+                            # do NOT mark skip_summary (user can retry)
                             db.query(SummaryQueue).filter(
                                 SummaryQueue.id == candidate.id
                             ).delete()
                             logger.error(
-                                f"Post {post.id}: permanent failure after "
-                                "5 attempts, marked skip_summary"
+                                f"Post {post.id}: removed from queue "
+                                f"after 5 attempts (not marked skip)"
                             )
-                        else:
-                            candidate.locked_at = None
 
                         db.commit()
                         logger.error(f"Permanent error post {post.id}: {e}")
