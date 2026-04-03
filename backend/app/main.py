@@ -23,11 +23,16 @@ from app.database import engine
 from app.rate_limiter import limiter
 from app.services.cerebras._types import PermanentError, TemporaryError
 
-# Configure logging
+# Configure logging — force=True ensures this overrides any prior config
+# (e.g. from uvicorn or alembic importing first)
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper()),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(settings.log_file), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler(settings.log_file),
+        logging.StreamHandler(),
+    ],
+    force=True,
 )
 
 logger = logging.getLogger(__name__)
