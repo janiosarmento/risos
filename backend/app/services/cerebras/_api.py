@@ -206,10 +206,6 @@ async def _call_model(
         "max_tokens": SUMMARY_MAX_TOKENS,
     }
 
-    # Minimize reasoning tokens for thinking models
-    if "gpt-oss" in model:
-        payload["reasoning_effort"] = "low"
-
     try:
         async with httpx.AsyncClient(
             timeout=settings.cerebras_timeout,
@@ -312,9 +308,8 @@ async def _call_model(
                 # Extract and normalize tags
                 tags = normalize_tags(result.get("tags", []), MAX_TAGS)
 
-                # Non gpt-oss models often generate tags in the summary language;
-                # use a cheap llama call to translate them to English
-                if tags and "gpt-oss" not in model:
+                # Translate non-English tags to English
+                if tags:
                     tags = await _translate_tags(tags, api_key, key_index)
 
                 # Allow both empty (error pages) or both filled
