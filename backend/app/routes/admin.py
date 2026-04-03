@@ -6,16 +6,15 @@ Summary reprocessing and database maintenance.
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.config import load_prompts, settings, USER_AGENT
+from app.config import load_prompts, settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import (
@@ -384,26 +383,15 @@ def clear_models_cache_endpoint(
     user: dict = Depends(get_current_user),
 ):
     """Clear models cache and model cooldowns."""
-    global _models_cache, _models_cache_time
     from app.services.cerebras import clear_models_cache
 
-    # Clear API-level cache + cooldowns
     clear_models_cache()
-    # Clear admin-level cache
-    _models_cache = None
-    _models_cache_time = None
-
     return {"ok": True}
 
 
 # =============================================================================
 # AI Models and Languages
 # =============================================================================
-
-# Cache for Cerebras models (avoid hitting API on every request)
-_models_cache: Optional[List[dict]] = None
-_models_cache_time: Optional[datetime] = None
-MODELS_CACHE_TTL = timedelta(minutes=30)
 
 
 class ModelInfo(BaseModel):
@@ -412,80 +400,28 @@ class ModelInfo(BaseModel):
 
 
 @router.get("/models", response_model=List[ModelInfo])
-async def get_available_models(user: dict = Depends(get_current_user)):
+async def list_available_models(
+    user: dict = Depends(get_current_user),
+):
     """
-    Fetch available models from Cerebras API.
-    Results are cached for 30 minutes.
+    Fetch available models from AI API.
+    Results are cached for 30 minutes (via cerebras._api).
     Requires authentication.
     """
-    global _models_cache, _models_cache_time
-
-    # Check cache
-    now = datetime.utcnow()
-    if _models_cache and _models_cache_time:
-        if now - _models_cache_time < MODELS_CACHE_TTL:
-            return _models_cache
-
-    # Get API key from DB settings or env fallback
-    from app.routes.preferences import (
-        get_effective_cerebras_api_keys,
-        get_effective_api_base_url,
+    from app.services.cerebras._api import (
+        get_available_models as fetch_models,
     )
 
-    db_session = next(get_db())
     try:
-        api_keys = get_effective_cerebras_api_keys(db_session)
-        api_base_url = get_effective_api_base_url(db_session)
-    finally:
-        db_session.close()
-
-    if not api_keys:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No Cerebras API key configured",
-        )
-
-    api_key = api_keys[0]  # Use first key for metadata requests
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=10,
-            headers={"User-Agent": USER_AGENT},
-        ) as client:
-            response = await client.get(
-                f"{api_base_url}/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-            )
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Cerebras models API error: {response.status_code}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="Failed to fetch models from Cerebras",
-                )
-
-            data = response.json()
-            models = [
-                ModelInfo(id=m["id"], owned_by=m.get("owned_by", "unknown"))
-                for m in data.get("data", [])
-            ]
-
-            # Sort by id
-            models.sort(key=lambda m: m.id)
-
-            # Cache results
-            _models_cache = models
-            _models_cache_time = now
-
-            return models
-
-    except httpx.RequestError as e:
-        logger.error(f"Error fetching Cerebras models: {e}")
+        model_ids = await fetch_models()
+        return [
+            ModelInfo(id=m, owned_by="provider") for m in sorted(model_ids)
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching models: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to connect to Cerebras API",
+            detail="Failed to fetch models from AI API",
         )
 
 

@@ -3,6 +3,7 @@ Cerebras client for AI summary generation.
 API calls, tag translation, model fallback, and orchestration.
 """
 
+import asyncio
 import json
 import logging
 from datetime import datetime
@@ -51,6 +52,9 @@ from app.services.cerebras._prompts import (
 
 logger = logging.getLogger(__name__)
 
+# Global lock: only one AI API call at a time (LM Studio limitation)
+_api_lock = asyncio.Lock()
+
 
 def _get_api_base_url() -> str:
     """Get the effective API base URL from preferences."""
@@ -82,7 +86,7 @@ def clear_models_cache():
 
 
 async def get_available_models() -> List[str]:
-    """Fetch available model IDs from Cerebras API (cached 30 min)."""
+    """Fetch available model IDs from API (cached 30 min)."""
     global _available_models_cache, _available_models_cache_time
 
     now = datetime.utcnow()
@@ -95,7 +99,7 @@ async def get_available_models() -> List[str]:
         return []
 
     try:
-        async with httpx.AsyncClient(
+        async with _api_lock, httpx.AsyncClient(
             timeout=MODELS_FETCH_TIMEOUT,
             headers={"User-Agent": USER_AGENT},
         ) as client:
@@ -390,10 +394,18 @@ async def generate_summary(
     if not title_only and is_garbage_content(content):
         raise GarbageContentError("Content detected as error/session page")
 
+    async with _api_lock:
+        return await _generate_summary_locked(content, title, title_only)
+
+
+async def _generate_summary_locked(
+    content: str, title: str, title_only: bool
+) -> SummaryResult:
+    """Inner implementation, called under _api_lock."""
     # Get API key
     api_key, key_index = api_key_rotator.get_next_key()
     if not api_key:
-        raise TemporaryError("All API keys are in cooldown")
+        raise TemporaryError("No API key configured")
 
     # Truncate content if too large
     max_content_len = MAX_CONTENT_LENGTH
@@ -444,7 +456,6 @@ async def call_llm_json(
 ) -> dict:
     """
     Generic LLM call expecting a JSON response.
-    Reuses circuit breaker, API key rotation, and model fallback.
     Used for topic suggestions, curation, etc.
 
     Returns:
@@ -454,6 +465,19 @@ async def call_llm_json(
         TemporaryError: Temporary error (retry possible)
         PermanentError: Permanent error
     """
+    async with _api_lock:
+        return await _call_llm_json_locked(
+            system_prompt, user_prompt, max_tokens, temperature
+        )
+
+
+async def _call_llm_json_locked(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int,
+    temperature: float,
+) -> dict:
+    """Inner implementation, called under _api_lock."""
     # Get API key
     api_key, key_index = api_key_rotator.get_next_key()
     if not api_key:
