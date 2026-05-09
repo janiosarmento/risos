@@ -79,6 +79,37 @@ document.addEventListener('alpine:init', () => {
             this.confirmModal.loading = false;
         },
 
+        // Font scale
+        fontScale: parseInt(sessionStorage.getItem('rss_font_scale') ?? '2', 10),
+        fontScales: [0.88, 0.94, 1.00, 1.12, 1.25],
+
+        applyFontScale() {
+            const scale = this.fontScales[this.fontScale];
+            document.documentElement.style.fontSize = (scale * 100) + '%';
+        },
+
+        increaseFontScale() {
+            if (this.fontScale < this.fontScales.length - 1) {
+                this.fontScale++;
+                sessionStorage.setItem('rss_font_scale', this.fontScale);
+                this.applyFontScale();
+            }
+        },
+
+        decreaseFontScale() {
+            if (this.fontScale > 0) {
+                this.fontScale--;
+                sessionStorage.setItem('rss_font_scale', this.fontScale);
+                this.applyFontScale();
+            }
+        },
+
+        resetFontScale() {
+            this.fontScale = 2;
+            sessionStorage.removeItem('rss_font_scale');
+            document.documentElement.style.fontSize = '';
+        },
+
         // Theme
         theme: localStorage.getItem('rss_theme') || 'system',
         availableThemes: [

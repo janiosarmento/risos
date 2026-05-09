@@ -396,6 +396,12 @@ function app() {
 
         // UI wrappers (delegate to UIStore — keeps existing method calls unchanged)
         applyTheme() { Alpine.store('ui').applyTheme(); },
+        get fontScale() { return Alpine.store('ui').fontScale; },
+        get fontScaleMin() { return Alpine.store('ui').fontScale === 0; },
+        get fontScaleMax() { return Alpine.store('ui').fontScale === Alpine.store('ui').fontScales.length - 1; },
+        increaseFontScale() { Alpine.store('ui').increaseFontScale(); },
+        decreaseFontScale() { Alpine.store('ui').decreaseFontScale(); },
+        resetFontScale() { Alpine.store('ui').resetFontScale(); },
         showToast(message, type = 'info', autoClose = true) {
             Alpine.store('ui').showToast(message, type, autoClose, this.toastTimeoutSeconds);
         },
@@ -456,8 +462,9 @@ function app() {
                 this.loadLocale(this.locale),
             ]);
 
-            // Apply theme and listen for system theme changes
+            // Apply theme and font scale
             this.applyTheme();
+            Alpine.store('ui').applyFontScale();
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (this.theme === 'system') {
                     this.applyTheme();
@@ -828,6 +835,7 @@ function app() {
             }
             this.token = null;
             sessionStorage.removeItem('rss_token');
+            this.resetFontScale();
             this.feeds = [];
             this.categories = [];
             this.posts = [];
