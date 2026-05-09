@@ -66,4 +66,19 @@ _Add a brief overview of your project architecture_
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+### Versioning
+
+A versão do app fica em `htdocs/index.html`:
+
+```html
+<script>var APP_VERSION = 'YYYYMMDD[letra]';</script>
+```
+
+Formato: data do dia (`YYYYMMDD`) + sufixo de letra incrementado a cada build do dia (`a`, `b`, `c`, ...).
+
+**A cada commit com mudança de código, atualizar a versão antes de commitar.**
+
+Exemplos:
+- Primeiro build do dia 2026-05-09 → `20260509a`
+- Segundo build no mesmo dia → `20260509b`
+- Primeiro build do dia seguinte → `20260510a`
