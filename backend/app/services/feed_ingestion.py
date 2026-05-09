@@ -6,6 +6,7 @@ Integrates parser, normalization, sanitization and deduplication.
 import logging
 from datetime import datetime
 from typing import Optional, Tuple
+from urllib.parse import urljoin
 
 from sqlalchemy.orm import Session
 
@@ -122,15 +123,18 @@ def _process_entry(
     Returns:
         Tuple of (created Post or None, error or None)
     """
+    # Resolve relative URLs against the feed URL
+    entry_url = urljoin(feed.url, entry.url) if entry.url else entry.url
+
     # Normalize URL
-    normalized_url = normalize_url(entry.url)
+    normalized_url = normalize_url(entry_url)
 
     # Sanitize content
     content = sanitize_html(entry.content, truncate=True)
 
     # Compute hash (includes title and URL to avoid collisions)
     content_hash = compute_content_hash(
-        entry.content, title=entry.title, url=entry.url
+        entry.content, title=entry.title, url=entry_url
     )
 
     # Check for duplicates by GUID
@@ -170,7 +174,7 @@ def _process_entry(
     post = Post(
         feed_id=feed.id,
         guid=entry.guid,
-        url=entry.url,
+        url=entry_url,
         normalized_url=normalized_url,
         title=entry.title,
         author=entry.author,
