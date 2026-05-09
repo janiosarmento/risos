@@ -66,6 +66,22 @@ _Add a brief overview of your project architecture_
 
 ## Conventions & Patterns
 
+### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org):
+
+```
+<type>: <descrição imperativa em inglês>
+```
+
+Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+
+Exemplos:
+- `feat: add keyboard shortcut for marking all as read`
+- `fix: resolve relative URLs in feed entries`
+- `docs: document versioning convention`
+- `refactor: extract URL resolution to helper function`
+
 ### Versioning
 
 A versão do app fica em `htdocs/index.html`:
