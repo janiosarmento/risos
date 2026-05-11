@@ -804,6 +804,11 @@ const settingsMixin = {
         this.userPrompt = this.defaultUserPrompt;
     },
 
+    async onApiBaseUrlChange() {
+        await this.saveAiSettings();
+        await this.clearModelsCache();
+    },
+
     async saveAiSettings() {
         try {
             const payload = {
