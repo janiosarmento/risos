@@ -71,6 +71,7 @@
     "skipSummaryTooltip": "Don't generate AI summary for this post",
     "skipSummaryActiveTooltip": "AI summary generation is disabled for this post",
     "cannotRegenerateSkipped": "This post is marked as skipped. Remove the skip first.",
+    "summaryQueued": "Waiting in queue — click to generate now",
     "tryGenerate": "Try to generate summary",
     "generateFailed": "Could not generate summary for this post.",
     "antiBot": "The page has anti-bot protection",

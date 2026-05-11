@@ -579,59 +579,22 @@ async def get_post(
             one_line_summary = summary.one_line_summary
             translated_title = summary.translated_title
             summary_status = "ready"
-        elif (
-            content_for_summary
-            and len(content_for_summary.strip()) > 100
-            and not post.skip_summary
-        ):
-            # Generate on-demand summary if there's enough content and not skipped
-            try:
-                logger.info(f"Generating on-demand summary for post {post.id}")
-                result = await generate_summary(
-                    content_for_summary, title=post.title
-                )
-
-                # Append model attribution to summary
-                summary_with_model = result.summary_pt
-                if summary_with_model and result.model:
-                    summary_with_model += f"\n\n— {result.model}"
-
-                # Save to database
-                new_summary = AISummary(
+        elif not post.skip_summary:
+            # No summary yet — ensure it's in the queue (high priority).
+            # Never generate on-demand; let the user trigger that explicitly.
+            existing_queue = (
+                db.query(SummaryQueue)
+                .filter(SummaryQueue.post_id == post.id)
+                .first()
+            )
+            if not existing_queue and content_for_summary:
+                db.add(SummaryQueue(
+                    post_id=post.id,
                     content_hash=post.content_hash,
-                    summary_pt=summary_with_model,
-                    one_line_summary=result.one_line_summary,
-                    translated_title=result.translated_title,
-                )
-                db.add(new_summary)
-
-                if result.tags:
-                    save_post_tags(db, post.id, result.tags)
-
+                    priority=1,  # Higher than background (0)
+                ))
                 db.commit()
-
-                summary_pt = summary_with_model
-                one_line_summary = result.one_line_summary
-                translated_title = result.translated_title
-                summary_status = "ready"
-
-            except GarbageContentError as e:
-                logger.info(f"Post {post.id}: {e}, marked skip_summary")
-                post.skip_summary = True
-                db.commit()
-                summary_status = "failed"
-            except CerebrasError as e:
-                logger.warning(
-                    f"Failed to generate summary for post {post.id}: {e}"
-                )
-                summary_status = "pending"  # Temporary, can retry later
-            except Exception as e:
-                logger.error(
-                    f"Unexpected error generating summary for post {post.id}: {e}"
-                )
-                post.skip_summary = True
-                db.commit()
-                summary_status = "failed"
+            summary_status = "queued"
 
     # Compute matched and ignored tags
     post_tags = [pt.tag for pt in post.tags]
