@@ -772,7 +772,12 @@ const settingsMixin = {
             const models = await this.fetchApi('/admin/models');
             this.availableModels = models || [];
             const saved = this.cerebrasModel;
-            this.$nextTick(() => { this.cerebrasModel = saved; });
+            const savedExists = models && models.some(m => m.id === saved);
+            if (savedExists) {
+                this.$nextTick(() => { this.cerebrasModel = saved; });
+            } else if (models && models.length > 0) {
+                this.setCerebrasModel(models[0].id);
+            }
         } catch (e) {
             console.warn('Failed to load AI models:', e);
             this.availableModels = [];
