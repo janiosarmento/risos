@@ -769,6 +769,11 @@ class Scheduler:
                             f"Summary generated successfully for post {post.id}"
                         )
 
+                        # Throttle automatic queue to reduce rate limit pressure.
+                        # Manual requests (generate/regenerate) bypass this.
+                        from app.services.cerebras._constants import SUMMARY_QUEUE_SLEEP_SECONDS
+                        await asyncio.sleep(SUMMARY_QUEUE_SLEEP_SECONDS)
+
                     except GarbageContentError as e:
                         # Content is unusable — mark skip and remove from queue
                         post.skip_summary = True
