@@ -32,4 +32,4 @@ DEFAULT_KEY_COOLDOWN_SECONDS = 60
 
 # Throttle between automatic summary generations to avoid hitting rate limits.
 # Manual requests (generate/regenerate) bypass this delay.
-SUMMARY_QUEUE_SLEEP_SECONDS = 5
+SUMMARY_QUEUE_SLEEP_SECONDS = 15
