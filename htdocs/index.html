@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260511e';</script>
+    <script>var APP_VERSION = '20260513a';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
@@ -1538,6 +1538,16 @@
                                                         <option :value="cat.id" x-text="cat.name"></option>
                                                     </template>
                                                 </select>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap" x-text="t('feeds.feedWeight')"></label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        x-model.number="editingFeed.weight"
+                                                        class="w-16 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                                    >
+                                                </div>
                                                 <button
                                                     @click="saveFeed()"
                                                     class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"

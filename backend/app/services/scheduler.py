@@ -542,7 +542,7 @@ class Scheduler:
 
     async def _job_process_summaries(self):
         """Job to process AI summary queue."""
-        from app.models import SummaryQueue, AISummary, SummaryFailure, Post
+        from app.models import SummaryQueue, AISummary, SummaryFailure, Post, Feed
         from app.services.cerebras import (
             generate_summary,
             circuit_breaker,
@@ -584,9 +584,14 @@ class Scheduler:
                         seconds=settings.summary_lock_timeout_seconds
                     )
 
-                    # Find next eligible item
+                    # Find next eligible item.
+                    # Re-evaluated every iteration so high-weight posts added
+                    # after queue start immediately preempt lower-weight ones.
+                    # Order: user-requested (priority) → feed weight → newest first
                     candidate = (
                         db.query(SummaryQueue)
+                        .join(Post, SummaryQueue.post_id == Post.id)
+                        .join(Feed, Post.feed_id == Feed.id)
                         .filter(
                             (SummaryQueue.locked_at.is_(None))
                             | (SummaryQueue.locked_at < lock_timeout),
@@ -595,7 +600,8 @@ class Scheduler:
                         )
                         .order_by(
                             SummaryQueue.priority.desc(),
-                            SummaryQueue.created_at.desc(),
+                            Feed.weight.desc(),
+                            Post.published_at.desc(),
                         )
                         .first()
                     )

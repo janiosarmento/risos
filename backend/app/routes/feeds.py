@@ -104,6 +104,7 @@ def list_feeds(
             "created_at": feed.created_at,
             "unread_count": unread_count,
             "starred_count": starred_count,
+            "weight": feed.weight or 0,
         }
         result.append(FeedResponse(**feed_dict))
 
@@ -291,6 +292,7 @@ async def create_feed(
         disabled_at=db_feed.disabled_at,
         created_at=db_feed.created_at,
         unread_count=unread_count,
+        weight=db_feed.weight or 0,
     )
 
 
@@ -513,6 +515,7 @@ def get_feed(
         disabled_at=feed.disabled_at,
         created_at=feed.created_at,
         unread_count=unread_count,
+        weight=feed.weight or 0,
     )
 
 
@@ -562,6 +565,8 @@ def update_feed(
         feed.category_id = (
             feed_update.category_id if feed_update.category_id != 0 else None
         )
+    if feed_update.weight is not None:
+        feed.weight = max(0, feed_update.weight)
 
     db.commit()
     db.refresh(feed)

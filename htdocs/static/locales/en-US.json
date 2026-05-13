@@ -268,6 +268,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "noFeeds": "No feeds added",
+    "feedWeight": "Priority weight",
     "unreadCount": "unread",
     "refresh": "Refresh feed now",
     "refreshResult": "{new} new posts, {skipped} skipped",

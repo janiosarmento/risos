@@ -63,6 +63,9 @@ class Feed(Base):
     # URL deduplication bypass
     allow_duplicate_urls = Column(Boolean, default=False)
 
+    # Summary queue priority weight (higher = processed first)
+    weight = Column(Integer, default=0)
+
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
 

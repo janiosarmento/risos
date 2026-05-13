@@ -89,6 +89,7 @@ class FeedCreate(BaseModel):
     url: str
     title: Optional[str] = None
     category_id: Optional[int] = None
+    weight: int = 0
 
 
 class FeedUpdate(BaseModel):
@@ -97,6 +98,7 @@ class FeedUpdate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
     category_id: Optional[int] = None
+    weight: Optional[int] = None
 
 
 class FeedResponse(BaseModel):
@@ -114,6 +116,7 @@ class FeedResponse(BaseModel):
     created_at: datetime
     unread_count: Optional[int] = 0
     starred_count: Optional[int] = 0
+    weight: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
