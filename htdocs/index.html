@@ -50,8 +50,19 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260513a';</script>
+    <script>var APP_VERSION = '20260513b';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
+    <script>
+      (function() {
+        var locale = localStorage.getItem('rss_locale') || 'pt-BR';
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'fetch';
+        link.crossOrigin = 'anonymous';
+        link.href = '/static/locales/' + locale + '.json?v=' + APP_VERSION;
+        document.head.appendChild(link);
+      })();
+    </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
     <!-- SVG Sprite Sheet -->
@@ -160,7 +171,14 @@
         </symbol>
     </svg>
 
-    <div x-data="app()" x-init="init()" x-cloak class="h-screen flex flex-col">
+    <div id="i18n-loading" class="h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <svg class="w-8 h-8 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+    </div>
+
+    <div x-data="app()" x-init="init()" x-cloak x-show="$store('i18n').ready" class="h-screen flex flex-col">
 
         <!-- Health Warning Banner -->
         <div x-show="healthWarning" class="bg-yellow-600 text-yellow-100 px-4 py-2 text-sm flex items-center justify-between">

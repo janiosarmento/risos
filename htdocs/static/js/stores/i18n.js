@@ -6,6 +6,7 @@ document.addEventListener('alpine:init', () => {
         locale: localStorage.getItem('rss_locale') || null,
         translations: {},
         availableLocales: [],
+        ready: false,
 
         async loadAvailableLocales() {
             try {
@@ -55,6 +56,10 @@ document.addEventListener('alpine:init', () => {
                 }
             } catch (e) {
                 console.error('Failed to load locale:', locale, e);
+            } finally {
+                this.ready = true;
+                const el = document.getElementById('i18n-loading');
+                if (el) el.remove();
             }
         }
     });
