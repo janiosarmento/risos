@@ -72,6 +72,7 @@
     "skipSummaryActiveTooltip": "Geração de resumo IA desativada para este post",
     "cannotRegenerateSkipped": "Este post está marcado para pular. Remova o skip primeiro.",
     "summaryQueued": "Aguardando na fila — clique para gerar agora",
+    "noSummary": "Este post não tem resumo.",
     "tryGenerate": "Tentar gerar resumo",
     "generateFailed": "Não foi possível gerar resumo para este post.",
     "antiBot": "A página tem proteção anti-bot",

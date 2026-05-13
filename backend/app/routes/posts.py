@@ -580,21 +580,14 @@ async def get_post(
             translated_title = summary.translated_title
             summary_status = "ready"
         elif not post.skip_summary:
-            # No summary yet — ensure it's in the queue (high priority).
-            # Never generate on-demand; let the user trigger that explicitly.
+            # No summary yet. Check if already in background queue.
+            # Never auto-enqueue on open — only explicit user action triggers generation.
             existing_queue = (
                 db.query(SummaryQueue)
                 .filter(SummaryQueue.post_id == post.id)
                 .first()
             )
-            if not existing_queue and content_for_summary:
-                db.add(SummaryQueue(
-                    post_id=post.id,
-                    content_hash=post.content_hash,
-                    priority=1,  # Higher than background (0)
-                ))
-                db.commit()
-            summary_status = "queued"
+            summary_status = "queued" if existing_queue else "pending"
 
     # Compute matched and ignored tags
     post_tags = [pt.tag for pt in post.tags]

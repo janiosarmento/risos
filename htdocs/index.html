@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260513b';</script>
+    <script>var APP_VERSION = '20260513c';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
     <script>
       (function() {
@@ -1044,9 +1044,9 @@
                                                     </div>
                                                 </template>
                                                 <template x-if="currentPost.summary_status === 'pending'">
-                                                    <div class="text-gray-500 italic flex items-center gap-2">
-                                                        <svg class="animate-spin h-4 w-4"><use href="#icon-spinner"/></svg>
-                                                        <span x-text="t('modal.generating')"></span>
+                                                    <div class="text-gray-500 text-sm">
+                                                        <p class="italic mb-2" x-text="t('modal.noSummary')"></p>
+                                                        <button @click="regenerateSummary()" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs" :disabled="regeneratingSummary" x-text="t('modal.tryGenerate')"></button>
                                                     </div>
                                                 </template>
                                                 <template x-if="currentPost.summary_status === 'queued'">
@@ -1271,11 +1271,9 @@
                             </template>
                             <!-- Gerando resumo -->
                             <template x-if="currentPost.summary_status === 'pending'">
-                                <div class="text-gray-500 dark:text-gray-300 italic">
-                                    <div class="flex items-center gap-2">
-                                        <svg class="animate-spin h-4 w-4"><use href="#icon-spinner"/></svg>
-                                        <span x-text="t('modal.generating')"></span>
-                                    </div>
+                                <div class="text-gray-500 dark:text-gray-300">
+                                    <p class="italic mb-4" x-text="t('modal.noSummary')"></p>
+                                    <button @click="regenerateSummary()" class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm" :disabled="regeneratingSummary" x-text="t('modal.tryGenerate')"></button>
                                 </div>
                             </template>
                             <!-- Aguardando na fila -->
