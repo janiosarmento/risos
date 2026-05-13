@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260513c';</script>
+    <script>var APP_VERSION = '20260513d';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
     <script>
       (function() {
@@ -178,7 +178,7 @@
         </svg>
     </div>
 
-    <div x-data="app()" x-init="init()" x-cloak x-show="$store('i18n').ready" class="h-screen flex flex-col">
+    <div id="app-root" x-data="app()" x-init="init()" x-cloak style="display:none" class="h-screen flex flex-col">
 
         <!-- Health Warning Banner -->
         <div x-show="healthWarning" class="bg-yellow-600 text-yellow-100 px-4 py-2 text-sm flex items-center justify-between">

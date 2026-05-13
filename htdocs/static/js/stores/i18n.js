@@ -58,8 +58,10 @@ document.addEventListener('alpine:init', () => {
                 console.error('Failed to load locale:', locale, e);
             } finally {
                 this.ready = true;
-                const el = document.getElementById('i18n-loading');
-                if (el) el.remove();
+                const loading = document.getElementById('i18n-loading');
+                if (loading) loading.remove();
+                const app = document.getElementById('app-root');
+                if (app) app.style.display = '';
             }
         }
     });
