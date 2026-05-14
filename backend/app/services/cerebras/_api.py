@@ -423,9 +423,20 @@ async def _generate_summary_locked(
         preferred_model = get_effective_cerebras_model(db)
         effective_language = get_effective_summary_language(db)
 
-        # Build message list (reused across model attempts)
+        # Build message list (reused across model attempts).
+        # System content uses array format so Anthropic prompt caching works.
+        # LiteLLM flattens this to a plain string for non-Anthropic backends.
         messages = [
-            {"role": "system", "content": get_system_prompt(db)},
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": get_system_prompt(db),
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+            },
             {
                 "role": "user",
                 "content": get_user_prompt(
