@@ -569,7 +569,12 @@ def get_effective_profile_min_tag_freq(db: Session) -> int:
 def get_effective_ai_timeout(db: Session) -> int:
     """Get AI request timeout from app_settings or default 30s."""
     saved = _get_setting(db, PREF_AI_TIMEOUT)
-    return int(saved) if saved else 30
+    if saved:
+        try:
+            return max(5, int(saved))
+        except (ValueError, TypeError):
+            pass
+    return 30
 
 
 def get_effective_api_base_url(db: Session) -> str:
