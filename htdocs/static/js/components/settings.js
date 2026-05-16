@@ -822,7 +822,7 @@ const settingsMixin = {
                 user_prompt: this.userPrompt,
             };
             if (this.apiKeys && !this.apiKeys.includes('****')) {
-                payload.cerebras_api_keys = this.apiKeys;
+                payload.ai_api_keys = this.apiKeys;
             }
             payload.api_base_url = this.apiBaseUrl;
             payload.ai_timeout = parseInt(this.aiTimeout) || 30;
@@ -967,7 +967,7 @@ const settingsMixin = {
                     locale: this.locale,
                     theme: this.theme,
                     summary_language: this.summaryLanguage,
-                    cerebras_model: this.aiModel,
+                    ai_model: this.aiModel,
                     feed_update_interval: this.feedUpdateInterval,
                     max_posts_per_feed: this.maxPostsPerFeed,
                     max_post_age_days: this.maxPostAgeDays,
@@ -1009,7 +1009,7 @@ const settingsMixin = {
 
             // AI settings
             if (serverPrefs.summary_language) this.summaryLanguage = serverPrefs.summary_language;
-            if (serverPrefs.cerebras_model) this.aiModel = serverPrefs.cerebras_model;
+            if (serverPrefs.ai_model) this.aiModel = serverPrefs.ai_model;
             if (serverPrefs.ai_timeout) this.aiTimeout = serverPrefs.ai_timeout;
 
             // Data settings
@@ -1044,7 +1044,7 @@ const settingsMixin = {
             }
 
             // AI keys and prompts
-            if (serverPrefs.cerebras_api_keys) this.apiKeys = serverPrefs.cerebras_api_keys;
+            if (serverPrefs.ai_api_keys) this.apiKeys = serverPrefs.ai_api_keys;
             if (serverPrefs.api_base_url) this.apiBaseUrl = serverPrefs.api_base_url;
             if (serverPrefs.system_prompt) this.systemPrompt = serverPrefs.system_prompt;
             if (serverPrefs.user_prompt) this.userPrompt = serverPrefs.user_prompt;
