@@ -42,6 +42,11 @@ get token() { return Alpine.store('auth').token; },
 set token(v) { Alpine.store('auth').token = v; },
 ```
 
+Computed values that derive from state are also expressed as getters, keeping template bindings clean:
+```js
+get splitPaneStyle() { return this.isSplitMode ? `height: ${this.splitRatio}%` : ''; },
+```
+
 ### Script Loading Order
 All scripts use `defer` and execute in document order:
 1. Stores (auth → i18n → ui → prefs)

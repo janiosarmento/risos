@@ -7,7 +7,7 @@ A self-hosted RSS reader with AI-powered summaries.
 ## Features
 
 - **RSS/Atom Feeds** — Subscribe to any feed, or paste a website URL for auto-discovery
-- **AI Summaries** — Automatic summarization via Cerebras AI (configurable model)
+- **AI Summaries** — Automatic summarization via any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.)
   - Full article extraction for better context
   - Title translation for foreign-language articles (including title-only posts)
   - Automatic model fallback when preferred model fails
@@ -63,7 +63,7 @@ docker-compose up -d
 git clone https://github.com/janiosarmento/risos.git /var/www/risos
 cd /var/www/risos
 sudo ./install.sh
-sudo nano backend/.env  # Set APP_PASSWORD, JWT_SECRET, CEREBRAS_API_KEY
+sudo nano backend/.env  # Set APP_PASSWORD, JWT_SECRET
 sudo systemctl restart risos
 ```
 
@@ -77,10 +77,9 @@ Edit `backend/.env`:
 # Required
 APP_PASSWORD=your_password
 JWT_SECRET=your_secret_key_minimum_32_chars  # openssl rand -hex 32
-CEREBRAS_API_KEY=your_key                    # from https://cloud.cerebras.ai/
 ```
 
-All other settings (AI model, summary language, data retention, interface behavior) are configured in the UI via **Settings > General**. The settings page also shows the app version and a "Clear cache" link for troubleshooting.
+All other settings — including AI API key, base URL, model, summary language, data retention, and interface behavior — are configured in the UI via **Settings**. The settings page also shows the app version and a "Clear cache" link for troubleshooting.
 
 ### Rate Limiting & Reliability
 
@@ -236,7 +235,7 @@ Edit `htdocs/static/locales/en-US.json` or `pt-BR.json`.
 
 - **Backend**: Python, FastAPI, SQLAlchemy, SQLite (WAL mode), APScheduler
 - **Frontend**: Alpine.js, Tailwind CSS (CDN)
-- **AI**: Cerebras API (multiple models with automatic fallback), optional Ollama for local batch processing
+- **AI**: Any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.) with automatic model fallback and circuit breaker
 
 ## Development
 
@@ -262,7 +261,7 @@ python scripts/regenerate.py --batch-size 100
 # Force re-generate ALL starred posts
 python scripts/regenerate.py --starred
 
-# Use local Ollama model instead of Cerebras
+# Use local model (via --local flag)
 python scripts/regenerate.py --local --batch-size 50
 
 # Smart tag merge: stem clustering + LLM refinement (dry run)
@@ -270,9 +269,6 @@ python scripts/smart_merge_tags.py
 
 # Apply merges after review
 python scripts/smart_merge_tags.py --apply
-
-# Translate non-English tags to English
-python scripts/translate_all_tags.py
 ```
 
 ---
