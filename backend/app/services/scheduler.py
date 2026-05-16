@@ -222,14 +222,15 @@ class Scheduler:
         from app.services.feed_ingestion import ingest_feed
         from app.models import Feed
 
-        interval = settings.feed_update_interval_minutes * 60
-
         while self._running and self.is_leader:
+            interval = 30 * 60  # default 30 minutes
             try:
                 logger.info("Job update_feeds: starting...")
 
                 db = SessionLocal()
                 try:
+                    from app.routes.preferences import get_effective_feed_update_interval
+                    interval = get_effective_feed_update_interval(db) * 60
                     now = datetime.utcnow()
 
                     # Find eligible feeds
@@ -377,6 +378,10 @@ class Scheduler:
                 start_time = datetime.utcnow()
 
                 try:
+                    from app.routes.preferences import (
+                        get_effective_max_post_age_days,
+                        get_effective_max_unread_days,
+                    )
                     posts_removed = 0
                     full_content_cleared = 0
                     unread_removed = 0
@@ -384,7 +389,7 @@ class Scheduler:
                     # 1. Remove posts read more than MAX_POST_AGE_DAYS ago
                     # (except favorites which are never removed)
                     cutoff_read = now - timedelta(
-                        days=settings.max_post_age_days
+                        days=get_effective_max_post_age_days(db)
                     )
                     result = (
                         db.query(Post)
@@ -402,7 +407,7 @@ class Scheduler:
                     # 2. Remove unread posts older than MAX_UNREAD_DAYS
                     # (except favorites and keep_unread which are never removed)
                     cutoff_unread = now - timedelta(
-                        days=settings.max_unread_days
+                        days=get_effective_max_unread_days(db)
                     )
                     result = (
                         db.query(Post)

@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from typing import List, Optional
 
-from app.config import load_prompts, settings
+from app.config import load_prompts
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def get_user_prompt(
     """
     Returns the user prompt with content, title, language, and date interpolated.
     Reads template from DB settings or prompts.yaml fallback.
-    If language is not provided, uses settings.summary_language as fallback.
+    If language is not provided, uses "Brazilian Portuguese" as fallback.
     """
     if db:
         from app.routes.preferences import (
@@ -79,7 +79,7 @@ def get_user_prompt(
         )
         tags_count = 7
     prompt = template.format(
-        language=language or settings.summary_language,
+        language=language or "Brazilian Portuguese",
         content=content,
         title=title or "Untitled",
         date=datetime.now().strftime("%Y-%m-%d"),

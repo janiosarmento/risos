@@ -1,6 +1,5 @@
 """
-Application configuration using pydantic-settings.
-Loads environment variables from .env file.
+Bootstrap configuration — operational settings live in the database.
 """
 
 from pathlib import Path
@@ -19,7 +18,7 @@ def load_prompts() -> dict:
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from .env"""
+    """Bootstrap configuration — operational settings live in the database."""
 
     # Database
     database_path: str = "./data/reader.db"
@@ -29,44 +28,13 @@ class Settings(BaseSettings):
     jwt_secret: str
     jwt_expiration_hours: int = 24
 
-    # Cerebras AI
-    cerebras_api_key: str = ""  # Can be comma-separated for multiple keys
-    cerebras_model: str = "llama-3.3-70b"
-
-    @property
-    def cerebras_api_keys(self) -> list:
-        """Returns list of API keys (supports comma-separated values)."""
-        if not self.cerebras_api_key:
-            return []
-        return [
-            k.strip() for k in self.cerebras_api_key.split(",") if k.strip()
-        ]
-
-    cerebras_max_rpm: int = 20
-    cerebras_timeout: int = 30
-    summary_language: str = "Brazilian Portuguese"
-
-    # Circuit Breaker
-    failure_threshold: int = 5
-    recovery_timeout_seconds: int = 300
-    half_open_max_requests: int = 3
-    model_cooldown_minutes: int = 30
-
     # Rate Limiting HTTP
     login_rate_limit: int = 5
     api_rate_limit: int = 100
     feeds_refresh_rate_limit: int = 10
 
     # Retention
-    max_posts_per_feed: int = 500
-    max_post_age_days: int = 365
-    max_unread_days: int = 90
     max_db_size_mb: int = 1024
-
-    # Jobs
-    feed_update_interval_minutes: int = 30
-    summary_lock_timeout_seconds: int = 300
-    cleanup_hour: int = 3
 
     # Proxy
     proxy_timeout_seconds: int = 10
@@ -78,10 +46,6 @@ class Settings(BaseSettings):
 
     # Security
     cors_origins: str = "https://rss.sarmento.org"
-
-    # UI
-    toast_timeout_seconds: int = 2
-    idle_refresh_seconds: int = 180  # 3 minutes
 
     model_config = SettingsConfigDict(
         env_file=".env",
