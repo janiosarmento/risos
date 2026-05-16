@@ -1,1 +1,0 @@
-{"nodes": [{"id": "migration_initial_schema", "label": "Migration: Initial Schema (172dd9c19d31)", "file_type": "code", "source_file": "backend/alembic/versions/172dd9c19d31_initial_schema.py", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}
