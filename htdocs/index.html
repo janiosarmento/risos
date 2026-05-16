@@ -48,10 +48,25 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
+    <!-- App version — update this AND the ?v= query strings on all asset tags below -->
+    <script>var APP_VERSION = '20260516d';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260516d">
+
+    <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
+    <script defer src="/static/js/stores/auth.js?v=20260516d"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260516d"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260516d"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260516d"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260516d"></script>
+    <script defer src="/static/js/components/settings.js?v=20260516d"></script>
+    <script defer src="/static/js/components/curation.js?v=20260516d"></script>
+    <script defer src="/static/js/app.js?v=20260516d"></script>
+
+    <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260516c';</script>
-    <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
+
+    <!-- Locale preload (synchronous — uses APP_VERSION var defined above) -->
     <script>
       (function() {
         var locale = localStorage.getItem('rss_locale') || 'pt-BR';
@@ -2459,16 +2474,6 @@
 
     </div>
 
-    <!-- Stores (loaded before app.js, order matters) -->
-    <script>document.write('<script src="/static/js/stores/auth.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <script>document.write('<script src="/static/js/stores/i18n.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <script>document.write('<script src="/static/js/stores/ui.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <script>document.write('<script src="/static/js/stores/prefs.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <!-- Components (loaded before app.js) -->
-    <script>document.write('<script src="/static/js/components/postDetail.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <script>document.write('<script src="/static/js/components/settings.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <script>document.write('<script src="/static/js/components/curation.js?v=' + APP_VERSION + '"><\/script>');</script>
-    <!-- Main app (must be after stores and components) -->
-    <script>document.write('<script src="/static/js/app.js?v=' + APP_VERSION + '"><\/script>');</script>
+
 </body>
 </html>

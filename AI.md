@@ -485,11 +485,19 @@ journalctl -u rss-reader -f
 
 ### 1. Cache Issues
 **Problem**: Frontend changes don't appear.
-**Solution**: Update `APP_VERSION` in the inline `<script>` in `index.html` `<head>`:
+**Solution**: Update **two things** in `index.html` `<head>`:
+
+1. The `APP_VERSION` JS variable:
 ```html
-<script>var APP_VERSION = '20260227c';</script>
+<script>var APP_VERSION = '20260516d';</script>
 ```
-CSS and JS tags are generated automatically from this value via `document.write`.
+
+2. The `?v=` query string on **every** `<link>` and `<script defer>` asset tag below it (CSS + 8 JS files):
+```html
+<link rel="stylesheet" href="/static/css/app.css?v=20260516d">
+<script defer src="/static/js/stores/auth.js?v=20260516d"></script>
+<!-- ... all 8 script tags ... -->
+```
 
 **Version format**: Use today's date + letter suffix: `20260108a`, `20260108b`, etc.
 Increment the letter for each change on the same day.
