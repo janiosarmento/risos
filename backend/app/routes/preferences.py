@@ -44,6 +44,7 @@ PREF_USER_PROMPT = "pref_user_prompt"
 PREF_BLOCKED_TERMS = "pref_blocked_terms"
 # API base URL
 PREF_API_BASE_URL = "pref_api_base_url"
+PREF_AI_TIMEOUT = "pref_ai_timeout"
 
 
 class PreferencesResponse(BaseModel):
@@ -82,6 +83,7 @@ class PreferencesResponse(BaseModel):
     blocked_terms: Optional[str] = None
     # API base URL
     api_base_url: Optional[str] = None
+    ai_timeout: int = 30
 
 
 class PreferencesUpdate(BaseModel):
@@ -110,6 +112,7 @@ class PreferencesUpdate(BaseModel):
     user_prompt: Optional[str] = None
     blocked_terms: Optional[str] = None
     api_base_url: Optional[str] = None
+    ai_timeout: Optional[int] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -158,6 +161,7 @@ def get_preferences(
         PREF_USER_PROMPT,
         PREF_BLOCKED_TERMS,
         PREF_API_BASE_URL,
+        PREF_AI_TIMEOUT,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -226,6 +230,7 @@ def get_preferences(
         or load_prompts().get("user_prompt", ""),
         blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
         api_base_url=prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
+        ai_timeout=int_or_default(prefs[PREF_AI_TIMEOUT], 30),
     )
 
 
@@ -329,6 +334,9 @@ def update_preferences(
     if prefs.api_base_url is not None:
         cleaned_url = prefs.api_base_url.strip().rstrip("/")
         _set_setting(db, PREF_API_BASE_URL, cleaned_url)
+
+    if prefs.ai_timeout is not None:
+        _set_setting(db, PREF_AI_TIMEOUT, str(prefs.ai_timeout))
 
     if prefs.blocked_terms is not None:
         # Clean, sort, and store
@@ -556,6 +564,12 @@ def get_effective_profile_min_tag_freq(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 2  # Default: tag must appear in at least 2 liked posts
+
+
+def get_effective_ai_timeout(db: Session) -> int:
+    """Get AI request timeout from app_settings or default 30s."""
+    saved = _get_setting(db, PREF_AI_TIMEOUT)
+    return int(saved) if saved else 30
 
 
 def get_effective_api_base_url(db: Session) -> str:
