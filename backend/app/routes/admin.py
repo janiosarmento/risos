@@ -406,7 +406,7 @@ async def list_available_models(
 ):
     """
     Fetch available models from AI API.
-    Results are cached for 30 minutes (via cerebras._api).
+    Results are cached for 30 minutes (via ai._api).
     Requires authentication.
     """
     from app.services.ai._api import (

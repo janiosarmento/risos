@@ -33,11 +33,11 @@ class ApiKeyRotator:
 
     def _get_keys(self) -> list:
         """Get API keys from DB settings or env fallback."""
-        from app.routes.preferences import get_effective_cerebras_api_keys
+        from app.routes.preferences import get_effective_ai_api_keys
 
         db = SessionLocal()
         try:
-            return get_effective_cerebras_api_keys(db)
+            return get_effective_ai_api_keys(db)
         finally:
             db.close()
 
@@ -195,25 +195,25 @@ class CircuitBreaker:
                 .filter(
                     AppSettings.key.in_(
                         [
-                            "cerebras_state",
-                            "cerebras_failures",
-                            "cerebras_half_successes",
-                            "cerebras_last_failure",
-                            "cerebras_last_call",
+                            "ai_state",
+                            "ai_failures",
+                            "ai_half_successes",
+                            "ai_last_failure",
+                            "ai_last_call",
                         ]
                     )
                 )
                 .all()
             ):
-                if row.key == "cerebras_state":
+                if row.key == "ai_state":
                     self.state = CircuitState(row.value)
-                elif row.key == "cerebras_failures":
+                elif row.key == "ai_failures":
                     self.failures = int(row.value)
-                elif row.key == "cerebras_half_successes":
+                elif row.key == "ai_half_successes":
                     self.half_successes = int(row.value)
-                elif row.key == "cerebras_last_failure":
+                elif row.key == "ai_last_failure":
                     self.last_failure = datetime.fromisoformat(row.value)
-                elif row.key == "cerebras_last_call":
+                elif row.key == "ai_last_call":
                     self.last_call = datetime.fromisoformat(row.value)
 
         finally:
@@ -224,17 +224,17 @@ class CircuitBreaker:
         db = SessionLocal()
         try:
             updates = {
-                "cerebras_state": self.state.value,
-                "cerebras_failures": str(self.failures),
-                "cerebras_half_successes": str(self.half_successes),
+                "ai_state": self.state.value,
+                "ai_failures": str(self.failures),
+                "ai_half_successes": str(self.half_successes),
             }
 
             if self.last_failure:
-                updates["cerebras_last_failure"] = (
+                updates["ai_last_failure"] = (
                     self.last_failure.isoformat()
                 )
             if self.last_call:
-                updates["cerebras_last_call"] = self.last_call.isoformat()
+                updates["ai_last_call"] = self.last_call.isoformat()
 
             for key, value in updates.items():
                 existing = (
