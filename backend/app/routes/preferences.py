@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.config import load_prompts, settings as env_settings
+from app.config import load_prompts
 from app.services.cerebras._constants import DEFAULT_API_BASE_URL
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -185,29 +185,29 @@ def get_preferences(
         theme=prefs[PREF_THEME],
         # AI settings
         summary_language=prefs[PREF_SUMMARY_LANGUAGE]
-        or env_settings.summary_language,
+        or "Brazilian Portuguese",
         cerebras_model=prefs[PREF_CEREBRAS_MODEL]
-        or env_settings.cerebras_model,
+        or "llama-3.3-70b",
         # Data settings
         feed_update_interval=int_or_default(
             prefs[PREF_FEED_UPDATE_INTERVAL],
-            env_settings.feed_update_interval_minutes,
+            30,
         ),
         max_posts_per_feed=int_or_default(
-            prefs[PREF_MAX_POSTS_PER_FEED], env_settings.max_posts_per_feed
+            prefs[PREF_MAX_POSTS_PER_FEED], 500
         ),
         max_post_age_days=int_or_default(
-            prefs[PREF_MAX_POST_AGE_DAYS], env_settings.max_post_age_days
+            prefs[PREF_MAX_POST_AGE_DAYS], 365
         ),
         max_unread_days=int_or_default(
-            prefs[PREF_MAX_UNREAD_DAYS], env_settings.max_unread_days
+            prefs[PREF_MAX_UNREAD_DAYS], 90
         ),
         # Interface settings
         toast_timeout_seconds=int_or_default(
-            prefs[PREF_TOAST_TIMEOUT], env_settings.toast_timeout_seconds
+            prefs[PREF_TOAST_TIMEOUT], 2
         ),
         idle_refresh_seconds=int_or_default(
-            prefs[PREF_IDLE_REFRESH], env_settings.idle_refresh_seconds
+            prefs[PREF_IDLE_REFRESH], 180
         ),
         reading_mode=prefs[PREF_READING_MODE] or "fullscreen",
         split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
@@ -218,11 +218,11 @@ def get_preferences(
         ),
         # AI keys and prompts
         cerebras_api_keys=_mask_keys(
-            prefs[PREF_CEREBRAS_API_KEYS] or env_settings.cerebras_api_key
+            prefs[PREF_CEREBRAS_API_KEYS] or ""
         ),
         tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
         model_cooldown_minutes=int_or_default(
-            prefs[PREF_MODEL_COOLDOWN], env_settings.model_cooldown_minutes
+            prefs[PREF_MODEL_COOLDOWN], 30
         ),
         system_prompt=prefs[PREF_SYSTEM_PROMPT]
         or load_prompts().get("system_prompt", ""),
@@ -404,17 +404,11 @@ def _mask_keys(raw: str) -> str:
 
 
 def get_effective_cerebras_api_keys(db: Session) -> list:
-    """Get API keys from app_settings or env default."""
+    """Get API keys from app_settings."""
     saved = _get_setting(db, PREF_CEREBRAS_API_KEYS)
-    if saved:
-        return [k.strip() for k in saved.split(",") if k.strip()]
-    # Fallback to .env
-    keys = env_settings.cerebras_api_keys
-    if keys:
-        # Save to DB for future reads
-        _set_setting(db, PREF_CEREBRAS_API_KEYS, env_settings.cerebras_api_key)
-        db.commit()
-    return keys
+    if not saved:
+        return []
+    return [k.strip() for k in saved.split(",") if k.strip()]
 
 
 def get_effective_system_prompt(db: Session) -> str:
@@ -444,81 +438,73 @@ def get_effective_user_prompt(db: Session) -> str:
 
 
 def get_effective_summary_language(db: Session) -> str:
-    """Get summary language from app_settings or env default."""
     saved = _get_setting(db, PREF_SUMMARY_LANGUAGE)
-    return saved or env_settings.summary_language
+    return saved or "Brazilian Portuguese"
 
 
 def get_effective_cerebras_model(db: Session) -> str:
-    """Get Cerebras model from app_settings or env default."""
     saved = _get_setting(db, PREF_CEREBRAS_MODEL)
-    return saved or env_settings.cerebras_model
+    return saved or "llama-3.3-70b"
 
 
 def get_effective_feed_update_interval(db: Session) -> int:
-    """Get feed update interval from app_settings or env default."""
     saved = _get_setting(db, PREF_FEED_UPDATE_INTERVAL)
     if saved:
         try:
             return int(saved)
         except (ValueError, TypeError):
             pass
-    return env_settings.feed_update_interval_minutes
+    return 30
 
 
 def get_effective_max_posts_per_feed(db: Session) -> int:
-    """Get max posts per feed from app_settings or env default."""
     saved = _get_setting(db, PREF_MAX_POSTS_PER_FEED)
     if saved:
         try:
             return int(saved)
         except (ValueError, TypeError):
             pass
-    return env_settings.max_posts_per_feed
+    return 500
 
 
 def get_effective_max_post_age_days(db: Session) -> int:
-    """Get max post age from app_settings or env default."""
     saved = _get_setting(db, PREF_MAX_POST_AGE_DAYS)
     if saved:
         try:
             return int(saved)
         except (ValueError, TypeError):
             pass
-    return env_settings.max_post_age_days
+    return 365
 
 
 def get_effective_max_unread_days(db: Session) -> int:
-    """Get max unread days from app_settings or env default."""
     saved = _get_setting(db, PREF_MAX_UNREAD_DAYS)
     if saved:
         try:
             return int(saved)
         except (ValueError, TypeError):
             pass
-    return env_settings.max_unread_days
+    return 90
 
 
 def get_effective_toast_timeout(db: Session) -> int:
-    """Get toast timeout from app_settings or env default."""
     saved = _get_setting(db, PREF_TOAST_TIMEOUT)
     if saved:
         try:
             return int(saved)
         except (ValueError, TypeError):
             pass
-    return env_settings.toast_timeout_seconds
+    return 2
 
 
 def get_effective_idle_refresh(db: Session) -> int:
-    """Get idle refresh from app_settings or env default."""
     saved = _get_setting(db, PREF_IDLE_REFRESH)
     if saved:
         try:
             return int(saved)
         except (ValueError, TypeError):
             pass
-    return env_settings.idle_refresh_seconds
+    return 180
 
 
 def get_effective_tags_per_post(db: Session) -> int:
@@ -533,14 +519,13 @@ def get_effective_tags_per_post(db: Session) -> int:
 
 
 def get_effective_model_cooldown(db: Session) -> int:
-    """Get model cooldown in minutes from app_settings or env default."""
     saved = _get_setting(db, PREF_MODEL_COOLDOWN)
     if saved:
         try:
             return max(5, min(120, int(saved)))
         except (ValueError, TypeError):
             pass
-    return env_settings.model_cooldown_minutes
+    return 30
 
 
 def get_effective_suggestion_min_tags(db: Session) -> int:
