@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260516e';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260516e">
+    <script>var APP_VERSION = '20260516f';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260516f">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260516e"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260516e"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260516e"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260516e"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260516e"></script>
-    <script defer src="/static/js/components/settings.js?v=20260516e"></script>
-    <script defer src="/static/js/components/curation.js?v=20260516e"></script>
-    <script defer src="/static/js/app.js?v=20260516e"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260516f"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260516f"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260516f"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260516f"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260516f"></script>
+    <script defer src="/static/js/components/settings.js?v=20260516f"></script>
+    <script defer src="/static/js/components/curation.js?v=20260516f"></script>
+    <script defer src="/static/js/app.js?v=20260516f"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -208,9 +208,10 @@
                     <h1 class="text-2xl font-bold mb-6 text-center" x-text="t('app.title')"></h1>
                     <form @submit.prevent="login()">
                         <div class="mb-4">
-                            <label class="block text-sm font-medium mb-2" x-text="t('auth.password')"></label>
+                            <label for="auth-password" class="block text-sm font-medium mb-2" x-text="t('auth.password')"></label>
                             <div class="relative" x-data="{ showPw: false }">
                                 <input
+                                    id="auth-password"
                                     :type="showPw ? 'text' : 'password'"
                                     x-model="password"
                                     class="w-full px-4 py-2 pr-10 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
@@ -1659,9 +1660,10 @@
                         <div x-show="settingsTab === 'ai'" class="space-y-4">
                             <!-- API Keys -->
                             <div>
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.apiKeys')"></label>
+                                <label for="setting-api-keys" class="block text-sm font-medium mb-1" x-text="t('settings.apiKeys')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.apiKeysDesc')"></p>
                                 <textarea
+                                    id="setting-api-keys"
                                     x-model="apiKeys"
                                     :placeholder="t('settings.apiKeysPlaceholder')"
                                     rows="2"
@@ -1671,9 +1673,10 @@
 
                             <!-- API Base URL -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.apiBaseUrl')"></label>
+                                <label for="setting-api-base-url" class="block text-sm font-medium mb-1" x-text="t('settings.apiBaseUrl')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.apiBaseUrlDesc')"></p>
                                 <input
+                                    id="setting-api-base-url"
                                     type="url"
                                     x-model="apiBaseUrl"
                                     :placeholder="t('settings.apiBaseUrlPlaceholder')"
@@ -1684,10 +1687,11 @@
 
                             <!-- AI Model -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
+                                <label for="setting-ai-model" class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <select
+                                        id="setting-ai-model"
                                         @change="setAiModel($event.target.value)"
                                         class="flex-1 max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                         :disabled="availableModels.length === 0"
@@ -1712,9 +1716,10 @@
 
                             <!-- AI Timeout -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.aiTimeout')"></label>
+                                <label for="setting-ai-timeout" class="block text-sm font-medium mb-1" x-text="t('settings.aiTimeout')"></label>
                                 <div class="flex items-center gap-2">
                                     <input
+                                        id="setting-ai-timeout"
                                         type="number"
                                         min="5" max="600"
                                         x-model.number="aiTimeout"
@@ -1727,9 +1732,10 @@
 
                             <!-- Summary Language -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
+                                <label for="setting-summary-language" class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
                                 <select
+                                    id="setting-summary-language"
                                     @change="setSummaryLanguage($event.target.value)"
                                     class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                 >
@@ -1741,10 +1747,11 @@
 
                             <!-- Tags per Post -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.tagsPerPost')"></label>
+                                <label for="setting-tags-per-post" class="block text-sm font-medium mb-1" x-text="t('settings.tagsPerPost')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.tagsPerPostDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <input
+                                        id="setting-tags-per-post"
                                         type="range"
                                         min="3" max="15" step="1"
                                         :value="tagsPerPost"
@@ -1758,10 +1765,11 @@
 
                             <!-- Model Cooldown -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.modelCooldown')"></label>
+                                <label for="setting-model-cooldown" class="block text-sm font-medium mb-1" x-text="t('settings.modelCooldown')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.modelCooldownDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <input
+                                        id="setting-model-cooldown"
                                         type="range"
                                         min="5" max="120" step="5"
                                         :value="modelCooldownMinutes"
@@ -1775,9 +1783,10 @@
 
                             <!-- System Prompt -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.systemPrompt')"></label>
+                                <label for="setting-system-prompt" class="block text-sm font-medium mb-1" x-text="t('settings.systemPrompt')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.systemPromptDesc')"></p>
                                 <textarea
+                                    id="setting-system-prompt"
                                     x-model="systemPrompt"
                                     rows="10"
                                     class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
@@ -1786,9 +1795,10 @@
 
                             <!-- User Prompt -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-1" x-text="t('settings.userPrompt')"></label>
+                                <label for="setting-user-prompt" class="block text-sm font-medium mb-1" x-text="t('settings.userPrompt')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.userPromptDesc')"></p>
                                 <textarea
+                                    id="setting-user-prompt"
                                     x-model="userPrompt"
                                     rows="8"
                                     class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
@@ -2046,9 +2056,10 @@
                                     </div>
                                     <!-- Language -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.language')"></label>
+                                        <label for="setting-language" class="block text-sm font-medium mb-1" x-text="t('settings.language')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.languageDesc')"></p>
                                         <select
+                                            id="setting-language"
                                             @change="setLocale($event.target.value)"
                                             class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                         >
@@ -2092,10 +2103,11 @@
                                 <div x-show="settingsAccordion.data" x-collapse class="p-4 space-y-4">
                                     <!-- Feed Update Interval -->
                                     <div>
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.feedUpdateInterval')"></label>
+                                        <label for="setting-feed-update-interval" class="block text-sm font-medium mb-1" x-text="t('settings.feedUpdateInterval')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.feedUpdateIntervalDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-feed-update-interval"
                                                 type="number"
                                                 min="5"
                                                 max="1440"
@@ -2108,10 +2120,11 @@
                                     </div>
                                     <!-- Max Posts per Feed -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.maxPostsPerFeed')"></label>
+                                        <label for="setting-max-posts-per-feed" class="block text-sm font-medium mb-1" x-text="t('settings.maxPostsPerFeed')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxPostsPerFeedDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-max-posts-per-feed"
                                                 type="number"
                                                 min="10"
                                                 max="10000"
@@ -2124,10 +2137,11 @@
                                     </div>
                                     <!-- Max Post Age -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.maxPostAgeDays')"></label>
+                                        <label for="setting-max-post-age-days" class="block text-sm font-medium mb-1" x-text="t('settings.maxPostAgeDays')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxPostAgeDaysDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-max-post-age-days"
                                                 type="number"
                                                 min="7"
                                                 max="3650"
@@ -2140,10 +2154,11 @@
                                     </div>
                                     <!-- Max Unread Days -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.maxUnreadDays')"></label>
+                                        <label for="setting-max-unread-days" class="block text-sm font-medium mb-1" x-text="t('settings.maxUnreadDays')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxUnreadDaysDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-max-unread-days"
                                                 type="number"
                                                 min="1"
                                                 max="365"
@@ -2169,10 +2184,11 @@
                                 <div x-show="settingsAccordion.interface" x-collapse class="p-4 space-y-4">
                                     <!-- Toast Timeout -->
                                     <div>
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.toastTimeout')"></label>
+                                        <label for="setting-toast-timeout" class="block text-sm font-medium mb-1" x-text="t('settings.toastTimeout')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.toastTimeoutDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-toast-timeout"
                                                 type="number"
                                                 min="0"
                                                 max="30"
@@ -2185,10 +2201,11 @@
                                     </div>
                                     <!-- Idle Refresh -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.idleRefresh')"></label>
+                                        <label for="setting-idle-refresh" class="block text-sm font-medium mb-1" x-text="t('settings.idleRefresh')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.idleRefreshDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-idle-refresh"
                                                 type="number"
                                                 min="0"
                                                 max="3600"
@@ -2201,10 +2218,11 @@
                                     </div>
                                     <!-- Suggestion Sensitivity -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.suggestionMinTags')"></label>
+                                        <label for="setting-suggestion-min-tags" class="block text-sm font-medium mb-1" x-text="t('settings.suggestionMinTags')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.suggestionMinTagsDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-suggestion-min-tags"
                                                 type="number"
                                                 min="1"
                                                 :max="tagsPerPost"
@@ -2217,10 +2235,11 @@
                                     </div>
                                     <!-- Profile Min Tag Frequency -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.profileMinTagFreq')"></label>
+                                        <label for="setting-profile-min-tag-freq" class="block text-sm font-medium mb-1" x-text="t('settings.profileMinTagFreq')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.profileMinTagFreqDesc')"></p>
                                         <div class="flex items-center gap-2">
                                             <input
+                                                id="setting-profile-min-tag-freq"
                                                 type="number"
                                                 min="1"
                                                 max="20"
@@ -2247,9 +2266,10 @@
                                     </div>
                                     <!-- Blocked Terms -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.blockedTerms')"></label>
+                                        <label for="setting-blocked-terms" class="block text-sm font-medium mb-1" x-text="t('settings.blockedTerms')"></label>
                                         <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.blockedTermsDesc')"></p>
                                         <textarea
+                                            id="setting-blocked-terms"
                                             :value="blockedTermsSorted()"
                                             @change="setBlockedTerms($event.target.value)"
                                             :placeholder="t('settings.blockedTermsPlaceholder')"
