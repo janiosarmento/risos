@@ -15,15 +15,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal
 from app.models import PostTag, AppSettings
-from app.services.cerebras._constants import (
+from app.services.ai._constants import (
     TAG_TRANSLATION_MODEL,
     TAG_TRANSLATION_TEMPERATURE,
     TAG_TRANSLATION_MAX_TOKENS,
     TAG_TRANSLATION_TIMEOUT,
 )
-from app.services.cerebras._parsing import normalize_tag
+from app.services.ai._parsing import normalize_tag
 from app.config import USER_AGENT
-from app.services.cerebras._infrastructure import api_key_rotator
+from app.services.ai._infrastructure import api_key_rotator
 
 import httpx
 import json

@@ -12,7 +12,7 @@ from sqlalchemy import or_, text
 from app.config import settings
 from app.database import SessionLocal
 from app.models import SchedulerLock
-from app.services.cerebras._constants import (
+from app.services.ai._constants import (
     SUMMARY_LOCK_TIMEOUT_SECONDS,
     CLEANUP_HOUR,
     AI_MAX_RPM,
@@ -553,7 +553,7 @@ class Scheduler:
     async def _job_process_summaries(self):
         """Job to process AI summary queue."""
         from app.models import SummaryQueue, AISummary, SummaryFailure, Post, Feed
-        from app.services.cerebras import (
+        from app.services.ai import (
             generate_summary,
             circuit_breaker,
             api_key_rotator,
@@ -787,7 +787,7 @@ class Scheduler:
 
                         # Throttle automatic queue to reduce rate limit pressure.
                         # Manual requests (generate/regenerate) bypass this.
-                        from app.services.cerebras._constants import SUMMARY_QUEUE_SLEEP_SECONDS
+                        from app.services.ai._constants import SUMMARY_QUEUE_SLEEP_SECONDS
                         await asyncio.sleep(SUMMARY_QUEUE_SLEEP_SECONDS)
 
                     except GarbageContentError as e:

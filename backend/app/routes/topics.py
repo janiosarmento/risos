@@ -249,7 +249,7 @@ async def suggest_tags_for_topic(
     user: dict = Depends(get_current_user),
 ):
     """Use AI to suggest which unassigned tags fit a specific topic."""
-    from app.services.cerebras._api import call_llm_json
+    from app.services.ai._api import call_llm_json
 
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
@@ -313,7 +313,7 @@ async def suggest_topics(
     user: dict = Depends(get_current_user),
 ):
     """Use AI to suggest topic groupings from popular tags."""
-    from app.services.cerebras._api import call_llm_json
+    from app.services.ai._api import call_llm_json
 
     # Exclude tags already assigned to any topic
     assigned_tags = {row.tag for row in db.query(TopicTag.tag).all()}

@@ -38,7 +38,7 @@ from app.schemas import (
     MarkReadRequest,
 )
 from app.services.content_extractor import extract_full_content
-from app.services.cerebras import (
+from app.services.ai import (
     generate_summary,
     CerebrasError,
     GarbageContentError,
@@ -1055,7 +1055,7 @@ async def curate_starred(
     user: dict = Depends(get_current_user),
 ):
     """Analyze starred posts with AI to identify essential vs redundant."""
-    from app.services.cerebras._api import call_llm_json
+    from app.services.ai._api import call_llm_json
     from app.routes.preferences import get_effective_summary_language
 
     language = get_effective_summary_language(db)

@@ -30,7 +30,7 @@ from sqlalchemy import func, text
 
 from app.database import SessionLocal
 from app.models import PostTag
-from app.services.cerebras._parsing import normalize_tag, parse_json_response
+from app.services.ai._parsing import normalize_tag, parse_json_response
 from app.services.ollama._api import OLLAMA_MODEL, OLLAMA_TIMEOUT, OLLAMA_URL
 from app.services.suggestions import clear_all_suggestions
 from app.services.user_profile import invalidate_user_profile
@@ -115,7 +115,7 @@ async def call_llm(
 ) -> dict:
     if use_local:
         return await call_ollama_json(system_prompt, user_prompt)
-    from app.services.cerebras._api import call_llm_json
+    from app.services.ai._api import call_llm_json
 
     return await call_llm_json(system_prompt, user_prompt)
 

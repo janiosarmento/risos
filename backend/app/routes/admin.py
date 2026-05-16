@@ -258,7 +258,7 @@ def get_queue_status(
     Return detailed queue status including items with cooldowns.
     Also shows API key rotator status.
     """
-    from app.services.cerebras import api_key_rotator
+    from app.services.ai import api_key_rotator
 
     now = datetime.utcnow()
 
@@ -346,7 +346,7 @@ def reset_circuit_breaker(
     """
     Reset circuit breaker, API key cooldowns, and queue cooldowns.
     """
-    from app.services.cerebras import circuit_breaker
+    from app.services.ai import circuit_breaker
 
     # Reset circuit breaker in DB
     db.query(AppSettings).filter(
@@ -384,7 +384,7 @@ def clear_models_cache_endpoint(
     user: dict = Depends(get_current_user),
 ):
     """Clear models cache and model cooldowns."""
-    from app.services.cerebras import clear_models_cache
+    from app.services.ai import clear_models_cache
 
     clear_models_cache()
     return {"ok": True}
@@ -409,7 +409,7 @@ async def list_available_models(
     Results are cached for 30 minutes (via cerebras._api).
     Requires authentication.
     """
-    from app.services.cerebras._api import (
+    from app.services.ai._api import (
         get_available_models as fetch_models,
     )
 

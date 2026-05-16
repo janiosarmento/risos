@@ -5,7 +5,7 @@ import logging
 import re
 from typing import List
 
-from app.services.cerebras._constants import (
+from app.services.ai._constants import (
     MIN_CONTENT_LENGTH,
     SHORT_CONTENT_LENGTH,
 )

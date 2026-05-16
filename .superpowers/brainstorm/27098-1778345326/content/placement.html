@@ -1,0 +1,86 @@
+<h2>Onde ficam os botões A- / A+?</h2>
+<p class="subtitle">O app tem sidebar sempre visível no tablet. Veja as opções de posicionamento.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="sidebar-header" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;height:160px;font-size:11px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+        <!-- Sidebar -->
+        <div style="width:36%;background:#1e293b;color:#fff;display:flex;flex-direction:column;">
+          <div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;gap:4px;">
+            <span style="font-weight:bold;font-size:12px;">Risos</span>
+            <div style="display:flex;gap:4px;align-items:center;">
+              <span style="background:#334155;color:#94a3b8;padding:1px 5px;border-radius:3px;font-weight:bold;">A-</span>
+              <span style="background:#334155;color:#94a3b8;padding:1px 5px;border-radius:3px;font-weight:bold;">A+</span>
+              <span style="color:#94a3b8;">⚙</span>
+              <span style="color:#94a3b8;">⎋</span>
+            </div>
+          </div>
+          <div style="padding:6px 10px;color:#94a3b8;font-size:10px;">Feed 1</div>
+          <div style="padding:6px 10px;color:#94a3b8;font-size:10px;">Feed 2</div>
+          <div style="padding:6px 10px;color:#64748b;font-size:10px;">Feed 3</div>
+        </div>
+        <!-- Post list -->
+        <div style="width:64%;background:#f8fafc;display:flex;flex-direction:column;">
+          <div style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:10px;color:#475569;">Todos os posts</div>
+          <div style="padding:6px 10px;border-bottom:1px solid #e2e8f0;">
+            <div style="font-size:10px;font-weight:600;color:#1e293b;">Título do post</div>
+            <div style="font-size:9px;color:#94a3b8;">Resumo breve...</div>
+          </div>
+          <div style="padding:6px 10px;">
+            <div style="font-size:10px;font-weight:600;color:#1e293b;">Outro post</div>
+            <div style="font-size:9px;color:#94a3b8;">Mais conteúdo...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — No cabeçalho da sidebar</h3>
+      <p>Ao lado dos ícones de configuração e logout. Sempre visível, acesso rápido. Pode ficar apertado se a sidebar for estreita.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="toolbar" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;height:160px;font-size:11px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">
+        <!-- Sidebar -->
+        <div style="width:36%;background:#1e293b;color:#fff;display:flex;flex-direction:column;">
+          <div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:bold;font-size:12px;">Risos</span>
+            <div style="display:flex;gap:6px;">
+              <span style="color:#94a3b8;">⚙</span>
+              <span style="color:#94a3b8;">⎋</span>
+            </div>
+          </div>
+          <div style="padding:6px 10px;color:#94a3b8;font-size:10px;">Feed 1</div>
+          <div style="padding:6px 10px;color:#94a3b8;font-size:10px;">Feed 2</div>
+          <div style="padding:6px 10px;color:#64748b;font-size:10px;">Feed 3</div>
+        </div>
+        <!-- Post list -->
+        <div style="width:64%;background:#f8fafc;display:flex;flex-direction:column;">
+          <div style="padding:6px 10px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:10px;color:#475569;">Todos os posts</span>
+            <div style="display:flex;gap:3px;">
+              <span style="background:#e2e8f0;padding:1px 5px;border-radius:3px;font-weight:bold;font-size:10px;">A-</span>
+              <span style="background:#e2e8f0;padding:1px 5px;border-radius:3px;font-weight:bold;font-size:10px;">A+</span>
+            </div>
+          </div>
+          <div style="padding:6px 10px;border-bottom:1px solid #e2e8f0;">
+            <div style="font-size:10px;font-weight:600;color:#1e293b;">Título do post</div>
+            <div style="font-size:9px;color:#94a3b8;">Resumo breve...</div>
+          </div>
+          <div style="padding:6px 10px;">
+            <div style="font-size:10px;font-weight:600;color:#1e293b;">Outro post</div>
+            <div style="font-size:9px;color:#94a3b8;">Mais conteúdo...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — No toolbar da lista de posts</h3>
+      <p>Canto direito do cabeçalho da lista. Contexto mais próximo do conteúdo. Some no mobile (onde não faz falta).</p>
+    </div>
+  </div>
+
+</div>

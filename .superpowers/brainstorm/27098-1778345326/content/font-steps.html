@@ -1,0 +1,65 @@
+<h2>Quantos degraus de tamanho?</h2>
+<p class="subtitle">Cada opção mostra como os textos do app ficariam. O padrão atual é sempre o do meio.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="three" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#f8fafc;padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <!-- Step 1: small (100%) -->
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:#94a3b8;width:36px;">A-</span>
+          <div style="font-size:12px;color:#1e293b;">Título do artigo · <span style="color:#94a3b8;font-size:11px;">Resumo com duas linhas de texto para dar contexto</span></div>
+        </div>
+        <hr style="border:none;border-top:1px solid #e2e8f0;">
+        <!-- Step 2: normal (112%) — highlighted -->
+        <div style="display:flex;align-items:center;gap:8px;background:#dbeafe;border-radius:4px;padding:4px 6px;">
+          <span style="font-size:10px;color:#3b82f6;width:36px;">normal</span>
+          <div style="font-size:13.5px;color:#1e293b;">Título do artigo · <span style="color:#94a3b8;font-size:12px;">Resumo com duas linhas de texto para dar contexto</span></div>
+        </div>
+        <hr style="border:none;border-top:1px solid #e2e8f0;">
+        <!-- Step 3: large (125%) -->
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:#94a3b8;width:36px;">A+</span>
+          <div style="font-size:15px;color:#1e293b;">Título do artigo · <span style="color:#94a3b8;font-size:13px;">Resumo com duas linhas</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 3 degraus</h3>
+      <p>Pequeno · Normal · Grande. Simples. A- vai ao mínimo e A+ ao máximo. Na prática: 100% → 112% → 125%.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="five" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#f8fafc;padding:12px;display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:9px;color:#94a3b8;width:20px;">−2</span>
+          <div style="font-size:11px;color:#1e293b;">Título · <span style="color:#94a3b8;font-size:10px;">Resumo do artigo aqui</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:9px;color:#94a3b8;width:20px;">−1</span>
+          <div style="font-size:12px;color:#1e293b;">Título · <span style="color:#94a3b8;font-size:11px;">Resumo do artigo aqui</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#dbeafe;border-radius:4px;padding:3px 6px;">
+          <span style="font-size:9px;color:#3b82f6;width:20px;">0</span>
+          <div style="font-size:13.5px;color:#1e293b;">Título · <span style="color:#94a3b8;font-size:12px;">Resumo do artigo aqui</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:9px;color:#94a3b8;width:20px;">+1</span>
+          <div style="font-size:15px;color:#1e293b;">Título · <span style="color:#94a3b8;font-size:13.5px;">Resumo do artigo</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:9px;color:#94a3b8;width:20px;">+2</span>
+          <div style="font-size:17px;color:#1e293b;">Título · <span style="color:#94a3b8;font-size:15px;">Resumo</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — 5 degraus</h3>
+      <p>Mais granularidade. A- e A+ ciciam pelo range. Na prática: 88% → 94% → 100% → 112% → 125%.</p>
+    </div>
+  </div>
+
+</div>

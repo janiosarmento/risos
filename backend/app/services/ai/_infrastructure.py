@@ -7,14 +7,14 @@ from typing import Optional, Tuple, Dict
 
 from app.database import SessionLocal
 from app.models import AppSettings
-from app.services.cerebras._constants import (
+from app.services.ai._constants import (
     DEFAULT_KEY_COOLDOWN_SECONDS,
     CB_FAILURE_THRESHOLD,
     CB_RECOVERY_TIMEOUT_SECONDS,
     CB_HALF_OPEN_MAX_REQUESTS,
     AI_MAX_RPM,
 )
-from app.services.cerebras._types import CircuitState
+from app.services.ai._types import CircuitState
 
 logger = logging.getLogger(__name__)
 

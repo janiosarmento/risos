@@ -14,12 +14,12 @@ import time
 from datetime import datetime
 
 from app.models import AISummary, PostTag
-from app.services.cerebras import (
+from app.services.ai import (
     circuit_breaker,
     generate_summary,
     GarbageContentError,
 )
-from app.services.cerebras._infrastructure import api_key_rotator
+from app.services.ai._infrastructure import api_key_rotator
 from app.services.tags import save_post_tags
 
 

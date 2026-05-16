@@ -13,14 +13,14 @@ import httpx
 
 from app.config import USER_AGENT
 from app.database import SessionLocal
-from app.services.cerebras._types import (
+from app.services.ai._types import (
     TemporaryError,
     PermanentError,
     ModelSpecificError,
     GarbageContentError,
     SummaryResult,
 )
-from app.services.cerebras._constants import (
+from app.services.ai._constants import (
     MODELS_CACHE_TTL,
     MODELS_FETCH_TIMEOUT,
     SUMMARY_TEMPERATURE,
@@ -30,18 +30,18 @@ from app.services.cerebras._constants import (
     MAX_TAGS,
     RATE_LIMIT_COOLDOWN_SECONDS,
 )
-from app.services.cerebras._parsing import (
+from app.services.ai._parsing import (
     is_garbage_content,  # noqa: F401
     normalize_tags,
     normalize_tag,
     parse_json_response,
 )
-from app.services.cerebras._infrastructure import (  # noqa: F401
+from app.services.ai._infrastructure import (  # noqa: F401
     api_key_rotator,
 )
 
 
-from app.services.cerebras._prompts import (
+from app.services.ai._prompts import (
     get_system_prompt,
     get_user_prompt,
 )  # noqa: F401

@@ -225,7 +225,7 @@ async def suggest_merges(
     user: dict = Depends(get_current_user),
 ):
     """Use AI to suggest near-duplicate tags that should be merged."""
-    from app.services.cerebras._api import call_llm_json
+    from app.services.ai._api import call_llm_json
 
     total_tags = db.query(func.count(func.distinct(PostTag.tag))).scalar() or 0
 

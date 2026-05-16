@@ -21,7 +21,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.database import engine
 from app.rate_limiter import limiter
-from app.services.cerebras._types import PermanentError, TemporaryError
+from app.services.ai._types import PermanentError, TemporaryError
 
 # Configure logging — force=True ensures this overrides any prior config
 # (e.g. from uvicorn or alembic importing first)

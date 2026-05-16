@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.config import load_prompts
-from app.services.cerebras._constants import DEFAULT_API_BASE_URL
+from app.services.ai._constants import DEFAULT_API_BASE_URL
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import AppSettings
