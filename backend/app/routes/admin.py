@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.config import load_prompts, settings
 from app.database import get_db
+from app.routes.preferences import get_effective_toast_timeout, get_effective_idle_refresh
 from app.dependencies import get_current_user
 from app.models import (
     SummaryQueue,
@@ -143,14 +144,14 @@ def vacuum_database(
 
 
 @router.get("/config")
-def get_public_config():
+def get_public_config(db: Session = Depends(get_db)):
     """
     Return public config for the frontend.
     Does not require authentication.
     """
     return {
-        "toast_timeout_seconds": settings.toast_timeout_seconds,
-        "idle_refresh_seconds": settings.idle_refresh_seconds,
+        "toast_timeout_seconds": get_effective_toast_timeout(db),
+        "idle_refresh_seconds": get_effective_idle_refresh(db),
     }
 
 
