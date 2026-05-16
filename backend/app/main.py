@@ -120,11 +120,11 @@ def reset_ai_state():
         db.query(AppSettings).filter(
             AppSettings.key.in_(
                 [
-                    "cerebras_state",
-                    "cerebras_failures",
-                    "cerebras_half_successes",
-                    "cerebras_last_failure",
-                    "cerebras_last_call",
+                    "ai_state",
+                    "ai_failures",
+                    "ai_half_successes",
+                    "ai_last_failure",
+                    "ai_last_call",
                 ]
             )
         ).delete()

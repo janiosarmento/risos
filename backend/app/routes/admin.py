@@ -229,10 +229,10 @@ def get_status(
 
     for row in (
         db.query(AppSettings)
-        .filter(AppSettings.key.in_(["cerebras_state", "health_warning"]))
+        .filter(AppSettings.key.in_(["ai_state", "health_warning"]))
         .all()
     ):
-        if row.key == "cerebras_state":
+        if row.key == "ai_state":
             circuit_state = row.value
         elif row.key == "health_warning":
             health_warning = row.value
@@ -352,11 +352,11 @@ def reset_circuit_breaker(
     db.query(AppSettings).filter(
         AppSettings.key.in_(
             [
-                "cerebras_state",
-                "cerebras_failures",
-                "cerebras_half_successes",
-                "cerebras_last_failure",
-                "cerebras_last_call",
+                "ai_state",
+                "ai_failures",
+                "ai_half_successes",
+                "ai_last_failure",
+                "ai_last_call",
             ]
         )
     ).delete()
