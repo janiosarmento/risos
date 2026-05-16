@@ -5,10 +5,15 @@ import threading
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict
 
-from app.config import settings
 from app.database import SessionLocal
 from app.models import AppSettings
-from app.services.cerebras._constants import DEFAULT_KEY_COOLDOWN_SECONDS
+from app.services.cerebras._constants import (
+    DEFAULT_KEY_COOLDOWN_SECONDS,
+    CB_FAILURE_THRESHOLD,
+    CB_RECOVERY_TIMEOUT_SECONDS,
+    CB_HALF_OPEN_MAX_REQUESTS,
+    AI_MAX_RPM,
+)
 from app.services.cerebras._types import CircuitState
 
 logger = logging.getLogger(__name__)
@@ -263,7 +268,7 @@ class CircuitBreaker:
         # Circuit breaker only blocks on actual API failures
 
         # Check minimum interval
-        min_interval = 60.0 / settings.cerebras_max_rpm
+        min_interval = 60.0 / AI_MAX_RPM
         if self.last_call:
             elapsed = (now - self.last_call).total_seconds()
             if elapsed < min_interval:
@@ -278,7 +283,7 @@ class CircuitBreaker:
             # Check if recovery timeout has passed
             if self.last_failure:
                 elapsed = (now - self.last_failure).total_seconds()
-                if elapsed >= settings.recovery_timeout_seconds:
+                if elapsed >= CB_RECOVERY_TIMEOUT_SECONDS:
                     # Transition to HALF
                     self.state = CircuitState.HALF
                     self.half_successes = 0
@@ -288,7 +293,7 @@ class CircuitBreaker:
                     return (
                         False,
                         "Circuit breaker OPEN (recovery in "
-                        f"{settings.recovery_timeout_seconds - elapsed:.0f}s)",
+                        f"{CB_RECOVERY_TIMEOUT_SECONDS - elapsed:.0f}s)",
                     )
 
         return True, None
@@ -300,7 +305,7 @@ class CircuitBreaker:
 
         if self.state == CircuitState.HALF:
             self.half_successes += 1
-            if self.half_successes >= settings.half_open_max_requests:
+            if self.half_successes >= CB_HALF_OPEN_MAX_REQUESTS:
                 # Transition to CLOSED
                 self.state = CircuitState.CLOSED
                 self.failures = 0
@@ -325,7 +330,7 @@ class CircuitBreaker:
             logger.warning("Circuit breaker: HALF -> OPEN (failure)")
         else:
             self.failures += 1
-            if self.failures >= settings.failure_threshold:
+            if self.failures >= CB_FAILURE_THRESHOLD:
                 self.state = CircuitState.OPEN
                 logger.warning(
                     "Circuit breaker: CLOSED -> OPEN "

@@ -33,3 +33,15 @@ DEFAULT_KEY_COOLDOWN_SECONDS = 60
 # Throttle between automatic summary generations to avoid hitting rate limits.
 # Manual requests (generate/regenerate) bypass this delay.
 SUMMARY_QUEUE_SLEEP_SECONDS = 15
+
+# Circuit breaker
+CB_FAILURE_THRESHOLD = 5
+CB_RECOVERY_TIMEOUT_SECONDS = 300
+CB_HALF_OPEN_MAX_REQUESTS = 3
+
+# Scheduler jobs
+SUMMARY_LOCK_TIMEOUT_SECONDS = 300
+CLEANUP_HOUR = 3
+
+# API rate limiting
+AI_MAX_RPM = 20

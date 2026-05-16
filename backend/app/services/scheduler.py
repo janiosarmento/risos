@@ -12,6 +12,11 @@ from sqlalchemy import or_, text
 from app.config import settings
 from app.database import SessionLocal
 from app.models import SchedulerLock
+from app.services.cerebras._constants import (
+    SUMMARY_LOCK_TIMEOUT_SECONDS,
+    CLEANUP_HOUR,
+    AI_MAX_RPM,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -354,7 +359,7 @@ class Scheduler:
                 now = datetime.utcnow()
 
                 # Check if it's time to run (03:00)
-                target_hour = settings.cleanup_hour
+                target_hour = CLEANUP_HOUR
                 if now.hour != target_hour:
                     # Calculate time until next execution
                     next_run = now.replace(
@@ -555,7 +560,7 @@ class Scheduler:
         from app.services.tags import save_post_tags
 
         # Interval based on rate limit (with safety margin)
-        interval = max(5, 60 // settings.cerebras_max_rpm + 1)
+        interval = max(5, 60 // AI_MAX_RPM + 1)
 
         while self._running and self.is_leader:
             try:
@@ -581,7 +586,7 @@ class Scheduler:
                 try:
                     now = datetime.utcnow()
                     lock_timeout = now - timedelta(
-                        seconds=settings.summary_lock_timeout_seconds
+                        seconds=SUMMARY_LOCK_TIMEOUT_SECONDS
                     )
 
                     # Find next eligible item.
