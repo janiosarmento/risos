@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260516f';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260516f">
+    <script>var APP_VERSION = '20260516g';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260516g">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260516f"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260516f"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260516f"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260516f"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260516f"></script>
-    <script defer src="/static/js/components/settings.js?v=20260516f"></script>
-    <script defer src="/static/js/components/curation.js?v=20260516f"></script>
-    <script defer src="/static/js/app.js?v=20260516f"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260516g"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260516g"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260516g"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260516g"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260516g"></script>
+    <script defer src="/static/js/components/settings.js?v=20260516g"></script>
+    <script defer src="/static/js/components/curation.js?v=20260516g"></script>
+    <script defer src="/static/js/app.js?v=20260516g"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -276,12 +276,12 @@
                                 <button @click="decreaseFontScale()" :disabled="fontScaleMin" class="text-xs font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed text-gray-500 dark:text-gray-400">A-</button>
                                 <button @click="increaseFontScale()" :disabled="fontScaleMax" class="text-sm font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed text-gray-500 dark:text-gray-400">A+</button>
                             </div>
-                            <button @click="openSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.settings')" :aria-label="t('sidebar.settings')"
+                            <button @click="openSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.settings')" :aria-label="t('sidebar.settings')">
                                 <svg class="w-5 h-5"><use href="#icon-settings"/></svg>
                             </button>
                             <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm hidden md:block" x-text="t('app.logout')"></button>
                             <!-- Mobile close button -->
-                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.closeMenu')" :aria-label="t('sidebar.closeMenu')"
+                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.closeMenu')" :aria-label="t('sidebar.closeMenu')">
                                 <svg class="w-6 h-6"><use href="#icon-x-close"/></svg>
                             </button>
                         </div>
@@ -585,7 +585,7 @@
                                         <span class="opacity-60" x-text="'(' + tagFilterCount + ')'"></span>
                                         <!-- Add to topic dropdown -->
                                         <span x-show="topics.length > 0" class="relative" x-data="{ open: false }">
-                                            <button @click="open = !open" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :data-tip="t('topics.addToTopic')" :aria-label="t('topics.addToTopic')"
+                                            <button @click="open = !open" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :data-tip="t('topics.addToTopic')" :aria-label="t('topics.addToTopic')">
                                                 <svg class="w-3 h-3"><use href="#icon-folder"/></svg>
                                             </button>
                                             <div x-show="open" @click.away="open = false" class="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 min-w-[160px]">
@@ -974,34 +974,34 @@
                                         <!-- Action buttons -->
                                         <div class="flex items-center gap-1 flex-shrink-0">
                                             <!-- Nav buttons -->
-                                            <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.prevPost')" :aria-label="t('modal.prevPost')"
+                                            <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.prevPost')" :aria-label="t('modal.prevPost')">
                                                 <svg class="w-4 h-4"><use href="#icon-chevron-left"/></svg>
                                             </button>
-                                            <button @click="nextPost()" :disabled="!canGoNext()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.nextPost')" :aria-label="t('modal.nextPost')"
+                                            <button @click="nextPost()" :disabled="!canGoNext()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.nextPost')" :aria-label="t('modal.nextPost')">
                                                 <svg class="w-4 h-4"><use href="#icon-chevron-right"/></svg>
                                             </button>
                                             <!-- Star -->
-                                            <button @click="toggleStar(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')" :aria-label="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
+                                            <button @click="toggleStar(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')" :aria-label="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20"><use href="#icon-star"/></svg>
                                             </button>
                                             <!-- Like -->
-                                            <button @click="toggleLike(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')" :aria-label="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
+                                            <button @click="toggleLike(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')" :aria-label="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')">
                                                 <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-red-500' : 'text-gray-400'" fill="currentColor" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
                                             </button>
                                             <!-- Keep unread -->
-                                            <button @click="toggleKeepUnread(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')" :aria-label="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')"
+                                            <button @click="toggleKeepUnread(currentPost)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')" :aria-label="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')">
                                                 <svg class="w-4 h-4" :class="currentPost.keep_unread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'" :fill="currentPost.keep_unread ? 'currentColor' : 'none'" :stroke="currentPost.keep_unread ? 'none' : 'currentColor'" :stroke-width="currentPost.keep_unread ? '0' : '1.5'" viewBox="0 0 24 24"><use href="#icon-lock"/></svg>
                                             </button>
                                             <!-- Read/Unread -->
-                                            <button @click="toggleRead(currentPost)" class="p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" :data-tip="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')" :aria-label="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')"
+                                            <button @click="toggleRead(currentPost)" class="p-1.5 rounded" :class="currentPost.is_read ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 text-white'" :data-tip="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')" :aria-label="currentPost.is_read ? t('modal.markUnread') : t('modal.markRead')">
                                                 <svg class="w-4 h-4"><use href="#icon-check"/></svg>
                                             </button>
                                             <!-- Original link -->
-                                            <a :href="currentPost.url" target="_blank" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="t('modal.original')" :aria-label="t('modal.original')"
+                                            <a :href="currentPost.url" target="_blank" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="t('modal.original')" :aria-label="t('modal.original')">
                                                 <svg class="w-4 h-4"><use href="#icon-external-link"/></svg>
                                             </a>
                                             <!-- Export -->
-                                            <button @click="exportPostAsMarkdown()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="t('modal.exportMarkdown')" :aria-label="t('modal.exportMarkdown')"
+                                            <button @click="exportPostAsMarkdown()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700" :data-tip="t('modal.exportMarkdown')" :aria-label="t('modal.exportMarkdown')">
                                                 <svg class="w-4 h-4"><use href="#icon-download"/></svg>
                                             </button>
                                             <!-- Close -->
@@ -2470,7 +2470,7 @@
                     <svg x-show="toast.type === 'info'" class="w-5 h-5 flex-shrink-0"><use href="#icon-info"/></svg>
                     <span x-text="toast.message"></span>
                 </div>
-                <button @click="hideToast()" class="text-white/80 hover:text-white flex-shrink-0" :data-tip="t('modal.dismiss')" :aria-label="t('modal.dismiss')"
+                <button @click="hideToast()" class="text-white/80 hover:text-white flex-shrink-0" :data-tip="t('modal.dismiss')" :aria-label="t('modal.dismiss')">
                     <svg class="w-5 h-5"><use href="#icon-x-close"/></svg>
                 </button>
             </div>
