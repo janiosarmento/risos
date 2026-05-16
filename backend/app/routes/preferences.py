@@ -20,7 +20,7 @@ router = APIRouter(prefix="/preferences", tags=["preferences"])
 PREF_LOCALE = "pref_locale"
 PREF_THEME = "pref_theme"
 PREF_SUMMARY_LANGUAGE = "pref_summary_language"
-PREF_CEREBRAS_MODEL = "pref_cerebras_model"
+PREF_AI_MODEL = "pref_ai_model"
 # Data settings
 PREF_FEED_UPDATE_INTERVAL = "pref_feed_update_interval"
 PREF_MAX_POSTS_PER_FEED = "pref_max_posts_per_feed"
@@ -35,7 +35,7 @@ PREF_SPLIT_RATIO = "pref_split_ratio"
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
 # AI keys and prompts
-PREF_CEREBRAS_API_KEYS = "pref_cerebras_api_keys"
+PREF_AI_API_KEYS = "pref_ai_api_keys"
 PREF_TAGS_PER_POST = "pref_tags_per_post"
 PREF_MODEL_COOLDOWN = "pref_model_cooldown_minutes"
 PREF_SYSTEM_PROMPT = "pref_system_prompt"
@@ -51,7 +51,7 @@ class PreferencesResponse(BaseModel):
     locale: Optional[str] = None
     theme: Optional[str] = None
     summary_language: Optional[str] = None
-    cerebras_model: Optional[str] = None
+    ai_model: Optional[str] = None
     # Data settings (returned as integers)
     feed_update_interval: Optional[int] = None
     max_posts_per_feed: Optional[int] = None
@@ -70,7 +70,7 @@ class PreferencesResponse(BaseModel):
         None  # min liked posts for a tag to enter profile
     )
     # AI keys and prompts
-    cerebras_api_keys: Optional[str] = (
+    ai_api_keys: Optional[str] = (
         None  # masked: "cbrk-****1234, cbrk-****5678"
     )
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
@@ -90,7 +90,7 @@ class PreferencesUpdate(BaseModel):
     locale: Optional[str] = None
     theme: Optional[str] = None
     summary_language: Optional[str] = None
-    cerebras_model: Optional[str] = None
+    ai_model: Optional[str] = None
     # Data settings
     feed_update_interval: Optional[int] = None
     max_posts_per_feed: Optional[int] = None
@@ -105,7 +105,7 @@ class PreferencesUpdate(BaseModel):
     suggestion_min_tags: Optional[int] = None
     profile_min_tag_freq: Optional[int] = None
     # AI keys and prompts
-    cerebras_api_keys: Optional[str] = None
+    ai_api_keys: Optional[str] = None
     tags_per_post: Optional[int] = None
     model_cooldown_minutes: Optional[int] = None
     system_prompt: Optional[str] = None
@@ -143,7 +143,7 @@ def get_preferences(
         PREF_LOCALE,
         PREF_THEME,
         PREF_SUMMARY_LANGUAGE,
-        PREF_CEREBRAS_MODEL,
+        PREF_AI_MODEL,
         PREF_FEED_UPDATE_INTERVAL,
         PREF_MAX_POSTS_PER_FEED,
         PREF_MAX_POST_AGE_DAYS,
@@ -154,7 +154,7 @@ def get_preferences(
         PREF_SPLIT_RATIO,
         PREF_SUGGESTION_MIN_TAGS,
         PREF_PROFILE_MIN_TAG_FREQ,
-        PREF_CEREBRAS_API_KEYS,
+        PREF_AI_API_KEYS,
         PREF_TAGS_PER_POST,
         PREF_MODEL_COOLDOWN,
         PREF_SYSTEM_PROMPT,
@@ -186,7 +186,7 @@ def get_preferences(
         # AI settings
         summary_language=prefs[PREF_SUMMARY_LANGUAGE]
         or "Brazilian Portuguese",
-        cerebras_model=prefs[PREF_CEREBRAS_MODEL]
+        ai_model=prefs[PREF_AI_MODEL]
         or "llama-3.3-70b",
         # Data settings
         feed_update_interval=int_or_default(
@@ -217,8 +217,8 @@ def get_preferences(
             prefs[PREF_PROFILE_MIN_TAG_FREQ], 2
         ),
         # AI keys and prompts
-        cerebras_api_keys=_mask_keys(
-            prefs[PREF_CEREBRAS_API_KEYS] or ""
+        ai_api_keys=_mask_keys(
+            prefs[PREF_AI_API_KEYS] or ""
         ),
         tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
         model_cooldown_minutes=int_or_default(
@@ -253,8 +253,8 @@ def update_preferences(
     if prefs.summary_language is not None:
         _set_setting(db, PREF_SUMMARY_LANGUAGE, prefs.summary_language)
 
-    if prefs.cerebras_model is not None:
-        _set_setting(db, PREF_CEREBRAS_MODEL, prefs.cerebras_model)
+    if prefs.ai_model is not None:
+        _set_setting(db, PREF_AI_MODEL, prefs.ai_model)
 
     # Data settings (store as string)
     if prefs.feed_update_interval is not None:
@@ -310,11 +310,11 @@ def update_preferences(
         invalidate_user_profile(db)
 
     # AI keys and prompts
-    if prefs.cerebras_api_keys is not None and prefs.cerebras_api_keys.strip():
+    if prefs.ai_api_keys is not None and prefs.ai_api_keys.strip():
         # Only save if not masked (contains actual keys, not "****")
-        if "****" not in prefs.cerebras_api_keys:
+        if "****" not in prefs.ai_api_keys:
             _set_setting(
-                db, PREF_CEREBRAS_API_KEYS, prefs.cerebras_api_keys.strip()
+                db, PREF_AI_API_KEYS, prefs.ai_api_keys.strip()
             )
 
     if prefs.tags_per_post is not None:
@@ -403,9 +403,9 @@ def _mask_keys(raw: str) -> str:
     return ", ".join(masked)
 
 
-def get_effective_cerebras_api_keys(db: Session) -> list:
+def get_effective_ai_api_keys(db: Session) -> list:
     """Get API keys from app_settings."""
-    saved = _get_setting(db, PREF_CEREBRAS_API_KEYS)
+    saved = _get_setting(db, PREF_AI_API_KEYS)
     if not saved:
         return []
     return [k.strip() for k in saved.split(",") if k.strip()]
@@ -442,8 +442,8 @@ def get_effective_summary_language(db: Session) -> str:
     return saved or "Brazilian Portuguese"
 
 
-def get_effective_cerebras_model(db: Session) -> str:
-    saved = _get_setting(db, PREF_CEREBRAS_MODEL)
+def get_effective_ai_model(db: Session) -> str:
+    saved = _get_setting(db, PREF_AI_MODEL)
     return saved or "llama-3.3-70b"
 
 

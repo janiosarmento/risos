@@ -341,13 +341,13 @@ async def _generate_summary_locked(
     # Get effective settings
     from app.routes.preferences import (
         get_effective_summary_language,
-        get_effective_cerebras_model,
+        get_effective_ai_model,
         get_effective_ai_timeout,
     )
 
     db = SessionLocal()
     try:
-        preferred_model = get_effective_cerebras_model(db)
+        preferred_model = get_effective_ai_model(db)
         effective_language = get_effective_summary_language(db)
         ai_timeout = get_effective_ai_timeout(db)
 
@@ -423,11 +423,11 @@ async def _call_llm_json_locked(
         raise TemporaryError("No API key configured")
 
     # Get preferred model (proxy handles fallback)
-    from app.routes.preferences import get_effective_cerebras_model, get_effective_ai_timeout
+    from app.routes.preferences import get_effective_ai_model, get_effective_ai_timeout
 
     db = SessionLocal()
     try:
-        model = get_effective_cerebras_model(db)
+        model = get_effective_ai_model(db)
         ai_timeout = get_effective_ai_timeout(db)
     finally:
         db.close()
