@@ -9,7 +9,7 @@ This document provides everything an AI assistant (or human developer) needs to 
 **Key characteristics:**
 - Single-user (no accounts, just a password)
 - Single-worker backend (SQLite + APScheduler)
-- AI summaries via Cerebras API
+- AI summaries via any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.)
 - Bilingual UI (English/Portuguese)
 - 100% vibe-coded with Claude Code
 
@@ -123,7 +123,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 |-------|------------|
 | **Frontend** | Alpine.js 3.x, Tailwind CSS (CDN), i18n with full tooltip coverage, SVG sprite sheet |
 | **Backend** | FastAPI, SQLAlchemy, SQLite (WAL mode) |
-| **AI** | Cerebras API (configurable model with fallback) |
+| **AI** | Any OpenAI-compatible API (configurable model, key, and base URL — set in UI) |
 | **Scheduler** | APScheduler |
 | **Server** | Gunicorn + Uvicorn workers, Nginx reverse proxy |
 
@@ -162,14 +162,13 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   │   │   ├── admin.py            # Admin endpoints (locales, models, circuit breaker reset)
 │   │   │   └── proxy.py            # SSRF-safe content proxy
 │   │   └── services/
-│   │       ├── cerebras/            # AI client package
+│   │       ├── ai/                  # AI client package
 │   │       │   ├── __init__.py      # Public API exports
 │   │       │   ├── _api.py          # generate_summary, call_llm_json, model fallback
 │   │       │   ├── _types.py        # SummaryResult, error classes, GarbageContentError
 │   │       │   ├── _infrastructure.py # CircuitBreaker, APIKeyRotator
 │   │       │   ├── _constants.py    # Shared constants
-│   │       │   ├── _prompts.py      # Prompt loading and formatting
-│   │       │   └── _legacy.py       # Legacy compatibility
+│   │       │   └── _prompts.py      # Prompt loading and formatting
 │   │       ├── scheduler.py        # APScheduler jobs
 │   │       ├── suggestions.py      # Tag overlap scoring, clear/reprocess
 │   │       ├── user_profile.py     # User interest profile from liked posts
@@ -188,8 +187,7 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 │   ├── scripts/
 │   │   ├── lib.py                  # Shared utilities (log, compute_content_hash, etc.)
 │   │   ├── regenerate.py           # Unified regeneration (--starred, --unread, --local)
-│   │   ├── smart_merge_tags.py     # 3-phase tag dedup (stem + LLM)
-│   │   └── translate_all_tags.py   # Batch tag translation to English
+│   │   └── smart_merge_tags.py     # 3-phase tag dedup (stem + LLM)
 │   ├── prompts.yaml                # AI prompts (gitignored)
 │   └── .env                        # Config (gitignored)
 │
@@ -203,45 +201,41 @@ Follow the pattern in admin.py. Add frontend call to display in Settings.
 
 ## Key Files to Understand
 
-### Frontend (`htdocs/static/js/app.js`)
+### Frontend (`htdocs/static/js/`)
 
-The entire frontend is in one file using Alpine.js. Key sections:
+The frontend uses Alpine.js with a zero-build, mixin-based architecture. `app.js` defines the root component via a plain function; feature groups live in separate mixin files spread into it:
 
 ```javascript
-// APP_VERSION is defined in index.html (single source of truth for cache busting)
-// Format: YYYYMMDD + letter suffix (a, b, c...). Increment letter for each change on same day.
+// app.js — root component
+function app() {
+    return {
+        ...postDetailMixin,   // post viewing, navigation, summary, export
+        ...settingsMixin,     // settings panel, CRUD, AI config, tags, topics
+        ...curationMixin,     // AI curation, batch ops, ZIP export
 
-// Main Alpine.js data object
-document.addEventListener('alpine:init', () => {
-    Alpine.data('app', () => ({
         // State
-        token: null,
-        posts: [],
-        feeds: [],
-        categories: [],
-        currentPost: null,
-        selectedIndex: -1,
+        feeds: [], categories: [], posts: [],
+        filter: 'unread', filterId: null,
 
-        // Computed properties use getters
+        // Getters proxy store state so HTML bindings don't change
+        get token() { return Alpine.store('auth').token; },
         get isSplitMode() { ... },
-        get unreadCount() { ... },
+        get splitPaneStyle() { return this.isSplitMode ? `height: ${this.splitRatio}%` : ''; },
 
-        // Methods
         async init() { ... },
-        async login(password) { ... },
-        async loadPosts() { ... },
-        openPost(post) { ... },
         handleKeyboard(e) { ... },
-        // ... etc
-    }));
-});
+    }
+}
 ```
 
+Shared state lives in Alpine stores (`auth`, `ui`, `i18n`, `prefs`) registered in `stores/`.
+
 **Important patterns:**
-- State is reactive via Alpine.js
-- API calls use `fetch()` with `Authorization: Bearer ${token}`
+- Mixin methods share `this` with the root component — no isolated scope
+- API calls go through `Alpine.store('auth').fetchApi()`
 - Preferences sync to server via `savePreferencesToServer()`
 - Keyboard handler at `handleKeyboard(e)` manages all shortcuts
+- `APP_VERSION` defined once in `index.html` `<head>` — single source of truth for cache busting
 
 ### Backend Entry (`backend/app/main.py`)
 
@@ -268,19 +262,21 @@ User preferences stored in `app_settings` table. Key preferences:
 - `reading_mode` - fullscreen/split
 - `split_ratio` - percentage for split view (20-80)
 - `summary_language` - AI summary language
-- `cerebras_model` - AI model selection
+- `ai_model` - AI model selection
+- `ai_api_keys` - API keys (one per line or comma-separated)
+- `ai_timeout` - request timeout in seconds (default 30)
 - `suggestion_min_tags` - minimum tag overlap for suggestions (1 to tags_per_post)
 - `tags_per_post` - number of tags per AI summary (3-15)
 - `model_cooldown_minutes` - grace period before retrying failed models
 - `blocked_terms` - newline-separated terms to flag noisy posts (with % wildcard)
 - Plus data retention settings
 
-### AI Service (`backend/app/services/cerebras/`)
+### AI Service (`backend/app/services/ai/`)
 
-Refactored into a package with clear separation of concerns:
+Package with clear separation of concerns:
 - `_api.py` — Summary generation with prompts, model fallback, `GarbageContentError` for unusable content
 - `_types.py` — `SummaryResult` dataclass, error hierarchy (`TemporaryError`, `PermanentError`, `ModelSpecificError`, `GarbageContentError`)
-- `_infrastructure.py` — `CircuitBreaker` (persistent state in DB), `APIKeyRotator` (round-robin with per-key cooldowns)
+- `_infrastructure.py` — `CircuitBreaker` (persistent state in DB as `ai_state`/`ai_failures`/etc.), `APIKeyRotator` (round-robin with per-key cooldowns)
 - `_constants.py` — Shared constants
 - `_prompts.py` — Prompt loading from `prompts.yaml` or DB overrides
 
@@ -411,16 +407,15 @@ journalctl -u rss-reader -f
 - OPML import/export
 
 ### AI
-- Automatic article summarization (Cerebras, configurable model)
+- Automatic article summarization via any OpenAI-compatible API
 - Automatic model fallback on response errors
 - Title translation for foreign-language articles (including title-only posts)
-- Configurable summary language, model, and model cooldown
+- Configurable summary language, model, API key, base URL, timeout, and model cooldown
 - Rate limiting and circuit breaker (with manual reset via Settings)
 - Auto-skip garbage content (`GarbageContentError` — paywalls, error pages, empty results)
 - Skip summary toggle per post (manual or automatic after permanent failures)
 - Skip summary indicator icon in post list (prohibition icon before title)
 - Tags extracted per post (configurable 3-15, shown as clickable chips on all posts)
-- Tags auto-translated to English for non-GPT models
 - Ignored tags system — exclude irrelevant tags from suggestions
 - Blocked terms — flag posts matching user-defined title patterns (with % wildcard support)
 
@@ -520,7 +515,7 @@ Increment the letter for each change on the same day.
 
 ### 6. AI Summaries Not Generating
 **Problem**: Queue stuck, no summaries appearing.
-**Solution**: Use the "Reset AI" button in Settings footer to reset the circuit breaker. Also check Cerebras API key and rate limits. The system will automatically try fallback models if the preferred model returns invalid responses.
+**Solution**: Use the "Reset AI" button in Settings footer to reset the circuit breaker. Also check that the AI API key and base URL are correctly set in Settings. The system will automatically try fallback models if the preferred model returns invalid responses.
 
 ---
 
@@ -652,17 +647,7 @@ Each has its own database, config, and systemd service.
 
 ```bash
 git add -A
-git commit -m "$(cat <<'EOF'
-Brief description of changes
-
-- Detail 1
-- Detail 2
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-EOF
-)"
+git commit -m "feat: brief description of changes"
 git push
 ```
 
@@ -682,17 +667,17 @@ git push
 - **Code patterns**: Search existing code for similar features
 - **Alpine.js**: https://alpinejs.dev/
 - **FastAPI**: https://fastapi.tiangolo.com/
-- **Cerebras**: https://inference-docs.cerebras.ai/
 
 ---
 
-*Last updated: 2026-03-08 (Post search, drag-and-drop feeds)*
+*Last updated: 2026-05-16 (Settings migration to DB, AI provider rename, mixin architecture)*
 
 ---
 
 ## Reference Documents
 
 - **AI.md** (this file) — Quick start guide for AI-assisted development
-- **PROJECT.md** — Detailed technical specification (circuit breaker, rate limiting, security, etc.)
 - **README.md** — Public documentation for end users
-- **PROGRESSO.md** — Development session notes (Portuguese)
+- **PROMPTS.md** — Default AI prompts with placeholder reference
+- **docs/specs/PROJECT.md** — Original technical specification (historical reference)
+- **docs/history/PROGRESSO.md** — Development session log (Portuguese, historical)
