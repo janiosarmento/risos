@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260516g';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260516g">
+    <script>var APP_VERSION = '20260516h';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260516h">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260516g"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260516g"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260516g"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260516g"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260516g"></script>
-    <script defer src="/static/js/components/settings.js?v=20260516g"></script>
-    <script defer src="/static/js/components/curation.js?v=20260516g"></script>
-    <script defer src="/static/js/app.js?v=20260516g"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260516h"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260516h"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260516h"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260516h"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260516h"></script>
+    <script defer src="/static/js/components/settings.js?v=20260516h"></script>
+    <script defer src="/static/js/components/curation.js?v=20260516h"></script>
+    <script defer src="/static/js/app.js?v=20260516h"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -203,7 +203,7 @@
 
         <!-- Login Screen -->
         <template x-if="!$store.auth.token">
-            <div class="flex-1 flex items-center justify-center">
+            <main class="flex-1 flex items-center justify-center">
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
                     <h1 class="text-2xl font-bold mb-6 text-center" x-text="t('app.title')"></h1>
                     <form @submit.prevent="login()">
@@ -243,7 +243,7 @@
                     </form>
                     <p class="mt-4 text-xs text-gray-400 text-center md:hidden" x-text="t('auth.mobileHint')"></p>
                 </div>
-            </div>
+            </main>
         </template>
 
         <!-- Main App -->
@@ -269,7 +269,7 @@
                     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
                 >
                     <!-- Header -->
-                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <header class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <h1 class="font-bold text-lg" x-text="t('app.title')"></h1>
                         <div class="flex items-center gap-2">
                             <div class="hidden md:flex items-center gap-1">
@@ -285,7 +285,7 @@
                                 <svg class="w-6 h-6"><use href="#icon-x-close"/></svg>
                             </button>
                         </div>
-                    </div>
+                    </header>
 
                     <!-- Actions -->
                     <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex gap-2">
@@ -1363,10 +1363,15 @@
                 @click.self="closeSettings()"
                 @keydown.escape.window="closeSettings()"
             >
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] md:max-h-[80vh] flex flex-col">
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] md:max-h-[80vh] flex flex-col"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="settings-dialog-title"
+                >
                     <!-- Header -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                        <h2 class="text-lg font-bold" x-text="t('settings.title')"></h2>
+                        <h2 id="settings-dialog-title" class="text-lg font-bold" x-text="t('settings.title')"></h2>
                         <button @click="closeSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl">&times;</button>
                     </div>
 
