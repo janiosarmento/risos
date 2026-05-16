@@ -185,3 +185,8 @@
         height: auto;
     }
 }
+
+/* Split view resize handle — touch-action must be inline-style-free */
+.resize-handle {
+    touch-action: none;
+}

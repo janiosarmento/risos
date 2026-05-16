@@ -752,7 +752,7 @@
                             id="post-list"
                             class="overflow-y-auto scrollbar-thin"
                             :class="isSplitMode ? 'flex-shrink-0 border-b border-gray-300 dark:border-gray-600' : 'flex-1'"
-                            :style="isSplitMode ? 'height: ' + splitRatio + '%' : ''"
+                            :style="splitPaneStyle"
                             @scroll="handleScroll($event)"
                         >
                         <template x-if="loading && posts.length === 0">
@@ -911,9 +911,8 @@
                             x-show="isSplitMode"
                             @mousedown="startResize($event)"
                             @touchstart.prevent="startResize($event)"
-                            class="h-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 cursor-row-resize flex-shrink-0 transition-colors"
+                            class="resize-handle h-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 cursor-row-resize flex-shrink-0 transition-colors"
                             :class="resizing ? 'bg-blue-500 dark:bg-blue-400' : ''"
-                            style="touch-action: none;"
                         ></div>
 
                         <!-- Split View Reading Pane (only on desktop in split mode) -->

@@ -81,6 +81,7 @@ function app() {
         set readingMode(v) { Alpine.store('prefs').readingMode = v; },
         get splitRatio() { return Alpine.store('prefs').splitRatio; },
         set splitRatio(v) { Alpine.store('prefs').splitRatio = v; },
+        get splitPaneStyle() { return this.isSplitMode ? `height: ${this.splitRatio}%` : ''; },
 
         // UI state (delegates to Alpine.store('ui'))
         get toast() { return Alpine.store('ui').toast; },
