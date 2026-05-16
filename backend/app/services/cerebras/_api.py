@@ -11,7 +11,7 @@ from typing import Dict, Optional, List
 
 import httpx
 
-from app.config import settings, USER_AGENT
+from app.config import USER_AGENT
 from app.database import SessionLocal
 from app.services.cerebras._types import (
     TemporaryError,
@@ -117,7 +117,7 @@ async def get_available_models() -> List[str]:
 
 
 async def _call_model(
-    model: str, api_key: str, key_index: int, messages: list
+    model: str, api_key: str, key_index: int, messages: list, timeout: int = 30
 ) -> SummaryResult:
     """
     Make a single API call to a specific model and parse the response.
@@ -141,7 +141,7 @@ async def _call_model(
 
     try:
         async with httpx.AsyncClient(
-            timeout=settings.cerebras_timeout,
+            timeout=timeout,
             headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.post(
@@ -287,7 +287,7 @@ async def _call_model(
                 raise ModelSpecificError(f"Invalid response: {e}")
 
     except httpx.TimeoutException:
-        raise TemporaryError(f"Timeout after {settings.cerebras_timeout}s")
+        raise TemporaryError(f"Timeout after {timeout}s")
 
     except httpx.RequestError as e:
         raise TemporaryError(f"Connection error: {e}")
@@ -342,12 +342,14 @@ async def _generate_summary_locked(
     from app.routes.preferences import (
         get_effective_summary_language,
         get_effective_cerebras_model,
+        get_effective_ai_timeout,
     )
 
     db = SessionLocal()
     try:
         preferred_model = get_effective_cerebras_model(db)
         effective_language = get_effective_summary_language(db)
+        ai_timeout = get_effective_ai_timeout(db)
 
         # Build message list (reused across model attempts).
         # System content uses array format so Anthropic prompt caching works.
@@ -374,7 +376,7 @@ async def _generate_summary_locked(
         db.close()
 
     # Use preferred model only (proxy handles fallback)
-    result = await _call_model(preferred_model, api_key, key_index, messages)
+    result = await _call_model(preferred_model, api_key, key_index, messages, ai_timeout)
 
     # Empty result means the model deemed the content unusable
     if not result.summary_pt and not result.tags:
@@ -421,11 +423,12 @@ async def _call_llm_json_locked(
         raise TemporaryError("No API key configured")
 
     # Get preferred model (proxy handles fallback)
-    from app.routes.preferences import get_effective_cerebras_model
+    from app.routes.preferences import get_effective_cerebras_model, get_effective_ai_timeout
 
     db = SessionLocal()
     try:
         model = get_effective_cerebras_model(db)
+        ai_timeout = get_effective_ai_timeout(db)
     finally:
         db.close()
 
@@ -447,7 +450,7 @@ async def _call_llm_json_locked(
 
     try:
         async with httpx.AsyncClient(
-            timeout=settings.cerebras_timeout,
+            timeout=ai_timeout,
             headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.post(
