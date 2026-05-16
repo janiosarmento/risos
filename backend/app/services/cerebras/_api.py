@@ -23,10 +23,6 @@ from app.services.cerebras._types import (
 from app.services.cerebras._constants import (
     MODELS_CACHE_TTL,
     MODELS_FETCH_TIMEOUT,
-    TAG_TRANSLATION_MODEL,
-    TAG_TRANSLATION_TEMPERATURE,
-    TAG_TRANSLATION_MAX_TOKENS,
-    TAG_TRANSLATION_TIMEOUT,
     SUMMARY_TEMPERATURE,
     SUMMARY_MAX_TOKENS,
     MAX_CONTENT_LENGTH,
@@ -118,72 +114,6 @@ async def get_available_models() -> List[str]:
 
     return _available_models_cache or []
 
-
-async def _translate_tags(tags: list, api_key: str, key_index: int) -> list:
-    """
-    Translate non-English tags to English using a fast, small model.
-    Returns translated tags or original tags on failure.
-    """
-    if not tags:
-        return tags
-
-    tags_str = ", ".join(tags)
-    messages = [
-        {
-            "role": "system",
-            "content": "You translate tags to English. Reply with ONLY the comma-separated translated tags, nothing else.",
-        },
-        {
-            "role": "user",
-            "content": f"Translate these tags to English (keep brand names, proper nouns, and already-English tags exactly as-is; use lowercase hyphens): {tags_str}",
-        },
-    ]
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": TAG_TRANSLATION_MODEL,
-        "messages": messages,
-        "temperature": TAG_TRANSLATION_TEMPERATURE,
-        "max_tokens": TAG_TRANSLATION_MAX_TOKENS,
-    }
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=TAG_TRANSLATION_TIMEOUT,
-            headers={"User-Agent": USER_AGENT},
-        ) as client:
-            response = await client.post(
-                f"{_get_api_base_url()}/chat/completions",
-                headers=headers,
-                json=payload,
-            )
-            if response.status_code != 200:
-                logger.warning(
-                    f"Tag translation failed: HTTP {response.status_code}"
-                )
-                return tags
-
-            data = response.json()
-            content = data["choices"][0]["message"]["content"].strip()
-            translated = [normalize_tag(t) for t in content.split(",")]
-            # Basic validation: similar count, no empty
-            translated = [t for t in translated if t]
-            if len(translated) >= len(tags) // 2:
-                logger.info(
-                    f"Tags translated: [{tags_str}] -> [{', '.join(translated)}]"
-                )
-                return translated
-            else:
-                logger.warning(
-                    f"Tag translation gave too few results: {len(translated)} from {len(tags)}"
-                )
-                return tags
-    except Exception as e:
-        logger.warning(f"Tag translation error: {e}")
-        return tags
 
 
 async def _call_model(
@@ -310,10 +240,6 @@ async def _call_model(
 
                 # Extract and normalize tags
                 tags = normalize_tags(result.get("tags", []), MAX_TAGS)
-
-                # Translate non-English tags to English
-                if tags:
-                    tags = await _translate_tags(tags, api_key, key_index)
 
                 # Allow both empty (error pages) or both filled
                 if bool(summary_pt) != bool(one_line):
