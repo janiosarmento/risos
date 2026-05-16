@@ -7,10 +7,10 @@ document.addEventListener('alpine:init', () => {
     Alpine.store('prefs', {
         // AI Settings
         summaryLanguage: null,
-        cerebrasModel: null,
+        aiModel: null,
         availableSummaryLanguages: [],
         availableModels: [],
-        cerebrasApiKeys: '',
+        apiKeys: '',
         apiBaseUrl: 'https://api.cerebras.ai/v1',
         systemPrompt: '',
         userPrompt: '',

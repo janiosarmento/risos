@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260516a';</script>
+    <script>var APP_VERSION = '20260516b';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
     <script>
       (function() {
@@ -1630,7 +1630,7 @@
                                 <label class="block text-sm font-medium mb-1" x-text="t('settings.apiKeys')"></label>
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.apiKeysDesc')"></p>
                                 <textarea
-                                    x-model="cerebrasApiKeys"
+                                    x-model="apiKeys"
                                     :placeholder="t('settings.apiKeysPlaceholder')"
                                     rows="2"
                                     class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
@@ -1656,7 +1656,7 @@
                                 <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <select
-                                        @change="setCerebrasModel($event.target.value)"
+                                        @change="setAiModel($event.target.value)"
                                         class="flex-1 max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                         :disabled="availableModels.length === 0"
                                     >
@@ -1664,7 +1664,7 @@
                                             <option x-text="t('settings.loadingModels')"></option>
                                         </template>
                                         <template x-for="model in availableModels" :key="model.id">
-                                            <option :value="model.id" :selected="cerebrasModel === model.id" x-text="model.id"></option>
+                                            <option :value="model.id" :selected="aiModel === model.id" x-text="model.id"></option>
                                         </template>
                                     </select>
                                     <button

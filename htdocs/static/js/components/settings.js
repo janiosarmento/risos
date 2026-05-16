@@ -772,12 +772,12 @@ const settingsMixin = {
         try {
             const models = await this.fetchApi('/admin/models');
             this.availableModels = models || [];
-            const saved = this.cerebrasModel;
+            const saved = this.aiModel;
             const savedExists = models && models.some(m => m.id === saved);
             if (savedExists) {
-                this.$nextTick(() => { this.cerebrasModel = saved; });
+                this.$nextTick(() => { this.aiModel = saved; });
             } else if (models && models.length > 0) {
-                this.setCerebrasModel(models[0].id);
+                this.setAiModel(models[0].id);
             }
         } catch (e) {
             console.warn('Failed to load AI models:', e);
@@ -790,8 +790,8 @@ const settingsMixin = {
         if (this.token) this.savePreferencesToServer();
     },
 
-    setCerebrasModel(model) {
-        this.cerebrasModel = model;
+    setAiModel(model) {
+        this.aiModel = model;
         if (this.token) this.savePreferencesToServer();
     },
 
@@ -821,8 +821,8 @@ const settingsMixin = {
                 system_prompt: this.systemPrompt,
                 user_prompt: this.userPrompt,
             };
-            if (this.cerebrasApiKeys && !this.cerebrasApiKeys.includes('****')) {
-                payload.cerebras_api_keys = this.cerebrasApiKeys;
+            if (this.apiKeys && !this.apiKeys.includes('****')) {
+                payload.cerebras_api_keys = this.apiKeys;
             }
             payload.api_base_url = this.apiBaseUrl;
             payload.ai_timeout = parseInt(this.aiTimeout) || 30;
@@ -967,7 +967,7 @@ const settingsMixin = {
                     locale: this.locale,
                     theme: this.theme,
                     summary_language: this.summaryLanguage,
-                    cerebras_model: this.cerebrasModel,
+                    cerebras_model: this.aiModel,
                     feed_update_interval: this.feedUpdateInterval,
                     max_posts_per_feed: this.maxPostsPerFeed,
                     max_post_age_days: this.maxPostAgeDays,
@@ -1009,7 +1009,7 @@ const settingsMixin = {
 
             // AI settings
             if (serverPrefs.summary_language) this.summaryLanguage = serverPrefs.summary_language;
-            if (serverPrefs.cerebras_model) this.cerebrasModel = serverPrefs.cerebras_model;
+            if (serverPrefs.cerebras_model) this.aiModel = serverPrefs.cerebras_model;
             if (serverPrefs.ai_timeout) this.aiTimeout = serverPrefs.ai_timeout;
 
             // Data settings
@@ -1044,7 +1044,7 @@ const settingsMixin = {
             }
 
             // AI keys and prompts
-            if (serverPrefs.cerebras_api_keys) this.cerebrasApiKeys = serverPrefs.cerebras_api_keys;
+            if (serverPrefs.cerebras_api_keys) this.apiKeys = serverPrefs.cerebras_api_keys;
             if (serverPrefs.api_base_url) this.apiBaseUrl = serverPrefs.api_base_url;
             if (serverPrefs.system_prompt) this.systemPrompt = serverPrefs.system_prompt;
             if (serverPrefs.user_prompt) this.userPrompt = serverPrefs.user_prompt;
