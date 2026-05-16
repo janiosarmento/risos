@@ -50,7 +50,7 @@
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>var APP_VERSION = '20260513d';</script>
+    <script>var APP_VERSION = '20260516a';</script>
     <script>document.write('<link rel="stylesheet" href="/static/css/app.css?v=' + APP_VERSION + '">');</script>
     <script>
       (function() {
@@ -1674,6 +1674,21 @@
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0 1 15.36-4.36M20 15a9 9 0 0 1-15.36 4.36"/></svg>
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- AI Timeout -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-1" x-text="t('settings.aiTimeout')"></label>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        min="5" max="600"
+                                        x-model.number="aiTimeout"
+                                        @change="saveAiSettings()"
+                                        class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                    >
+                                    <span class="text-sm text-gray-500">s</span>
                                 </div>
                             </div>
 

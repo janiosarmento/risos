@@ -104,6 +104,8 @@ function app() {
         set summaryLanguage(v) { Alpine.store('prefs').summaryLanguage = v; },
         get cerebrasModel() { return Alpine.store('prefs').cerebrasModel; },
         set cerebrasModel(v) { Alpine.store('prefs').cerebrasModel = v; },
+        get aiTimeout() { return Alpine.store('prefs').aiTimeout; },
+        set aiTimeout(v) { Alpine.store('prefs').aiTimeout = v; },
         get availableSummaryLanguages() { return Alpine.store('prefs').availableSummaryLanguages; },
         set availableSummaryLanguages(v) { Alpine.store('prefs').availableSummaryLanguages = v; },
         get availableModels() { return Alpine.store('prefs').availableModels; },

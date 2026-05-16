@@ -110,6 +110,7 @@
     "summaryLanguageDesc": "Language for AI-generated summaries",
     "aiModel": "AI Model",
     "aiModelDesc": "Model used for generating summaries",
+    "aiTimeout": "AI Timeout",
     "loadingModels": "Loading models...",
     "data": "Data",
     "feedUpdateInterval": "Feed Update Interval",

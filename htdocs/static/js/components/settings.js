@@ -825,6 +825,7 @@ const settingsMixin = {
                 payload.cerebras_api_keys = this.cerebrasApiKeys;
             }
             payload.api_base_url = this.apiBaseUrl;
+            payload.ai_timeout = parseInt(this.aiTimeout) || 30;
             await this.fetchApi('/preferences', {
                 method: 'PUT',
                 body: JSON.stringify(payload),
@@ -1009,6 +1010,7 @@ const settingsMixin = {
             // AI settings
             if (serverPrefs.summary_language) this.summaryLanguage = serverPrefs.summary_language;
             if (serverPrefs.cerebras_model) this.cerebrasModel = serverPrefs.cerebras_model;
+            if (serverPrefs.ai_timeout) this.aiTimeout = serverPrefs.ai_timeout;
 
             // Data settings
             if (serverPrefs.feed_update_interval) this.feedUpdateInterval = serverPrefs.feed_update_interval;

@@ -18,6 +18,7 @@ document.addEventListener('alpine:init', () => {
         defaultUserPrompt: '',
         tagsPerPost: 7,
         modelCooldownMinutes: 30,
+        aiTimeout: 30,
 
         // Data Settings
         feedUpdateInterval: 30,
