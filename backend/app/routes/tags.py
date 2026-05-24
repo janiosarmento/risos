@@ -281,14 +281,25 @@ async def suggest_merges(
         .group_by(PostTag.tag)
         .all()
     )
-    all_tags = {r.tag: r.count for r in all_rows}
+    
+    # Pre-compute tag metadata ONCE to avoid heavy string/regex overhead in the O(N*M) search loop
+    tag_metadata = {}
+    for r in all_rows:
+        t = r.tag
+        t_clean = t.strip().lower()
+        tag_metadata[t] = {
+            "count": r.count,
+            "clean": t_clean,
+            "digits": _get_digits(t_clean),
+            "initials": _get_initials(t_clean),
+            "parts": [p for p in t_clean.split("-") if p],
+        }
 
     # Index segments to identify high-fan-out (generic) categories
     from collections import defaultdict
     segment_to_tags = defaultdict(set)
-    for tag in all_tags:
-        parts = [p for p in tag.split("-") if p]
-        for p in parts:
+    for tag, meta in tag_metadata.items():
+        for p in meta["parts"]:
             if len(p) >= 3:
                 segment_to_tags[p].add(tag)
 
@@ -301,21 +312,24 @@ async def suggest_merges(
 
     for row in rows:
         t1 = row.tag
-        t1_clean = t1.strip().lower()
-        t1_parts = [p for p in t1_clean.split("-") if p]
-        t1_initials = _get_initials(t1_clean)
-        t1_digits = _get_digits(t1_clean)
+        if t1 not in tag_metadata:
+            continue
+        meta1 = tag_metadata[t1]
+        t1_clean = meta1["clean"]
+        t1_parts = meta1["parts"]
+        t1_initials = meta1["initials"]
+        t1_digits = meta1["digits"]
 
         candidates = []
-        for t2 in all_tags:
-            t2_clean = t2.strip().lower()
-            if t2_clean == t1_clean:
+        for t2, meta2 in tag_metadata.items():
+            if t2 == t1:
                 continue
 
             # 1. Reject if different digits (e.g. 4g vs 5g, python2 vs python3, 2k vs 4k)
-            t2_digits = _get_digits(t2_clean)
-            if t1_digits != t2_digits:
+            if t1_digits != meta2["digits"]:
                 continue
+
+            t2_clean = meta2["clean"]
 
             # 2. Check for exact hyphen difference (e.g. game-dev vs gamedev)
             if t1_clean.replace("-", "") == t2_clean.replace("-", ""):
@@ -328,22 +342,24 @@ async def suggest_merges(
                 continue
 
             # 4. Check for abbreviation/initials match (e.g. ai vs artificial-intelligence)
-            t2_initials = _get_initials(t2_clean)
+            t2_initials = meta2["initials"]
             if (t1_initials and t1_initials == t2_clean) or (t2_initials and t2_initials == t1_clean):
                 candidates.append(t2)
                 continue
 
             # 5. Check for spelling variation (Levenshtein distance)
+            # Early exit: edit distance of at most D is only mathematically possible if length diff is at most D.
             if len(t1_clean) >= 4 and len(t2_clean) >= 4:
-                if _edit_dist(t1_clean, t2_clean) <= 1:
+                len_diff = abs(len(t1_clean) - len(t2_clean))
+                if len_diff <= 1 and _edit_dist(t1_clean, t2_clean) <= 1:
                     candidates.append(t2)
                     continue
-                if len(t1_clean) >= 6 and len(t2_clean) >= 6 and _edit_dist(t1_clean, t2_clean) <= 2:
+                if len(t1_clean) >= 6 and len(t2_clean) >= 6 and len_diff <= 2 and _edit_dist(t1_clean, t2_clean) <= 2:
                     candidates.append(t2)
                     continue
 
             # 6. Check for shared significant stem/segments (skip if generic)
-            t2_parts = [p for p in t2_clean.split("-") if p]
+            t2_parts = meta2["parts"]
             shared_parts = set(t1_parts).intersection(set(t2_parts))
             significant_shared = False
             for p in shared_parts:
@@ -376,7 +392,7 @@ async def suggest_merges(
     for i, g in enumerate(groups_to_eval, 1):
         group_lines.append(f"Group {i}:")
         for tag in g:
-            count = all_tags.get(tag, 0)
+            count = tag_metadata.get(tag, {}).get("count", 0)
             group_lines.append(f"- {tag} ({count} posts)")
         group_lines.append("")
 
