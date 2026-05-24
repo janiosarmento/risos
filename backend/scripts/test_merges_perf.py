@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Performance diagnostic script for tag merge suggestions batch.
-Runs the exact pre-filtering algorithm on batch 2 (offset 100, batch_size 100)
+Optimized performance diagnostic script for tag merge suggestions batch.
+Runs the highly optimized O(1) pre-filtering algorithm on batch 2 (offset 100, batch_size 100)
 and prints execution metrics and candidate groups.
 
 Usage:
@@ -54,7 +54,7 @@ def main():
         
         t_pre = time.monotonic()
         
-        # 1. Pre-compute metadata
+        # 1. Pre-compute metadata ONCE
         tag_metadata = {}
         for r in all_rows:
             t = r.tag
@@ -67,18 +67,38 @@ def main():
                 "parts": [p for p in t_clean.split("-") if p],
             }
             
-        # 2. Build segments index
+        # 2. Build clean_to_original map for fast direct O(1) lookups
+        clean_to_original = {meta["clean"]: tag for tag, meta in tag_metadata.items()}
+            
+        # 3. Build segment_to_tags inverted index
         segment_to_tags = defaultdict(set)
         for tag, meta in tag_metadata.items():
             for p in meta["parts"]:
                 if len(p) >= 3:
                     segment_to_tags[p].add(tag)
                     
-        # 3. Identify generic categories (fan-out > 5)
+        # 4. Identify generic categories (fan-out > 5)
         generic_segments = {seg for seg, tags in segment_to_tags.items() if len(tags) > 5}
         print(f"Generic segments (>5 tags): {len(generic_segments)} identified (out of {len(segment_to_tags)} total)")
         
-        # 4. Filter candidate groups
+        # 5. Build hyphenless_to_tags index (For exact hyphen difference)
+        hyphenless_to_tags = defaultdict(set)
+        for tag, meta in tag_metadata.items():
+            hyphenless_to_tags[meta["clean"].replace("-", "")].add(tag)
+            
+        # 6. Build initials_to_tags index (For acronym matching)
+        initials_to_tags = defaultdict(set)
+        for tag, meta in tag_metadata.items():
+            initials = meta["initials"]
+            if initials:
+                initials_to_tags[initials].add(tag)
+                
+        # 7. Build tags_by_length index (For strict Levenshtein spelling check)
+        tags_by_length = defaultdict(list)
+        for tag, meta in tag_metadata.items():
+            tags_by_length[len(meta["clean"])].append(tag)
+            
+        # 8. Filter candidate groups using O(1) index lookups
         groups_to_eval = []
         seen_groups = set()
         
@@ -92,55 +112,67 @@ def main():
             t1_initials = meta1["initials"]
             t1_digits = meta1["digits"]
             
+            candidate_pool = set()
+            
+            # --- INDEX LOOKUPS (No full database scan!) ---
+            
+            # Heuristic 1: Exact hyphen difference (O(1))
+            hyphenless = t1_clean.replace("-", "")
+            if hyphenless in hyphenless_to_tags:
+                candidate_pool.update(hyphenless_to_tags[hyphenless])
+                
+            # Heuristic 2: Plural/singular difference (O(1))
+            # e.g., tool -> tools
+            for p in [t1_clean + "s", t1_clean + "es"]:
+                if p in clean_to_original:
+                    candidate_pool.add(clean_to_original[p])
+            # e.g., tools -> tool
+            if t1_clean.endswith("s"):
+                s1 = t1_clean[:-1]
+                if s1 in clean_to_original:
+                    candidate_pool.add(clean_to_original[s1])
+            if t1_clean.endswith("es"):
+                s2 = t1_clean[:-2]
+                if s2 in clean_to_original:
+                    candidate_pool.add(clean_to_original[s2])
+                    
+            # Heuristic 3: Acronym / initials matching (O(1))
+            # If t1 is an acronym (like "ai"), find all matching tags
+            if len(t1_clean) in [2, 3] and t1_clean in initials_to_tags:
+                candidate_pool.update(initials_to_tags[t1_clean])
+            # If t1 is long (like "artificial-intelligence"), look up acronym tag
+            if t1_initials and t1_initials in clean_to_original:
+                candidate_pool.add(clean_to_original[t1_initials])
+                
+            # Heuristic 4: Shared specific segments matching (O(1) per segment)
+            for p in t1_parts:
+                if len(p) >= 3 and p not in generic_segments:
+                    if p in segment_to_tags:
+                        candidate_pool.update(segment_to_tags[p])
+                        
+            # Heuristic 5: Levenshtein spelling check (restricted strictly to distance <= 1)
+            # Only checked against tags of similar length (length diff <= 1)
+            if len(t1_clean) >= 4:
+                for l in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
+                    for t2 in tags_by_length[l]:
+                        t2_clean = tag_metadata[t2]["clean"]
+                        # Strict distance <= 1 check
+                        if _edit_dist(t1_clean, t2_clean) <= 1:
+                            candidate_pool.add(t2)
+                            
+            # Verify and filter candidates from candidate_pool
             candidates = []
-            for t2, meta2 in tag_metadata.items():
+            for t2 in candidate_pool:
                 if t2 == t1:
                     continue
+                meta2 = tag_metadata[t2]
                 
-                # Heuristic 1: digit mismatch early reject
+                # Digit mismatch early reject
                 if t1_digits != meta2["digits"]:
                     continue
                     
-                t2_clean = meta2["clean"]
+                candidates.append(t2)
                 
-                # Heuristic 2: exact hyphen mismatch
-                if t1_clean.replace("-", "") == t2_clean.replace("-", ""):
-                    candidates.append(t2)
-                    continue
-                    
-                # Heuristic 3: plural/singular
-                if t1_clean + "s" == t2_clean or t2_clean + "s" == t1_clean:
-                    candidates.append(t2)
-                    continue
-                    
-                # Heuristic 4: initials/acronym match
-                t2_initials = meta2["initials"]
-                if (t1_initials and t1_initials == t2_clean) or (t2_initials and t2_initials == t1_clean):
-                    candidates.append(t2)
-                    continue
-                    
-                # Heuristic 5: edit distance spelling check
-                if len(t1_clean) >= 4 and len(t2_clean) >= 4:
-                    len_diff = abs(len(t1_clean) - len(t2_clean))
-                    if len_diff <= 1 and _edit_dist(t1_clean, t2_clean) <= 1:
-                        candidates.append(t2)
-                        continue
-                    if len(t1_clean) >= 6 and len(t2_clean) >= 6 and len_diff <= 2 and _edit_dist(t1_clean, t2_clean) <= 2:
-                        candidates.append(t2)
-                        continue
-                        
-                # Heuristic 6: specific segment matching
-                t2_parts = meta2["parts"]
-                shared_parts = set(t1_parts).intersection(set(t2_parts))
-                significant_shared = False
-                for p in shared_parts:
-                    if len(p) >= 3 and p not in generic_segments:
-                        significant_shared = True
-                        break
-                if significant_shared:
-                    candidates.append(t2)
-                    continue
-                    
             if candidates:
                 group = sorted([t1] + candidates)
                 group_key = tuple(group)
