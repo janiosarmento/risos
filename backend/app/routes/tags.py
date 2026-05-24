@@ -295,6 +295,9 @@ async def suggest_merges(
             "parts": [p for p in t_clean.split("-") if p],
         }
 
+    # Build clean_to_original map for fast direct O(1) lookups
+    clean_to_original = {meta["clean"]: tag for tag, meta in tag_metadata.items()}
+
     # Index segments to identify high-fan-out (generic) categories
     from collections import defaultdict
     segment_to_tags = defaultdict(set)
@@ -306,7 +309,24 @@ async def suggest_merges(
     # Segments that appear in more than 5 tags are considered generic category suffixes/prefixes
     generic_segments = {seg for seg, tags in segment_to_tags.items() if len(tags) > 5}
 
-    # Find candidate groups for the active batch
+    # Build hyphenless_to_tags index (For exact hyphen difference)
+    hyphenless_to_tags = defaultdict(set)
+    for tag, meta in tag_metadata.items():
+        hyphenless_to_tags[meta["clean"].replace("-", "")].add(tag)
+
+    # Build initials_to_tags index (For acronym matching)
+    initials_to_tags = defaultdict(set)
+    for tag, meta in tag_metadata.items():
+        initials = meta["initials"]
+        if initials:
+            initials_to_tags[initials].add(tag)
+
+    # Build tags_by_length index (For strict Levenshtein spelling check)
+    tags_by_length = defaultdict(list)
+    for tag, meta in tag_metadata.items():
+        tags_by_length[len(meta["clean"])].append(tag)
+
+    # Find candidate groups for the active batch using O(1) index lookups
     groups_to_eval = []
     seen_groups = set()
 
@@ -320,55 +340,66 @@ async def suggest_merges(
         t1_initials = meta1["initials"]
         t1_digits = meta1["digits"]
 
+        candidate_pool = set()
+
+        # --- INDEX LOOKUPS (No full database scan!) ---
+
+        # Heuristic 1: Exact hyphen difference (O(1))
+        hyphenless = t1_clean.replace("-", "")
+        if hyphenless in hyphenless_to_tags:
+            candidate_pool.update(hyphenless_to_tags[hyphenless])
+
+        # Heuristic 2: Plural/singular difference (O(1))
+        # e.g., tool -> tools
+        for p in [t1_clean + "s", t1_clean + "es"]:
+            if p in clean_to_original:
+                candidate_pool.add(clean_to_original[p])
+        # e.g., tools -> tool
+        if t1_clean.endswith("s"):
+            s1 = t1_clean[:-1]
+            if s1 in clean_to_original:
+                candidate_pool.add(clean_to_original[s1])
+        if t1_clean.endswith("es"):
+            s2 = t1_clean[:-2]
+            if s2 in clean_to_original:
+                candidate_pool.add(clean_to_original[s2])
+
+        # Heuristic 3: Acronym / initials matching (O(1))
+        # If t1 is an acronym (like "ai"), find all matching tags
+        if len(t1_clean) in [2, 3] and t1_clean in initials_to_tags:
+            candidate_pool.update(initials_to_tags[t1_clean])
+        # If t1 is long (like "artificial-intelligence"), look up acronym tag
+        if t1_initials and t1_initials in clean_to_original:
+            candidate_pool.add(clean_to_original[t1_initials])
+
+        # Heuristic 4: Shared specific segments matching (O(1) per segment)
+        for p in t1_parts:
+            if len(p) >= 3 and p not in generic_segments:
+                if p in segment_to_tags:
+                    candidate_pool.update(segment_to_tags[p])
+
+        # Heuristic 5: Levenshtein spelling check (restricted strictly to distance <= 1)
+        # Only checked against tags of similar length (length diff <= 1)
+        if len(t1_clean) >= 4:
+            for l in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
+                for t2 in tags_by_length[l]:
+                    t2_clean = tag_metadata[t2]["clean"]
+                    # Strict distance <= 1 check
+                    if _edit_dist(t1_clean, t2_clean) <= 1:
+                        candidate_pool.add(t2)
+
+        # Verify and filter candidates from candidate_pool
         candidates = []
-        for t2, meta2 in tag_metadata.items():
+        for t2 in candidate_pool:
             if t2 == t1:
                 continue
+            meta2 = tag_metadata[t2]
 
-            # 1. Reject if different digits (e.g. 4g vs 5g, python2 vs python3, 2k vs 4k)
+            # Digit mismatch early reject
             if t1_digits != meta2["digits"]:
                 continue
 
-            t2_clean = meta2["clean"]
-
-            # 2. Check for exact hyphen difference (e.g. game-dev vs gamedev)
-            if t1_clean.replace("-", "") == t2_clean.replace("-", ""):
-                candidates.append(t2)
-                continue
-
-            # 3. Check for plural/singular difference (e.g. tool vs tools)
-            if t1_clean + "s" == t2_clean or t2_clean + "s" == t1_clean:
-                candidates.append(t2)
-                continue
-
-            # 4. Check for abbreviation/initials match (e.g. ai vs artificial-intelligence)
-            t2_initials = meta2["initials"]
-            if (t1_initials and t1_initials == t2_clean) or (t2_initials and t2_initials == t1_clean):
-                candidates.append(t2)
-                continue
-
-            # 5. Check for spelling variation (Levenshtein distance)
-            # Early exit: edit distance of at most D is only mathematically possible if length diff is at most D.
-            if len(t1_clean) >= 4 and len(t2_clean) >= 4:
-                len_diff = abs(len(t1_clean) - len(t2_clean))
-                if len_diff <= 1 and _edit_dist(t1_clean, t2_clean) <= 1:
-                    candidates.append(t2)
-                    continue
-                if len(t1_clean) >= 6 and len(t2_clean) >= 6 and len_diff <= 2 and _edit_dist(t1_clean, t2_clean) <= 2:
-                    candidates.append(t2)
-                    continue
-
-            # 6. Check for shared significant stem/segments (skip if generic)
-            t2_parts = meta2["parts"]
-            shared_parts = set(t1_parts).intersection(set(t2_parts))
-            significant_shared = False
-            for p in shared_parts:
-                if len(p) >= 3 and p not in generic_segments:
-                    significant_shared = True
-                    break
-            if significant_shared:
-                candidates.append(t2)
-                continue
+            candidates.append(t2)
 
         if candidates:
             # Form a candidate group and sort it
