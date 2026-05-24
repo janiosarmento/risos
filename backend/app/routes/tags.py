@@ -54,6 +54,35 @@ def _normalize_tag(tag: str) -> str:
     return tag[:50]
 
 
+def _edit_dist(s1: str, s2: str) -> int:
+    """Standard space-optimized Levenshtein distance."""
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = [i2 + 1]
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+        distances = distances_
+    return distances[-1]
+
+
+def _get_digits(s: str) -> str:
+    """Extract all digits from a string."""
+    return "".join(c for c in s if c.isdigit())
+
+
+def _get_initials(tag: str) -> str:
+    """Get the initials of a hyphenated tag."""
+    parts = [p for p in tag.split("-") if p]
+    if len(parts) > 1:
+        return "".join(p[0] for p in parts)
+    return ""
+
+
 @router.get("/popular")
 def get_popular_tags(
     limit: int = Query(
@@ -246,7 +275,112 @@ async def suggest_merges(
             "batch_size": body.batch_size,
         }
 
-    tags_list = "\n".join(f"- {row.tag} ({row.count} posts)" for row in rows)
+    # Load all tags to find candidate synonyms from the entire database
+    all_rows = (
+        db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
+        .group_by(PostTag.tag)
+        .all()
+    )
+    all_tags = {r.tag: r.count for r in all_rows}
+
+    # Index segments to identify high-fan-out (generic) categories
+    from collections import defaultdict
+    segment_to_tags = defaultdict(set)
+    for tag in all_tags:
+        parts = [p for p in tag.split("-") if p]
+        for p in parts:
+            if len(p) >= 3:
+                segment_to_tags[p].add(tag)
+
+    # Segments that appear in more than 5 tags are considered generic category suffixes/prefixes
+    generic_segments = {seg for seg, tags in segment_to_tags.items() if len(tags) > 5}
+
+    # Find candidate groups for the active batch
+    groups_to_eval = []
+    seen_groups = set()
+
+    for row in rows:
+        t1 = row.tag
+        t1_clean = t1.strip().lower()
+        t1_parts = [p for p in t1_clean.split("-") if p]
+        t1_initials = _get_initials(t1_clean)
+        t1_digits = _get_digits(t1_clean)
+
+        candidates = []
+        for t2 in all_tags:
+            t2_clean = t2.strip().lower()
+            if t2_clean == t1_clean:
+                continue
+
+            # 1. Reject if different digits (e.g. 4g vs 5g, python2 vs python3, 2k vs 4k)
+            t2_digits = _get_digits(t2_clean)
+            if t1_digits != t2_digits:
+                continue
+
+            # 2. Check for exact hyphen difference (e.g. game-dev vs gamedev)
+            if t1_clean.replace("-", "") == t2_clean.replace("-", ""):
+                candidates.append(t2)
+                continue
+
+            # 3. Check for plural/singular difference (e.g. tool vs tools)
+            if t1_clean + "s" == t2_clean or t2_clean + "s" == t1_clean:
+                candidates.append(t2)
+                continue
+
+            # 4. Check for abbreviation/initials match (e.g. ai vs artificial-intelligence)
+            t2_initials = _get_initials(t2_clean)
+            if (t1_initials and t1_initials == t2_clean) or (t2_initials and t2_initials == t1_clean):
+                candidates.append(t2)
+                continue
+
+            # 5. Check for spelling variation (Levenshtein distance)
+            if len(t1_clean) >= 4 and len(t2_clean) >= 4:
+                if _edit_dist(t1_clean, t2_clean) <= 1:
+                    candidates.append(t2)
+                    continue
+                if len(t1_clean) >= 6 and len(t2_clean) >= 6 and _edit_dist(t1_clean, t2_clean) <= 2:
+                    candidates.append(t2)
+                    continue
+
+            # 6. Check for shared significant stem/segments (skip if generic)
+            t2_parts = [p for p in t2_clean.split("-") if p]
+            shared_parts = set(t1_parts).intersection(set(t2_parts))
+            significant_shared = False
+            for p in shared_parts:
+                if len(p) >= 3 and p not in generic_segments:
+                    significant_shared = True
+                    break
+            if significant_shared:
+                candidates.append(t2)
+                continue
+
+        if candidates:
+            # Form a candidate group and sort it
+            group = sorted([t1] + candidates)
+            group_key = tuple(group)
+            if group_key not in seen_groups:
+                seen_groups.add(group_key)
+                groups_to_eval.append(group)
+
+    # Short-circuit and return empty list if no candidate groups are found
+    if not groups_to_eval:
+        return {
+            "groups": [],
+            "total_tags": total_tags,
+            "offset": body.offset,
+            "batch_size": body.batch_size,
+        }
+
+    # Format the candidate groups for the LLM prompt
+    group_lines = []
+    for i, g in enumerate(groups_to_eval, 1):
+        group_lines.append(f"Group {i}:")
+        for tag in g:
+            count = all_tags.get(tag, 0)
+            group_lines.append(f"- {tag} ({count} posts)")
+        group_lines.append("")
+
+    groups_list = "\n".join(group_lines)
 
     system_prompt = (
         "You are a tag consolidation assistant for an RSS reader. "
@@ -255,36 +389,39 @@ async def suggest_merges(
         "should be merged into a single canonical tag."
     )
 
-    user_prompt = f"""Here are {len(rows)} tags with their post counts:
+    user_prompt = f"""I have pre-grouped some tags that are potential synonyms or near-duplicates. For each group, evaluate if they are indeed true synonyms or duplicates.
 
-{tags_list}
+IMPORTANT Rules:
+- Choose the most descriptive, commonly-used tag as the canonical form (prefer the one with the higher post count).
+- Only group tags that truly mean the same thing.
+- Tags that are distinct concepts should NOT be grouped (e.g. 'ai' and 'ai-ethics' are different).
+- Do NOT merge different versions, generations, or numerical values (e.g., '4g' and '5g' are different, 'ipv4' and 'ipv6' are different, '2k' and '4k' are different, 'react-17' and 'react-18' are different, 'python2' and 'python3' are different).
+- If a group contains no true duplicates/synonyms, skip it entirely.
 
-Group any tags that are synonyms or near-duplicates (e.g. career-advice / career-tips / career-guidance). For each group:
-- Choose the most descriptive, commonly-used tag as the canonical form
-- Only group tags that truly mean the same thing
-- Tags that are distinct concepts should NOT be grouped (e.g. 'ai' and 'ai-ethics' are different)
-- A tag with no duplicates should be omitted entirely
+Here are the candidate groups to evaluate:
 
-Respond ONLY in JSON:
+{groups_list}
+
+Respond ONLY in JSON format:
 {{
   "groups": [
     {{"canonical": "best-tag", "merge": ["synonym1", "synonym2"]}}
   ]
 }}
 
-If no duplicates are found, return {{"groups": []}}"""
+If no true duplicates/synonyms are found, return {{"groups": []}}"""
 
     result = await call_llm_json(system_prompt, user_prompt)
 
-    # Validate: only include tags that actually exist in the batch
-    available = {row.tag for row in rows}
+    # Validate: only include tags that actually existed in the generated candidate groups
+    available = {tag for g in groups_to_eval for tag in g}
     groups = []
     for g in result.get("groups", []):
         canonical = g.get("canonical", "")
         merge = [
             t
             for t in g.get("merge", [])
-            if isinstance(t, str) and t in available
+            if isinstance(t, str) and t in available and t != canonical
         ]
         if canonical in available and merge:
             groups.append({"canonical": canonical, "merge": merge})
