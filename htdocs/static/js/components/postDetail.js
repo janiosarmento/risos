@@ -37,8 +37,6 @@ const postDetailMixin = {
 
     splitIntoParagraphs(text) {
         if (!text) return text;
-        // Already has paragraph breaks — leave as-is
-        if (/\n\s*\n/.test(text)) return text;
 
         const PLACEHOLDER = '\x00';
         const abbrPattern = new RegExp(
@@ -49,13 +47,15 @@ const postDetailMixin = {
             'g'
         );
 
-        const masked = text.replace(abbrPattern, m => m.replaceAll('.', PLACEHOLDER));
-        const sentences = masked.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝÇ0-9])/);
-
-        return sentences
-            .map(s => s.replaceAll(PLACEHOLDER, '.').trim())
-            .filter(Boolean)
-            .join('\n\n');
+        // Split each existing paragraph independently
+        return text.split(/\n\s*\n/).map(paragraph => {
+            const masked = paragraph.replace(abbrPattern, m => m.replaceAll('.', PLACEHOLDER));
+            const sentences = masked.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝÇ0-9])/);
+            return sentences
+                .map(s => s.replaceAll(PLACEHOLDER, '.').trim())
+                .filter(Boolean)
+                .join('\n\n');
+        }).join('\n\n');
     },
 
     // Open / close
