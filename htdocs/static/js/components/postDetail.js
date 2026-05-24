@@ -27,37 +27,6 @@ const postDetailMixin = {
         return text.replace(/[\u00A0\u202F\u2007\u2060]/g, ' ').replace(/&nbsp;/g, ' ');
     },
 
-    _ABBREVIATIONS: [
-        'p.ex.', 'i.e.', 'e.g.', 'U.S.', 'U.K.',
-        'etc.', 'vs.',
-        'Inc.', 'Ltd.', 'Corp.', 'Co.',
-        'Dr.', 'Dra.', 'Sr.', 'Sra.', 'Prof.', 'Profa.', 'Jr.',
-        'EUA.', 'nº.', 'ed.', 'vol.', 'cap.',
-    ],
-
-    splitIntoParagraphs(text) {
-        if (!text) return text;
-
-        const PLACEHOLDER = '\x00';
-        const abbrPattern = new RegExp(
-            '\\b(' + this._ABBREVIATIONS
-                .sort((a, b) => b.length - a.length)
-                .map(a => a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-                .join('|') + ')',
-            'g'
-        );
-
-        // Split each existing paragraph independently
-        return text.split(/\n\s*\n/).map(paragraph => {
-            const masked = paragraph.replace(abbrPattern, m => m.replaceAll('.', PLACEHOLDER));
-            const sentences = masked.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝÇ0-9])/);
-            return sentences
-                .map(s => s.replaceAll(PLACEHOLDER, '.').trim())
-                .filter(Boolean)
-                .join('\n\n');
-        }).join('\n\n');
-    },
-
     // Open / close
     async openPost(post) {
         // Set loading state FIRST to prevent flash of old content
@@ -92,7 +61,7 @@ const postDetailMixin = {
             const data = await this.fetchApi(`/posts/${post.id}`);
             // Clean non-breaking spaces from text fields
             if (data.full_content) data.full_content = this.cleanText(data.full_content);
-            if (data.summary_pt) data.summary_pt = this.splitIntoParagraphs(this.cleanText(data.summary_pt));
+            if (data.summary_pt) data.summary_pt = this.cleanText(data.summary_pt);
             if (data.one_line_summary) data.one_line_summary = this.cleanText(data.one_line_summary);
 
             this.currentPost = { ...this.currentPost, ...data };
@@ -181,7 +150,7 @@ const postDetailMixin = {
             });
 
             const updates = {
-                summary_pt: this.splitIntoParagraphs(this.cleanText(data.summary_pt)),
+                summary_pt: this.cleanText(data.summary_pt),
                 one_line_summary: this.cleanText(data.one_line_summary),
                 translated_title: data.translated_title,
                 tags: data.tags || [],

@@ -13,6 +13,55 @@ from app.services.ai._constants import (
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Summary paragraph splitting
+# ---------------------------------------------------------------------------
+
+_ABBREVIATIONS = sorted(
+    [
+        "etc.", "vs.", "p.ex.",
+        "Inc.", "Ltd.", "Corp.", "Co.",
+        "Dr.", "Dra.", "Sr.", "Sra.", "Prof.", "Profa.", "Jr.",
+        "i.e.", "e.g.",
+        "U.S.", "U.K.",
+        "EUA.", "nº.", "ed.", "vol.", "cap.",
+    ],
+    key=len,
+    reverse=True,
+)
+
+_PLACEHOLDER = "\x00"
+
+_ABBREV_PATTERN = re.compile(
+    r"\b(" + "|".join(re.escape(abbr) for abbr in _ABBREVIATIONS) + r")"
+)
+
+_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÝÇ0-9])")
+
+
+def split_into_paragraphs(summary: str) -> str:
+    """Split a dense summary into paragraphs at sentence boundaries,
+    preserving common abbreviations (vs., Dr., U.S., etc.)."""
+    if not summary:
+        return summary
+
+    def _split_block(block: str) -> str:
+        masked = _ABBREV_PATTERN.sub(
+            lambda m: m.group(0).replace(".", _PLACEHOLDER), block
+        )
+        sentences = _SENTENCE_BOUNDARY.split(masked)
+        return "\n\n".join(
+            s.replace(_PLACEHOLDER, ".").strip()
+            for s in sentences
+            if s.strip()
+        )
+
+    # Process each existing paragraph independently
+    return "\n\n".join(
+        _split_block(p) for p in re.split(r"\n\s*\n", summary)
+    )
+
+
 # Tags too generic to be useful
 GENERIC_TAGS = frozenset({"news", "article", "technology", "update", "post"})
 

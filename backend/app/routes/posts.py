@@ -43,6 +43,7 @@ from app.services.ai import (
     CerebrasError,
     GarbageContentError,
 )
+from app.services.ai._parsing import split_into_paragraphs
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
 from app.routes.preferences import get_effective_blocked_terms
@@ -575,7 +576,7 @@ async def get_post(
         )
 
         if summary:
-            summary_pt = summary.summary_pt
+            summary_pt = split_into_paragraphs(summary.summary_pt)
             one_line_summary = summary.one_line_summary
             translated_title = summary.translated_title
             summary_status = "ready"
@@ -994,7 +995,7 @@ async def regenerate_summary(
         return {
             "success": True,
             "post_id": post_id,
-            "summary_pt": summary_text,
+            "summary_pt": split_into_paragraphs(summary_text),
             "one_line_summary": result.one_line_summary,
             "translated_title": result.translated_title,
             "tags": result.tags or [],
