@@ -321,10 +321,12 @@ async def suggest_merges(
         if initials:
             initials_to_tags[initials].add(tag)
 
-    # Build tags_by_length index (For strict Levenshtein spelling check)
-    tags_by_length = defaultdict(list)
+    # Build tags_by_len_and_first_char index (Massive Levenshtein optimization)
+    tags_by_len_and_first_char = defaultdict(list)
     for tag, meta in tag_metadata.items():
-        tags_by_length[len(meta["clean"])].append(tag)
+        clean = meta["clean"]
+        if clean:
+            tags_by_len_and_first_char[(len(clean), clean[0])].append(tag)
 
     # Find candidate groups for the active batch using O(1) index lookups
     groups_to_eval = []
@@ -379,10 +381,11 @@ async def suggest_merges(
                     candidate_pool.update(segment_to_tags[p])
 
         # Heuristic 5: Levenshtein spelling check (restricted strictly to distance <= 1)
-        # Only checked against tags of similar length (length diff <= 1)
+        # Only checked against tags of similar length starting with the same first character
         if len(t1_clean) >= 4:
+            first_char = t1_clean[0]
             for l in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
-                for t2 in tags_by_length[l]:
+                for t2 in tags_by_len_and_first_char[(l, first_char)]:
                     t2_clean = tag_metadata[t2]["clean"]
                     # Strict distance <= 1 check
                     if _edit_dist(t1_clean, t2_clean) <= 1:
