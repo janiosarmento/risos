@@ -23,7 +23,7 @@ _ABBREVIATIONS = sorted(
         "Inc.", "Ltd.", "Corp.", "Co.",
         "Dr.", "Dra.", "Sr.", "Sra.", "Prof.", "Profa.", "Jr.",
         "i.e.", "e.g.",
-        "U.S.", "U.K.",
+        "U.S.", "U.K.", "O.J.",
         "EUA.", "nº.", "ed.", "vol.", "cap.",
     ],
     key=len,
