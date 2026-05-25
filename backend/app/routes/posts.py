@@ -965,9 +965,7 @@ async def regenerate_summary(
         )
 
         # Append model attribution to summary
-        summary_text = result.summary_pt
-        if summary_text and result.model:
-            summary_text += f"\n\n— {result.model}"
+        summary_text = result.get_summary_with_signature()
 
         if existing_summary:
             # Update existing summary

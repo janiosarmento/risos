@@ -320,8 +320,12 @@ async def generate_summary(
     if not title_only and is_garbage_content(content):
         raise GarbageContentError("Content detected as error/session page")
 
+    import time
+    start_time = time.time()
     async with _api_lock:
-        return await _generate_summary_locked(content, title, title_only)
+        result = await _generate_summary_locked(content, title, title_only)
+    result.duration = time.time() - start_time
+    return result
 
 
 async def _generate_summary_locked(

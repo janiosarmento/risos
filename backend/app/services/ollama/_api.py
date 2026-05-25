@@ -28,6 +28,9 @@ async def generate_summary_local(
     if is_garbage_content(content):
         raise GarbageContentError("Garbage content detected")
 
+    import time
+    start_time = time.time()
+
     content = content[:MAX_CONTENT_LENGTH]
 
     system_prompt = get_system_prompt(db)
@@ -83,10 +86,13 @@ async def generate_summary_local(
             "Model returned empty result (unusable content)"
         )
 
+    duration = time.time() - start_time
+
     return SummaryResult(
         summary_pt=summary_pt,
         one_line_summary=one_line,
         translated_title=translated_title,
         tags=tags,
         model=f"ollama/{OLLAMA_MODEL}",
+        duration=duration,
     )

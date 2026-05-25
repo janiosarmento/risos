@@ -110,9 +110,7 @@ async def regenerate_one(
     if post.skip_summary:
         post.skip_summary = False
 
-    summary_text = result.summary_pt
-    if summary_text and result.model:
-        summary_text += f"\n\n— {result.model}"
+    summary_text = result.get_summary_with_signature()
 
     existing = (
         db.query(AISummary)

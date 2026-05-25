@@ -52,3 +52,17 @@ class SummaryResult:
     translated_title: str = None
     tags: List[str] = field(default_factory=list)
     model: str = ""
+    duration: float = 0.0
+
+    def get_summary_with_signature(self) -> str:
+        """Returns the summary text appended with the model name, timestamp and generation duration."""
+        if not self.summary_pt:
+            return ""
+        if not self.model:
+            return self.summary_pt
+
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        duration_str = f" ({int(self.duration)} s)" if self.duration else ""
+        return f"{self.summary_pt}\n\n— {self.model}\n— {timestamp}{duration_str}"
+

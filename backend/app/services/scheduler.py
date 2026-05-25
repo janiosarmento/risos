@@ -753,9 +753,7 @@ class Scheduler:
                         )
 
                         # Append model attribution to summary
-                        summary_text = summary_result.summary_pt
-                        if summary_text and summary_result.model:
-                            summary_text += f"\n\n— {summary_result.model}"
+                        summary_text = summary_result.get_summary_with_signature()
 
                         # Save summary
                         ai_summary = AISummary(
