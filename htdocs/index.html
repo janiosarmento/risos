@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260527d';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260527d">
+    <script>var APP_VERSION = '20260527f';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260527f">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260527d"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260527d"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260527d"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260527d"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260527d"></script>
-    <script defer src="/static/js/components/settings.js?v=20260527d"></script>
-    <script defer src="/static/js/components/curation.js?v=20260527d"></script>
-    <script defer src="/static/js/app.js?v=20260527d"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260527f"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260527f"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260527f"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260527f"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260527f"></script>
+    <script defer src="/static/js/components/settings.js?v=20260527f"></script>
+    <script defer src="/static/js/components/curation.js?v=20260527f"></script>
+    <script defer src="/static/js/app.js?v=20260527f"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -183,6 +183,10 @@
         <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
         </symbol>
     </svg>
 
@@ -1031,6 +1035,18 @@
                                             <div class="px-3 py-1.5 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between">
                                                 <h3 class="text-xs font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
                                                 <div class="flex items-center gap-1">
+                                                    <!-- Copy summary -->
+                                                    <button
+                                                        @click="copySummaryToClipboard()"
+                                                        class="text-xs px-2 py-0.5 rounded transition-colors bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        :disabled="!currentPost || !currentPost.summary_pt"
+                                                        :data-tip="t('modal.copySummary')"
+                                                        :aria-label="t('modal.copySummary')"
+                                                    >
+                                                        <span class="flex items-center gap-1">
+                                                            <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+                                                        </span>
+                                                    </button>
                                                     <button @click="toggleSkipSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')">
                                                         <span class="flex items-center gap-1">
                                                             <svg class="w-3 h-3"><use href="#icon-prohibition"/></svg>
@@ -1248,6 +1264,19 @@
                         <div class="px-4 py-2 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between min-h-[42px]">
                             <h3 class="text-sm font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
                             <div class="flex items-center gap-1">
+                                <!-- Copy summary -->
+                                <button
+                                    @click="copySummaryToClipboard()"
+                                    class="text-xs px-2 py-1 rounded transition-colors bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    :disabled="!currentPost || !currentPost.summary_pt"
+                                    :data-tip="t('modal.copySummary')"
+                                    :aria-label="t('modal.copySummary')"
+                                >
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+                                        <span class="hidden md:inline" x-text="t('modal.copySummary').split(' (')[0]"></span>
+                                    </span>
+                                </button>
                                 <button
                                     @click="toggleSkipSummary()"
                                     class="text-xs px-2 py-1 rounded transition-colors"

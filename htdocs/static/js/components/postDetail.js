@@ -167,6 +167,18 @@ const postDetailMixin = {
         }
     },
 
+    // Copy to Clipboard
+    async copySummaryToClipboard() {
+        if (!this.currentPost || !this.currentPost.summary_pt) return;
+        try {
+            await navigator.clipboard.writeText(this.currentPost.summary_pt);
+            this.showToast(this.t('modal.summaryCopied'));
+        } catch (err) {
+            console.error('Failed to copy summary:', err);
+            this.showToast(this.t('errors.copyFailed'), 'error');
+        }
+    },
+
     // Export
     exportPostAsMarkdown() {
         const post = this.currentPost;

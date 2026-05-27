@@ -609,6 +609,9 @@ function app() {
                     } else if (this.isKey(e, 'c')) {
                         this.toggleKeepUnread(this.currentPost);
                         return;
+                    } else if (this.isKey(e, 'y')) {
+                        this.copySummaryToClipboard();
+                        return;
                     } else if (this.isKey(e, 'r') && e.shiftKey) {
                         this.regenerateSummary();
                         return;

@@ -80,12 +80,14 @@
     "antiBotReason1": "The site blocks automated access",
     "antiBotReason2": "The content is video or media",
     "shortcuts": "ESC close | M read/unread",
-    "starShortcut": "S star | L like | Shift+R regenerate",
+    "starShortcut": "S star | L like | Shift+R regenerate | Y copy",
     "navShortcuts": "J/K navigate posts",
     "read": "Read",
     "unread": "Unread",
     "noContent": "No content available",
-    "exportMarkdown": "Export"
+    "exportMarkdown": "Export",
+    "copySummary": "Copy Summary (Y)",
+    "summaryCopied": "Summary copied to clipboard"
   },
   "settings": {
     "title": "Settings",
@@ -330,7 +332,8 @@
     "generic": "Error importing",
     "loginFailed": "Login failed",
     "sessionExpired": "Session expired",
-    "requestFailed": "Request failed"
+    "requestFailed": "Request failed",
+    "copyFailed": "Failed to copy to clipboard"
   },
   "confirm": {
     "deleteCategory": "Delete \"{name}\"?",

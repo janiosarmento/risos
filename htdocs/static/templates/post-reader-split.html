@@ -72,6 +72,18 @@
                                             <div class="px-3 py-1.5 bg-blue-100 dark:bg-slate-700 border-b border-blue-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-between">
                                                 <h3 class="text-xs font-medium text-blue-600 dark:text-blue-300" x-text="t('modal.aiSummary')"></h3>
                                                 <div class="flex items-center gap-1">
+                                                    <!-- Copy summary -->
+                                                    <button
+                                                        @click="copySummaryToClipboard()"
+                                                        class="text-xs px-2 py-0.5 rounded transition-colors bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        :disabled="!currentPost || !currentPost.summary_pt"
+                                                        :data-tip="t('modal.copySummary')"
+                                                        :aria-label="t('modal.copySummary')"
+                                                    >
+                                                        <span class="flex items-center gap-1">
+                                                            <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+                                                        </span>
+                                                    </button>
                                                     <button @click="toggleSkipSummary()" class="text-xs px-2 py-0.5 rounded transition-colors" :class="currentPost.skip_summary ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'" :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')">
                                                         <span class="flex items-center gap-1">
                                                             <svg class="w-3 h-3"><use href="#icon-prohibition"/></svg>

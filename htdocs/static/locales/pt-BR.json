@@ -80,12 +80,14 @@
     "antiBotReason1": "O site bloqueia acesso automatizado",
     "antiBotReason2": "O conteúdo é um vídeo ou mídia",
     "shortcuts": "ESC fechar | M lido/não lido",
-    "starShortcut": "S favoritar | L gostei | Shift+R regenerar",
+    "starShortcut": "S favoritar | L gostei | Shift+R regenerar | Y copiar",
     "navShortcuts": "J/K navegar posts",
     "read": "Lido",
     "unread": "Não lido",
     "noContent": "Sem conteúdo disponível",
-    "exportMarkdown": "Exportar"
+    "exportMarkdown": "Exportar",
+    "copySummary": "Copiar Resumo (Y)",
+    "summaryCopied": "Resumo copiado para a área de transferência"
   },
   "settings": {
     "title": "Configurações",
@@ -330,7 +332,8 @@
     "generic": "Erro ao importar",
     "loginFailed": "Falha no login",
     "sessionExpired": "Sessão expirada",
-    "requestFailed": "Falha na requisição"
+    "requestFailed": "Falha na requisição",
+    "copyFailed": "Falha ao copiar para a área de transferência"
   },
   "confirm": {
     "deleteCategory": "Excluir \"{name}\"?",

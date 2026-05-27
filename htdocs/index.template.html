@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260527d';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260527d">
+    <script>var APP_VERSION = '20260527f';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260527f">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260527d"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260527d"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260527d"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260527d"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260527d"></script>
-    <script defer src="/static/js/components/settings.js?v=20260527d"></script>
-    <script defer src="/static/js/components/curation.js?v=20260527d"></script>
-    <script defer src="/static/js/app.js?v=20260527d"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260527f"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260527f"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260527f"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260527f"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260527f"></script>
+    <script defer src="/static/js/components/settings.js?v=20260527f"></script>
+    <script defer src="/static/js/components/curation.js?v=20260527f"></script>
+    <script defer src="/static/js/app.js?v=20260527f"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -183,6 +183,10 @@
         <symbol id="icon-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
         </symbol>
     </svg>
 
