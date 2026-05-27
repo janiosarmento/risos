@@ -29,6 +29,7 @@ async def generate_summary_local(
         raise GarbageContentError("Garbage content detected")
 
     import time
+
     start_time = time.time()
 
     content = content[:MAX_CONTENT_LENGTH]
@@ -82,9 +83,7 @@ async def generate_summary_local(
     tags = normalize_tags(result.get("tags", []), MAX_TAGS)
 
     if not summary_pt and not one_line:
-        raise GarbageContentError(
-            "Model returned empty result (unusable content)"
-        )
+        raise GarbageContentError("Model returned empty result (unusable content)")
 
     duration = time.time() - start_time
 

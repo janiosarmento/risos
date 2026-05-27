@@ -27,6 +27,7 @@ def _get_popular_tags(db, limit: int = 200) -> List[str]:
         return _popular_tags_cache
 
     from sqlalchemy import func
+
     from app.models import PostTag
 
     rows = (
@@ -66,8 +67,8 @@ def get_user_prompt(
     """
     if db:
         from app.routes.preferences import (
-            get_effective_user_prompt,
             get_effective_tags_per_post,
+            get_effective_user_prompt,
         )
 
         template = get_effective_user_prompt(db)

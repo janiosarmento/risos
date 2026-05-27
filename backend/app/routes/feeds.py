@@ -3,14 +3,13 @@ Feed routes.
 CRUD + refresh + OPML import/export.
 """
 
+import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import List, Optional
-from urllib.parse import urlparse, urljoin
-import re
-import httpx
+from urllib.parse import urljoin, urlparse
 
-from app.config import USER_AGENT
+import httpx
 from fastapi import (
     APIRouter,
     Depends,
@@ -24,14 +23,15 @@ from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.config import USER_AGENT
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Feed, Post, Category
+from app.models import Category, Feed, Post
 from app.schemas import (
-    FeedCreate,
-    FeedUpdate,
-    FeedResponse,
     MAX_CATEGORY_NAME_LENGTH,
+    FeedCreate,
+    FeedResponse,
+    FeedUpdate,
 )
 from app.services.feed_ingestion import ingest_feed
 
@@ -73,12 +73,8 @@ def list_feeds(
     query = (
         db.query(
             Feed,
-            func.coalesce(unread_count_subq.c.unread_count, 0).label(
-                "unread_count"
-            ),
-            func.coalesce(starred_count_subq.c.starred_count, 0).label(
-                "starred_count"
-            ),
+            func.coalesce(unread_count_subq.c.unread_count, 0).label("unread_count"),
+            func.coalesce(starred_count_subq.c.starred_count, 0).label("starred_count"),
         )
         .outerjoin(unread_count_subq, Feed.id == unread_count_subq.c.feed_id)
         .outerjoin(starred_count_subq, Feed.id == starred_count_subq.c.feed_id)
@@ -163,10 +159,7 @@ async def discover_feed(
         )
 
         for match in feed_pattern.findall(html):
-            if (
-                "application/rss+xml" in match
-                or "application/atom+xml" in match
-            ):
+            if "application/rss+xml" in match or "application/atom+xml" in match:
                 href_match = re.search(r'href=["\']([^"\']+)["\']', match)
                 if href_match:
                     feed_url = urljoin(str(resp.url), href_match.group(1))
@@ -187,7 +180,9 @@ async def discover_feed(
             "/rss/index.xml",
         ]
 
-        base_url = f"{urlparse(str(resp.url)).scheme}://{urlparse(str(resp.url)).netloc}"
+        base_url = (
+            f"{urlparse(str(resp.url)).scheme}://{urlparse(str(resp.url)).netloc}"
+        )
 
         for path in common_paths:
             try:
@@ -216,9 +211,7 @@ async def discover_feed(
         )
 
 
-@router.post(
-    "", response_model=FeedResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=FeedResponse, status_code=status.HTTP_201_CREATED)
 async def create_feed(
     feed: FeedCreate,
     db: Session = Depends(get_db),
@@ -239,9 +232,7 @@ async def create_feed(
 
     # Check if category_id exists (if provided)
     if feed.category_id:
-        category = (
-            db.query(Category).filter(Category.id == feed.category_id).first()
-        )
+        category = db.query(Category).filter(Category.id == feed.category_id).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -376,11 +367,7 @@ async def import_opml(
                 cat_name = cat_name[:MAX_CATEGORY_NAME_LENGTH].strip()
 
                 # Find or create category
-                category = (
-                    db.query(Category)
-                    .filter(Category.name == cat_name)
-                    .first()
-                )
+                category = db.query(Category).filter(Category.name == cat_name).first()
                 if not category:
                     category = Category(name=cat_name)
                     db.add(category)
@@ -408,9 +395,7 @@ async def import_opml(
 
 
 @router.get("/export-opml")
-def export_opml(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
+def export_opml(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     """
     Export all feeds in OPML format.
 

@@ -200,9 +200,7 @@ def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
     html = re.sub(
         r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE
     )
-    html = re.sub(
-        r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE
-    )
+    html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
 
     # Remove HTML comments
     html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
@@ -225,9 +223,7 @@ def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
         tag = re.sub(r'\s+rel="[^"]*"', "", tag)
         tag = re.sub(r'\s+target="[^"]*"', "", tag)
         # Add new ones
-        tag = tag.replace(
-            "<a ", '<a rel="noopener noreferrer" target="_blank" '
-        )
+        tag = tag.replace("<a ", '<a rel="noopener noreferrer" target="_blank" ')
         return tag
 
     sanitized = re.sub(r"<a\s[^>]*>", fix_links, sanitized)

@@ -6,7 +6,7 @@ Uses feedparser + httpx for fetch and parse.
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 import feedparser
@@ -144,9 +144,7 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
                 if response.status_code in (301, 302, 303, 307, 308):
                     redirect_url = response.headers.get("location")
                     if not redirect_url:
-                        raise FeedFetchError(
-                            "Redirect without Location header"
-                        )
+                        raise FeedFetchError("Redirect without Location header")
 
                     # Validate redirect
                     is_safe = _is_http_to_https(

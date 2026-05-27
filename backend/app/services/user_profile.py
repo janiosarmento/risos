@@ -6,12 +6,12 @@ Analyzes liked posts to create a profile of user interests using tag aggregation
 import json
 import logging
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Post, PostTag, AppSettings, IgnoredTag
+from app.models import AppSettings, IgnoredTag, Post, PostTag
 
 logger = logging.getLogger(__name__)
 

@@ -7,44 +7,41 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 import httpx
 
 from app.config import USER_AGENT
 from app.database import SessionLocal
-from app.services.ai._types import (
-    TemporaryError,
-    PermanentError,
-    ModelSpecificError,
-    GarbageContentError,
-    SummaryResult,
-)
 from app.services.ai._constants import (
-    MODELS_CACHE_TTL,
-    MODELS_FETCH_TIMEOUT,
-    SUMMARY_TEMPERATURE,
-    SUMMARY_MAX_TOKENS,
     MAX_CONTENT_LENGTH,
     MAX_ONE_LINE_LENGTH,
     MAX_TAGS,
+    MODELS_CACHE_TTL,
+    MODELS_FETCH_TIMEOUT,
     RATE_LIMIT_COOLDOWN_SECONDS,
-)
-from app.services.ai._parsing import (
-    is_garbage_content,  # noqa: F401
-    normalize_tags,
-    normalize_tag,
-    parse_json_response,
+    SUMMARY_MAX_TOKENS,
+    SUMMARY_TEMPERATURE,
 )
 from app.services.ai._infrastructure import (  # noqa: F401
     api_key_rotator,
 )
-
-
+from app.services.ai._parsing import (
+    is_garbage_content,  # noqa: F401
+    normalize_tags,
+    parse_json_response,
+)
 from app.services.ai._prompts import (
     get_system_prompt,
     get_user_prompt,
 )  # noqa: F401
+from app.services.ai._types import (
+    GarbageContentError,
+    ModelSpecificError,
+    PermanentError,
+    SummaryResult,
+    TemporaryError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +92,13 @@ async def get_available_models() -> List[str]:
         return []
 
     try:
-        async with _api_lock, httpx.AsyncClient(
-            timeout=MODELS_FETCH_TIMEOUT,
-            headers={"User-Agent": USER_AGENT},
-        ) as client:
+        async with (
+            _api_lock,
+            httpx.AsyncClient(
+                timeout=MODELS_FETCH_TIMEOUT,
+                headers={"User-Agent": USER_AGENT},
+            ) as client,
+        ):
             response = await client.get(
                 f"{_get_api_base_url()}/models",
                 headers={"Authorization": f"Bearer {api_keys[0]}"},
@@ -113,7 +113,6 @@ async def get_available_models() -> List[str]:
         logger.warning(f"Failed to fetch available models: {e}")
 
     return _available_models_cache or []
-
 
 
 async def _call_model(
@@ -161,15 +160,11 @@ async def _call_model(
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
                 )
-                raise TemporaryError(
-                    f"Rate limit reached on key {key_index + 1}"
-                )
+                raise TemporaryError(f"Rate limit reached on key {key_index + 1}")
 
             # Handle server errors
             if response.status_code >= 500:
-                raise TemporaryError(
-                    f"Server error: HTTP {response.status_code}"
-                )
+                raise TemporaryError(f"Server error: HTTP {response.status_code}")
 
             # Handle client errors
             if response.status_code >= 400:
@@ -182,9 +177,7 @@ async def _call_model(
                     flush=True,
                     file=sys.stderr,
                 )
-                raise ModelSpecificError(
-                    f"Request error: HTTP {response.status_code}"
-                )
+                raise ModelSpecificError(f"Request error: HTTP {response.status_code}")
 
             # Parse response
             data = response.json()
@@ -200,9 +193,7 @@ async def _call_model(
             # Check if response was truncated
             was_truncated = choice.get("finish_reason") == "length"
             if was_truncated:
-                logger.warning(
-                    "Response truncated by API (finish_reason=length)"
-                )
+                logger.warning("Response truncated by API (finish_reason=length)")
 
             # Try different response structures
             message = choice.get("message", {})
@@ -243,9 +234,7 @@ async def _call_model(
 
                 # Allow both empty (error pages) or both filled
                 if bool(summary_pt) != bool(one_line):
-                    raise ValueError(
-                        "Inconsistent fields (one empty, other not)"
-                    )
+                    raise ValueError("Inconsistent fields (one empty, other not)")
 
                 # Truncate one_line if needed
                 if len(one_line) > MAX_ONE_LINE_LENGTH:
@@ -253,9 +242,7 @@ async def _call_model(
 
                 # Detect incomplete/truncated summaries
                 if summary_pt:
-                    last_char = (
-                        summary_pt.rstrip()[-1] if summary_pt.strip() else ""
-                    )
+                    last_char = summary_pt.rstrip()[-1] if summary_pt.strip() else ""
                     ends_properly = last_char in ".!?:;)\"'»"
                     if was_truncated or (not ends_properly and not tags):
                         raise ModelSpecificError(
@@ -269,8 +256,7 @@ async def _call_model(
                 actual_model = data.get("model", model)
                 if "oxit_model" in data:
                     logger.info(
-                        f"Proxy fallback: requested {model}, "
-                        f"used {data['oxit_model']}"
+                        f"Proxy fallback: requested {model}, used {data['oxit_model']}"
                     )
 
                 return SummaryResult(
@@ -321,6 +307,7 @@ async def generate_summary(
         raise GarbageContentError("Content detected as error/session page")
 
     import time
+
     start_time = time.time()
     async with _api_lock:
         result = await _generate_summary_locked(content, title, title_only)
@@ -344,9 +331,9 @@ async def _generate_summary_locked(
 
     # Get effective settings
     from app.routes.preferences import (
-        get_effective_summary_language,
         get_effective_ai_model,
         get_effective_ai_timeout,
+        get_effective_summary_language,
     )
 
     db = SessionLocal()
@@ -371,22 +358,20 @@ async def _generate_summary_locked(
             },
             {
                 "role": "user",
-                "content": get_user_prompt(
-                    content, title, effective_language, db
-                ),
+                "content": get_user_prompt(content, title, effective_language, db),
             },
         ]
     finally:
         db.close()
 
     # Use preferred model only (proxy handles fallback)
-    result = await _call_model(preferred_model, api_key, key_index, messages, ai_timeout)
+    result = await _call_model(
+        preferred_model, api_key, key_index, messages, ai_timeout
+    )
 
     # Empty result means the model deemed the content unusable
     if not result.summary_pt and not result.tags:
-        raise GarbageContentError(
-            "Model returned empty result (unusable content)"
-        )
+        raise GarbageContentError("Model returned empty result (unusable content)")
 
     return result
 
@@ -471,7 +456,7 @@ async def _call_llm_json_locked(
 
             if response.status_code != 200:
                 raise PermanentError(
-                    f"HTTP {response.status_code}: " f"{response.text[:200]}"
+                    f"HTTP {response.status_code}: {response.text[:200]}"
                 )
 
             data = response.json()
@@ -480,10 +465,7 @@ async def _call_llm_json_locked(
         result = parse_json_response(content)
         actual_model = data.get("model", model)
         if "oxit_model" in data:
-            logger.info(
-                f"Proxy fallback: requested {model}, "
-                f"used {data['oxit_model']}"
-            )
+            logger.info(f"Proxy fallback: requested {model}, used {data['oxit_model']}")
         logger.info(f"call_llm_json succeeded with model {actual_model}")
         return result
 

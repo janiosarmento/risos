@@ -65,7 +65,9 @@ def _edit_dist(s1: str, s2: str) -> int:
             if c1 == c2:
                 distances_.append(distances[i1])
             else:
-                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+                distances_.append(
+                    1 + min((distances[i1], distances[i1 + 1], distances_[-1]))
+                )
         distances = distances_
     return distances[-1]
 
@@ -85,23 +87,13 @@ def _get_initials(tag: str) -> str:
 
 @router.get("/popular")
 def get_popular_tags(
-    limit: int = Query(
-        10, ge=1, le=50, description="Number of tags to return"
-    ),
-    min_count: int = Query(
-        1, ge=1, description="Minimum post count to include"
-    ),
+    limit: int = Query(10, ge=1, le=50, description="Number of tags to return"),
+    min_count: int = Query(1, ge=1, description="Minimum post count to include"),
     unread_only: bool = Query(False, description="Only count unread posts"),
     starred_only: bool = Query(False, description="Only count starred posts"),
-    suggested_only: bool = Query(
-        False, description="Only count suggested posts"
-    ),
-    feed_id: Optional[int] = Query(
-        None, description="Scope to a specific feed"
-    ),
-    category_id: Optional[int] = Query(
-        None, description="Scope to a category"
-    ),
+    suggested_only: bool = Query(False, description="Only count suggested posts"),
+    feed_id: Optional[int] = Query(None, description="Scope to a specific feed"),
+    category_id: Optional[int] = Query(None, description="Scope to a category"),
     topic_id: Optional[int] = Query(
         None, description="Scope to posts matching a topic's tags"
     ),
@@ -111,9 +103,9 @@ def get_popular_tags(
     """Get most popular tags by post count, excluding ignored tags."""
     ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
 
-    query = db.query(
-        PostTag.tag, func.count(PostTag.post_id).label("count")
-    ).join(Post, Post.id == PostTag.post_id)
+    query = db.query(PostTag.tag, func.count(PostTag.post_id).label("count")).join(
+        Post, Post.id == PostTag.post_id
+    )
 
     if unread_only:
         query = query.filter(Post.is_read.is_(False))
@@ -124,11 +116,7 @@ def get_popular_tags(
     if feed_id is not None:
         query = query.filter(Post.feed_id == feed_id)
     elif category_id is not None:
-        feed_ids = (
-            db.query(Feed.id)
-            .filter(Feed.category_id == category_id)
-            .subquery()
-        )
+        feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
         query = query.filter(Post.feed_id.in_(feed_ids))
 
     # Scope to posts that have at least one of the topic's tags
@@ -189,9 +177,7 @@ def search_tags(
     )
 
     if exclude_topic_id is not None:
-        existing = db.query(TopicTag.tag).filter(
-            TopicTag.topic_id == exclude_topic_id
-        )
+        existing = db.query(TopicTag.tag).filter(TopicTag.topic_id == exclude_topic_id)
         query = query.filter(~PostTag.tag.in_(existing))
 
     rows = query.limit(limit).all()
@@ -281,7 +267,7 @@ async def suggest_merges(
         .group_by(PostTag.tag)
         .all()
     )
-    
+
     # Pre-compute tag metadata ONCE to avoid heavy string/regex overhead in the O(N*M) search loop
     tag_metadata = {}
     for r in all_rows:
@@ -300,6 +286,7 @@ async def suggest_merges(
 
     # Index segments to identify high-fan-out (generic) categories
     from collections import defaultdict
+
     segment_to_tags = defaultdict(set)
     for tag, meta in tag_metadata.items():
         for p in meta["parts"]:
@@ -517,9 +504,7 @@ def apply_merges(
             )
             # Rename remaining source → canonical
             result = db.execute(
-                text(
-                    "UPDATE post_tags SET tag = :canonical WHERE tag = :source"
-                ),
+                text("UPDATE post_tags SET tag = :canonical WHERE tag = :source"),
                 {"source": source, "canonical": canonical},
             )
             posts_affected += result.rowcount
@@ -535,9 +520,7 @@ def apply_merges(
                 {"source": source, "canonical": canonical},
             )
             db.execute(
-                text(
-                    "UPDATE topic_tags SET tag = :canonical WHERE tag = :source"
-                ),
+                text("UPDATE topic_tags SET tag = :canonical WHERE tag = :source"),
                 {"source": source, "canonical": canonical},
             )
 
@@ -637,9 +620,7 @@ def purge_rare_tags(
     def generate():
         try:
             if total == 0:
-                yield json_line(
-                    {"type": "done", "tags_removed": 0, "rows_deleted": 0}
-                )
+                yield json_line({"type": "done", "tags_removed": 0, "rows_deleted": 0})
                 return
 
             yield json_line({"type": "start", "total_tags": total})

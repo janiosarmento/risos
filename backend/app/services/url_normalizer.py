@@ -5,7 +5,7 @@ Applies consistent rules to compare URLs.
 
 import logging
 from typing import Optional
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 
@@ -141,9 +141,7 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
 
     # Filter tracking parameters
     filtered_params = {
-        k: v
-        for k, v in query_params.items()
-        if k.lower() not in TRACKING_PARAMS
+        k: v for k, v in query_params.items() if k.lower() not in TRACKING_PARAMS
     }
 
     # Rebuild sorted query string (for consistency)

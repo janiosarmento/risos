@@ -1,0 +1,26 @@
+[tool.ruff]
+# Limite máximo de caracteres por linha (padrão do Black)
+line-length = 88
+
+# Alvos de versão do Python
+target-version = "py310"
+
+# Excluir pastas autogeradas e caches
+exclude = [
+    ".git",
+    ".pytest_cache",
+    "alembic", # Ignorar migrações autogeradas pelo alembic para evitar conflitos
+    "__pycache__"
+]
+
+[tool.ruff.lint]
+# Habilitar regras específicas de linting
+# E: pycodestyle errors
+# W: pycodestyle warnings
+# F: Pyflakes
+# I: isort (ordenação de imports)
+select = ["E", "F", "I", "W"]
+ignore = []
+
+[tool.ruff.lint.isort]
+combine-as-imports = true

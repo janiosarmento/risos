@@ -16,14 +16,17 @@ from sqlalchemy.orm import Session
 
 from app.config import load_prompts, settings
 from app.database import get_db
-from app.routes.preferences import get_effective_toast_timeout, get_effective_idle_refresh
 from app.dependencies import get_current_user
 from app.models import (
-    SummaryQueue,
-    SummaryFailure,
     AISummary,
-    Post,
     AppSettings,
+    Post,
+    SummaryFailure,
+    SummaryQueue,
+)
+from app.routes.preferences import (
+    get_effective_idle_refresh,
+    get_effective_toast_timeout,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,10 +35,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 # Path to locales directory (relative to backend)
 LOCALES_DIR = (
-    Path(__file__).parent.parent.parent.parent
-    / "htdocs"
-    / "static"
-    / "locales"
+    Path(__file__).parent.parent.parent.parent / "htdocs" / "static" / "locales"
 )
 
 
@@ -69,9 +69,7 @@ def reprocess_summary(
 
     # Check if already in queue
     existing_queue = (
-        db.query(SummaryQueue)
-        .filter(SummaryQueue.content_hash == content_hash)
-        .first()
+        db.query(SummaryQueue).filter(SummaryQueue.content_hash == content_hash).first()
     )
     if existing_queue:
         # Reset existing entry
@@ -197,22 +195,22 @@ def get_available_locales():
 
 
 @router.get("/status")
-def get_status(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
+def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     """
     Return detailed system status.
 
     Includes counters, database size, circuit breaker state, etc.
     """
-    from app.models import Feed, Post, AppSettings
+    from app.models import AppSettings, Feed, Post
 
     # Counters
     feeds_count = db.query(Feed).count()
     posts_count = db.query(Post).count()
     unread_count = db.query(Post).filter(Post.is_read.is_(False)).count()
     queue_size = db.query(SummaryQueue).count()
-    unread_queue_size = db.query(SummaryQueue).join(Post).filter(Post.is_read.is_(False)).count()
+    unread_queue_size = (
+        db.query(SummaryQueue).join(Post).filter(Post.is_read.is_(False)).count()
+    )
     starred_count = db.query(Post).filter(Post.is_starred.is_(True)).count()
     summaries_count = db.query(AISummary).count()
     failures_count = db.query(SummaryFailure).count()
@@ -278,15 +276,9 @@ def get_queue_status(
     # Queue stats
     total = db.query(SummaryQueue).count()
     in_cooldown = (
-        db.query(SummaryQueue)
-        .filter(SummaryQueue.cooldown_until > now)
-        .count()
+        db.query(SummaryQueue).filter(SummaryQueue.cooldown_until > now).count()
     )
-    locked = (
-        db.query(SummaryQueue)
-        .filter(SummaryQueue.locked_at.isnot(None))
-        .count()
-    )
+    locked = db.query(SummaryQueue).filter(SummaryQueue.locked_at.isnot(None)).count()
     ready = total - in_cooldown - locked
 
     # Get items in cooldown (first 10)
@@ -338,9 +330,7 @@ def clear_queue_cooldowns(
 
     # Count items in cooldown
     in_cooldown = (
-        db.query(SummaryQueue)
-        .filter(SummaryQueue.cooldown_until > now)
-        .count()
+        db.query(SummaryQueue).filter(SummaryQueue.cooldown_until > now).count()
     )
 
     # Clear cooldowns
@@ -428,9 +418,7 @@ async def list_available_models(
 
     try:
         model_ids = await fetch_models()
-        return [
-            ModelInfo(id=m, owned_by="provider") for m in sorted(model_ids)
-        ]
+        return [ModelInfo(id=m, owned_by="provider") for m in sorted(model_ids)]
     except Exception as e:
         logger.error(f"Error fetching models: {e}")
         raise HTTPException(

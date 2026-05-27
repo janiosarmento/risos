@@ -86,9 +86,7 @@ def create_topic(
     """Create a new topic with optional tags."""
     name = body.name.strip()
     if not name:
-        raise HTTPException(
-            status_code=400, detail="Topic name cannot be empty"
-        )
+        raise HTTPException(status_code=400, detail="Topic name cannot be empty")
 
     existing = db.query(Topic).filter(Topic.name == name).first()
     if existing:
@@ -134,13 +132,9 @@ def update_topic(
     if body.name is not None:
         name = body.name.strip()
         if not name:
-            raise HTTPException(
-                status_code=400, detail="Topic name cannot be empty"
-            )
+            raise HTTPException(status_code=400, detail="Topic name cannot be empty")
         existing = (
-            db.query(Topic)
-            .filter(Topic.name == name, Topic.id != topic_id)
-            .first()
+            db.query(Topic).filter(Topic.name == name, Topic.id != topic_id).first()
         )
         if existing:
             raise HTTPException(
@@ -299,9 +293,7 @@ Respond ONLY in JSON:
     # Validate: only return tags that actually exist in the unassigned pool
     available = {row.tag for row in rows}
     suggested = [
-        t
-        for t in result.get("tags", [])
-        if isinstance(t, str) and t in available
+        t for t in result.get("tags", []) if isinstance(t, str) and t in available
     ]
 
     return {"tags": suggested, "topic_name": topic.name}
@@ -332,9 +324,7 @@ async def suggest_topics(
     if not rows:
         return {"suggestions": [], "orphan_tags": [], "total_tags_analyzed": 0}
 
-    tags_with_counts = "\n".join(
-        f"- {row.tag} ({row.count} posts)" for row in rows
-    )
+    tags_with_counts = "\n".join(f"- {row.tag} ({row.count} posts)" for row in rows)
 
     system_prompt = (
         "You organize article tags into topic groups for a personal RSS reader. "

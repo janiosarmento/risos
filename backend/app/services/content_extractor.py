@@ -108,9 +108,7 @@ def _is_cloudflare_blocked(status_code: int, html: str) -> bool:
 
     # Cloudflare typically returns 403 or 503 for hard blocks
     if status_code in (403, 503):
-        matches = sum(
-            1 for pattern in CLOUDFLARE_PATTERNS if pattern in html_lower
-        )
+        matches = sum(1 for pattern in CLOUDFLARE_PATTERNS if pattern in html_lower)
         if matches >= 2:
             return True
 
@@ -324,18 +322,14 @@ async def extract_full_content(url: str) -> ExtractedContent:
                 html = response.text
 
     except httpx.TimeoutException:
-        logger.info(
-            f"Timeout fetching {url}, will try curl-impersonate fallback"
-        )
+        logger.info(f"Timeout fetching {url}, will try curl-impersonate fallback")
         use_curl_fallback = True
     except httpx.RequestError as e:
         logger.error(f"Error fetching {url}: {e}")
         use_curl_fallback = True
     except Exception as e:
         logger.error(f"Error extracting content from {url}: {e}")
-        return ExtractedContent(
-            title="", content="", success=False, error=str(e)
-        )
+        return ExtractedContent(title="", content="", success=False, error=str(e))
 
     # Try curl-impersonate fallback if needed and available
     if use_curl_fallback:

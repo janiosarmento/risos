@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Post, AISummary, IgnoredTag
+from app.models import AISummary, IgnoredTag, Post
 from app.routes.posts import title_matches_term
 from app.routes.preferences import get_effective_blocked_terms
 from app.services.user_profile import get_user_profile
@@ -96,9 +96,7 @@ def get_suggestion_candidates(
                 for term in blocked_terms
             )
         ]
-        logger.debug(
-            f"{len(unread_posts)} posts remaining after blocked terms filter"
-        )
+        logger.debug(f"{len(unread_posts)} posts remaining after blocked terms filter")
 
     # Find posts with sufficient tag overlap
     candidates = []
@@ -139,9 +137,7 @@ def process_suggestion_candidates(db: Session) -> int:
     # Get user profile
     profile = get_user_profile(db)
     if not profile or not profile.get("tags"):
-        logger.info(
-            "No user profile available, skipping suggestion processing"
-        )
+        logger.info("No user profile available, skipping suggestion processing")
         return 0
 
     tags_per_post = get_effective_tags_per_post(db)
@@ -212,9 +208,7 @@ def get_suggestion_stats(db: Session) -> dict:
 
     # Count suggested posts (not read)
     suggested_unread = (
-        db.query(Post)
-        .filter(Post.is_suggested == 1, Post.is_read == 0)
-        .count()
+        db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).count()
     )
 
     # Total suggested posts

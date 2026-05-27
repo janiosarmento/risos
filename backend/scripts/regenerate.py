@@ -30,9 +30,7 @@ DEFAULT_BATCH_SIZE = 100
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Regenerate summaries/tags for posts."
-    )
+    parser = argparse.ArgumentParser(description="Regenerate summaries/tags for posts.")
     parser.add_argument(
         "--batch-size",
         type=int,
@@ -121,11 +119,7 @@ async def main():
     )
 
     db.close()
-    log(
-        f"Done! Success: {success}, "
-        f"Skipped: {skipped}, "
-        f"Errors: {errors}"
-    )
+    log(f"Done! Success: {success}, Skipped: {skipped}, Errors: {errors}")
 
 
 if __name__ == "__main__":

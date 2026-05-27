@@ -8,16 +8,15 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 
-from fastapi.responses import JSONResponse
-
+from alembic import command
 from app.config import settings
 from app.database import engine
 from app.rate_limiter import limiter
@@ -47,9 +46,7 @@ def run_migrations():
         # Find alembic.ini relative to project directory
         base_dir = Path(__file__).resolve().parent.parent
         alembic_cfg = Config(str(base_dir / "alembic.ini"))
-        alembic_cfg.set_main_option(
-            "script_location", str(base_dir / "alembic")
-        )
+        alembic_cfg.set_main_option("script_location", str(base_dir / "alembic"))
 
         logger.info("Running database migrations...")
         command.upgrade(alembic_cfg, "head")
@@ -71,31 +68,23 @@ def check_database_integrity():
         db_path = Path(settings.database_path)
 
         if not db_path.exists():
-            logger.info(
-                "Database does not exist yet, skipping integrity check"
-            )
+            logger.info("Database does not exist yet, skipping integrity check")
             return
 
         db_size_mb = db_path.stat().st_size / (1024 * 1024)
 
         with engine.connect() as conn:
             if db_size_mb > 100:
-                logger.info(
-                    f"Database size: {db_size_mb:.1f}MB - running quick_check"
-                )
+                logger.info(f"Database size: {db_size_mb:.1f}MB - running quick_check")
                 result = conn.execute(text("PRAGMA quick_check;")).fetchone()
             else:
                 logger.info(
                     f"Database size: {db_size_mb:.1f}MB - running integrity_check"
                 )
-                result = conn.execute(
-                    text("PRAGMA integrity_check;")
-                ).fetchone()
+                result = conn.execute(text("PRAGMA integrity_check;")).fetchone()
 
             if result[0] != "ok":
-                logger.critical(
-                    f"Database integrity check failed: {result[0]}"
-                )
+                logger.critical(f"Database integrity check failed: {result[0]}")
                 sys.exit(1)
 
             logger.info("Database integrity check passed")
@@ -217,9 +206,7 @@ async def handle_permanent_error(request: Request, exc: PermanentError):
     if "model_not_found" in msg or "does not exist" in msg:
         detail = "The configured AI model is unavailable. Check Settings > AI."
     elif "all models failed" in msg.lower():
-        detail = (
-            "All AI models failed. Try again later or check Settings > AI."
-        )
+        detail = "All AI models failed. Try again later or check Settings > AI."
     else:
         detail = "AI could not process this request."
     return JSONResponse(status_code=502, content={"detail": detail})
@@ -244,13 +231,13 @@ async def health_check():
 
 # Include routers
 from app.routes import (
+    admin,
     auth,
     categories,
     feeds,
     posts,
-    proxy,
-    admin,
     preferences,
+    proxy,
     suggestions,
     tags,
     topics,

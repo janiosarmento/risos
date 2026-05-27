@@ -7,26 +7,27 @@ Updates post_tags rows in-place and also updates user_profile tags.
 """
 
 import asyncio
-import sys
 import os
 import re
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import SessionLocal
-from app.models import PostTag, AppSettings
-from app.services.ai._constants import (
-    TAG_TRANSLATION_MODEL,
-    TAG_TRANSLATION_TEMPERATURE,
-    TAG_TRANSLATION_MAX_TOKENS,
-    TAG_TRANSLATION_TIMEOUT,
-)
-from app.services.ai._parsing import normalize_tag
-from app.config import USER_AGENT
-from app.services.ai._infrastructure import api_key_rotator
+import json
 
 import httpx
-import json
+
+from app.config import USER_AGENT
+from app.database import SessionLocal
+from app.models import AppSettings, PostTag
+from app.services.ai._constants import (
+    TAG_TRANSLATION_MAX_TOKENS,
+    TAG_TRANSLATION_MODEL,
+    TAG_TRANSLATION_TEMPERATURE,
+    TAG_TRANSLATION_TIMEOUT,
+)
+from app.services.ai._infrastructure import api_key_rotator
+from app.services.ai._parsing import normalize_tag
 
 # Portuguese patterns to detect non-English tags (even without accents)
 PT_PATTERNS = [
@@ -125,9 +126,7 @@ async def main():
     db = SessionLocal()
 
     # Get all distinct tags
-    all_tags = sorted(
-        set(t[0] for t in db.query(PostTag.tag).distinct().all())
-    )
+    all_tags = sorted(set(t[0] for t in db.query(PostTag.tag).distinct().all()))
     non_english = [t for t in all_tags if is_likely_non_english(t)]
     print(f"Total distinct tags: {len(all_tags)}")
     print(f"Non-English tags to translate: {len(non_english)}")
@@ -231,9 +230,7 @@ async def main():
             new_profile_tags = []
             for t in old_profile_tags:
                 normalized = normalize_tag(t)
-                new_profile_tags.append(
-                    full_mapping.get(normalized, normalized)
-                )
+                new_profile_tags.append(full_mapping.get(normalized, normalized))
             # Deduplicate
             new_profile_tags = list(dict.fromkeys(new_profile_tags))
             profile["tags"] = new_profile_tags

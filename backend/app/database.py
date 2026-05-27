@@ -4,8 +4,8 @@ WAL mode enabled for better concurrency.
 """
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.config import settings
 

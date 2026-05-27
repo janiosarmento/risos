@@ -19,12 +19,30 @@ logger = logging.getLogger(__name__)
 
 _ABBREVIATIONS = sorted(
     [
-        "etc.", "vs.", "p.ex.",
-        "Inc.", "Ltd.", "Corp.", "Co.",
-        "Dr.", "Dra.", "Sr.", "Sra.", "Prof.", "Profa.", "Jr.",
-        "i.e.", "e.g.",
-        "U.S.", "U.K.", "O.J.",
-        "EUA.", "nº.", "ed.", "vol.", "cap.",
+        "etc.",
+        "vs.",
+        "p.ex.",
+        "Inc.",
+        "Ltd.",
+        "Corp.",
+        "Co.",
+        "Dr.",
+        "Dra.",
+        "Sr.",
+        "Sra.",
+        "Prof.",
+        "Profa.",
+        "Jr.",
+        "i.e.",
+        "e.g.",
+        "U.S.",
+        "U.K.",
+        "O.J.",
+        "EUA.",
+        "nº.",
+        "ed.",
+        "vol.",
+        "cap.",
     ],
     key=len,
     reverse=True,
@@ -51,15 +69,11 @@ def split_into_paragraphs(summary: str) -> str:
         )
         sentences = _SENTENCE_BOUNDARY.split(masked)
         return "\n\n".join(
-            s.replace(_PLACEHOLDER, ".").strip()
-            for s in sentences
-            if s.strip()
+            s.replace(_PLACEHOLDER, ".").strip() for s in sentences if s.strip()
         )
 
     # Process each existing paragraph independently
-    return "\n\n".join(
-        _split_block(p) for p in re.split(r"\n\s*\n", summary)
-    )
+    return "\n\n".join(_split_block(p) for p in re.split(r"\n\s*\n", summary))
 
 
 # Tags too generic to be useful
@@ -106,9 +120,7 @@ def is_garbage_content(content: str) -> bool:
     content_lower = content.lower()
 
     # Check for garbage patterns
-    matches = sum(
-        1 for pattern in GARBAGE_PATTERNS if pattern in content_lower
-    )
+    matches = sum(1 for pattern in GARBAGE_PATTERNS if pattern in content_lower)
 
     # If multiple patterns match or content is very short with one match
     if matches >= 2:
@@ -220,15 +232,9 @@ def parse_json_response(content: str) -> dict:
         summary = summary_match.group(1) or summary_match.group(2) or ""
         one_line = one_line_match.group(1) or one_line_match.group(2) or ""
         # Decode basic escapes
-        summary = (
-            summary.replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace('\\"', '"')
-        )
+        summary = summary.replace("\\n", "\n").replace("\\r", "\r").replace('\\"', '"')
         one_line = (
-            one_line.replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace('\\"', '"')
+            one_line.replace("\\n", "\n").replace("\\r", "\r").replace('\\"', '"')
         )
         return {"summary_pt": summary, "one_line_summary": one_line}
 

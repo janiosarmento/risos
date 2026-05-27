@@ -62,7 +62,7 @@ class SummaryResult:
             return self.summary_pt
 
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
         duration_str = f" ({int(self.duration)} s)" if self.duration else ""
         return f"{self.summary_pt}\n\n— {self.model}\n— {timestamp}{duration_str}"
-

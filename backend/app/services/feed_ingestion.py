@@ -11,15 +11,15 @@ from urllib.parse import urljoin
 from sqlalchemy.orm import Session
 
 from app.models import Feed, Post, SummaryQueue
+from app.services.content_hasher import compute_content_hash
 from app.services.feed_parser import (
-    fetch_and_parse,
-    ParsedEntry,
     FeedFetchError,
     FeedParseError,
+    ParsedEntry,
+    fetch_and_parse,
 )
-from app.services.url_normalizer import normalize_url
 from app.services.html_sanitizer import sanitize_html
-from app.services.content_hasher import compute_content_hash
+from app.services.url_normalizer import normalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +47,7 @@ def _check_duplicate_by_guid(
     if not guid:
         return False, False
 
-    existing = (
-        db.query(Post)
-        .filter(Post.feed_id == feed.id, Post.guid == guid)
-        .first()
-    )
+    existing = db.query(Post).filter(Post.feed_id == feed.id, Post.guid == guid).first()
 
     if not existing:
         return False, False
@@ -133,14 +129,10 @@ def _process_entry(
     content = sanitize_html(entry.content, truncate=True)
 
     # Compute hash (includes title and URL to avoid collisions)
-    content_hash = compute_content_hash(
-        entry.content, title=entry.title, url=entry_url
-    )
+    content_hash = compute_content_hash(entry.content, title=entry.title, url=entry_url)
 
     # Check for duplicates by GUID
-    is_dup, collision = _check_duplicate_by_guid(
-        db, feed, entry.guid, normalized_url
-    )
+    is_dup, collision = _check_duplicate_by_guid(db, feed, entry.guid, normalized_url)
 
     if collision:
         feed.guid_collision_count = (feed.guid_collision_count or 0) + 1

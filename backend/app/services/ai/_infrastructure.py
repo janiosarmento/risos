@@ -3,16 +3,16 @@
 import logging
 import threading
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Dict
+from typing import Dict, Optional, Tuple
 
 from app.database import SessionLocal
 from app.models import AppSettings
 from app.services.ai._constants import (
-    DEFAULT_KEY_COOLDOWN_SECONDS,
-    CB_FAILURE_THRESHOLD,
-    CB_RECOVERY_TIMEOUT_SECONDS,
-    CB_HALF_OPEN_MAX_REQUESTS,
     AI_MAX_RPM,
+    CB_FAILURE_THRESHOLD,
+    CB_HALF_OPEN_MAX_REQUESTS,
+    CB_RECOVERY_TIMEOUT_SECONDS,
+    DEFAULT_KEY_COOLDOWN_SECONDS,
 )
 from app.services.ai._types import CircuitState
 
@@ -46,9 +46,7 @@ class ApiKeyRotator:
         db = SessionLocal()
         try:
             row = (
-                db.query(AppSettings)
-                .filter(AppSettings.key == "api_key_index")
-                .first()
+                db.query(AppSettings).filter(AppSettings.key == "api_key_index").first()
             )
             if row:
                 saved_index = int(row.value)
@@ -70,18 +68,12 @@ class ApiKeyRotator:
         db = SessionLocal()
         try:
             existing = (
-                db.query(AppSettings)
-                .filter(AppSettings.key == "api_key_index")
-                .first()
+                db.query(AppSettings).filter(AppSettings.key == "api_key_index").first()
             )
             if existing:
                 existing.value = str(self._current_index)
             else:
-                db.add(
-                    AppSettings(
-                        key="api_key_index", value=str(self._current_index)
-                    )
-                )
+                db.add(AppSettings(key="api_key_index", value=str(self._current_index)))
             db.commit()
         except Exception as e:
             logger.error(f"Error saving API key index: {e}")
@@ -101,20 +93,15 @@ class ApiKeyRotator:
             return None, None
         return keys[0], 0
 
-    def set_key_cooldown(
-        self, key: str, seconds: int = DEFAULT_KEY_COOLDOWN_SECONDS
-    ):
+    def set_key_cooldown(self, key: str, seconds: int = DEFAULT_KEY_COOLDOWN_SECONDS):
         """Put a key in cooldown after rate limit."""
         with self._lock:
-            self._key_cooldowns[key] = datetime.utcnow() + timedelta(
-                seconds=seconds
-            )
+            self._key_cooldowns[key] = datetime.utcnow() + timedelta(seconds=seconds)
             keys = self._get_keys()
             if key in keys:
                 key_index = keys.index(key) + 1
                 logger.warning(
-                    f"API key {key_index}/{len(keys)} in cooldown for "
-                    f"{seconds}s"
+                    f"API key {key_index}/{len(keys)} in cooldown for {seconds}s"
                 )
 
     def clear_cooldown(self, key: str):
@@ -230,18 +217,12 @@ class CircuitBreaker:
             }
 
             if self.last_failure:
-                updates["ai_last_failure"] = (
-                    self.last_failure.isoformat()
-                )
+                updates["ai_last_failure"] = self.last_failure.isoformat()
             if self.last_call:
                 updates["ai_last_call"] = self.last_call.isoformat()
 
             for key, value in updates.items():
-                existing = (
-                    db.query(AppSettings)
-                    .filter(AppSettings.key == key)
-                    .first()
-                )
+                existing = db.query(AppSettings).filter(AppSettings.key == key).first()
                 if existing:
                     existing.value = value
                 else:
@@ -274,8 +255,7 @@ class CircuitBreaker:
             if elapsed < min_interval:
                 return (
                     False,
-                    "Waiting for minimum interval "
-                    f"({min_interval - elapsed:.1f}s)",
+                    f"Waiting for minimum interval ({min_interval - elapsed:.1f}s)",
                 )
 
         # Check circuit breaker
@@ -333,8 +313,7 @@ class CircuitBreaker:
             if self.failures >= CB_FAILURE_THRESHOLD:
                 self.state = CircuitState.OPEN
                 logger.warning(
-                    "Circuit breaker: CLOSED -> OPEN "
-                    f"({self.failures} failures)"
+                    f"Circuit breaker: CLOSED -> OPEN ({self.failures} failures)"
                 )
 
         self._save_state()

@@ -14,39 +14,38 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
 from fastapi.responses import RedirectResponse
-from starlette.responses import Response
+from pydantic import BaseModel
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, subqueryload
+from starlette.responses import Response
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import (
-    Post,
-    Feed,
-    Category,
     AISummary,
+    Category,
+    Feed,
+    Post,
     PostTag,
     SummaryQueue,
     TopicTag,
 )
+from app.routes.preferences import get_effective_blocked_terms
 from app.schemas import (
-    PostResponse,
+    MarkReadRequest,
     PostDetail,
     PostListResponse,
-    MarkReadRequest,
+    PostResponse,
 )
-from app.services.content_extractor import extract_full_content
 from app.services.ai import (
-    generate_summary,
     CerebrasError,
-    GarbageContentError,
+    generate_summary,
 )
 from app.services.ai._parsing import split_into_paragraphs
+from app.services.content_extractor import extract_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
-from app.routes.preferences import get_effective_blocked_terms
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 def _word_boundary(escaped: str, side: str) -> str:
     """Return appropriate boundary anchor for start/end of an escaped pattern.
 
-    \b only works between \w and \W chars.  If the pattern edge is a
+    \b only works between \\w and \\W chars.  If the pattern edge is a
     non-word char (like '[' or '$'), we only need a boundary on the
     word-char side to prevent partial word matches.  The non-word char
     itself already breaks any word, so no boundary needed on that side.
@@ -131,9 +130,7 @@ def is_safe_redirect_url(url: str) -> bool:
             return False
 
         # Block common private IP ranges
-        if hostname.startswith(
-            ("10.", "192.168.", "172.16.", "172.17.", "172.18.")
-        ):
+        if hostname.startswith(("10.", "192.168.", "172.16.", "172.17.", "172.18.")):
             return False
 
         return True
@@ -151,17 +148,13 @@ def get_summary_status(db: Session, post: Post) -> str:
 
     # Check if summary already exists
     summary = (
-        db.query(AISummary)
-        .filter(AISummary.content_hash == post.content_hash)
-        .first()
+        db.query(AISummary).filter(AISummary.content_hash == post.content_hash).first()
     )
     if summary:
         return "ready"
 
     # Check if in queue
-    queue_entry = (
-        db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
-    )
+    queue_entry = db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
     if queue_entry:
         if queue_entry.error_type == "permanent":
             return "failed"
@@ -206,11 +199,7 @@ def list_posts(
             .all()
         ]
         if topic_tags:
-            query = (
-                query.join(PostTag)
-                .filter(PostTag.tag.in_(topic_tags))
-                .distinct()
-            )
+            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
         else:
             # Empty topic — no posts match
             query = query.filter(Post.id == -1)
@@ -223,16 +212,10 @@ def list_posts(
         relevant_feed_ids.add(feed_id)
     elif category_id is not None:
         # Get feeds from the category
-        category_feeds = (
-            db.query(Feed.id).filter(Feed.category_id == category_id).all()
-        )
+        category_feeds = db.query(Feed.id).filter(Feed.category_id == category_id).all()
         feed_ids_list = [f.id for f in category_feeds]
         relevant_feed_ids.update(feed_ids_list)
-        feed_ids = (
-            db.query(Feed.id)
-            .filter(Feed.category_id == category_id)
-            .subquery()
-        )
+        feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
         query = query.filter(Post.feed_id.in_(feed_ids))
 
     # Apply filters (can be combined)
@@ -262,18 +245,14 @@ def list_posts(
     total = query.count()
 
     # Fetch sorted posts
-    posts = (
-        query.order_by(Post.sort_date.desc()).offset(offset).limit(limit).all()
-    )
+    posts = query.order_by(Post.sort_date.desc()).offset(offset).limit(limit).all()
 
     # Fetch summaries for posts (by content_hash)
     content_hashes = [p.content_hash for p in posts if p.content_hash]
     summaries_map = {}
     if content_hashes:
         summaries = (
-            db.query(AISummary)
-            .filter(AISummary.content_hash.in_(content_hashes))
-            .all()
+            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
         )
         summaries_map = {s.content_hash: s for s in summaries}
 
@@ -282,9 +261,7 @@ def list_posts(
     if relevant_feed_ids:
         unread_counts = (
             db.query(Post.feed_id, func.count(Post.id))
-            .filter(
-                Post.feed_id.in_(relevant_feed_ids), Post.is_read.is_(False)
-            )
+            .filter(Post.feed_id.in_(relevant_feed_ids), Post.is_read.is_(False))
             .group_by(Post.feed_id)
             .all()
         )
@@ -299,9 +276,7 @@ def list_posts(
         Post.is_starred.is_(True)
     )
     if topic_id is not None and topic_tags:
-        starred_query = starred_query.join(PostTag).filter(
-            PostTag.tag.in_(topic_tags)
-        )
+        starred_query = starred_query.join(PostTag).filter(PostTag.tag.in_(topic_tags))
     elif tag:
         starred_query = starred_query.join(PostTag).filter(
             PostTag.tag == tag.strip().lower()
@@ -338,9 +313,7 @@ def list_posts(
     # Convert to response
     result = []
     for post in posts:
-        summary = (
-            summaries_map.get(post.content_hash) if post.content_hash else None
-        )
+        summary = summaries_map.get(post.content_hash) if post.content_hash else None
         post_dict = {
             "id": post.id,
             "feed_id": post.feed_id,
@@ -360,9 +333,7 @@ def list_posts(
             "liked_at": post.liked_at,
             "is_suggested": bool(post.is_suggested),
             "suggestion_score": post.suggestion_score,
-            "summary_status": (
-                "ready" if summary else get_summary_status(db, post)
-            ),
+            "summary_status": ("ready" if summary else get_summary_status(db, post)),
             "one_line_summary": summary.one_line_summary if summary else None,
             "translated_title": summary.translated_title if summary else None,
             "skip_summary": bool(post.skip_summary),
@@ -389,9 +360,7 @@ def list_posts(
 
 def _slugify(text: str) -> str:
     """Convert text to a safe filename slug."""
-    text = (
-        unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    )
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     text = re.sub(r"[^\w\s-]", "", text).strip().lower()
     text = re.sub(r"[-\s]+", "-", text)
     return text[:80]
@@ -455,15 +424,9 @@ def export_starred(
         if feed:
             zip_label = _slugify(feed.title)
     elif category_id is not None:
-        feed_ids = (
-            db.query(Feed.id)
-            .filter(Feed.category_id == category_id)
-            .subquery()
-        )
+        feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
         query = query.filter(Post.feed_id.in_(feed_ids))
-        category = (
-            db.query(Category).filter(Category.id == category_id).first()
-        )
+        category = db.query(Category).filter(Category.id == category_id).first()
         if category:
             zip_label = _slugify(category.name)
 
@@ -480,9 +443,7 @@ def export_starred(
     summaries_map = {}
     if content_hashes:
         summaries = (
-            db.query(AISummary)
-            .filter(AISummary.content_hash.in_(content_hashes))
-            .all()
+            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
         )
         summaries_map = {s.content_hash: s for s in summaries}
 
@@ -494,9 +455,7 @@ def export_starred(
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for post in posts:
             summary = (
-                summaries_map.get(post.content_hash)
-                if post.content_hash
-                else None
+                summaries_map.get(post.content_hash) if post.content_hash else None
             )
             md_content = _post_to_markdown(post, summary)
 
@@ -520,9 +479,7 @@ def export_starred(
     return Response(
         content=zip_bytes,
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{zip_filename}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )
 
 
@@ -584,9 +541,7 @@ async def get_post(
             # No summary yet. Check if already in background queue.
             # Never auto-enqueue on open — only explicit user action triggers generation.
             existing_queue = (
-                db.query(SummaryQueue)
-                .filter(SummaryQueue.post_id == post.id)
-                .first()
+                db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
             )
             summary_status = "queued" if existing_queue else "pending"
 
@@ -595,8 +550,8 @@ async def get_post(
     matched_tags = []
     ignored_tags = []
     if post_tags:
-        from app.services.user_profile import get_user_profile
         from app.models import IgnoredTag
+        from app.services.user_profile import get_user_profile
 
         profile = get_user_profile(db)
         if profile and profile.get("tags"):
@@ -801,9 +756,7 @@ def mark_read_batch(
         query = query.filter(Post.feed_id == request.feed_id)
     elif request.category_id:
         feed_ids = (
-            db.query(Feed.id)
-            .filter(Feed.category_id == request.category_id)
-            .subquery()
+            db.query(Feed.id).filter(Feed.category_id == request.category_id).subquery()
         )
         query = query.filter(Post.feed_id.in_(feed_ids))
     else:
@@ -812,9 +765,7 @@ def mark_read_batch(
             detail="Must specify post_ids, feed_id, category_id, or all=true",
         )
 
-    count = query.update(
-        {"is_read": True, "read_at": now}, synchronize_session=False
-    )
+    count = query.update({"is_read": True, "read_at": now}, synchronize_session=False)
     db.commit()
 
     return {"marked_read": count}
@@ -919,6 +870,7 @@ async def regenerate_summary(
     - Returns the new summary
     """
     import sys
+
     print(f"[REGEN] Request received for post {post_id}", flush=True, file=sys.stderr)
 
     post = get_post_or_404(db, post_id)
@@ -1006,7 +958,9 @@ async def regenerate_summary(
             detail=f"AI service error: {str(e)}",
         )
     except Exception as e:
-        print(f"[REGEN] Exception: {type(e).__name__}: {e}", flush=True, file=sys.stderr)
+        print(
+            f"[REGEN] Exception: {type(e).__name__}: {e}", flush=True, file=sys.stderr
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to regenerate summary: {str(e)}",
@@ -1054,8 +1008,8 @@ async def curate_starred(
     user: dict = Depends(get_current_user),
 ):
     """Analyze starred posts with AI to identify essential vs redundant."""
-    from app.services.ai._api import call_llm_json
     from app.routes.preferences import get_effective_summary_language
+    from app.services.ai._api import call_llm_json
 
     language = get_effective_summary_language(db)
 
@@ -1076,24 +1030,14 @@ async def curate_starred(
             .all()
         ]
         if topic_tags:
-            query = (
-                query.join(PostTag)
-                .filter(PostTag.tag.in_(topic_tags))
-                .distinct()
-            )
+            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
             from app.models import Topic as TopicModel
 
-            topic = (
-                db.query(TopicModel)
-                .filter(TopicModel.id == body.topic_id)
-                .first()
-            )
+            topic = db.query(TopicModel).filter(TopicModel.id == body.topic_id).first()
             if topic:
                 context_name = topic.name
     elif body.tag:
-        query = query.join(PostTag).filter(
-            PostTag.tag == body.tag.strip().lower()
-        )
+        query = query.join(PostTag).filter(PostTag.tag == body.tag.strip().lower())
         context_name = f"tag: {body.tag}"
 
     # Apply feed/category filter
@@ -1141,9 +1085,7 @@ async def curate_starred(
     summaries_map = {}
     if content_hashes:
         summaries = (
-            db.query(AISummary)
-            .filter(AISummary.content_hash.in_(content_hashes))
-            .all()
+            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
         )
         summaries_map = {s.content_hash: s for s in summaries}
 
@@ -1270,9 +1212,7 @@ def export_selection(
     summaries_map = {}
     if content_hashes:
         summaries = (
-            db.query(AISummary)
-            .filter(AISummary.content_hash.in_(content_hashes))
-            .all()
+            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
         )
         summaries_map = {s.content_hash: s for s in summaries}
 
@@ -1281,9 +1221,7 @@ def export_selection(
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for post in posts:
             summary = (
-                summaries_map.get(post.content_hash)
-                if post.content_hash
-                else None
+                summaries_map.get(post.content_hash) if post.content_hash else None
             )
             md_content = _post_to_markdown(post, summary)
 
@@ -1303,7 +1241,5 @@ def export_selection(
     return Response(
         content=zip_bytes,
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{zip_filename}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )

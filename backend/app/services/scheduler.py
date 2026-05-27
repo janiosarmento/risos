@@ -7,15 +7,16 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timedelta
+
 from sqlalchemy import or_, text
 
 from app.config import settings
 from app.database import SessionLocal
 from app.models import SchedulerLock
 from app.services.ai._constants import (
-    SUMMARY_LOCK_TIMEOUT_SECONDS,
-    CLEANUP_HOUR,
     AI_MAX_RPM,
+    CLEANUP_HOUR,
+    SUMMARY_LOCK_TIMEOUT_SECONDS,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,9 +74,7 @@ class Scheduler:
             timeout = now - timedelta(seconds=LOCK_TIMEOUT)
 
             # Check existing lock
-            existing = (
-                db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
-            )
+            existing = db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
 
             if existing:
                 # Check if expired
@@ -94,9 +93,7 @@ class Scheduler:
                     self.is_leader = True
                 else:
                     # Another process is leader
-                    logger.info(
-                        f"Another instance is leader: {existing.locked_by}"
-                    )
+                    logger.info(f"Another instance is leader: {existing.locked_by}")
                     self.is_leader = False
             else:
                 # Create lock
@@ -208,19 +205,15 @@ class Scheduler:
         self._tasks.append(asyncio.create_task(self._job_process_summaries()))
 
         # Job: update_user_profile (every 6 hours, if stale)
-        self._tasks.append(
-            asyncio.create_task(self._job_update_user_profile())
-        )
+        self._tasks.append(asyncio.create_task(self._job_update_user_profile()))
 
         # Job: process_suggestions (every hour)
-        self._tasks.append(
-            asyncio.create_task(self._job_process_suggestions())
-        )
+        self._tasks.append(asyncio.create_task(self._job_process_suggestions()))
 
     async def _job_update_feeds(self):
         """Job to update feeds periodically."""
-        from app.services.feed_ingestion import ingest_feed
         from app.models import Feed
+        from app.services.feed_ingestion import ingest_feed
 
         while self._running and self.is_leader:
             interval = 30 * 60  # default 30 minutes
@@ -229,7 +222,10 @@ class Scheduler:
 
                 db = SessionLocal()
                 try:
-                    from app.routes.preferences import get_effective_feed_update_interval
+                    from app.routes.preferences import (
+                        get_effective_feed_update_interval,
+                    )
+
                     interval = get_effective_feed_update_interval(db) * 60
                     now = datetime.utcnow()
 
@@ -248,9 +244,7 @@ class Scheduler:
                         .all()
                     )
 
-                    logger.info(
-                        f"Job update_feeds: {len(feeds)} feeds to update"
-                    )
+                    logger.info(f"Job update_feeds: {len(feeds)} feeds to update")
 
                     for feed in feeds:
                         if not self._running or not self.is_leader:
@@ -291,7 +285,7 @@ class Scheduler:
         to the summary queue. This catches orphaned posts that were never
         queued or whose queue entries were lost.
         """
-        from app.models import Post, SummaryQueue, AISummary
+        from app.models import AISummary, Post, SummaryQueue
 
         db = SessionLocal()
         try:
@@ -305,9 +299,7 @@ class Scheduler:
                 .filter(
                     Post.content_hash.isnot(None),
                     or_(Post.is_read.is_(False), Post.is_starred.is_(True)),
-                    ~Post.content_hash.in_(
-                        db.query(SummaryQueue.content_hash)
-                    ),
+                    ~Post.content_hash.in_(db.query(SummaryQueue.content_hash)),
                     ~Post.content_hash.in_(db.query(AISummary.content_hash)),
                 )
                 .order_by(Post.published_at.desc())  # Newer posts first
@@ -318,9 +310,7 @@ class Scheduler:
             if not orphaned_posts:
                 return
 
-            logger.info(
-                f"Backfill: found {len(orphaned_posts)} orphaned posts"
-            )
+            logger.info(f"Backfill: found {len(orphaned_posts)} orphaned posts")
 
             added = 0
             for post in orphaned_posts:
@@ -353,7 +343,7 @@ class Scheduler:
 
     async def _job_cleanup_retention(self):
         """Job to clean up old posts."""
-        from app.models import Post, CleanupLog
+        from app.models import CleanupLog, Post
 
         while self._running and self.is_leader:
             try:
@@ -382,6 +372,7 @@ class Scheduler:
                         get_effective_max_post_age_days,
                         get_effective_max_unread_days,
                     )
+
                     posts_removed = 0
                     full_content_cleared = 0
                     unread_removed = 0
@@ -396,8 +387,7 @@ class Scheduler:
                         .filter(
                             Post.is_read.is_(True),
                             Post.read_at < cutoff_read,
-                            (Post.is_starred.is_(False))
-                            | (Post.is_starred.is_(None)),
+                            (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
                             Post.keep_unread.is_(False),
                         )
                         .delete(synchronize_session=False)
@@ -414,8 +404,7 @@ class Scheduler:
                         .filter(
                             Post.is_read.is_(False),
                             Post.fetched_at < cutoff_unread,
-                            (Post.is_starred.is_(False))
-                            | (Post.is_starred.is_(None)),
+                            (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
                             Post.keep_unread.is_(False),
                         )
                         .delete(synchronize_session=False)
@@ -431,13 +420,10 @@ class Scheduler:
                             Post.is_read.is_(True),
                             Post.read_at < cutoff_full,
                             Post.full_content.isnot(None),
-                            (Post.is_starred.is_(False))
-                            | (Post.is_starred.is_(None)),
+                            (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
                             Post.keep_unread.is_(False),
                         )
-                        .update(
-                            {"full_content": None}, synchronize_session=False
-                        )
+                        .update({"full_content": None}, synchronize_session=False)
                     )
                     full_content_cleared += result
 
@@ -478,8 +464,9 @@ class Scheduler:
 
     async def _job_health_check(self):
         """Job to check system health."""
-        from app.models import AppSettings
         import os
+
+        from app.models import AppSettings
 
         interval = 300  # 5 minutes
 
@@ -496,9 +483,7 @@ class Scheduler:
 
                     # 2. Check disk space
                     statvfs = os.statvfs(".")
-                    free_mb = (statvfs.f_frsize * statvfs.f_bavail) / (
-                        1024 * 1024
-                    )
+                    free_mb = (statvfs.f_frsize * statvfs.f_bavail) / (1024 * 1024)
                     if free_mb < 100:
                         warnings.append(f"Low disk space: {free_mb:.0f}MB")
 
@@ -507,16 +492,12 @@ class Scheduler:
                     if os.path.exists(db_path):
                         db_size_mb = os.path.getsize(db_path) / (1024 * 1024)
                         if db_size_mb > settings.max_db_size_mb:
-                            warnings.append(
-                                f"Database too large: {db_size_mb:.0f}MB"
-                            )
+                            warnings.append(f"Database too large: {db_size_mb:.0f}MB")
 
                     # Update app_settings
                     if warnings:
                         warning_text = "; ".join(warnings)
-                        logger.warning(
-                            f"Health check warnings: {warning_text}"
-                        )
+                        logger.warning(f"Health check warnings: {warning_text}")
                         existing = (
                             db.query(AppSettings)
                             .filter(AppSettings.key == "health_warning")
@@ -526,9 +507,7 @@ class Scheduler:
                             existing.value = warning_text
                         else:
                             db.add(
-                                AppSettings(
-                                    key="health_warning", value=warning_text
-                                )
+                                AppSettings(key="health_warning", value=warning_text)
                             )
                     else:
                         db.query(AppSettings).filter(
@@ -552,14 +531,14 @@ class Scheduler:
 
     async def _job_process_summaries(self):
         """Job to process AI summary queue."""
-        from app.models import SummaryQueue, AISummary, SummaryFailure, Post, Feed
+        from app.models import AISummary, Feed, Post, SummaryQueue
         from app.services.ai import (
-            generate_summary,
-            circuit_breaker,
-            api_key_rotator,
-            TemporaryError,
-            PermanentError,
             GarbageContentError,
+            PermanentError,
+            TemporaryError,
+            api_key_rotator,
+            circuit_breaker,
+            generate_summary,
         )
         from app.services.content_extractor import extract_full_content
         from app.services.tags import save_post_tags
@@ -582,17 +561,13 @@ class Scheduler:
                     logger.debug(
                         "Job process_summaries: all API keys in cooldown, waiting..."
                     )
-                    await asyncio.sleep(
-                        30
-                    )  # Wait longer when all keys are blocked
+                    await asyncio.sleep(30)  # Wait longer when all keys are blocked
                     continue
 
                 db = SessionLocal()
                 try:
                     now = datetime.utcnow()
-                    lock_timeout = now - timedelta(
-                        seconds=SUMMARY_LOCK_TIMEOUT_SECONDS
-                    )
+                    lock_timeout = now - timedelta(seconds=SUMMARY_LOCK_TIMEOUT_SECONDS)
 
                     # Find next eligible item.
                     # Re-evaluated every iteration so high-weight posts added
@@ -642,9 +617,7 @@ class Scheduler:
                     # Check if summary already exists for this hash
                     existing_summary = (
                         db.query(AISummary)
-                        .filter(
-                            AISummary.content_hash == candidate.content_hash
-                        )
+                        .filter(AISummary.content_hash == candidate.content_hash)
                         .first()
                     )
 
@@ -660,11 +633,7 @@ class Scheduler:
                         continue
 
                     # Get post for content
-                    post = (
-                        db.query(Post)
-                        .filter(Post.id == candidate.post_id)
-                        .first()
-                    )
+                    post = db.query(Post).filter(Post.id == candidate.post_id).first()
                     if not post:
                         # Post was deleted, remove from queue
                         db.query(SummaryQueue).filter(
@@ -680,8 +649,7 @@ class Scheduler:
                         ).delete()
                         db.commit()
                         logger.debug(
-                            f"Post {post.id} marked skip_summary, "
-                            "removing from queue"
+                            f"Post {post.id} marked skip_summary, removing from queue"
                         )
                         continue
 
@@ -692,26 +660,20 @@ class Scheduler:
                             SummaryQueue.id == candidate.id
                         ).delete()
                         db.commit()
-                        logger.debug(
-                            f"Post {post.id} already read, skipping summary"
-                        )
+                        logger.debug(f"Post {post.id} already read, skipping summary")
                         continue
 
                     # Fetch full_content if not available
                     content = post.full_content
                     if not content and post.url:
                         try:
-                            logger.info(
-                                f"Fetching full content for post {post.id}..."
-                            )
+                            logger.info(f"Fetching full content for post {post.id}...")
                             result = await extract_full_content(post.url)
                             if result.success and result.content:
                                 content = result.content
                                 post.full_content = content
                                 db.commit()
-                                logger.info(
-                                    f"Full content saved for post {post.id}"
-                                )
+                                logger.info(f"Full content saved for post {post.id}")
                             # Delay to avoid rate limit (429)
                             await asyncio.sleep(2)
                         except Exception as e:
@@ -738,16 +700,13 @@ class Scheduler:
                             ).delete()
                             db.commit()
                             logger.debug(
-                                f"Post {post.id}: no content, "
-                                "marked skip_summary"
+                                f"Post {post.id}: no content, marked skip_summary"
                             )
                             continue
 
                     # Call API
                     try:
-                        logger.info(
-                            f"Generating summary for post {post.id}..."
-                        )
+                        logger.info(f"Generating summary for post {post.id}...")
                         summary_result = await generate_summary(
                             content, title=post.title, title_only=title_only
                         )
@@ -766,12 +725,8 @@ class Scheduler:
 
                         # Save tags for recommendations
                         if summary_result.tags:
-                            tag_count = save_post_tags(
-                                db, post.id, summary_result.tags
-                            )
-                            logger.debug(
-                                f"Saved {tag_count} tags for post {post.id}"
-                            )
+                            tag_count = save_post_tags(db, post.id, summary_result.tags)
+                            logger.debug(f"Saved {tag_count} tags for post {post.id}")
 
                         # Remove from queue
                         db.query(SummaryQueue).filter(
@@ -785,7 +740,10 @@ class Scheduler:
 
                         # Throttle automatic queue to reduce rate limit pressure.
                         # Manual requests (generate/regenerate) bypass this.
-                        from app.services.ai._constants import SUMMARY_QUEUE_SLEEP_SECONDS
+                        from app.services.ai._constants import (
+                            SUMMARY_QUEUE_SLEEP_SECONDS,
+                        )
+
                         await asyncio.sleep(SUMMARY_QUEUE_SLEEP_SECONDS)
 
                     except GarbageContentError as e:
@@ -795,9 +753,7 @@ class Scheduler:
                             SummaryQueue.id == candidate.id
                         ).delete()
                         db.commit()
-                        logger.info(
-                            f"Post {post.id}: {e}, marked skip_summary"
-                        )
+                        logger.info(f"Post {post.id}: {e}, marked skip_summary")
 
                     except TemporaryError as e:
                         error_msg = str(e)
@@ -820,13 +776,9 @@ class Scheduler:
 
                         if candidate.attempts >= 5:
                             # 24h cooldown
-                            candidate.cooldown_until = now + timedelta(
-                                hours=24
-                            )
+                            candidate.cooldown_until = now + timedelta(hours=24)
                             candidate.attempts = 0
-                            logger.warning(
-                                f"Post {post.id}: 5 errors, 24h cooldown"
-                            )
+                            logger.warning(f"Post {post.id}: 5 errors, 24h cooldown")
 
                         candidate.locked_at = None
                         db.commit()
@@ -869,10 +821,10 @@ class Scheduler:
     async def _job_update_user_profile(self):
         """Job to update user interest profile for recommendations."""
         from app.services.user_profile import (
-            is_profile_stale,
+            MIN_LIKED_POSTS,
             generate_user_profile,
             get_liked_posts_count,
-            MIN_LIKED_POSTS,
+            is_profile_stale,
         )
 
         # Check every 6 hours
@@ -897,9 +849,7 @@ class Scheduler:
                                 f"({liked_count}/{MIN_LIKED_POSTS})"
                             )
                     else:
-                        logger.debug(
-                            "Job update_user_profile: profile is fresh"
-                        )
+                        logger.debug("Job update_user_profile: profile is fresh")
                 finally:
                     db.close()
 

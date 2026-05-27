@@ -44,9 +44,7 @@ def is_valid_image_url(url: str) -> bool:
             return False
 
         # Don't allow common private IPs
-        if hostname.startswith(
-            ("10.", "192.168.", "172.16.", "172.17.", "172.18.")
-        ):
+        if hostname.startswith(("10.", "192.168.", "172.16.", "172.17.", "172.18.")):
             return False
 
         return True

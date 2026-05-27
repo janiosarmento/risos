@@ -17,10 +17,10 @@ from app.services.suggestions import (
     process_suggestion_candidates,
 )
 from app.services.user_profile import (
-    generate_user_profile,
-    invalidate_user_profile,
-    get_liked_posts_count,
     MIN_LIKED_POSTS,
+    generate_user_profile,
+    get_liked_posts_count,
+    invalidate_user_profile,
 )
 
 logger = logging.getLogger(__name__)

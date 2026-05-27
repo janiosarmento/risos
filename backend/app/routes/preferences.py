@@ -3,16 +3,17 @@ User preferences routes.
 Stores locale, theme, AI settings, and data settings in app_settings table.
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from app.config import load_prompts
-from app.services.ai._constants import DEFAULT_API_BASE_URL
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import AppSettings
+from app.services.ai._constants import DEFAULT_API_BASE_URL
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -63,16 +64,12 @@ class PreferencesResponse(BaseModel):
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
     # Suggestions settings
-    suggestion_min_tags: Optional[int] = (
-        None  # minimum tag overlap for suggestions
-    )
+    suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions
     profile_min_tag_freq: Optional[int] = (
         None  # min liked posts for a tag to enter profile
     )
     # AI keys and prompts
-    ai_api_keys: Optional[str] = (
-        None  # masked: "cbrk-****1234, cbrk-****5678"
-    )
+    ai_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
     model_cooldown_minutes: Optional[int] = (
         None  # grace period for failed models (5-120)
@@ -184,50 +181,31 @@ def get_preferences(
         locale=prefs[PREF_LOCALE],
         theme=prefs[PREF_THEME],
         # AI settings
-        summary_language=prefs[PREF_SUMMARY_LANGUAGE]
-        or "Brazilian Portuguese",
-        ai_model=prefs[PREF_AI_MODEL]
-        or "llama-3.3-70b",
+        summary_language=prefs[PREF_SUMMARY_LANGUAGE] or "Brazilian Portuguese",
+        ai_model=prefs[PREF_AI_MODEL] or "llama-3.3-70b",
         # Data settings
         feed_update_interval=int_or_default(
             prefs[PREF_FEED_UPDATE_INTERVAL],
             30,
         ),
-        max_posts_per_feed=int_or_default(
-            prefs[PREF_MAX_POSTS_PER_FEED], 500
-        ),
-        max_post_age_days=int_or_default(
-            prefs[PREF_MAX_POST_AGE_DAYS], 365
-        ),
-        max_unread_days=int_or_default(
-            prefs[PREF_MAX_UNREAD_DAYS], 90
-        ),
+        max_posts_per_feed=int_or_default(prefs[PREF_MAX_POSTS_PER_FEED], 500),
+        max_post_age_days=int_or_default(prefs[PREF_MAX_POST_AGE_DAYS], 365),
+        max_unread_days=int_or_default(prefs[PREF_MAX_UNREAD_DAYS], 90),
         # Interface settings
-        toast_timeout_seconds=int_or_default(
-            prefs[PREF_TOAST_TIMEOUT], 2
-        ),
-        idle_refresh_seconds=int_or_default(
-            prefs[PREF_IDLE_REFRESH], 180
-        ),
+        toast_timeout_seconds=int_or_default(prefs[PREF_TOAST_TIMEOUT], 2),
+        idle_refresh_seconds=int_or_default(prefs[PREF_IDLE_REFRESH], 180),
         reading_mode=prefs[PREF_READING_MODE] or "fullscreen",
         split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
         # Suggestions
         suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
-        profile_min_tag_freq=int_or_default(
-            prefs[PREF_PROFILE_MIN_TAG_FREQ], 2
-        ),
+        profile_min_tag_freq=int_or_default(prefs[PREF_PROFILE_MIN_TAG_FREQ], 2),
         # AI keys and prompts
-        ai_api_keys=_mask_keys(
-            prefs[PREF_AI_API_KEYS] or ""
-        ),
+        ai_api_keys=_mask_keys(prefs[PREF_AI_API_KEYS] or ""),
         tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
-        model_cooldown_minutes=int_or_default(
-            prefs[PREF_MODEL_COOLDOWN], 30
-        ),
+        model_cooldown_minutes=int_or_default(prefs[PREF_MODEL_COOLDOWN], 30),
         system_prompt=prefs[PREF_SYSTEM_PROMPT]
         or load_prompts().get("system_prompt", ""),
-        user_prompt=prefs[PREF_USER_PROMPT]
-        or load_prompts().get("user_prompt", ""),
+        user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
         blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
         api_base_url=prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
         ai_timeout=int_or_default(prefs[PREF_AI_TIMEOUT], 30),
@@ -258,14 +236,10 @@ def update_preferences(
 
     # Data settings (store as string)
     if prefs.feed_update_interval is not None:
-        _set_setting(
-            db, PREF_FEED_UPDATE_INTERVAL, str(prefs.feed_update_interval)
-        )
+        _set_setting(db, PREF_FEED_UPDATE_INTERVAL, str(prefs.feed_update_interval))
 
     if prefs.max_posts_per_feed is not None:
-        _set_setting(
-            db, PREF_MAX_POSTS_PER_FEED, str(prefs.max_posts_per_feed)
-        )
+        _set_setting(db, PREF_MAX_POSTS_PER_FEED, str(prefs.max_posts_per_feed))
 
     if prefs.max_post_age_days is not None:
         _set_setting(db, PREF_MAX_POST_AGE_DAYS, str(prefs.max_post_age_days))
@@ -313,9 +287,7 @@ def update_preferences(
     if prefs.ai_api_keys is not None and prefs.ai_api_keys.strip():
         # Only save if not masked (contains actual keys, not "****")
         if "****" not in prefs.ai_api_keys:
-            _set_setting(
-                db, PREF_AI_API_KEYS, prefs.ai_api_keys.strip()
-            )
+            _set_setting(db, PREF_AI_API_KEYS, prefs.ai_api_keys.strip())
 
     if prefs.tags_per_post is not None:
         tags_per_post = max(3, min(15, prefs.tags_per_post))
@@ -363,15 +335,11 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
     from app.models import Post
     from app.routes.posts import title_matches_term
 
-    suggested = (
-        db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).all()
-    )
+    suggested = db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).all()
     count = 0
     for post in suggested:
         title_lower = (post.title or "").lower()
-        if any(
-            title_matches_term(title_lower, term) for term in blocked_terms
-        ):
+        if any(title_matches_term(title_lower, term) for term in blocked_terms):
             post.is_suggested = 0
             post.suggestion_score = None
             post.suggested_at = None
@@ -564,14 +532,8 @@ def get_effective_ai_timeout(db: Session) -> int:
 
 def get_effective_api_base_url(db: Session) -> str:
     """Get API base URL from app_settings or default."""
-    row = (
-        db.query(AppSettings)
-        .filter(AppSettings.key == PREF_API_BASE_URL)
-        .first()
-    )
-    return (row.value if row and row.value else DEFAULT_API_BASE_URL).rstrip(
-        "/"
-    )
+    row = db.query(AppSettings).filter(AppSettings.key == PREF_API_BASE_URL).first()
+    return (row.value if row and row.value else DEFAULT_API_BASE_URL).rstrip("/")
 
 
 def get_effective_blocked_terms(db: Session) -> list:

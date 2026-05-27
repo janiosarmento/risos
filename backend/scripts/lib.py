@@ -15,9 +15,9 @@ from datetime import datetime
 
 from app.models import AISummary, PostTag
 from app.services.ai import (
+    GarbageContentError,
     circuit_breaker,
     generate_summary,
-    GarbageContentError,
 )
 from app.services.ai._infrastructure import api_key_rotator
 from app.services.tags import save_post_tags
@@ -57,9 +57,7 @@ def clear_rate_limits():
 # ---------------------------------------------------------------------------
 # Single post regeneration
 # ---------------------------------------------------------------------------
-async def regenerate_one(
-    db, post, use_local=False, delete_existing_tags=False
-):
+async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
     """
     Regenerate summary and tags for a single post.
 
@@ -88,9 +86,7 @@ async def regenerate_one(
         if use_local:
             from app.services.ollama import generate_summary_local
 
-            result = await generate_summary_local(
-                content, title=post.title, db=db
-            )
+            result = await generate_summary_local(content, title=post.title, db=db)
         else:
             result = await generate_summary(content, title=post.title)
     except GarbageContentError as e:
@@ -113,9 +109,7 @@ async def regenerate_one(
     summary_text = result.get_summary_with_signature()
 
     existing = (
-        db.query(AISummary)
-        .filter(AISummary.content_hash == content_hash)
-        .first()
+        db.query(AISummary).filter(AISummary.content_hash == content_hash).first()
     )
     if existing:
         existing.summary_pt = summary_text
@@ -166,12 +160,8 @@ async def run_batch_loop(
     for batch_start in range(0, total, INTERNAL_BATCH_SIZE):
         batch = posts[batch_start : batch_start + INTERNAL_BATCH_SIZE]
         batch_num = batch_start // INTERNAL_BATCH_SIZE + 1
-        total_batches = (
-            total + INTERNAL_BATCH_SIZE - 1
-        ) // INTERNAL_BATCH_SIZE
-        log(
-            f"--- Batch {batch_num}/{total_batches} ({success_count} OK so far) ---"
-        )
+        total_batches = (total + INTERNAL_BATCH_SIZE - 1) // INTERNAL_BATCH_SIZE
+        log(f"--- Batch {batch_num}/{total_batches} ({success_count} OK so far) ---")
 
         last_called_api = False
         for post in batch:

@@ -40,9 +40,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     # Generate JWT token
     jti = str(uuid.uuid4())
-    expires_at = datetime.utcnow() + timedelta(
-        hours=settings.jwt_expiration_hours
-    )
+    expires_at = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
 
     payload = {
         "jti": jti,
@@ -56,9 +54,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/logout")
-def logout(
-    user: dict = Depends(get_current_user), db: Session = Depends(get_db)
-):
+def logout(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Invalidate token by adding jti to blacklist.
     """
@@ -67,9 +63,7 @@ def logout(
     # Get token expiration
     # (token is still valid at this point, so we can trust the user's jti)
     # Calculate expires_at based on config
-    expires_at = datetime.utcnow() + timedelta(
-        hours=settings.jwt_expiration_hours
-    )
+    expires_at = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
 
     # Add to blacklist
     blacklist_entry = TokenBlacklist(jti=jti, expires_at=expires_at)

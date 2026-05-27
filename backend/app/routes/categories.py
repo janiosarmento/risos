@@ -14,9 +14,9 @@ from app.dependencies import get_current_user
 from app.models import Category, Feed
 from app.schemas import (
     CategoryCreate,
-    CategoryUpdate,
-    CategoryResponse,
     CategoryReorder,
+    CategoryResponse,
+    CategoryUpdate,
 )
 
 router = APIRouter(prefix="/categories", tags=["categories"])
@@ -39,9 +39,7 @@ def list_categories(
             Category,
             func.coalesce(feed_count_subq.c.feed_count, 0).label("feed_count"),
         )
-        .outerjoin(
-            feed_count_subq, Category.id == feed_count_subq.c.category_id
-        )
+        .outerjoin(feed_count_subq, Category.id == feed_count_subq.c.category_id)
         .order_by(func.lower(Category.name))
         .all()
     )
@@ -61,9 +59,7 @@ def list_categories(
     return result
 
 
-@router.post(
-    "", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     category: CategoryCreate,
     db: Session = Depends(get_db),
@@ -72,11 +68,7 @@ def create_category(
     """Create a new category."""
     # Check if parent_id exists (if provided)
     if category.parent_id:
-        parent = (
-            db.query(Category)
-            .filter(Category.id == category.parent_id)
-            .first()
-        )
+        parent = db.query(Category).filter(Category.id == category.parent_id).first()
         if not parent:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -116,9 +108,7 @@ def get_category(
         )
 
     feed_count = (
-        db.query(func.count(Feed.id))
-        .filter(Feed.category_id == category_id)
-        .scalar()
+        db.query(func.count(Feed.id)).filter(Feed.category_id == category_id).scalar()
     )
 
     return CategoryResponse(
@@ -172,9 +162,7 @@ def update_category(
         category.name = category_update.name
     if category_update.parent_id is not None:
         category.parent_id = (
-            category_update.parent_id
-            if category_update.parent_id != 0
-            else None
+            category_update.parent_id if category_update.parent_id != 0 else None
         )
     if category_update.position is not None:
         category.position = category_update.position
@@ -183,9 +171,7 @@ def update_category(
     db.refresh(category)
 
     feed_count = (
-        db.query(func.count(Feed.id))
-        .filter(Feed.category_id == category_id)
-        .scalar()
+        db.query(func.count(Feed.id)).filter(Feed.category_id == category_id).scalar()
     )
 
     return CategoryResponse(
@@ -234,9 +220,7 @@ def reorder_categories(
     # Check if all IDs exist
     existing_ids = set(
         id
-        for (id,) in db.query(Category.id)
-        .filter(Category.id.in_(reorder.order))
-        .all()
+        for (id,) in db.query(Category.id).filter(Category.id.in_(reorder.order)).all()
     )
 
     if len(existing_ids) != len(reorder.order):
