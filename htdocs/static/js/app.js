@@ -1489,12 +1489,22 @@ function app() {
         formatDate(dateStr) {
             if (!dateStr) return '';
 
+            // Force UTC timezone if string is ISO without explicit timezone offset
+            let formattedStr = dateStr;
+            if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                // If it contains 'T' (ISO format) but doesn't specify timezone, treat as UTC
+                const hasTimezone = (dateStr.substring(dateStr.indexOf('T')).match(/[\-+]\d{2}/) !== null);
+                if (dateStr.includes('T') && !hasTimezone) {
+                    formattedStr = dateStr + 'Z';
+                }
+            }
+
             const MINUTE = 60000;
             const HOUR = 3600000;
             const DAY = 86400000;
             const WEEK = 604800000;
 
-            const date = new Date(dateStr);
+            const date = new Date(formattedStr);
             const now = new Date();
             const diff = now - date;
 

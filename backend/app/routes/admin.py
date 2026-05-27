@@ -255,7 +255,7 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
     )
 
     # Circuit breaker
-    circuit_state = "unknown"
+    circuit_state = "closed"
     health_warning = None
 
     for row in (
