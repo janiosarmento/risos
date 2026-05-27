@@ -16,6 +16,8 @@ const settingsMixin = {
     showSettings: false,
     settingsTab: 'categories',
     settingsAccordion: { appearance: true, ai: false, data: false, interface: false, tagMerge: false },
+    systemStatus: null,
+    loadingStatus: false,
 
     // Category CRUD
     newCategoryName: '',
@@ -1074,6 +1076,18 @@ const settingsMixin = {
             this.showToast(this.t('settings.modelsCacheCleared'));
         } catch (error) {
             console.error('Failed to clear models cache:', error);
+        }
+    },
+
+    async loadSystemStatus() {
+        this.loadingStatus = true;
+        try {
+            this.systemStatus = await this.fetchApi('/admin/status');
+        } catch (error) {
+            console.error('Failed to load system status:', error);
+            this.showToast(this.t('errors.requestFailed'), 'error');
+        } finally {
+            this.loadingStatus = false;
         }
     },
 

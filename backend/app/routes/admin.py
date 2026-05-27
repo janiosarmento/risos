@@ -212,8 +212,18 @@ def get_status(
     posts_count = db.query(Post).count()
     unread_count = db.query(Post).filter(Post.is_read.is_(False)).count()
     queue_size = db.query(SummaryQueue).count()
+    unread_queue_size = db.query(SummaryQueue).join(Post).filter(Post.is_read.is_(False)).count()
+    starred_count = db.query(Post).filter(Post.is_starred.is_(True)).count()
     summaries_count = db.query(AISummary).count()
     failures_count = db.query(SummaryFailure).count()
+
+    # Oldest post date
+    oldest_post = db.query(Post).order_by(Post.sort_date.asc()).first()
+    oldest_post_date = (
+        oldest_post.published_at.isoformat()
+        if oldest_post and oldest_post.published_at
+        else (oldest_post.sort_date.isoformat() if oldest_post else None)
+    )
 
     # Database size
     db_path = settings.database_path
@@ -242,11 +252,14 @@ def get_status(
         "posts_count": posts_count,
         "unread_count": unread_count,
         "queue_size": queue_size,
+        "unread_queue_size": unread_queue_size,
+        "starred_count": starred_count,
         "summaries_count": summaries_count,
         "failures_count": failures_count,
         "circuit_breaker": circuit_state,
         "health_warning": health_warning,
         "db_size_mb": db_size_mb,
+        "oldest_post_date": oldest_post_date,
     }
 
 

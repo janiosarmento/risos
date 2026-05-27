@@ -95,7 +95,8 @@
       "opml": "OPML",
       "ai": "IA",
       "topics": "Tópicos",
-      "general": "Geral"
+      "general": "Geral",
+      "status": "Status"
     },
     "close": "Fechar",
     "theme": "Aparência",
@@ -213,6 +214,23 @@
       "move": "mover",
       "copy": "copiar",
       "empty": "Nenhum tópico ainda. Crie um manualmente ou use sugestões da IA."
+    },
+    "status": {
+      "title": "Status do Sistema",
+      "loading": "Carregando métricas do sistema...",
+      "refresh": "Atualizar Métricas",
+      "llmQueue": "Aguardando IA (Não Lidos)",
+      "llmQueueDesc": "Artigos não lidos que esperam por geração de resumo e tags pelo LLM",
+      "totalFeeds": "Feeds Cadastrados",
+      "totalPosts": "Artigos Indexados",
+      "totalUnread": "Artigos Não Lidos",
+      "totalStarred": "Artigos Favoritos",
+      "dbSize": "Tamanho do Banco",
+      "oldestPost": "Artigo Mais Antigo",
+      "aiState": "Estado do Circuit Breaker da IA",
+      "aiStateNormal": "Operando normalmente",
+      "aiStateTriggered": "Circuit breaker ativo (Erros detectados)",
+      "warning": "Aviso de Saúde:"
     }
   },
   "splitView": {

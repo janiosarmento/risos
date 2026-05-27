@@ -95,7 +95,8 @@
       "opml": "OPML",
       "ai": "AI",
       "topics": "Topics",
-      "general": "General"
+      "general": "General",
+      "status": "Status"
     },
     "close": "Close",
     "theme": "Appearance",
@@ -213,6 +214,23 @@
       "move": "move",
       "copy": "copy",
       "empty": "No topics yet. Create one manually or use AI suggestions."
+    },
+    "status": {
+      "title": "System Status",
+      "loading": "Loading system metrics...",
+      "refresh": "Refresh Metrics",
+      "llmQueue": "Pending AI (Unread)",
+      "llmQueueDesc": "Unread articles waiting for AI summary and tag generation by the LLM",
+      "totalFeeds": "Registered Feeds",
+      "totalPosts": "Indexed Articles",
+      "totalUnread": "Unread Articles",
+      "totalStarred": "Starred Articles",
+      "dbSize": "Database Size",
+      "oldestPost": "Oldest Article",
+      "aiState": "AI Circuit Breaker State",
+      "aiStateNormal": "Operating normally",
+      "aiStateTriggered": "AI Circuit Breaker active (Errors detected)",
+      "warning": "Health Warning:"
     }
   },
   "splitView": {

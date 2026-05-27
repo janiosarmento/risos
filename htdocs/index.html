@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260524b';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260524b">
+    <script>var APP_VERSION = '20260527a';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260527a">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260524b"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260524b"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260524b"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260524b"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260524b"></script>
-    <script defer src="/static/js/components/settings.js?v=20260524b"></script>
-    <script defer src="/static/js/components/curation.js?v=20260524b"></script>
-    <script defer src="/static/js/app.js?v=20260524b"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260527a"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260527a"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260527a"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260527a"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260527a"></script>
+    <script defer src="/static/js/components/settings.js?v=20260527a"></script>
+    <script defer src="/static/js/components/curation.js?v=20260527a"></script>
+    <script defer src="/static/js/app.js?v=20260527a"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1413,6 +1413,12 @@
                             :class="settingsTab === 'general' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
                             x-text="t('settings.tabs.general')"
                         ></button>
+                        <button
+                            @click="settingsTab = 'status'; loadSystemStatus()"
+                            class="px-4 py-2 text-sm font-medium"
+                            :class="settingsTab === 'status' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            x-text="t('settings.tabs.status')"
+                        ></button>
                     </div>
 
                     <!-- Content -->
@@ -2432,6 +2438,156 @@
                                 </div>
                             </div>
 
+                        </div>
+
+                        <!-- Status Tab -->
+                        <div x-show="settingsTab === 'status'" class="space-y-6">
+                            <!-- Loader -->
+                            <template x-if="loadingStatus">
+                                <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                                    <svg class="animate-spin h-8 w-8 text-blue-600 dark:text-blue-400"><use href="#icon-spinner"/></svg>
+                                    <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.status.loading')"></span>
+                                </div>
+                            </template>
+
+                            <!-- Content loaded -->
+                            <template x-if="!loadingStatus && systemStatus">
+                                <div class="space-y-6">
+                                    
+                                    <!-- Destaque Principal: Fila de IA -->
+                                    <div class="p-5 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+                                        <div class="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-blue-500/5 to-transparent pointer-events-none"></div>
+                                        
+                                        <div class="flex items-start gap-4">
+                                            <div class="p-3 bg-blue-600 text-white rounded-xl shadow-md flex-shrink-0 animate-pulse">
+                                                <svg class="w-6 h-6"><use href="#icon-sparkles"/></svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300" x-text="t('settings.status.llmQueue')"></h3>
+                                                <p class="text-xs text-blue-600/80 dark:text-blue-400/80 mt-1 max-w-[90%]" x-text="t('settings.status.llmQueueDesc')"></p>
+                                                
+                                                <div class="mt-4 flex items-baseline gap-2">
+                                                    <span class="text-3xl font-extrabold text-blue-900 dark:text-blue-200" x-text="systemStatus.unread_queue_size"></span>
+                                                    <span class="text-xs text-blue-700/70 dark:text-blue-400/70" x-text="'/ ' + systemStatus.queue_size + ' no total na fila'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Grid de Métricas Gerais -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        
+                                        <!-- Starred -->
+                                        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow transition-all flex items-center gap-3">
+                                            <div class="p-2.5 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400">
+                                                <svg class="w-5 h-5"><use href="#icon-star"/></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium" x-text="t('settings.status.totalStarred')"></p>
+                                                <p class="text-xl font-bold text-gray-800 dark:text-gray-200 mt-0.5" x-text="systemStatus.starred_count"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Unread -->
+                                        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow transition-all flex items-center gap-3">
+                                            <div class="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                                <svg class="w-5 h-5"><use href="#icon-check"/></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium" x-text="t('settings.status.totalUnread')"></p>
+                                                <p class="text-xl font-bold text-gray-800 dark:text-gray-200 mt-0.5" x-text="systemStatus.unread_count"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Total Posts -->
+                                        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow transition-all flex items-center gap-3">
+                                            <div class="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                                <svg class="w-5 h-5"><use href="#icon-folder"/></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium" x-text="t('settings.status.totalPosts')"></p>
+                                                <p class="text-xl font-bold text-gray-800 dark:text-gray-200 mt-0.5" x-text="systemStatus.posts_count"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Feeds -->
+                                        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow transition-all flex items-center gap-3">
+                                            <div class="p-2.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                                                <svg class="w-5 h-5"><use href="#icon-rss"/></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium" x-text="t('settings.status.totalFeeds')"></p>
+                                                <p class="text-xl font-bold text-gray-800 dark:text-gray-200 mt-0.5" x-text="systemStatus.feeds_count"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- DB Size -->
+                                        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow transition-all flex items-center gap-3">
+                                            <div class="p-2.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0v3.75"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium" x-text="t('settings.status.dbSize')"></p>
+                                                <p class="text-xl font-bold text-gray-800 dark:text-gray-200 mt-0.5" x-text="systemStatus.db_size_mb + ' MB'"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Oldest Post Date -->
+                                        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow transition-all flex items-center gap-3">
+                                            <div class="p-2.5 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path></svg>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium" x-text="t('settings.status.oldestPost')"></p>
+                                                <p class="text-sm font-bold text-gray-800 dark:text-gray-200 mt-0.5" x-text="systemStatus.oldest_post_date ? formatDate(systemStatus.oldest_post_date) : t('time.unknown')"></p>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Sistema e IA -->
+                                    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/20 space-y-4">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-700 dark:text-gray-300" x-text="t('settings.status.aiState')"></p>
+                                                <div class="flex items-center gap-2 mt-1.5">
+                                                    <span class="w-2.5 h-2.5 rounded-full" :class="systemStatus.circuit_breaker === 'closed' ? 'bg-green-500' : 'bg-red-500'"></span>
+                                                    <span class="text-xs text-gray-600 dark:text-gray-400" x-text="systemStatus.circuit_breaker === 'closed' ? t('settings.status.aiStateNormal') : t('settings.status.aiStateTriggered')"></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Botão de Reset Integrado -->
+                                            <button 
+                                                @click="resetCircuitBreaker(); loadSystemStatus()"
+                                                class="px-4 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                                            >
+                                                <svg class="w-3.5 h-3.5"><use href="#icon-refresh"/></svg>
+                                                <span x-text="t('settings.resetCircuitBreaker')"></span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Aviso de saúde se houver -->
+                                        <template x-if="systemStatus.health_warning">
+                                            <div class="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg flex items-start gap-2 text-xs text-red-700 dark:text-red-400">
+                                                <span class="font-bold uppercase" x-text="t('settings.status.warning')"></span>
+                                                <span x-text="systemStatus.health_warning"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    
+                                    <!-- Ação Manual de Atualização das Métricas -->
+                                    <div class="flex justify-end pt-2">
+                                        <button 
+                                            @click="loadSystemStatus()" 
+                                            class="px-4 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-1.5"
+                                        >
+                                            <svg class="w-3.5 h-3.5"><use href="#icon-refresh"/></svg>
+                                            <span x-text="t('settings.status.refresh')"></span>
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </template>
                         </div>
                     </div>
 
