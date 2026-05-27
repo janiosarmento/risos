@@ -201,7 +201,12 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
 
     Includes counters, database size, circuit breaker state, etc.
     """
-    from app.models import AppSettings, Feed, Post
+    from datetime import timedelta
+
+    from sqlalchemy import func
+
+    from app.models import AppSettings, Feed, Post, SchedulerLock
+    from app.routes.preferences import get_effective_feed_update_interval
 
     # Counters
     feeds_count = db.query(Feed).count()
@@ -214,6 +219,24 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
     starred_count = db.query(Post).filter(Post.is_starred.is_(True)).count()
     summaries_count = db.query(AISummary).count()
     failures_count = db.query(SummaryFailure).count()
+
+    # Fetching metrics
+    feed_update_interval = get_effective_feed_update_interval(db)
+
+    # Last successful fetch time among active feeds
+    last_fetched_val = (
+        db.query(func.max(Feed.last_fetched_at))
+        .filter(Feed.disabled_at.is_(None))
+        .scalar()
+    )
+    last_fetched_date = last_fetched_val.isoformat() if last_fetched_val else None
+
+    # Check background scheduler status
+    lock = db.query(SchedulerLock).filter(SchedulerLock.id == 1).first()
+    scheduler_active = False
+    if lock:
+        # lock heartbeat is updated every 30 seconds
+        scheduler_active = lock.heartbeat_at > datetime.utcnow() - timedelta(seconds=90)
 
     # Oldest post date
     oldest_post = db.query(Post).order_by(Post.sort_date.asc()).first()
@@ -258,6 +281,9 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
         "health_warning": health_warning,
         "db_size_mb": db_size_mb,
         "oldest_post_date": oldest_post_date,
+        "feed_update_interval": feed_update_interval,
+        "last_fetched_date": last_fetched_date,
+        "scheduler_active": scheduler_active,
     }
 
 

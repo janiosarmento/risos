@@ -49,18 +49,18 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260527b';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260527b">
+    <script>var APP_VERSION = '20260527c';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260527c">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260527b"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260527b"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260527b"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260527b"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260527b"></script>
-    <script defer src="/static/js/components/settings.js?v=20260527b"></script>
-    <script defer src="/static/js/components/curation.js?v=20260527b"></script>
-    <script defer src="/static/js/app.js?v=20260527b"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260527c"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260527c"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260527c"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260527c"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260527c"></script>
+    <script defer src="/static/js/components/settings.js?v=20260527c"></script>
+    <script defer src="/static/js/components/curation.js?v=20260527c"></script>
+    <script defer src="/static/js/app.js?v=20260527c"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -2573,6 +2573,36 @@
                                                 <span x-text="systemStatus.health_warning"></span>
                                             </div>
                                         </template>
+                                    </div>
+
+                                    <!-- Agendamento & Busca de Feeds -->
+                                    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/20 space-y-4">
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300" x-text="t('settings.status.fetchingSection')"></p>
+                                            
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/50">
+                                                <!-- Interval -->
+                                                <div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold" x-text="t('settings.status.fetchingInterval')"></p>
+                                                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1" x-text="t('settings.status.fetchingIntervalValue').replace('{n}', systemStatus.feed_update_interval)"></p>
+                                                </div>
+                                                
+                                                <!-- Last Run -->
+                                                <div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold" x-text="t('settings.status.fetchingLastRun')"></p>
+                                                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1" x-text="systemStatus.last_fetched_date ? formatDate(systemStatus.last_fetched_date) : t('time.unknown')"></p>
+                                                </div>
+                                                
+                                                <!-- Scheduler State -->
+                                                <div>
+                                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold" x-text="t('settings.status.schedulerState')"></p>
+                                                    <div class="flex items-center gap-1.5 mt-1">
+                                                        <span class="w-2 h-2 rounded-full" :class="systemStatus.scheduler_active ? 'bg-green-500' : 'bg-red-500'"></span>
+                                                        <span class="text-xs font-semibold" :class="systemStatus.scheduler_active ? 'text-green-600 dark:text-green-400' : 'text-red-500'" x-text="systemStatus.scheduler_active ? t('settings.status.schedulerActive') : t('settings.status.schedulerInactive')"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <!-- Ação Manual de Atualização das Métricas -->

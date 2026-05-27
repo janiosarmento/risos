@@ -230,7 +230,14 @@
       "aiState": "Estado do Circuit Breaker da IA",
       "aiStateNormal": "Operando normalmente",
       "aiStateTriggered": "Circuit breaker ativo (Erros detectados)",
-      "warning": "Aviso de Saúde:"
+      "warning": "Aviso de Saúde:",
+      "fetchingSection": "Agendamento & Busca de Feeds",
+      "fetchingInterval": "Intervalo de Busca",
+      "fetchingIntervalValue": "A cada {n} minutos",
+      "fetchingLastRun": "Última busca geral",
+      "schedulerState": "Serviço de Busca (Scheduler)",
+      "schedulerActive": "Ativo e saudável",
+      "schedulerInactive": "Inativo / Aguardando liderança"
     }
   },
   "splitView": {

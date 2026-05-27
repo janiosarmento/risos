@@ -230,7 +230,14 @@
       "aiState": "AI Circuit Breaker State",
       "aiStateNormal": "Operating normally",
       "aiStateTriggered": "AI Circuit Breaker active (Errors detected)",
-      "warning": "Health Warning:"
+      "warning": "Health Warning:",
+      "fetchingSection": "Scheduling & Feed Fetching",
+      "fetchingInterval": "Fetch Interval",
+      "fetchingIntervalValue": "Every {n} minutes",
+      "fetchingLastRun": "Last general fetch",
+      "schedulerState": "Fetching Service (Scheduler)",
+      "schedulerActive": "Active and healthy",
+      "schedulerInactive": "Inactive / Awaiting leadership"
     }
   },
   "splitView": {
