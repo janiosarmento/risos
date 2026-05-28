@@ -371,15 +371,22 @@ def _mask_keys(raw: str) -> str:
 
 def get_effective_ai_api_key(db: Session) -> Optional[str]:
     """Retorna a chave de API única configurada via Jano, ou None."""
+    import sys
     secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
+    print(f"[DEBUG api_key] pref_jano_secret_name no banco: {secret_name!r}", file=sys.stderr, flush=True)
     if not secret_name:
+        print("[DEBUG api_key] FALHOU: pref_jano_secret_name está vazio ou não existe no banco", file=sys.stderr, flush=True)
         return None
     from app.services.jano_client import get_jano_secret
     try:
         val = get_jano_secret(secret_name)
-        return val.strip() if val and val.strip() else None
+        print(f"[DEBUG api_key] Jano retornou para '{secret_name}': {('(vazio)' if not val else repr(val[:10] + '...' if len(val or '') > 10 else val))}", file=sys.stderr, flush=True)
+        result = val.strip() if val and val.strip() else None
+        print(f"[DEBUG api_key] Chave final: {'OK (' + str(len(result)) + ' chars)' if result else 'None'}", file=sys.stderr, flush=True)
+        return result
     except Exception as e:
         import logging
+        print(f"[DEBUG api_key] EXCEÇÃO ao resolver segredo '{secret_name}': {type(e).__name__}: {e}", file=sys.stderr, flush=True)
         logging.getLogger(__name__).error(
             f"Erro ao recuperar segredo Jano '{secret_name}': {e}"
         )
