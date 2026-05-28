@@ -80,7 +80,6 @@ def clear_models_cache():
 
 async def get_available_models() -> List[str]:
     """Fetch available model IDs from API (cached 30 min)."""
-    import sys
     global _available_models_cache, _available_models_cache_time
 
     now = datetime.utcnow()
@@ -89,13 +88,13 @@ async def get_available_models() -> List[str]:
             return _available_models_cache
 
     api_keys = api_key_rotator._get_keys()
-    print(f"[DEBUG models] api_keys disponíveis: {len(api_keys)} chave(s)", file=sys.stderr, flush=True)
+    logger.error(f"[DEBUG models] api_keys disponíveis: {len(api_keys)} chave(s)")
     if not api_keys:
-        print("[DEBUG models] FALHOU: nenhuma chave de API disponível", file=sys.stderr, flush=True)
+        logger.error("[DEBUG models] FALHOU: nenhuma chave de API disponível — verifique pref_jano_secret_name no banco")
         return []
 
     api_url = f"{_get_api_base_url()}/models"
-    print(f"[DEBUG models] Chamando: GET {api_url}", file=sys.stderr, flush=True)
+    logger.error(f"[DEBUG models] Chamando: GET {api_url}")
 
     try:
         async with (
@@ -109,18 +108,18 @@ async def get_available_models() -> List[str]:
                 api_url,
                 headers={"Authorization": f"Bearer {api_keys[0]}"},
             )
-            print(f"[DEBUG models] HTTP status: {response.status_code}", file=sys.stderr, flush=True)
+            logger.error(f"[DEBUG models] HTTP status: {response.status_code}")
             if response.status_code == 200:
                 data = response.json()
                 models = [m["id"] for m in data.get("data", [])]
-                print(f"[DEBUG models] Modelos encontrados: {models}", file=sys.stderr, flush=True)
+                logger.error(f"[DEBUG models] Modelos encontrados: {models}")
                 _available_models_cache = models
                 _available_models_cache_time = now
                 return models
             else:
-                print(f"[DEBUG models] FALHOU: HTTP {response.status_code} — {response.text[:300]}", file=sys.stderr, flush=True)
+                logger.error(f"[DEBUG models] FALHOU: HTTP {response.status_code} — {response.text[:300]}")
     except Exception as e:
-        print(f"[DEBUG models] EXCEÇÃO: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+        logger.error(f"[DEBUG models] EXCEÇÃO: {type(e).__name__}: {e}")
         logger.warning(f"Failed to fetch available models: {e}")
 
     return _available_models_cache or []
