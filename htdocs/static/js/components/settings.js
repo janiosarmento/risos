@@ -773,7 +773,7 @@ const settingsMixin = {
     async loadAvailableModels() {
         console.log('[DEBUG models] loadAvailableModels iniciada');
         try {
-            const models = await this.fetchApi('/admin/models');
+            const models = await this.fetchApi('/admin/models?_t=' + Date.now());
             console.log('[DEBUG models] Retorno de /admin/models:', JSON.stringify(models));
             if (!models || models.length === 0) {
                 console.warn('[DEBUG models] A lista de modelos retornada está vazia ou nula.');

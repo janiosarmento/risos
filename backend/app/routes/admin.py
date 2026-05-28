@@ -435,21 +435,20 @@ async def list_available_models(
 ):
     """
     Fetch available models from AI API.
-    Results are cached for 30 minutes (via ai._api).
     Requires authentication.
     """
+    from fastapi.responses import JSONResponse
+
     from app.services.ai._api import (
         get_available_models as fetch_models,
     )
 
-    import sys
     try:
-        print("[models endpoint] chamando fetch_models()...", file=sys.stderr, flush=True)
         model_ids = await fetch_models()
-        print(f"[models endpoint] resultado: {len(model_ids)} modelos", file=sys.stderr, flush=True)
-        return [ModelInfo(id=m, owned_by="provider") for m in sorted(model_ids)]
+        models = [ModelInfo(id=m, owned_by="provider").model_dump() for m in sorted(model_ids)]
+        return JSONResponse(content=models, headers={"Cache-Control": "no-store"})
     except Exception as e:
-        print(f"[models endpoint] EXCEÇÃO: {e}", file=sys.stderr, flush=True)
+        logger.error(f"Error fetching models: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch models: {e}",
