@@ -485,54 +485,6 @@ async def list_available_models(
         )
 
 
-@router.get("/debug-jano")
-async def debug_jano_resolution(
-    user: dict = Depends(get_current_user),
-):
-    """
-    Endpoint temporário para testar e debugar a resolução do segredo do Jano.
-    Retorna diagnóstico detalhado direto para o frontend.
-    """
-    from app.database import SessionLocal
-    from app.routes.preferences import PREF_JANO_SECRET_NAME, _get_setting
-    from app.services.jano_client import get_jano_secret
-    
-    db = SessionLocal()
-    try:
-        secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
-        if not secret_name:
-            return {
-                "success": False,
-                "error": "pref_jano_secret_name não está configurado no banco de dados.",
-                "secret_name": None
-            }
-            
-        try:
-            val = get_jano_secret(secret_name)
-            if val is None:
-                return {
-                    "success": False,
-                    "error": "secrets_resolver retornou None",
-                    "secret_name": secret_name
-                }
-            val_clean = val.strip() if isinstance(val, str) else ""
-            return {
-                "success": True,
-                "secret_name": secret_name,
-                "length": len(val_clean),
-                "preview": val_clean[:5] + "..." if len(val_clean) > 5 else val_clean,
-                "is_empty": len(val_clean) == 0
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "error": f"Exceção ao resolver segredo: {type(e).__name__}: {e}",
-                "secret_name": secret_name
-            }
-    finally:
-        db.close()
-
-
 # Static list of target languages for AI summaries
 # Key: English name (used in prompts), Value: Native name (for display)
 SUMMARY_LANGUAGES = {

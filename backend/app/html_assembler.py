@@ -70,6 +70,17 @@ def assemble_html_files():
 
         assembled_content = include_pattern.sub(replacer, content)
 
+        # Replace {{APP_VERSION}} with the version from the script tag
+        version_match = re.search(
+            r"var APP_VERSION\s*=\s*'([^']+)'", assembled_content
+        )
+        if version_match:
+            version = version_match.group(1)
+            assembled_content = assembled_content.replace(
+                "{{APP_VERSION}}", version
+            )
+            logger.info(f"HTML Assembler: APP_VERSION = {version}")
+
         # Write to final htdocs/index.html
         output_path.write_text(assembled_content, encoding="utf-8")
         logger.info("HTML Assembler: Successfully compiled htdocs/index.html")

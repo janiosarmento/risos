@@ -71,8 +71,6 @@ def clear_models_cache():
 
 async def get_available_models() -> List[str]:
     """Fetch available model IDs from API. No cache — always fresh."""
-    import sys
-
     from app.routes.preferences import get_effective_ai_api_key
 
     db = SessionLocal()
@@ -81,13 +79,10 @@ async def get_available_models() -> List[str]:
     finally:
         db.close()
 
-    print(f"[get_models] api_key={'OK('+str(len(api_key))+')' if api_key else 'None'}", file=sys.stderr, flush=True)
-
     if not api_key:
         return []
 
     api_url = f"{_get_api_base_url()}/models"
-    print(f"[get_models] GET {api_url}", file=sys.stderr, flush=True)
 
     try:
         async with httpx.AsyncClient(
@@ -98,16 +93,13 @@ async def get_available_models() -> List[str]:
                 api_url,
                 headers={"Authorization": f"Bearer {api_key}"},
             )
-            print(f"[get_models] HTTP {response.status_code}", file=sys.stderr, flush=True)
             if response.status_code == 200:
                 data = response.json()
-                models = [m["id"] for m in data.get("data", [])]
-                print(f"[get_models] {len(models)} modelos", file=sys.stderr, flush=True)
-                return models
+                return [m["id"] for m in data.get("data", [])]
             else:
-                print(f"[get_models] ERRO: {response.text[:200]}", file=sys.stderr, flush=True)
+                logger.error(f"Failed to fetch models: HTTP {response.status_code}")
     except Exception as e:
-        print(f"[get_models] EXCEÇÃO: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+        logger.warning(f"Failed to fetch available models: {e}")
 
     return []
 

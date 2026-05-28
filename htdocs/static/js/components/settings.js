@@ -771,13 +771,8 @@ const settingsMixin = {
     },
 
     async loadAvailableModels() {
-        console.log('[DEBUG models] loadAvailableModels iniciada');
         try {
             const models = await this.fetchApi('/admin/models?_t=' + Date.now());
-            console.log('[DEBUG models] Retorno de /admin/models:', JSON.stringify(models));
-            if (!models || models.length === 0) {
-                console.warn('[DEBUG models] A lista de modelos retornada está vazia ou nula.');
-            }
             this.availableModels = models || [];
             const saved = this.aiModel;
             const savedExists = models && models.some(m => m.id === saved);
@@ -787,8 +782,7 @@ const settingsMixin = {
                 this.setAiModel(models[0].id);
             }
         } catch (e) {
-            console.error('[DEBUG models] Erro ao carregar modelos de AI:', e);
-            alert('Falha ao carregar modelos de AI: ' + e.message);
+            console.error('Failed to load AI models:', e);
             this.availableModels = [];
         }
     },
@@ -1094,32 +1088,6 @@ const settingsMixin = {
             this.showToast(this.t('errors.requestFailed'), 'error');
         } finally {
             this.loadingStatus = false;
-        }
-    },
-
-    async debugJanoSecret() {
-        try {
-            await this.saveAiSettings();
-            const result = await this.fetchApi('/admin/debug-jano');
-            console.log('[DEBUG jano] Resultado:', result);
-            if (result.success) {
-                alert(
-                    `DIAGNÓSTICO JANO - SUCESSO!\\n\\n` +
-                    `Caminho: \${result.secret_name}\\n` +
-                    `Tamanho da chave resolvida: \${result.length} caracteres\\n` +
-                    `Prévia (mascarada): "\${result.preview}"\\n` +
-                    `Chave vazia?: \${result.is_empty ? 'Sim (AVISO: chave sem conteúdo!)' : 'Não'}`
-                );
-            } else {
-                alert(
-                    `DIAGNÓSTICO JANO - FALHA!\\n\\n` +
-                    `Caminho: \${result.secret_name}\\n` +
-                    `Erro retornado: \${result.error}`
-                );
-            }
-        } catch (error) {
-            console.error('[DEBUG jano] Erro na requisição:', error);
-            alert(`DIAGNÓSTICO JANO - ERRO CRÍTICO NA REQUISIÇÃO!\\n\\n\${error.message}`);
         }
     },
 
