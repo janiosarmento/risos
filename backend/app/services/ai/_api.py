@@ -87,39 +87,38 @@ async def get_available_models() -> List[str]:
         if now - _available_models_cache_time < MODELS_CACHE_TTL:
             return _available_models_cache
 
-    api_keys = api_key_rotator._get_keys()
-    logger.error(f"[DEBUG models] api_keys disponíveis: {len(api_keys)} chave(s)")
-    if not api_keys:
-        logger.error("[DEBUG models] FALHOU: nenhuma chave de API disponível — verifique pref_jano_secret_name no banco")
+    from app.routes.preferences import get_effective_ai_api_key
+
+    db = SessionLocal()
+    try:
+        api_key = get_effective_ai_api_key(db)
+    finally:
+        db.close()
+
+    if not api_key:
+        logger.warning("get_available_models: no API key configured")
         return []
 
     api_url = f"{_get_api_base_url()}/models"
-    logger.error(f"[DEBUG models] Chamando: GET {api_url}")
 
     try:
-        async with (
-            _api_lock,
-            httpx.AsyncClient(
-                timeout=MODELS_FETCH_TIMEOUT,
-                headers={"User-Agent": USER_AGENT},
-            ) as client,
-        ):
+        async with httpx.AsyncClient(
+            timeout=MODELS_FETCH_TIMEOUT,
+            headers={"User-Agent": USER_AGENT},
+        ) as client:
             response = await client.get(
                 api_url,
-                headers={"Authorization": f"Bearer {api_keys[0]}"},
+                headers={"Authorization": f"Bearer {api_key}"},
             )
-            logger.error(f"[DEBUG models] HTTP status: {response.status_code}")
             if response.status_code == 200:
                 data = response.json()
                 models = [m["id"] for m in data.get("data", [])]
-                logger.error(f"[DEBUG models] Modelos encontrados: {models}")
                 _available_models_cache = models
                 _available_models_cache_time = now
                 return models
             else:
-                logger.error(f"[DEBUG models] FALHOU: HTTP {response.status_code} — {response.text[:300]}")
+                logger.error(f"Failed to fetch models: HTTP {response.status_code}")
     except Exception as e:
-        logger.error(f"[DEBUG models] EXCEÇÃO: {type(e).__name__}: {e}")
         logger.warning(f"Failed to fetch available models: {e}")
 
     return _available_models_cache or []
