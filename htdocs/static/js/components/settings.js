@@ -1097,6 +1097,32 @@ const settingsMixin = {
         }
     },
 
+    async debugJanoSecret() {
+        try {
+            await this.saveAiSettings();
+            const result = await this.fetchApi('/admin/debug-jano');
+            console.log('[DEBUG jano] Resultado:', result);
+            if (result.success) {
+                alert(
+                    `DIAGNÓSTICO JANO - SUCESSO!\\n\\n` +
+                    `Caminho: \${result.secret_name}\\n` +
+                    `Tamanho da chave resolvida: \${result.length} caracteres\\n` +
+                    `Prévia (mascarada): "\${result.preview}"\\n` +
+                    `Chave vazia?: \${result.is_empty ? 'Sim (AVISO: chave sem conteúdo!)' : 'Não'}`
+                );
+            } else {
+                alert(
+                    `DIAGNÓSTICO JANO - FALHA!\\n\\n` +
+                    `Caminho: \${result.secret_name}\\n` +
+                    `Erro retornado: \${result.error}`
+                );
+            }
+        } catch (error) {
+            console.error('[DEBUG jano] Erro na requisição:', error);
+            alert(`DIAGNÓSTICO JANO - ERRO CRÍTICO NA REQUISIÇÃO!\\n\\n\${error.message}`);
+        }
+    },
+
     clearCacheAndReload() {
         localStorage.clear();
         window.location.href = window.location.pathname + '?_=' + Date.now();
