@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — update this AND the ?v= query strings on all asset tags below -->
-    <script>var APP_VERSION = '20260527l';</script>
+    <script>var APP_VERSION = '20260527m';</script>
     <link rel="stylesheet" href="/static/css/app.css?v=20260527j">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1516,24 +1516,26 @@
                                             </div>
                                         </div>
                                         <!-- Edit Mode -->
-                                        <div x-show="editingCategory && editingCategory.id === category.id" class="flex gap-2">
-                                            <input
-                                                type="text"
-                                                x-model="editingCategory.name"
-                                                class="flex-1 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
-                                            >
-                                            <button
-                                                @click="saveCategory()"
-                                                class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
-                                                :disabled="savingCategory"
-                                                x-text="t('categories.save')"
-                                            ></button>
-                                            <button
-                                                @click="cancelEditCategory()"
-                                                class="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded text-sm"
-                                                x-text="t('categories.cancel')"
-                                            ></button>
-                                        </div>
+                                        <template x-if="editingCategory && editingCategory.id === category.id">
+                                            <div class="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    x-model="editingCategory.name"
+                                                    class="flex-1 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                                >
+                                                <button
+                                                    @click="saveCategory()"
+                                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+                                                    :disabled="savingCategory"
+                                                    x-text="t('categories.save')"
+                                                ></button>
+                                                <button
+                                                    @click="cancelEditCategory()"
+                                                    class="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded text-sm"
+                                                    x-text="t('categories.cancel')"
+                                                ></button>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                                 <template x-if="categories.length === 0">
