@@ -52,6 +52,10 @@ bd close <id>         # Complete work
 
 ### Rules
 
+- Sempre peça esclarecimentos quando o pedido do usuário não for suficientemente claro; não faça suposições.
+
+- Use `bd` para ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
