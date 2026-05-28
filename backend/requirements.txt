@@ -33,3 +33,7 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pyyaml
 psutil>=5.9.0
+
+# Jano Secret Manager (produção/servidor)
+-e /opt/jano
+
