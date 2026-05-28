@@ -10,7 +10,7 @@ document.addEventListener('alpine:init', () => {
         aiModel: null,
         availableSummaryLanguages: [],
         availableModels: [],
-        apiKeys: '',
+        janoSecretName: '',
         apiBaseUrl: 'https://api.cerebras.ai/v1',
         systemPrompt: '',
         userPrompt: '',

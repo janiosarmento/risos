@@ -36,7 +36,7 @@ PREF_SPLIT_RATIO = "pref_split_ratio"
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
 # AI keys and prompts
-PREF_AI_API_KEYS = "pref_ai_api_keys"
+PREF_JANO_SECRET_NAME = "pref_jano_secret_name"
 PREF_TAGS_PER_POST = "pref_tags_per_post"
 PREF_MODEL_COOLDOWN = "pref_model_cooldown_minutes"
 PREF_SYSTEM_PROMPT = "pref_system_prompt"
@@ -69,7 +69,7 @@ class PreferencesResponse(BaseModel):
         None  # min liked posts for a tag to enter profile
     )
     # AI keys and prompts
-    ai_api_keys: Optional[str] = None  # masked: "cbrk-****1234, cbrk-****5678"
+    jano_secret_name: Optional[str] = None
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
     model_cooldown_minutes: Optional[int] = (
         None  # grace period for failed models (5-120)
@@ -102,7 +102,7 @@ class PreferencesUpdate(BaseModel):
     suggestion_min_tags: Optional[int] = None
     profile_min_tag_freq: Optional[int] = None
     # AI keys and prompts
-    ai_api_keys: Optional[str] = None
+    jano_secret_name: Optional[str] = None
     tags_per_post: Optional[int] = None
     model_cooldown_minutes: Optional[int] = None
     system_prompt: Optional[str] = None
@@ -151,7 +151,7 @@ def get_preferences(
         PREF_SPLIT_RATIO,
         PREF_SUGGESTION_MIN_TAGS,
         PREF_PROFILE_MIN_TAG_FREQ,
-        PREF_AI_API_KEYS,
+        PREF_JANO_SECRET_NAME,
         PREF_TAGS_PER_POST,
         PREF_MODEL_COOLDOWN,
         PREF_SYSTEM_PROMPT,
@@ -200,7 +200,7 @@ def get_preferences(
         suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
         profile_min_tag_freq=int_or_default(prefs[PREF_PROFILE_MIN_TAG_FREQ], 2),
         # AI keys and prompts
-        ai_api_keys=_mask_keys(prefs[PREF_AI_API_KEYS] or ""),
+        jano_secret_name=prefs[PREF_JANO_SECRET_NAME],
         tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
         model_cooldown_minutes=int_or_default(prefs[PREF_MODEL_COOLDOWN], 30),
         system_prompt=prefs[PREF_SYSTEM_PROMPT]
@@ -284,10 +284,8 @@ def update_preferences(
         invalidate_user_profile(db)
 
     # AI keys and prompts
-    if prefs.ai_api_keys is not None and prefs.ai_api_keys.strip():
-        # Only save if not masked (contains actual keys, not "****")
-        if "****" not in prefs.ai_api_keys:
-            _set_setting(db, PREF_AI_API_KEYS, prefs.ai_api_keys.strip())
+    if prefs.jano_secret_name is not None:
+        _set_setting(db, PREF_JANO_SECRET_NAME, prefs.jano_secret_name.strip())
 
     if prefs.tags_per_post is not None:
         tags_per_post = max(3, min(15, prefs.tags_per_post))
@@ -372,11 +370,22 @@ def _mask_keys(raw: str) -> str:
 
 
 def get_effective_ai_api_keys(db: Session) -> list:
-    """Get API keys from app_settings."""
-    saved = _get_setting(db, PREF_AI_API_KEYS)
-    if not saved:
+    """Get API keys from Jano secret manager using configured secret path."""
+    secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
+    if not secret_name:
         return []
-    return [k.strip() for k in saved.split(",") if k.strip()]
+    from app.services.jano_client import get_jano_secret
+    try:
+        val = get_jano_secret(secret_name)
+        if not val:
+            return []
+        return [k.strip() for k in val.split(",") if k.strip()]
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(
+            f"Error retrieving Jano secret '{secret_name}': {e}"
+        )
+        return []
 
 
 def get_effective_system_prompt(db: Session) -> str:
@@ -509,7 +518,7 @@ def get_effective_suggestion_min_tags(db: Session) -> int:
 
 
 def get_effective_profile_min_tag_freq(db: Session) -> int:
-    """Get minimum tag frequency for profile inclusion from app_settings or default (2)."""
+    """Get minimum tag frequency for profile inclusion (default: 2)."""
     saved = _get_setting(db, PREF_PROFILE_MIN_TAG_FREQ)
     if saved:
         try:

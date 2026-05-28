@@ -822,10 +822,8 @@ const settingsMixin = {
             const payload = {
                 system_prompt: this.systemPrompt,
                 user_prompt: this.userPrompt,
+                jano_secret_name: this.janoSecretName || '',
             };
-            if (this.apiKeys && !this.apiKeys.includes('****')) {
-                payload.ai_api_keys = this.apiKeys;
-            }
             payload.api_base_url = this.apiBaseUrl;
             payload.ai_timeout = parseInt(this.aiTimeout) || 30;
             await this.fetchApi('/preferences', {
@@ -1046,7 +1044,7 @@ const settingsMixin = {
             }
 
             // AI keys and prompts
-            if (serverPrefs.ai_api_keys) this.apiKeys = serverPrefs.ai_api_keys;
+            this.janoSecretName = serverPrefs.jano_secret_name || '';
             if (serverPrefs.api_base_url) this.apiBaseUrl = serverPrefs.api_base_url;
             if (serverPrefs.system_prompt) this.systemPrompt = serverPrefs.system_prompt;
             if (serverPrefs.user_prompt) this.userPrompt = serverPrefs.user_prompt;
