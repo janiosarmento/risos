@@ -4,34 +4,10 @@ Integrates with the secrets_resolver library to retrieve API keys securely.
 """
 
 import logging
-import sys
-from pathlib import Path
+
+from secrets_resolver import get_secret
 
 logger = logging.getLogger(__name__)
-
-# Dynamically resolve and import secrets_resolver from ~/projects/jano
-try:
-    from secrets_resolver import get_secret
-except ImportError:
-    # Try adding standard user development path or production server path for Jano
-    jano_src = Path.home() / "projects" / "jano" / "src"
-    if not jano_src.exists():
-        jano_src = Path("/opt/jano/src")
-
-    if jano_src.exists():
-        sys.path.insert(0, str(jano_src))
-        try:
-            from secrets_resolver import get_secret
-            logger.info(f"Successfully loaded secrets_resolver from {jano_src}")
-        except ImportError as e:
-            logger.error(f"Failed to import secrets_resolver from {jano_src}: {e}")
-            raise
-    else:
-        logger.error(
-            "secrets_resolver not installed and local Jano repo "
-            "not found in ~/projects/jano or /opt/jano"
-        )
-        raise
 
 
 def get_jano_secret(path: str) -> str:
