@@ -469,7 +469,13 @@ async def list_available_models(
                     headers={"Cache-Control": "no-store"},
                 )
             data = response.json()
-            models = [ModelInfo(id=m["id"], owned_by=m.get("owned_by", "provider")).model_dump() for m in data.get("data", [])]
+            models = [
+                ModelInfo(
+                    id=m["id"].removeprefix("models/"),
+                    owned_by=m.get("owned_by", "provider"),
+                ).model_dump()
+                for m in data.get("data", [])
+            ]
             return JSONResponse(content=models, headers={"Cache-Control": "no-store"})
     except Exception as e:
         return JSONResponse(
