@@ -150,12 +150,8 @@ async def lifespan(app: FastAPI):
     logger.info(f"Database: {settings.database_path}")
     logger.info(f"Log level: {settings.log_level}")
 
-    # Assemble HTML files from templates
-    try:
-        from app.html_assembler import assemble_html_files
-        assemble_html_files()
-    except Exception as e:
-        logger.error(f"Failed to assemble HTML templates on startup: {e}")
+    # Nota: index.html é gerado localmente (python -m app.html_assembler)
+    # antes do commit. NÃO rodar no servidor — causa erros de permissão.
 
     # Ensure data directory exists
     Path(settings.database_path).parent.mkdir(parents=True, exist_ok=True)
