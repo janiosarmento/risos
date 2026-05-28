@@ -78,3 +78,9 @@ def assemble_html_files():
     except Exception as e:
         logger.error(f"HTML Assembler failed: {e}", exc_info=True)
         return False
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    assemble_html_files()
+
