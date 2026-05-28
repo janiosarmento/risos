@@ -771,8 +771,13 @@ const settingsMixin = {
     },
 
     async loadAvailableModels() {
+        console.log('[DEBUG models] loadAvailableModels iniciada');
         try {
             const models = await this.fetchApi('/admin/models');
+            console.log('[DEBUG models] Retorno de /admin/models:', JSON.stringify(models));
+            if (!models || models.length === 0) {
+                console.warn('[DEBUG models] A lista de modelos retornada está vazia ou nula.');
+            }
             this.availableModels = models || [];
             const saved = this.aiModel;
             const savedExists = models && models.some(m => m.id === saved);
@@ -782,7 +787,8 @@ const settingsMixin = {
                 this.setAiModel(models[0].id);
             }
         } catch (e) {
-            console.warn('Failed to load AI models:', e);
+            console.error('[DEBUG models] Erro ao carregar modelos de AI:', e);
+            alert('Falha ao carregar modelos de AI: ' + e.message);
             this.availableModels = [];
         }
     },
