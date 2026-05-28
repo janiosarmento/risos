@@ -369,23 +369,27 @@ def _mask_keys(raw: str) -> str:
     return ", ".join(masked)
 
 
-def get_effective_ai_api_keys(db: Session) -> list:
-    """Get API keys from Jano secret manager using configured secret path."""
+def get_effective_ai_api_key(db: Session) -> Optional[str]:
+    """Retorna a chave de API única configurada via Jano, ou None."""
     secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
     if not secret_name:
-        return []
+        return None
     from app.services.jano_client import get_jano_secret
     try:
         val = get_jano_secret(secret_name)
-        if not val:
-            return []
-        return [k.strip() for k in val.split(",") if k.strip()]
+        return val.strip() if val and val.strip() else None
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(
-            f"Error retrieving Jano secret '{secret_name}': {e}"
+            f"Erro ao recuperar segredo Jano '{secret_name}': {e}"
         )
-        return []
+        return None
+
+
+def get_effective_ai_api_keys(db: Session) -> list:
+    """Retorna lista com a chave única (compat. com callers antigos)."""
+    key = get_effective_ai_api_key(db)
+    return [key] if key else []
 
 
 def get_effective_system_prompt(db: Session) -> str:

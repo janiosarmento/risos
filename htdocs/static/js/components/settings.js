@@ -1068,6 +1068,8 @@ const settingsMixin = {
 
     async clearModelsCache() {
         try {
+            // Salva as configurações AI primeiro (garante que jano_secret_name está no banco)
+            await this.saveAiSettings();
             await this.fetchApi('/admin/clear-models-cache', { method: 'POST' });
             this.availableModels = [];
             await this.loadAvailableModels();
