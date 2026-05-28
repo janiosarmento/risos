@@ -17,7 +17,6 @@ from app.services.ai._constants import (
     MAX_CONTENT_LENGTH,
     MAX_ONE_LINE_LENGTH,
     MAX_TAGS,
-    MODELS_CACHE_TTL,
     MODELS_FETCH_TIMEOUT,
     RATE_LIMIT_COOLDOWN_SECONDS,
     SUMMARY_MAX_TOKENS,
@@ -64,29 +63,14 @@ def _get_api_base_url() -> str:
 _model_cooldowns: Dict[str, datetime] = {}  # model_id -> cooldown_until
 
 
-# Cache for available models (shared with admin routes)
-_available_models_cache: Optional[List[str]] = None
-_available_models_cache_time: Optional[datetime] = None
-
-
 def clear_models_cache():
-    """Clear the models cache and all model cooldowns."""
-    global _available_models_cache, _available_models_cache_time
-    _available_models_cache = None
-    _available_models_cache_time = None
+    """Clear model cooldowns."""
     _model_cooldowns.clear()
-    logger.info("Models cache and cooldowns cleared")
+    logger.info("Model cooldowns cleared")
 
 
 async def get_available_models() -> List[str]:
-    """Fetch available model IDs from API (cached 30 min)."""
-    global _available_models_cache, _available_models_cache_time
-
-    now = datetime.utcnow()
-    if _available_models_cache and _available_models_cache_time:
-        if now - _available_models_cache_time < MODELS_CACHE_TTL:
-            return _available_models_cache
-
+    """Fetch available model IDs from API. No cache — always fresh."""
     from app.routes.preferences import get_effective_ai_api_key
 
     db = SessionLocal()
@@ -112,16 +96,13 @@ async def get_available_models() -> List[str]:
             )
             if response.status_code == 200:
                 data = response.json()
-                models = [m["id"] for m in data.get("data", [])]
-                _available_models_cache = models
-                _available_models_cache_time = now
-                return models
+                return [m["id"] for m in data.get("data", [])]
             else:
                 logger.error(f"Failed to fetch models: HTTP {response.status_code}")
     except Exception as e:
         logger.warning(f"Failed to fetch available models: {e}")
 
-    return _available_models_cache or []
+    return []
 
 
 async def _call_model(
