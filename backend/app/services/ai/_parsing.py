@@ -43,6 +43,7 @@ _ABBREVIATIONS = sorted(
         "ed.",
         "vol.",
         "cap.",
+        "St.",
     ],
     key=len,
     reverse=True,
