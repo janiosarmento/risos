@@ -88,6 +88,9 @@ def check_database_integrity():
                 sys.exit(1)
 
             logger.info("Database integrity check passed")
+            
+        # Libera todas as conexões físicas do pool do SQLite para evitar locks residuais antes do Alembic
+        engine.dispose()
 
     except Exception as e:
         logger.critical(f"Failed to check database integrity: {e}")
