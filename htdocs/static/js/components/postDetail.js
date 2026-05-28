@@ -11,6 +11,8 @@ const postDetailMixin = {
     currentPost: null,
     loadingContent: false,
     regeneratingSummary: false,
+    readerResizing: false,
+    summaryWidthPercent: parseFloat(localStorage.getItem('risos_summary_width') || '33.33'),
 
     // Helpers
     getCurrentPostIndex() {
@@ -177,6 +179,48 @@ const postDetailMixin = {
             console.error('Failed to copy summary:', err);
             this.showToast(this.t('errors.copyFailed'), 'error');
         }
+    },
+
+    // Horizontal split view reading pane resize
+    startReaderResize(e) {
+        e.preventDefault();
+        this.readerResizing = true;
+        this._doReaderResize = this.doReaderResize.bind(this);
+        this._stopReaderResize = this.stopReaderResize.bind(this);
+        document.addEventListener('mousemove', this._doReaderResize);
+        document.addEventListener('mouseup', this._stopReaderResize);
+        document.addEventListener('touchmove', this._doReaderResize, { passive: false });
+        document.addEventListener('touchend', this._stopReaderResize);
+        document.addEventListener('touchcancel', this._stopReaderResize);
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+    },
+
+    doReaderResize(e) {
+        e.preventDefault();
+        const container = document.getElementById('post-reader-two-columns');
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        
+        const relativeX = clientX - rect.left;
+        const leftWidthPercent = (relativeX / rect.width) * 100;
+        let rightWidthPercent = 100 - leftWidthPercent;
+        
+        // Limits: min 20% and max 60% for the AI Summary column to keep visual balance
+        this.summaryWidthPercent = Math.min(60, Math.max(20, Math.round(rightWidthPercent * 100) / 100));
+    },
+
+    stopReaderResize() {
+        this.readerResizing = false;
+        document.removeEventListener('mousemove', this._doReaderResize);
+        document.removeEventListener('mouseup', this._stopReaderResize);
+        document.removeEventListener('touchmove', this._doReaderResize);
+        document.removeEventListener('touchend', this._stopReaderResize);
+        document.removeEventListener('touchcancel', this._stopReaderResize);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        localStorage.setItem('risos_summary_width', this.summaryWidthPercent.toString());
     },
 
     // Export
