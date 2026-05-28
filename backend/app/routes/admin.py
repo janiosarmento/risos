@@ -429,7 +429,7 @@ class ModelInfo(BaseModel):
     owned_by: str
 
 
-@router.get("/models", response_model=List[ModelInfo])
+@router.get("/models")
 async def list_available_models(
     user: dict = Depends(get_current_user),
 ):
@@ -439,19 +439,43 @@ async def list_available_models(
     """
     from fastapi.responses import JSONResponse
 
-    from app.services.ai._api import (
-        get_available_models as fetch_models,
-    )
+    from app.routes.preferences import get_effective_ai_api_key, get_effective_api_base_url
 
+    db = next(get_db())
     try:
-        model_ids = await fetch_models()
-        models = [ModelInfo(id=m, owned_by="provider").model_dump() for m in sorted(model_ids)]
-        return JSONResponse(content=models, headers={"Cache-Control": "no-store"})
+        api_key = get_effective_ai_api_key(db)
+        api_url = get_effective_api_base_url(db)
+    finally:
+        db.close()
+
+    if not api_key:
+        return JSONResponse(
+            content={"error": "no_api_key", "detail": "Jano secret not resolved"},
+            status_code=500,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(
+                f"{api_url}/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            if response.status_code != 200:
+                return JSONResponse(
+                    content={"error": "api_error", "status": response.status_code, "detail": response.text[:300], "url": f"{api_url}/models"},
+                    status_code=502,
+                    headers={"Cache-Control": "no-store"},
+                )
+            data = response.json()
+            models = [ModelInfo(id=m["id"], owned_by=m.get("owned_by", "provider")).model_dump() for m in data.get("data", [])]
+            return JSONResponse(content=models, headers={"Cache-Control": "no-store"})
     except Exception as e:
-        logger.error(f"Error fetching models: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to fetch models: {e}",
+        return JSONResponse(
+            content={"error": "exception", "detail": f"{type(e).__name__}: {e}", "url": f"{api_url}/models"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
         )
 
 
