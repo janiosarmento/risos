@@ -1259,7 +1259,9 @@ def get_related_posts(
     Fetch related posts based on shared tags.
     Ordered by the number of common tags (descending).
     """
-    from sqlalchemy import func
+    import math
+
+    from sqlalchemy import case, func
 
     from app.models import Feed, Post, PostTag
     from app.routes.preferences import get_effective_related_posts_limit
@@ -1278,20 +1280,38 @@ def get_related_posts(
     # 3. Determinar limite das preferências
     limit = get_effective_related_posts_limit(db)
 
-    # 4. Query de posts relacionados
+    # 3b. Obter frequência global das tags para ponderação de relevância (TF-IDF)
+    tag_freqs = (
+        db.query(PostTag.tag, func.count(PostTag.post_id))
+        .filter(PostTag.tag.in_(active_tags))
+        .group_by(PostTag.tag)
+        .all()
+    )
+
+    tag_weights = {}
+    for tag, freq in tag_freqs:
+        # Fórmulas de peso inverso: tags raras ganham pesos maiores
+        tag_weights[tag] = 1.0 / math.log(freq + 1) if freq > 0 else 0.1
+
+    # Construir pontuação ponderada de relevância
+    w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
+    relevance_score = func.sum(case(w_cases, else_=0.0))
+
+    # 4. Query de posts relacionados ordenados por score de relevância
     related_query = (
         db.query(
             Post.id,
             Post.title,
             Feed.title.label("feed_title"),
-            func.count(PostTag.tag).label("common_tags_count")
+            func.count(PostTag.tag).label("common_tags_count"),
+            relevance_score.label("relevance_score"),
         )
         .join(PostTag, Post.id == PostTag.post_id)
         .join(Feed, Post.feed_id == Feed.id)
         .filter(PostTag.tag.in_(active_tags))
         .filter(Post.id != post_id)
         .group_by(Post.id)
-        .order_by(func.count(PostTag.tag).desc(), Post.sort_date.desc())
+        .order_by(relevance_score.desc(), Post.sort_date.desc())
         .limit(limit)
     )
 
