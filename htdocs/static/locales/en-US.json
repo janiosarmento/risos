@@ -97,7 +97,13 @@
     "selectAllRelated": "Select All",
     "selectNoneRelated": "Deselect All",
     "noRelatedPosts": "No related posts found in the database.",
-    "commonTags": "{count} tag(s) in common"
+    "commonTags": "{count} tag(s) in common",
+    "assistantFilters": "Read Status Filters:",
+    "assistantIncludeRead": "Include read",
+    "assistantIncludeUnread": "Include unread",
+    "markedAsReadSuccess": "Posts marked as read!",
+    "markAsRead": "Mark as read",
+    "analyzingPost": "Analyzing post:"
   },
   "settings": {
     "title": "Settings",

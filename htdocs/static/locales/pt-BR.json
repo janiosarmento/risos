@@ -97,7 +97,13 @@
     "selectAllRelated": "Marcar Todos",
     "selectNoneRelated": "Desmarcar Todos",
     "noRelatedPosts": "Nenhum post relacionado encontrado no banco de dados.",
-    "commonTags": "{count} tag(s) em comum"
+    "commonTags": "{count} tag(s) em comum",
+    "assistantFilters": "Filtros de Leitura:",
+    "assistantIncludeRead": "Buscar lidos",
+    "assistantIncludeUnread": "Buscar não lidos",
+    "markedAsReadSuccess": "Posts marcados como lidos!",
+    "markAsRead": "Marcar como lidos",
+    "analyzingPost": "Analisando post:"
   },
   "settings": {
     "title": "Configurações",

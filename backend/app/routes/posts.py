@@ -1252,6 +1252,8 @@ class RelatedSummaryRequest(BaseModel):
 @router.get("/{post_id}/related")
 def get_related_posts(
     post_id: int,
+    include_read: bool = True,
+    include_unread: bool = True,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -1349,7 +1351,15 @@ def get_related_posts(
             .join(Feed, Post.feed_id == Feed.id)
             .filter(Post.id != post_id)
             .filter(or_(*filter_conditions))
-            .order_by(text_score.desc(), Post.sort_date.desc())
+        )
+
+        if not include_read:
+            text_query = text_query.filter(Post.is_read.is_(False))
+        if not include_unread:
+            text_query = text_query.filter(Post.is_read.is_(True))
+
+        text_query = (
+            text_query.order_by(text_score.desc(), Post.sort_date.desc())
             .limit(limit)
         )
         text_results = text_query.all()
@@ -1410,7 +1420,15 @@ def get_related_posts(
             .join(Feed, Post.feed_id == Feed.id)
             .filter(PostTag.tag.in_(active_tags))
             .filter(Post.id != post_id)
-            .group_by(Post.id)
+        )
+
+        if not include_read:
+            related_query = related_query.filter(Post.is_read.is_(False))
+        if not include_unread:
+            related_query = related_query.filter(Post.is_read.is_(True))
+
+        related_query = (
+            related_query.group_by(Post.id)
             .order_by(relevance_score.desc(), Post.sort_date.desc())
             .limit(limit)
         )

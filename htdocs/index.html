@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260530c">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260530c">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260530c">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260530d">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260530d">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260530d">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260530c">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260530d">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260530c">
+    <link rel="manifest" href="/manifest.json?v=20260530d">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -48,19 +48,19 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260530c in all ?v= below -->
-    <script>var APP_VERSION = '20260530c';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260530c">
+    <!-- App version — single source of truth. Assembler replaces 20260530d in all ?v= below -->
+    <script>var APP_VERSION = '20260530d';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260530d">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260530c"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260530c"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260530c"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260530c"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260530c"></script>
-    <script defer src="/static/js/components/settings.js?v=20260530c"></script>
-    <script defer src="/static/js/components/curation.js?v=20260530c"></script>
-    <script defer src="/static/js/app.js?v=20260530c"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260530d"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260530d"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260530d"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260530d"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260530d"></script>
+    <script defer src="/static/js/components/settings.js?v=20260530d"></script>
+    <script defer src="/static/js/components/curation.js?v=20260530d"></script>
+    <script defer src="/static/js/app.js?v=20260530d"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1437,6 +1437,35 @@
                         <p class="text-xs text-purple-600 dark:text-purple-400" x-text="t('modal.assistantDescription')"></p>
                     </div>
 
+                    <!-- Analyzing Post Title -->
+                    <div class="px-4 py-2.5 bg-purple-50/30 dark:bg-purple-950/5 border-b border-purple-100/30 dark:border-purple-900/10 flex flex-col gap-0.5">
+                        <span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider" x-text="t('modal.analyzingPost')"></span>
+                        <span class="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-1" x-text="currentPost ? currentPost.title : ''"></span>
+                    </div>
+
+                    <!-- Read Status Filters -->
+                    <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-700/20 border-b border-gray-100 dark:border-gray-800/40 flex items-center gap-4 text-xs">
+                        <span class="font-semibold text-gray-500" x-text="t('modal.assistantFilters')"></span>
+                        <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input 
+                                type="checkbox" 
+                                x-model="assistantIncludeRead"
+                                @change="loadRelatedPosts()"
+                                class="rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300" x-text="t('modal.assistantIncludeRead')"></span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                            <input 
+                                type="checkbox" 
+                                x-model="assistantIncludeUnread"
+                                @change="loadRelatedPosts()"
+                                class="rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300" x-text="t('modal.assistantIncludeUnread')"></span>
+                        </label>
+                    </div>
+
                     <!-- Body -->
                     <div class="flex-1 overflow-y-auto p-4 space-y-4">
                         <!-- Loading State -->
@@ -1506,12 +1535,21 @@
                                         <svg class="w-4 h-4"><use href="#icon-sparkles"/></svg>
                                         <span x-text="t('modal.consolidatedSummary')"></span>
                                     </h3>
-                                    <button
-                                        x-show="assistantSummary"
-                                        @click="copyAssistantSummary()"
-                                        class="text-xs px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-300 rounded shadow-sm transition-all"
-                                        x-text="t('modal.copyConsolidated')"
-                                    ></button>
+                                    <div class="flex items-center gap-2" x-show="assistantSummary">
+                                        <button
+                                            @click="markProcessedAsRead()"
+                                            :disabled="assistantMarkingRead"
+                                            class="text-xs px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-300 rounded shadow-sm transition-all flex items-center gap-1"
+                                        >
+                                            <svg x-show="assistantMarkingRead" class="animate-spin h-3 w-3 text-purple-600"><use href="#icon-spinner"/></svg>
+                                            <span x-text="t('modal.markAsRead')"></span>
+                                        </button>
+                                        <button
+                                            @click="copyAssistantSummary()"
+                                            class="text-xs px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-300 rounded shadow-sm transition-all"
+                                            x-text="t('modal.copyConsolidated')"
+                                        ></button>
+                                    </div>
                                 </div>
 
                                 <!-- Generating Spinner State -->

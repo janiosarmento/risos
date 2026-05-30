@@ -19,6 +19,9 @@ const postDetailMixin = {
     assistantSummary: null,
     assistantLoading: false,
     assistantGenerating: false,
+    assistantIncludeRead: true,
+    assistantIncludeUnread: true,
+    assistantMarkingRead: false,
 
     // Helpers
     getCurrentPostIndex() {
@@ -233,12 +236,23 @@ const postDetailMixin = {
     async openAssistant() {
         if (!this.currentPost) return;
         this.showAssistantModal = true;
+        this.assistantIncludeRead = true;
+        this.assistantIncludeUnread = true;
+        this.assistantSummary = null;
+        await this.loadRelatedPosts();
+    },
+
+    async loadRelatedPosts() {
+        if (!this.currentPost) return;
         this.assistantLoading = true;
         this.relatedPosts = [];
         this.selectedRelatedPosts = new Set();
-        this.assistantSummary = null;
         try {
-            const data = await this.fetchApi(`/posts/${this.currentPost.id}/related`);
+            const params = new URLSearchParams({
+                include_read: this.assistantIncludeRead,
+                include_unread: this.assistantIncludeUnread
+            });
+            const data = await this.fetchApi(`/posts/${this.currentPost.id}/related?${params.toString()}`);
             this.relatedPosts = data.posts || [];
             // Select all by default
             this.relatedPosts.forEach(p => this.selectedRelatedPosts.add(p.id));
@@ -295,6 +309,33 @@ const postDetailMixin = {
         } catch (err) {
             console.error('Failed to copy consolidated summary:', err);
             this.showToast(this.t('errors.copyFailed'), 'error');
+        }
+    },
+
+    async markProcessedAsRead() {
+        if (this.selectedRelatedPosts.size === 0 || this.assistantMarkingRead) return;
+        this.assistantMarkingRead = true;
+        try {
+            const postIds = Array.from(this.selectedRelatedPosts);
+            await this.fetchApi('/posts/mark-read', {
+                method: 'POST',
+                body: JSON.stringify({ post_ids: postIds }),
+            });
+
+            // Atualiza o estado is_read local de cada post na lista de posts principal
+            postIds.forEach(id => {
+                const localPost = this.posts.find(p => p.id === id);
+                if (localPost) {
+                    localPost.is_read = true;
+                }
+            });
+
+            this.showToast(this.t('modal.markedAsReadSuccess') || 'Posts marcados como lidos!');
+        } catch (e) {
+            console.error('Failed to mark posts as read:', e);
+            this.showToast(this.t('errors.markReadFailed') || 'Erro ao marcar posts como lidos', 'error');
+        } finally {
+            this.assistantMarkingRead = false;
         }
     },
 
