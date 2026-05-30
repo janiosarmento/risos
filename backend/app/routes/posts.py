@@ -1243,3 +1243,173 @@ def export_selection(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )
+
+
+class RelatedSummaryRequest(BaseModel):
+    post_ids: List[int]
+
+
+@router.get("/{post_id}/related")
+def get_related_posts(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Fetch related posts based on shared tags.
+    Ordered by the number of common tags (descending).
+    """
+    from sqlalchemy import func
+
+    from app.models import Feed, Post, PostTag
+    from app.routes.preferences import get_effective_related_posts_limit
+
+    # 1. Validar se o post existe
+    get_post_or_404(db, post_id)
+
+    # 2. Obter as tags do post atual
+    tags_query = db.query(PostTag.tag).filter(PostTag.post_id == post_id)
+    active_tags = [t[0] for t in tags_query.all()]
+
+    if not active_tags:
+        # Posts sem tags (ou seja, sem resumo) não mostram relacionados
+        return {"posts": []}
+
+    # 3. Determinar limite das preferências
+    limit = get_effective_related_posts_limit(db)
+
+    # 4. Query de posts relacionados
+    related_query = (
+        db.query(
+            Post.id,
+            Post.title,
+            Feed.title.label("feed_title"),
+            func.count(PostTag.tag).label("common_tags_count")
+        )
+        .join(PostTag, Post.id == PostTag.post_id)
+        .join(Feed, Post.feed_id == Feed.id)
+        .filter(PostTag.tag.in_(active_tags))
+        .filter(Post.id != post_id)
+        .group_by(Post.id)
+        .order_by(func.count(PostTag.tag).desc(), Post.sort_date.desc())
+        .limit(limit)
+    )
+
+    results = related_query.all()
+
+    posts_list = [
+        {
+            "id": r.id,
+            "title": r.title,
+            "feed_title": r.feed_title,
+        }
+        for r in results
+    ]
+
+    return {"posts": posts_list}
+
+
+@router.post("/related-summary")
+async def generate_related_summary(
+    body: RelatedSummaryRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """
+    Generate a consolidation of summaries (summary of summaries)
+    for the selected related posts.
+    """
+    if not body.post_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nenhum post selecionado para consolidar",
+        )
+
+    import re
+
+    from app.models import AISummary, Post
+    from app.services.ai import call_llm_text
+
+    # 1. Carrega os posts
+    posts = db.query(Post).filter(Post.id.in_(body.post_ids)).all()
+    if not posts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Posts não encontrados",
+        )
+
+    # 2. Carrega os resumos correspondentes
+    content_hashes = [p.content_hash for p in posts if p.content_hash]
+    summaries_map = {}
+    if content_hashes:
+        summaries = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash.in_(content_hashes))
+            .all()
+        )
+        summaries_map = {
+            s.content_hash: s.summary_pt
+            for s in summaries
+            if s.summary_pt
+        }
+
+    # 3. Constrói o texto consolidado
+    prompt_content = []
+    for p in posts:
+        summary_text = summaries_map.get(p.content_hash)
+        if not summary_text:
+            # Fallback se não tiver resumo
+            summary_text = p.content or ""
+
+        if summary_text.strip():
+            clean_summary = re.sub(r"<[^>]+>", "", summary_text)
+            prompt_content.append(
+                f"Título: {p.title}\nResumo:\n{clean_summary}\n---"
+            )
+
+    if not prompt_content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nenhum dos posts selecionados possui resumo ou conteúdo válido",
+        )
+
+    combined_summaries = "\n\n".join(prompt_content)
+
+    # 4. Invoca o LLM
+    system_prompt = (
+        "Você é o assistente inteligente de consolidação do Risos "
+        "(Sparkle Assistant).\n"
+        "Sua tarefa é analisar os resumos e títulos de múltiplos posts e "
+        "produzir uma síntese global unificada ('sumário dos sumários').\n"
+        "Crie um resumo de alto nível, bem estruturado em tópicos lógicos, "
+        "destacando os pontos convergentes, divergências significativas e "
+        "uma conclusão consolidada.\n"
+        "Sua resposta deve ser escrita obrigatoriamente em "
+        "Português Brasileiro, formatada em Markdown elegante.\n"
+        "Seja direto e objetivo, sem introduções desnecessárias ou saudações. "
+        "Vá direto ao conteúdo consolidado."
+    )
+
+    user_prompt = (
+        "Aqui estão as matérias selecionadas e seus respectivos resumos:\n\n"
+        f"{combined_summaries}\n\n"
+        "Por favor, consolide tudo isso em um único sumário estruturado, "
+        "elegante e fácil de ler."
+    )
+
+    try:
+        super_summary = await call_llm_text(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=4096,
+            temperature=0.3
+        )
+        return {"summary": super_summary}
+    except Exception as e:
+        logger.error(f"Erro ao gerar sumário consolidado: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Erro ao processar consolidação no LLM: {str(e)}",
+        )
+
+

@@ -14,6 +14,7 @@ const settingsMixin = {
     // --- State ---
     resizing: false, // true while dragging the split-view resize handle
     showSettings: false,
+    relatedPostsLimit: 30,
     settingsTab: 'categories',
     settingsAccordion: { appearance: true, ai: false, data: false, interface: false, tagMerge: false },
     systemStatus: null,
@@ -876,6 +877,11 @@ const settingsMixin = {
         if (this.token) this.savePreferencesToServer();
     },
 
+    setRelatedPostsLimit(value) {
+        this.relatedPostsLimit = parseInt(value) || 30;
+        if (this.token) this.savePreferencesToServer();
+    },
+
     setIdleRefresh(value) {
         this.idleRefreshSeconds = parseInt(value) || 180;
         this.resetIdleTimer();
@@ -982,6 +988,7 @@ const settingsMixin = {
                     model_cooldown_minutes: this.modelCooldownMinutes,
                     blocked_terms: this.blockedTerms,
                     api_base_url: this.apiBaseUrl,
+                    related_posts_limit: this.relatedPostsLimit,
                 }),
             });
         } catch (e) {
@@ -1011,6 +1018,9 @@ const settingsMixin = {
             if (serverPrefs.summary_language) this.summaryLanguage = serverPrefs.summary_language;
             if (serverPrefs.ai_model) this.aiModel = serverPrefs.ai_model;
             if (serverPrefs.ai_timeout) this.aiTimeout = serverPrefs.ai_timeout;
+            if (serverPrefs.related_posts_limit !== undefined && serverPrefs.related_posts_limit !== null) {
+                this.relatedPostsLimit = serverPrefs.related_posts_limit;
+            }
 
             // Data settings
             if (serverPrefs.feed_update_interval) this.feedUpdateInterval = serverPrefs.feed_update_interval;

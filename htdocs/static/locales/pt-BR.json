@@ -79,7 +79,7 @@
     "antiBotReasons": "Isso pode acontecer quando:",
     "antiBotReason1": "O site bloqueia acesso automatizado",
     "antiBotReason2": "O conteúdo é um vídeo ou mídia",
-    "shortcuts": "ESC fechar | M lido/não lido",
+    "shortcuts": "ESC fechar | M lido/não lido | A assistente",
     "starShortcut": "S favoritar | L gostei | Shift+R regenerar | Y copiar",
     "navShortcuts": "J/K navegar posts",
     "read": "Lido",
@@ -87,7 +87,16 @@
     "noContent": "Sem conteúdo disponível",
     "exportMarkdown": "Exportar",
     "copySummary": "Copiar Resumo (Y)",
-    "summaryCopied": "Resumo copiado para a área de transferência"
+    "summaryCopied": "Resumo copiado para a área de transferência",
+    "assistantTitle": "Assistente Inteligente",
+    "assistantDescription": "Selecione matérias relacionadas para gerar uma síntese unificada por IA.",
+    "process": "Processar",
+    "processing": "Processando...",
+    "consolidatedSummary": "Sumário Consolidado",
+    "copyConsolidated": "Copiar Sumário",
+    "selectAllRelated": "Marcar Todos",
+    "selectNoneRelated": "Desmarcar Todos",
+    "noRelatedPosts": "Nenhum post relacionado encontrado no banco de dados."
   },
   "settings": {
     "title": "Configurações",
@@ -158,6 +167,8 @@
     "modelCooldown": "Cooldown de Modelo (min)",
     "modelCooldownDesc": "Período de espera antes de retentar um modelo com erro (5-120 minutos)",
     "userPromptDesc": "Template enviado com cada artigo. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
+    "relatedPostsLimit": "Limite do Assistente",
+    "relatedPostsLimitDesc": "Número máximo de posts relacionados listados no assistente de IA",
     "resetDefaults": "Restaurar prompts padrão",
     "clearCache": "Limpar cache",
     "resetCircuitBreaker": "Resetar IA",
@@ -333,7 +344,9 @@
     "loginFailed": "Falha no login",
     "sessionExpired": "Sessão expirada",
     "requestFailed": "Falha na requisição",
-    "copyFailed": "Falha ao copiar para a área de transferência"
+    "copyFailed": "Falha ao copiar para a área de transferência",
+    "loadRelatedPosts": "Erro ao carregar posts relacionados",
+    "generateConsolidatedSummary": "Erro ao consolidar resumos no LLM"
   },
   "confirm": {
     "deleteCategory": "Excluir \"{name}\"?",

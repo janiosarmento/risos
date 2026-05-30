@@ -13,6 +13,12 @@ const postDetailMixin = {
     regeneratingSummary: false,
     readerResizing: false,
     summaryWidthPercent: parseFloat(localStorage.getItem('risos_summary_width') || '33.33'),
+    showAssistantModal: false,
+    relatedPosts: [],
+    selectedRelatedPosts: new Set(),
+    assistantSummary: null,
+    assistantLoading: false,
+    assistantGenerating: false,
 
     // Helpers
     getCurrentPostIndex() {
@@ -221,6 +227,75 @@ const postDetailMixin = {
         document.body.style.userSelect = '';
         document.body.style.cursor = '';
         localStorage.setItem('risos_summary_width', this.summaryWidthPercent.toString());
+    },
+
+    // Assistant / Sparkle methods
+    async openAssistant() {
+        if (!this.currentPost) return;
+        this.showAssistantModal = true;
+        this.assistantLoading = true;
+        this.relatedPosts = [];
+        this.selectedRelatedPosts = new Set();
+        this.assistantSummary = null;
+        try {
+            const data = await this.fetchApi(`/posts/${this.currentPost.id}/related`);
+            this.relatedPosts = data.posts || [];
+            // Select all by default
+            this.relatedPosts.forEach(p => this.selectedRelatedPosts.add(p.id));
+        } catch (e) {
+            console.error('Failed to load related posts:', e);
+            this.showError(this.t('errors.loadRelatedPosts') + ': ' + this.translateError(e.message));
+        } finally {
+            this.assistantLoading = false;
+        }
+    },
+
+    toggleRelatedPostSelection(postId) {
+        if (this.selectedRelatedPosts.has(postId)) {
+            this.selectedRelatedPosts.delete(postId);
+        } else {
+            this.selectedRelatedPosts.add(postId);
+        }
+        this.selectedRelatedPosts = new Set(this.selectedRelatedPosts);
+    },
+
+    toggleAllRelatedPosts() {
+        if (this.selectedRelatedPosts.size === this.relatedPosts.length) {
+            this.selectedRelatedPosts.clear();
+        } else {
+            this.relatedPosts.forEach(p => this.selectedRelatedPosts.add(p.id));
+        }
+        this.selectedRelatedPosts = new Set(this.selectedRelatedPosts);
+    },
+
+    async processRelatedPosts() {
+        if (this.selectedRelatedPosts.size === 0 || this.assistantGenerating) return;
+        this.assistantGenerating = true;
+        this.assistantSummary = null;
+        try {
+            const postIds = Array.from(this.selectedRelatedPosts);
+            const data = await this.fetchApi('/posts/related-summary', {
+                method: 'POST',
+                body: JSON.stringify({ post_ids: postIds }),
+            });
+            this.assistantSummary = data.summary;
+        } catch (e) {
+            console.error('Failed to generate consolidated summary:', e);
+            this.showError(this.t('errors.generateConsolidatedSummary') + ': ' + this.translateError(e.message));
+        } finally {
+            this.assistantGenerating = false;
+        }
+    },
+
+    async copyAssistantSummary() {
+        if (!this.assistantSummary) return;
+        try {
+            await navigator.clipboard.writeText(this.assistantSummary);
+            this.showToast(this.t('modal.summaryCopied'));
+        } catch (err) {
+            console.error('Failed to copy consolidated summary:', err);
+            this.showToast(this.t('errors.copyFailed'), 'error');
+        }
     },
 
     // Export

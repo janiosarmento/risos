@@ -462,3 +462,95 @@ async def _call_llm_json_locked(
         raise
     except Exception as e:
         raise PermanentError(f"LLM call failed: {e}")
+
+
+async def call_llm_text(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int = 4096,
+    temperature: float = 0.3,
+) -> str:
+    """
+    Generic LLM call returning plain text content.
+    Used for general summaries, consolidation, etc.
+    """
+    async with _api_lock:
+        return await _call_llm_text_locked(
+            system_prompt, user_prompt, max_tokens, temperature
+        )
+
+
+async def _call_llm_text_locked(
+    system_prompt: str,
+    user_prompt: str,
+    max_tokens: int,
+    temperature: float,
+) -> str:
+    """Inner implementation of call_llm_text, called under _api_lock."""
+    # Get API key
+    api_key, key_index = api_key_rotator.get_next_key()
+    if not api_key:
+        raise TemporaryError("No API key configured")
+
+    # Get preferred model (proxy handles fallback)
+    from app.routes.preferences import get_effective_ai_model, get_effective_ai_timeout
+
+    db = SessionLocal()
+    try:
+        model = get_effective_ai_model(db)
+        ai_timeout = get_effective_ai_timeout(db)
+    finally:
+        db.close()
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=ai_timeout,
+            headers={"User-Agent": USER_AGENT},
+        ) as client:
+            response = await client.post(
+                f"{_get_api_base_url()}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+
+            if response.status_code == 429:
+                api_key_rotator.set_key_cooldown(
+                    api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
+                )
+                raise TemporaryError("Rate limit reached")
+
+            if response.status_code != 200:
+                raise PermanentError(
+                    f"HTTP {response.status_code}: {response.text[:200]}"
+                )
+
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+
+        actual_model = data.get("model", model)
+        if "oxit_model" in data:
+            logger.info(f"Proxy fallback: requested {model}, used {data['oxit_model']}")
+        logger.info(f"call_llm_text succeeded with model {actual_model}")
+        return content
+
+    except (TemporaryError, PermanentError):
+        raise
+    except Exception as e:
+        raise PermanentError(f"LLM call failed: {e}")
+

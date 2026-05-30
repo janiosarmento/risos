@@ -579,6 +579,14 @@ function app() {
                     return;
                 }
 
+                // If assistant is open
+                if (this.showAssistantModal) {
+                    if (e.key === 'Escape') {
+                        this.showAssistantModal = false;
+                    }
+                    return;
+                }
+
                 // If settings is open
                 if (this.showSettings) {
                     if (e.key === 'Escape') {
@@ -617,6 +625,9 @@ function app() {
                         return;
                     } else if (this.isKey(e, 'r') && !e.shiftKey) {
                         this.refreshFeeds();
+                        return;
+                    } else if (this.isKey(e, 'a')) {
+                        this.openAssistant();
                         return;
                     }
                     // In fullscreen mode, J/K navigate posts within modal

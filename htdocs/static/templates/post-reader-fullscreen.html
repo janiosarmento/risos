@@ -77,6 +77,16 @@
                         >
                             <svg class="w-5 h-5" :class="currentPost.keep_unread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-blue-400'" :fill="currentPost.keep_unread ? 'currentColor' : 'none'" :stroke="currentPost.keep_unread ? 'none' : 'currentColor'" :stroke-width="currentPost.keep_unread ? '0' : '1.5'" viewBox="0 0 24 24"><use href="#icon-lock"/></svg>
                         </button>
+                        <!-- Sparkle Assistant Button -->
+                        <button
+                            @click="openAssistant()"
+                            class="p-1.5 md:px-3 md:py-1 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/40 dark:hover:bg-purple-800/40 text-purple-700 dark:text-purple-300 rounded flex items-center gap-1 transition-colors"
+                            :data-tip="t('modal.assistantTitle') + ' (A)'"
+                            :aria-label="t('modal.assistantTitle')"
+                        >
+                            <svg class="w-5 h-5"><use href="#icon-sparkles"/></svg>
+                            <span class="hidden md:inline text-sm" x-text="t('modal.assistantTitle')"></span>
+                        </button>
                         <!-- Read/Unread button - icon only on mobile -->
                         <button
                             @click="toggleRead(currentPost)"

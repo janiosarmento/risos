@@ -79,7 +79,7 @@
     "antiBotReasons": "This can happen when:",
     "antiBotReason1": "The site blocks automated access",
     "antiBotReason2": "The content is video or media",
-    "shortcuts": "ESC close | M read/unread",
+    "shortcuts": "ESC close | M read/unread | A assistant",
     "starShortcut": "S star | L like | Shift+R regenerate | Y copy",
     "navShortcuts": "J/K navigate posts",
     "read": "Read",
@@ -87,7 +87,16 @@
     "noContent": "No content available",
     "exportMarkdown": "Export",
     "copySummary": "Copy Summary (Y)",
-    "summaryCopied": "Summary copied to clipboard"
+    "summaryCopied": "Summary copied to clipboard",
+    "assistantTitle": "Smart Assistant",
+    "assistantDescription": "Select related articles to generate a unified AI synthesis.",
+    "process": "Process",
+    "processing": "Processing...",
+    "consolidatedSummary": "Consolidated Summary",
+    "copyConsolidated": "Copy Summary",
+    "selectAllRelated": "Select All",
+    "selectNoneRelated": "Deselect All",
+    "noRelatedPosts": "No related posts found in the database."
   },
   "settings": {
     "title": "Settings",
@@ -158,6 +167,8 @@
     "modelCooldown": "Model Cooldown (min)",
     "modelCooldownDesc": "Grace period before retrying a failed model (5-120 minutes)",
     "userPromptDesc": "Template sent with each article. Placeholders: {language}, {content}, {title}, {date}, {tags_count}",
+    "relatedPostsLimit": "Assistant Limit",
+    "relatedPostsLimitDesc": "Maximum number of related posts listed in the AI assistant",
     "resetDefaults": "Reset prompts to defaults",
     "clearCache": "Clear cache",
     "resetCircuitBreaker": "Reset AI",
@@ -333,7 +344,9 @@
     "loginFailed": "Login failed",
     "sessionExpired": "Session expired",
     "requestFailed": "Request failed",
-    "copyFailed": "Failed to copy to clipboard"
+    "copyFailed": "Failed to copy to clipboard",
+    "loadRelatedPosts": "Failed to load related posts",
+    "generateConsolidatedSummary": "Failed to generate consolidated summary"
   },
   "confirm": {
     "deleteCategory": "Delete \"{name}\"?",
