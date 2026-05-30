@@ -81,6 +81,21 @@ def assemble_html_files():
             )
             logger.info(f"HTML Assembler: APP_VERSION = {version}")
 
+            # Also update htdocs/manifest.json icons with cache-busting version params
+            manifest_path = htdocs_dir / "manifest.json"
+            if manifest_path.exists():
+                manifest_content = manifest_path.read_text(encoding="utf-8")
+                manifest_content = re.sub(
+                    r'("src"\s*:\s*"/static/icons/[^"?]+)(?:\?v=[^"]*)?"',
+                    rf'\1?v={version}"',
+                    manifest_content
+                )
+                manifest_path.write_text(manifest_content, encoding="utf-8")
+                logger.info(
+                    "HTML Assembler: Updated htdocs/manifest.json icons "
+                    f"to v={version}"
+                )
+
         # Write to final htdocs/index.html
         output_path.write_text(assembled_content, encoding="utf-8")
         logger.info("HTML Assembler: Successfully compiled htdocs/index.html")
