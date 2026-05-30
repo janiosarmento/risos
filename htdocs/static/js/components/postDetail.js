@@ -19,8 +19,9 @@ const postDetailMixin = {
     assistantSummary: null,
     assistantLoading: false,
     assistantGenerating: false,
-    assistantIncludeRead: true,
+    assistantIncludeRead: false,
     assistantIncludeUnread: true,
+    assistantIncludeZeroCommonTags: false,
     assistantMarkingRead: false,
 
     // Helpers
@@ -236,8 +237,9 @@ const postDetailMixin = {
     async openAssistant() {
         if (!this.currentPost) return;
         this.showAssistantModal = true;
-        this.assistantIncludeRead = true;
+        this.assistantIncludeRead = false;
         this.assistantIncludeUnread = true;
+        this.assistantIncludeZeroCommonTags = false;
         this.assistantSummary = null;
         await this.loadRelatedPosts();
     },
@@ -251,7 +253,8 @@ const postDetailMixin = {
         try {
             const params = new URLSearchParams({
                 include_read: this.assistantIncludeRead,
-                include_unread: this.assistantIncludeUnread
+                include_unread: this.assistantIncludeUnread,
+                min_common_tags: this.assistantIncludeZeroCommonTags ? 0 : 1
             });
             const data = await this.fetchApi(`/posts/${this.currentPost.id}/related?${params.toString()}`);
             this.relatedPosts = data.posts || [];

@@ -1254,6 +1254,7 @@ def get_related_posts(
     post_id: int,
     include_read: bool = True,
     include_unread: bool = True,
+    min_common_tags: int = 0,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
@@ -1378,15 +1379,16 @@ def get_related_posts(
                 )
                 tag_counts_map = {p_id: count for p_id, count in tag_counts}
 
-            posts_list = [
-                {
-                    "id": r.id,
-                    "title": r.title,
-                    "feed_title": r.feed_title,
-                    "common_tags_count": tag_counts_map.get(r.id, 0),
-                }
-                for r in text_results
-            ]
+            posts_list = []
+            for r in text_results:
+                common_count = tag_counts_map.get(r.id, 0)
+                if common_count >= min_common_tags:
+                    posts_list.append({
+                        "id": r.id,
+                        "title": r.title,
+                        "feed_title": r.feed_title,
+                        "common_tags_count": common_count,
+                    })
 
     # --- PARTE B: FALLBACK PARA BUSCA POR TAGS (TF-IDF) ---
     # Se a busca textual não encontrou nada e o post tem tags, caímos para o TF-IDF
