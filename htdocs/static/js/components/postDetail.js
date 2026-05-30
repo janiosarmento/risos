@@ -292,6 +292,10 @@ const postDetailMixin = {
         this.assistantSummary = null;
         try {
             const postIds = Array.from(this.selectedRelatedPosts);
+            // Inclui automaticamente o post de origem na consolidação
+            if (this.currentPost && !postIds.includes(this.currentPost.id)) {
+                postIds.push(this.currentPost.id);
+            }
             const data = await this.fetchApi('/posts/related-summary', {
                 method: 'POST',
                 body: JSON.stringify({ post_ids: postIds }),
@@ -321,6 +325,10 @@ const postDetailMixin = {
         this.assistantMarkingRead = true;
         try {
             const postIds = Array.from(this.selectedRelatedPosts);
+            // Também inclui o post de origem ao marcar como lidos
+            if (this.currentPost && !postIds.includes(this.currentPost.id)) {
+                postIds.push(this.currentPost.id);
+            }
             await this.fetchApi('/posts/mark-read', {
                 method: 'POST',
                 body: JSON.stringify({ post_ids: postIds }),
