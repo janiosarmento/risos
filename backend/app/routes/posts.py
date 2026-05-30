@@ -1256,79 +1256,175 @@ def get_related_posts(
     user: dict = Depends(get_current_user),
 ):
     """
-    Fetch related posts based on shared tags.
-    Ordered by the number of common tags (descending).
+    Fetch related posts using a hybrid textual keyword search
+    with tag-similarity fallback.
     """
     import math
+    import re
 
-    from sqlalchemy import case, func
+    from sqlalchemy import case, func, or_
 
-    from app.models import Feed, Post, PostTag
+    from app.models import AISummary, Feed, Post, PostTag
     from app.routes.preferences import get_effective_related_posts_limit
 
     # 1. Validar se o post existe
-    get_post_or_404(db, post_id)
+    post = get_post_or_404(db, post_id)
 
-    # 2. Obter as tags do post atual
+    # 2. Obter as tags do post atual (usadas para o fallback)
     tags_query = db.query(PostTag.tag).filter(PostTag.post_id == post_id)
     active_tags = [t[0] for t in tags_query.all()]
-
-    if not active_tags:
-        # Posts sem tags (ou seja, sem resumo) não mostram relacionados
-        return {"posts": []}
 
     # 3. Determinar limite das preferências
     limit = get_effective_related_posts_limit(db)
 
-    # 3b. Obter frequência global das tags para ponderação de relevância (TF-IDF)
-    tag_freqs = (
-        db.query(PostTag.tag, func.count(PostTag.post_id))
-        .filter(PostTag.tag.in_(active_tags))
-        .group_by(PostTag.tag)
-        .all()
-    )
+    # --- PARTE A: BUSCA TEXTUAL POR PALAVRAS-CHAVE ---
+    posts_list = []
 
-    tag_weights = {}
-    for tag, freq in tag_freqs:
-        # Fórmulas de peso inverso: tags raras ganham pesos maiores
-        tag_weights[tag] = 1.0 / math.log(freq + 1) if freq > 0 else 0.1
+    # Limpar e tokenizar o título do post atual
+    title_clean = re.sub(r"[^\w\s-]", "", post.title.lower())
+    words = [w for w in title_clean.split() if len(w) >= 3]
 
-    # Construir pontuação ponderada de relevância
-    if not tag_weights:
-        relevance_score = func.count(PostTag.tag)
-    else:
-        w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
-        relevance_score = func.sum(case(*w_cases, else_=0.0))
+    # Stop words comuns em inglês e português
+    stop_words = {
+        "de", "do", "da", "em", "para", "com", "por", "um", "uma", "os", "as",
+        "se", "ou", "o", "a", "que", "ao", "aos", "no", "na", "nos", "nas",
+        "and", "the", "a", "an", "of", "to", "in", "for", "with", "on", "at",
+        "by", "from", "about", "as", "is", "are", "was", "were", "it", "this",
+        "that", "these", "those", "how", "why", "what", "where", "when", "who",
+        "which", "released", "version", "new", "update", "novo", "nova",
+        "atualizacao", "versao", "lancado", "lancada", "using", "usando",
+        "post", "article", "artigo", "feed", "blog", "site", "web"
+    }
 
-    # 4. Query de posts relacionados ordenados por score de relevância
-    related_query = (
-        db.query(
-            Post.id,
-            Post.title,
-            Feed.title.label("feed_title"),
-            func.count(PostTag.tag).label("common_tags_count"),
-            relevance_score.label("relevance_score"),
+    keywords = [w for w in words if w not in stop_words]
+    if not keywords and words:
+        keywords = words
+
+    if keywords:
+        score_conditions = []
+        filter_conditions = []
+
+        for kw in keywords:
+            term = f"%{kw}%"
+            # Condições de filtro para garantir que o post correspondido tenha algum termo
+            filter_conditions.append(func.lower(Post.title).like(term))
+            filter_conditions.append(func.lower(Post.content).like(term))
+            filter_conditions.append(
+                func.lower(AISummary.translated_title).like(term)
+            )
+            filter_conditions.append(
+                func.lower(AISummary.one_line_summary).like(term)
+            )
+            filter_conditions.append(
+                func.lower(AISummary.summary_pt).like(term)
+            )
+
+            # Relevância alta para match no Título
+            title_match = or_(
+                func.lower(Post.title).like(term),
+                func.lower(AISummary.translated_title).like(term),
+            )
+            # Relevância moderada para match no Conteúdo/Resumos
+            content_match = or_(
+                func.lower(Post.content).like(term),
+                func.lower(AISummary.one_line_summary).like(term),
+                func.lower(AISummary.summary_pt).like(term),
+            )
+
+            score_conditions.append(case((title_match, 5.0), else_=0.0))
+            score_conditions.append(case((content_match, 1.5), else_=0.0))
+
+        text_score = sum(score_conditions)
+
+        # Executar a busca de texto
+        text_query = (
+            db.query(
+                Post.id,
+                Post.title,
+                Feed.title.label("feed_title"),
+            )
+            .outerjoin(
+                AISummary, Post.content_hash == AISummary.content_hash
+            )
+            .join(Feed, Post.feed_id == Feed.id)
+            .filter(Post.id != post_id)
+            .filter(or_(*filter_conditions))
+            .order_by(text_score.desc(), Post.sort_date.desc())
+            .limit(limit)
         )
-        .join(PostTag, Post.id == PostTag.post_id)
-        .join(Feed, Post.feed_id == Feed.id)
-        .filter(PostTag.tag.in_(active_tags))
-        .filter(Post.id != post_id)
-        .group_by(Post.id)
-        .order_by(relevance_score.desc(), Post.sort_date.desc())
-        .limit(limit)
-    )
+        text_results = text_query.all()
 
-    results = related_query.all()
+        if text_results:
+            # Encontramos posts por texto! Vamos calcular as tags em comum para a UI
+            post_ids_found = [r.id for r in text_results]
+            tag_counts_map = {}
+            if active_tags:
+                tag_counts = (
+                    db.query(PostTag.post_id, func.count(PostTag.tag))
+                    .filter(PostTag.tag.in_(active_tags))
+                    .filter(PostTag.post_id.in_(post_ids_found))
+                    .group_by(PostTag.post_id)
+                    .all()
+                )
+                tag_counts_map = {p_id: count for p_id, count in tag_counts}
 
-    posts_list = [
-        {
-            "id": r.id,
-            "title": r.title,
-            "feed_title": r.feed_title,
-            "common_tags_count": r.common_tags_count,
-        }
-        for r in results
-    ]
+            posts_list = [
+                {
+                    "id": r.id,
+                    "title": r.title,
+                    "feed_title": r.feed_title,
+                    "common_tags_count": tag_counts_map.get(r.id, 0),
+                }
+                for r in text_results
+            ]
+
+    # --- PARTE B: FALLBACK PARA BUSCA POR TAGS (TF-IDF) ---
+    # Se a busca textual não encontrou nada e o post tem tags, caímos para o TF-IDF
+    if not posts_list and active_tags:
+        tag_freqs = (
+            db.query(PostTag.tag, func.count(PostTag.post_id))
+            .filter(PostTag.tag.in_(active_tags))
+            .group_by(PostTag.tag)
+            .all()
+        )
+
+        tag_weights = {}
+        for tag, freq in tag_freqs:
+            tag_weights[tag] = 1.0 / math.log(freq + 1) if freq > 0 else 0.1
+
+        if not tag_weights:
+            relevance_score = func.count(PostTag.tag)
+        else:
+            w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
+            relevance_score = func.sum(case(*w_cases, else_=0.0))
+
+        related_query = (
+            db.query(
+                Post.id,
+                Post.title,
+                Feed.title.label("feed_title"),
+                func.count(PostTag.tag).label("common_tags_count"),
+                relevance_score.label("relevance_score"),
+            )
+            .join(PostTag, Post.id == PostTag.post_id)
+            .join(Feed, Post.feed_id == Feed.id)
+            .filter(PostTag.tag.in_(active_tags))
+            .filter(Post.id != post_id)
+            .group_by(Post.id)
+            .order_by(relevance_score.desc(), Post.sort_date.desc())
+            .limit(limit)
+        )
+        tag_results = related_query.all()
+
+        posts_list = [
+            {
+                "id": r.id,
+                "title": r.title,
+                "feed_title": r.feed_title,
+                "common_tags_count": r.common_tags_count,
+            }
+            for r in tag_results
+        ]
 
     return {"posts": posts_list}
 
