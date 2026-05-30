@@ -247,6 +247,7 @@ const postDetailMixin = {
         this.assistantLoading = true;
         this.relatedPosts = [];
         this.selectedRelatedPosts = new Set();
+        this.assistantSummary = null; // Limpa o resumo anterior ao alterar os filtros
         try {
             const params = new URLSearchParams({
                 include_read: this.assistantIncludeRead,
@@ -254,8 +255,11 @@ const postDetailMixin = {
             });
             const data = await this.fetchApi(`/posts/${this.currentPost.id}/related?${params.toString()}`);
             this.relatedPosts = data.posts || [];
-            // Select all by default
-            this.relatedPosts.forEach(p => this.selectedRelatedPosts.add(p.id));
+            
+            // Cria um novo Set e atribui de forma atômica para forçar a reatividade do Alpine
+            const newSelection = new Set();
+            this.relatedPosts.forEach(p => newSelection.add(p.id));
+            this.selectedRelatedPosts = newSelection;
         } catch (e) {
             console.error('Failed to load related posts:', e);
             this.showError(this.t('errors.loadRelatedPosts') + ': ' + this.translateError(e.message));
