@@ -1294,8 +1294,11 @@ def get_related_posts(
         tag_weights[tag] = 1.0 / math.log(freq + 1) if freq > 0 else 0.1
 
     # Construir pontuação ponderada de relevância
-    w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
-    relevance_score = func.sum(case(w_cases, else_=0.0))
+    if not tag_weights:
+        relevance_score = func.count(PostTag.tag)
+    else:
+        w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
+        relevance_score = func.sum(case(*w_cases, else_=0.0))
 
     # 4. Query de posts relacionados ordenados por score de relevância
     related_query = (
