@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260530a';</script>
+    <script>var APP_VERSION = '20260530b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1050,7 +1050,7 @@
                                             >
                                             <div class="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 leading-tight">
                                                 <span x-text="p.title"></span>
-                                                <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ')'"></span>
+                                                <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ' • ' + t('modal.commonTags').replace('{count}', p.common_tags_count) + ')'"></span>
                                             </div>
                                         </label>
                                     </template>

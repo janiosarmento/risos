@@ -96,7 +96,8 @@
     "copyConsolidated": "Copy Summary",
     "selectAllRelated": "Select All",
     "selectNoneRelated": "Deselect All",
-    "noRelatedPosts": "No related posts found in the database."
+    "noRelatedPosts": "No related posts found in the database.",
+    "commonTags": "{count} tag(s) in common"
   },
   "settings": {
     "title": "Settings",

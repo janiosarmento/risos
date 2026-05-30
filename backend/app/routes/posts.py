@@ -1302,6 +1302,7 @@ def get_related_posts(
             "id": r.id,
             "title": r.title,
             "feed_title": r.feed_title,
+            "common_tags_count": r.common_tags_count,
         }
         for r in results
     ]

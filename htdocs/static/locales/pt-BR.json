@@ -96,7 +96,8 @@
     "copyConsolidated": "Copiar Sumário",
     "selectAllRelated": "Marcar Todos",
     "selectNoneRelated": "Desmarcar Todos",
-    "noRelatedPosts": "Nenhum post relacionado encontrado no banco de dados."
+    "noRelatedPosts": "Nenhum post relacionado encontrado no banco de dados.",
+    "commonTags": "{count} tag(s) em comum"
   },
   "settings": {
     "title": "Configurações",

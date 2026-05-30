@@ -48,19 +48,19 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260530a in all ?v= below -->
-    <script>var APP_VERSION = '20260530a';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260530a">
+    <!-- App version — single source of truth. Assembler replaces 20260530b in all ?v= below -->
+    <script>var APP_VERSION = '20260530b';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260530b">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260530a"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260530a"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260530a"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260530a"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260530a"></script>
-    <script defer src="/static/js/components/settings.js?v=20260530a"></script>
-    <script defer src="/static/js/components/curation.js?v=20260530a"></script>
-    <script defer src="/static/js/app.js?v=20260530a"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260530b"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260530b"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260530b"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260530b"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260530b"></script>
+    <script defer src="/static/js/components/settings.js?v=20260530b"></script>
+    <script defer src="/static/js/components/curation.js?v=20260530b"></script>
+    <script defer src="/static/js/app.js?v=20260530b"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1476,7 +1476,7 @@
                                             >
                                             <div class="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 leading-tight">
                                                 <span x-text="p.title"></span>
-                                                <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ')'"></span>
+                                                <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ' • ' + t('modal.commonTags').replace('{count}', p.common_tags_count) + ')'"></span>
                                             </div>
                                         </label>
                                     </template>
