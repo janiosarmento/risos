@@ -47,6 +47,7 @@ PREF_BLOCKED_TERMS = "pref_blocked_terms"
 PREF_API_BASE_URL = "pref_api_base_url"
 PREF_AI_TIMEOUT = "pref_ai_timeout"
 PREF_RELATED_POSTS_LIMIT = "pref_related_posts_limit"
+PREF_AI_MAX_TOKENS = "pref_ai_max_tokens"
 
 
 class PreferencesResponse(BaseModel):
@@ -83,6 +84,7 @@ class PreferencesResponse(BaseModel):
     api_base_url: Optional[str] = None
     ai_timeout: int = 30
     related_posts_limit: int = 30
+    ai_max_tokens: int = 8192
 
 
 class PreferencesUpdate(BaseModel):
@@ -113,6 +115,7 @@ class PreferencesUpdate(BaseModel):
     api_base_url: Optional[str] = None
     ai_timeout: Optional[int] = None
     related_posts_limit: Optional[int] = None
+    ai_max_tokens: Optional[int] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -163,6 +166,7 @@ def get_preferences(
         PREF_API_BASE_URL,
         PREF_AI_TIMEOUT,
         PREF_RELATED_POSTS_LIMIT,
+        PREF_AI_MAX_TOKENS,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -214,6 +218,7 @@ def get_preferences(
         api_base_url=prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
         ai_timeout=int_or_default(prefs[PREF_AI_TIMEOUT], 30),
         related_posts_limit=int_or_default(prefs[PREF_RELATED_POSTS_LIMIT], 30),
+        ai_max_tokens=int_or_default(prefs[PREF_AI_MAX_TOKENS], 8192),
     )
 
 
@@ -316,6 +321,10 @@ def update_preferences(
     if prefs.related_posts_limit is not None:
         limit = max(5, min(100, prefs.related_posts_limit))
         _set_setting(db, PREF_RELATED_POSTS_LIMIT, str(limit))
+
+    if prefs.ai_max_tokens is not None:
+        max_tokens = max(256, min(32768, prefs.ai_max_tokens))
+        _set_setting(db, PREF_AI_MAX_TOKENS, str(max_tokens))
 
     if prefs.blocked_terms is not None:
         # Clean, sort, and store
@@ -546,6 +555,17 @@ def get_effective_ai_timeout(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 30
+
+
+def get_effective_ai_max_tokens(db: Session) -> int:
+    """Get AI request max tokens from app_settings or default 8192."""
+    saved = _get_setting(db, PREF_AI_MAX_TOKENS)
+    if saved:
+        try:
+            return max(256, min(32768, int(saved)))
+        except (ValueError, TypeError):
+            pass
+    return 8192
 
 
 def get_effective_api_base_url(db: Session) -> str:

@@ -107,6 +107,8 @@ function app() {
         set aiModel(v) { Alpine.store('prefs').aiModel = v; },
         get aiTimeout() { return Alpine.store('prefs').aiTimeout; },
         set aiTimeout(v) { Alpine.store('prefs').aiTimeout = v; },
+        get aiMaxTokens() { return Alpine.store('prefs').aiMaxTokens; },
+        set aiMaxTokens(v) { Alpine.store('prefs').aiMaxTokens = v; },
         get availableSummaryLanguages() { return Alpine.store('prefs').availableSummaryLanguages; },
         set availableSummaryLanguages(v) { Alpine.store('prefs').availableSummaryLanguages = v; },
         get availableModels() { return Alpine.store('prefs').availableModels; },

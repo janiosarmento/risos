@@ -105,7 +105,7 @@ async def get_available_models() -> List[str]:
 
 
 async def _call_model(
-    model: str, api_key: str, key_index: int, messages: list, timeout: int = 30
+    model: str, api_key: str, key_index: int, messages: list, timeout: int = 30, max_tokens: int = 8192
 ) -> SummaryResult:
     """
     Make a single API call to a specific model and parse the response.
@@ -124,7 +124,7 @@ async def _call_model(
         "model": model,
         "messages": messages,
         "temperature": SUMMARY_TEMPERATURE,
-        "max_tokens": SUMMARY_MAX_TOKENS,
+        "max_tokens": max_tokens,
     }
 
     try:
@@ -322,6 +322,7 @@ async def _generate_summary_locked(
     from app.routes.preferences import (
         get_effective_ai_model,
         get_effective_ai_timeout,
+        get_effective_ai_max_tokens,
         get_effective_summary_language,
     )
 
@@ -330,6 +331,7 @@ async def _generate_summary_locked(
         preferred_model = get_effective_ai_model(db)
         effective_language = get_effective_summary_language(db)
         ai_timeout = get_effective_ai_timeout(db)
+        ai_max_tokens = get_effective_ai_max_tokens(db)
 
         # Build message list (reused across model attempts).
         # System content uses array format so Anthropic prompt caching works.
@@ -355,7 +357,7 @@ async def _generate_summary_locked(
 
     # Use preferred model only (proxy handles fallback)
     result = await _call_model(
-        preferred_model, api_key, key_index, messages, ai_timeout
+        preferred_model, api_key, key_index, messages, ai_timeout, ai_max_tokens
     )
 
     # Empty result means the model deemed the content unusable

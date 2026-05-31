@@ -131,6 +131,7 @@
     "aiModel": "Modelo IA",
     "aiModelDesc": "Modelo usado para gerar resumos",
     "aiTimeout": "Timeout da IA",
+    "aiMaxTokens": "Máximo de Tokens da IA",
     "loadingModels": "Carregando modelos...",
     "data": "Dados",
     "feedUpdateInterval": "Intervalo de Atualização",

@@ -827,6 +827,7 @@ const settingsMixin = {
             };
             payload.api_base_url = this.apiBaseUrl;
             payload.ai_timeout = parseInt(this.aiTimeout) || 30;
+            payload.ai_max_tokens = parseInt(this.aiMaxTokens) || 8192;
             await this.fetchApi('/preferences', {
                 method: 'PUT',
                 body: JSON.stringify(payload),
@@ -1018,6 +1019,7 @@ const settingsMixin = {
             if (serverPrefs.summary_language) this.summaryLanguage = serverPrefs.summary_language;
             if (serverPrefs.ai_model) this.aiModel = serverPrefs.ai_model;
             if (serverPrefs.ai_timeout) this.aiTimeout = serverPrefs.ai_timeout;
+            if (serverPrefs.ai_max_tokens) this.aiMaxTokens = serverPrefs.ai_max_tokens;
             if (serverPrefs.related_posts_limit !== undefined && serverPrefs.related_posts_limit !== null) {
                 this.relatedPostsLimit = serverPrefs.related_posts_limit;
             }
