@@ -626,7 +626,7 @@ function app() {
                     } else if (this.isKey(e, 'r') && !e.shiftKey) {
                         this.refreshFeeds();
                         return;
-                    } else if (this.isKey(e, 'a')) {
+                    } else if (this.isKey(e, 'i')) {
                         this.openAssistant();
                         return;
                     }

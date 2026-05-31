@@ -214,6 +214,7 @@ Each has its own database, config, and service.
 | `Space` | Toggle checkbox (in select mode) |
 | `R` | Refresh feeds |
 | `Shift+R` | Regenerate AI summary (when post is open) |
+| `I` | Open Smart Assistant / related posts (when post is open) |
 | `/` | Focus search |
 | `Escape` | Close modal / clear search |
 
