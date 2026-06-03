@@ -1735,9 +1735,6 @@ async def generate_related_summary(
             temperature=0.3,
             engine="ondemand",
         )
-            max_tokens=4096,
-            temperature=0.3
-        )
         return {"summary": super_summary}
     except Exception as e:
         logger.error(f"Erro ao gerar sumário consolidado: {e}")
