@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260603e">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260603e">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260603e">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260603f">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260603f">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260603f">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260603e">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260603f">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260603e">
+    <link rel="manifest" href="/manifest.json?v=20260603f">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -48,19 +48,19 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260603e in all ?v= below -->
-    <script>var APP_VERSION = '20260603e';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260603e">
+    <!-- App version — single source of truth. Assembler replaces 20260603f in all ?v= below -->
+    <script>var APP_VERSION = '20260603f';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260603f">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260603e"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260603e"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260603e"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260603e"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260603e"></script>
-    <script defer src="/static/js/components/settings.js?v=20260603e"></script>
-    <script defer src="/static/js/components/curation.js?v=20260603e"></script>
-    <script defer src="/static/js/app.js?v=20260603e"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260603f"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260603f"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260603f"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260603f"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260603f"></script>
+    <script defer src="/static/js/components/settings.js?v=20260603f"></script>
+    <script defer src="/static/js/components/curation.js?v=20260603f"></script>
+    <script defer src="/static/js/app.js?v=20260603f"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1910,6 +1910,7 @@
                                     type="text"
                                     x-model="janoSecretName"
                                     :placeholder="t('settings.janoSecretNamePlaceholder')"
+                                    @change="onJanoSecretNameChange()"
                                     class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
                                 />
                             </div>
@@ -2072,6 +2073,7 @@
                                         type="text"
                                         x-model="backgroundJanoSecretName"
                                         :placeholder="t('settings.backgroundJanoSecretNamePlaceholder')"
+                                        @change="onBackgroundJanoSecretNameChange()"
                                         class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
                                     />
                                 </div>

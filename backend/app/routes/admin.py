@@ -429,6 +429,37 @@ class ModelInfo(BaseModel):
     owned_by: str
 
 
+@router.get("/validate-secret")
+def validate_secret(
+    name: str,
+    engine: str = "ondemand",
+    user: dict = Depends(get_current_user),
+):
+    """
+    Validate that a Jano secret exists and can be resolved.
+    Use ?engine=background to validate against the background engine.
+    Returns masked key preview so user can verify it's the right one.
+    """
+    from app.routes.preferences import (
+        get_effective_ai_api_key,
+        get_effective_background_ai_api_key,
+    )
+
+    # Resolve the named secret directly (not the saved preference)
+    from app.services.jano_client import get_jano_secret
+
+    try:
+        val = get_jano_secret(name)
+        if val and val.strip():
+            key = val.strip()
+            masked = key[:5] + "****" + key[-4:] if len(key) > 12 else "****"
+            return {"valid": True, "masked_key": masked}
+    except Exception:
+        pass
+
+    return {"valid": False, "masked_key": None}
+
+
 @router.get("/models")
 async def list_available_models(
     engine: str = "ondemand",

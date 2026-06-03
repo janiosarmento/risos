@@ -821,11 +821,65 @@ const settingsMixin = {
         if (this.token) this.savePreferencesToServer();
     },
 
+    async _validateSecret(engine) {
+        const name = engine === 'background' ? this.backgroundJanoSecretName : this.janoSecretName;
+        if (!name || !name.trim()) return { valid: false, reason: 'empty' };
+        try {
+            const result = await this.fetchApi(`/admin/validate-secret?name=${encodeURIComponent(name.trim())}&engine=${engine}`);
+            return result;
+        } catch (e) {
+            return { valid: false, reason: 'error', error: e.message };
+        }
+    },
+
+    async _validateAndReloadModels(engine) {
+        const label = engine === 'background' ? 'Background' : 'On-demand';
+        const result = await this._validateSecret(engine);
+        if (!result.valid) {
+            if (result.reason === 'empty') {
+                // No secret name provided — clear models, let user know they need to configure
+                if (engine === 'background') {
+                    this.backgroundAvailableModels = [];
+                } else {
+                    this.availableModels = [];
+                }
+                return;
+            }
+            this.showToast(
+                `${label}: ${this.t('settings.secretNotFound') || 'Secret not found'} — ${this.t('settings.checkSecretName') || 'check the name and try again'}`,
+                'error'
+            );
+            return;
+        }
+        // Valid secret — clear and reload models
+        if (engine === 'background') {
+            this.backgroundAvailableModels = [];
+            await this.loadBackgroundAvailableModels();
+        } else {
+            this.availableModels = [];
+            await this.loadAvailableModels();
+        }
+        this.showToast(`${label}: ${this.t('settings.secretValid') || 'Secret found'} (${result.masked_key})`);
+    },
+
+    async onApiBaseUrlChange() {
+        await this.saveAiSettings();
+        await this._validateAndReloadModels('ondemand');
+    },
+
     async onBackgroundApiBaseUrlChange() {
         await this.saveAiSettings();
-        // Clear and reload background models
-        this.backgroundAvailableModels = [];
-        await this.loadBackgroundAvailableModels();
+        await this._validateAndReloadModels('background');
+    },
+
+    async onJanoSecretNameChange() {
+        await this.saveAiSettings();
+        await this._validateAndReloadModels('ondemand');
+    },
+
+    async onBackgroundJanoSecretNameChange() {
+        await this.saveAiSettings();
+        await this._validateAndReloadModels('background');
     },
 
     async loadPromptDefaults() {
