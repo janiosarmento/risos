@@ -245,6 +245,17 @@ const postDetailMixin = {
         this.assistantSummary = null;
     },
 
+    closeAssistant() {
+        this.showAssistantModal = false;
+        this.relatedPosts = [];
+        this.selectedRelatedPosts = new Set();
+        this.assistantSummary = null;
+        this.assistantIncludeRead = false;
+        this.assistantIncludeUnread = true;
+        this.assistantIncludeZeroCommonTags = false;
+        this.assistantSkipTagFallback = false;
+    },
+
     async loadRelatedPosts() {
         if (!this.currentPost) return;
         this.assistantLoading = true;
