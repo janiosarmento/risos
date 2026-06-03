@@ -58,6 +58,7 @@ function app() {
         topicsExpanded: localStorage.getItem('rss_topics_expanded') === '1', // Sidebar "Topics" section
         searchQuery: '',
         _searchTimeout: null,
+        _pendingReload: false,  // Reagendar loadPosts quando chamado durante outro load
         // Health
         healthWarning: null,
 
@@ -905,7 +906,10 @@ function app() {
         },
 
         async loadPosts(reset = false) {
-            if (this.loading) return;
+            if (this.loading) {
+                if (reset) this._pendingReload = true;
+                return;
+            }
 
             if (reset) {
                 this.posts = [];
@@ -1016,6 +1020,10 @@ function app() {
                 console.error('Failed to load posts:', error);
             } finally {
                 this.loading = false;
+                if (this._pendingReload) {
+                    this._pendingReload = false;
+                    await this.loadPosts(true);
+                }
             }
         },
 
