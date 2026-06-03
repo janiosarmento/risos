@@ -104,6 +104,7 @@
     "assistantIncludeZeroCommonTags": "Include posts with zero common tags",
     "assistantSkipTagFallback": "Disable tag fallback",
     "assistantSkipTagFallbackDesc": "Only use keyword search; skip tag-based matching when no results found",
+    "assistantSearch": "Search",
     "markedAsReadSuccess": "Posts marked as read!",
     "markAsRead": "Mark as read",
     "analyzingPost": "Analyzing post:"

@@ -241,8 +241,8 @@ const postDetailMixin = {
         this.assistantIncludeRead = false;
         this.assistantIncludeUnread = true;
         this.assistantIncludeZeroCommonTags = false;
+        this.assistantSkipTagFallback = false;
         this.assistantSummary = null;
-        await this.loadRelatedPosts();
     },
 
     async loadRelatedPosts() {
