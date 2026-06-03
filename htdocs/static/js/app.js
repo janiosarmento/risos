@@ -494,6 +494,7 @@ function app() {
                 if (this.topicsExpanded) this.loadTopics();
                 // Load AI models and prompt defaults (requires auth)
                 this.loadAvailableModels();
+                this.loadBackgroundAvailableModels();
                 this.loadPromptDefaults();
                 this.setupIdleDetection();
                 this._startPeriodicRefresh();
