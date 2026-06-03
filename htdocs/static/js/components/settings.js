@@ -798,6 +798,36 @@ const settingsMixin = {
         if (this.token) this.savePreferencesToServer();
     },
 
+    async loadBackgroundAvailableModels() {
+        try {
+            const models = await this.fetchApi('/admin/models?engine=background&_t=' + Date.now());
+            this.backgroundAvailableModels = models || [];
+            const saved = this.backgroundAiModel;
+            const savedExists = models && models.some(m => m.id === saved);
+            if (savedExists) {
+                this.$nextTick(() => { this.backgroundAiModel = saved; });
+            } else if (models && models.length > 0) {
+                this.backgroundAiModel = models[0].id;
+                if (this.token) this.savePreferencesToServer();
+            }
+        } catch (e) {
+            console.warn('Failed to load background AI models:', e);
+            this.backgroundAvailableModels = [];
+        }
+    },
+
+    setBackgroundAiModel(model) {
+        this.backgroundAiModel = model;
+        if (this.token) this.savePreferencesToServer();
+    },
+
+    async onBackgroundApiBaseUrlChange() {
+        await this.saveAiSettings();
+        // Clear and reload background models
+        this.backgroundAvailableModels = [];
+        await this.loadBackgroundAvailableModels();
+    },
+
     async loadPromptDefaults() {
         try {
             const data = await this.fetchApi('/admin/prompt-defaults');
@@ -824,8 +854,10 @@ const settingsMixin = {
                 system_prompt: this.systemPrompt,
                 user_prompt: this.userPrompt,
                 jano_secret_name: this.janoSecretName || '',
+                background_jano_secret_name: this.backgroundJanoSecretName || '',
             };
             payload.api_base_url = this.apiBaseUrl;
+            payload.background_api_base_url = this.backgroundApiBaseUrl;
             payload.ai_timeout = parseInt(this.aiTimeout) || 30;
             payload.ai_max_tokens = parseInt(this.aiMaxTokens) || 8192;
             await this.fetchApi('/preferences', {
@@ -989,6 +1021,9 @@ const settingsMixin = {
                     model_cooldown_minutes: this.modelCooldownMinutes,
                     blocked_terms: this.blockedTerms,
                     api_base_url: this.apiBaseUrl,
+                    background_jano_secret_name: this.backgroundJanoSecretName || '',
+                    background_api_base_url: this.backgroundApiBaseUrl,
+                    background_ai_model: this.backgroundAiModel || null,
                     related_posts_limit: this.relatedPostsLimit,
                 }),
             });
@@ -1063,6 +1098,10 @@ const settingsMixin = {
             if (serverPrefs.blocked_terms !== null && serverPrefs.blocked_terms !== undefined) {
                 this.blockedTerms = serverPrefs.blocked_terms;
             }
+            // Background AI settings
+            this.backgroundJanoSecretName = serverPrefs.background_jano_secret_name || '';
+            if (serverPrefs.background_api_base_url) this.backgroundApiBaseUrl = serverPrefs.background_api_base_url;
+            if (serverPrefs.background_ai_model) this.backgroundAiModel = serverPrefs.background_ai_model;
         } catch (e) {
             console.warn('Failed to sync preferences:', e);
         }
@@ -1084,7 +1123,8 @@ const settingsMixin = {
             await this.saveAiSettings();
             await this.fetchApi('/admin/clear-models-cache', { method: 'POST' });
             this.availableModels = [];
-            await this.loadAvailableModels();
+            this.backgroundAvailableModels = [];
+            await Promise.all([this.loadAvailableModels(), this.loadBackgroundAvailableModels()]);
             this.showToast(this.t('settings.modelsCacheCleared'));
         } catch (error) {
             console.error('Failed to clear models cache:', error);

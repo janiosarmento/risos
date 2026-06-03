@@ -49,6 +49,11 @@ PREF_AI_TIMEOUT = "pref_ai_timeout"
 PREF_RELATED_POSTS_LIMIT = "pref_related_posts_limit"
 PREF_AI_MAX_TOKENS = "pref_ai_max_tokens"
 
+# Background AI settings (fall back to on-demand if not set)
+PREF_BACKGROUND_JANO_SECRET_NAME = "pref_background_jano_secret_name"
+PREF_BACKGROUND_API_BASE_URL = "pref_background_api_base_url"
+PREF_BACKGROUND_AI_MODEL = "pref_background_ai_model"
+
 
 class PreferencesResponse(BaseModel):
     locale: Optional[str] = None
@@ -85,6 +90,10 @@ class PreferencesResponse(BaseModel):
     ai_timeout: int = 30
     related_posts_limit: int = 30
     ai_max_tokens: int = 8192
+    # Background AI settings (fall back to on-demand if not set)
+    background_jano_secret_name: Optional[str] = None
+    background_api_base_url: Optional[str] = None
+    background_ai_model: Optional[str] = None
 
 
 class PreferencesUpdate(BaseModel):
@@ -116,6 +125,10 @@ class PreferencesUpdate(BaseModel):
     ai_timeout: Optional[int] = None
     related_posts_limit: Optional[int] = None
     ai_max_tokens: Optional[int] = None
+    # Background AI settings
+    background_jano_secret_name: Optional[str] = None
+    background_api_base_url: Optional[str] = None
+    background_ai_model: Optional[str] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -167,6 +180,9 @@ def get_preferences(
         PREF_AI_TIMEOUT,
         PREF_RELATED_POSTS_LIMIT,
         PREF_AI_MAX_TOKENS,
+        PREF_BACKGROUND_JANO_SECRET_NAME,
+        PREF_BACKGROUND_API_BASE_URL,
+        PREF_BACKGROUND_AI_MODEL,
     ]
 
     prefs = {k: None for k in all_keys}
@@ -219,6 +235,10 @@ def get_preferences(
         ai_timeout=int_or_default(prefs[PREF_AI_TIMEOUT], 30),
         related_posts_limit=int_or_default(prefs[PREF_RELATED_POSTS_LIMIT], 30),
         ai_max_tokens=int_or_default(prefs[PREF_AI_MAX_TOKENS], 8192),
+        # Background AI settings
+        background_jano_secret_name=prefs[PREF_BACKGROUND_JANO_SECRET_NAME],
+        background_api_base_url=prefs[PREF_BACKGROUND_API_BASE_URL] or prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
+        background_ai_model=prefs[PREF_BACKGROUND_AI_MODEL] or prefs[PREF_AI_MODEL] or "llama-3.3-70b",
     )
 
 
@@ -337,6 +357,17 @@ def update_preferences(
         _set_setting(db, PREF_BLOCKED_TERMS, cleaned)
         # Remove existing suggestions for newly-blocked posts
         _unsuggest_blocked_posts(db, lines)
+
+    # Background AI settings
+    if prefs.background_jano_secret_name is not None:
+        _set_setting(db, PREF_BACKGROUND_JANO_SECRET_NAME, prefs.background_jano_secret_name.strip())
+
+    if prefs.background_api_base_url is not None:
+        cleaned_url = prefs.background_api_base_url.strip().rstrip("/")
+        _set_setting(db, PREF_BACKGROUND_API_BASE_URL, cleaned_url)
+
+    if prefs.background_ai_model is not None:
+        _set_setting(db, PREF_BACKGROUND_AI_MODEL, prefs.background_ai_model)
 
     db.commit()
 
@@ -572,6 +603,35 @@ def get_effective_api_base_url(db: Session) -> str:
     """Get API base URL from app_settings or default."""
     row = db.query(AppSettings).filter(AppSettings.key == PREF_API_BASE_URL).first()
     return (row.value if row and row.value else DEFAULT_API_BASE_URL).rstrip("/")
+
+
+def get_effective_background_ai_api_key(db: Session) -> Optional[str]:
+    """Background API key — falls back to on-demand key if not set."""
+    secret_name = _get_setting(db, PREF_BACKGROUND_JANO_SECRET_NAME)
+    if secret_name:
+        from app.services.jano_client import get_jano_secret
+
+        try:
+            val = get_jano_secret(secret_name)
+            if val and val.strip():
+                return val.strip()
+        except Exception:
+            pass
+    return get_effective_ai_api_key(db)
+
+
+def get_effective_background_api_base_url(db: Session) -> str:
+    """Background API base URL — falls back to on-demand URL if not set."""
+    row = db.query(AppSettings).filter(AppSettings.key == PREF_BACKGROUND_API_BASE_URL).first()
+    if row and row.value:
+        return row.value.rstrip("/")
+    return get_effective_api_base_url(db)
+
+
+def get_effective_background_ai_model(db: Session) -> str:
+    """Background AI model — falls back to on-demand model if not set."""
+    saved = _get_setting(db, PREF_BACKGROUND_AI_MODEL)
+    return saved or get_effective_ai_model(db)
 
 
 def get_effective_blocked_terms(db: Session) -> list:

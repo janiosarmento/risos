@@ -708,7 +708,7 @@ class Scheduler:
                     try:
                         logger.info(f"Generating summary for post {post.id}...")
                         summary_result = await generate_summary(
-                            content, title=post.title, title_only=title_only
+                            content, title=post.title, title_only=title_only, engine="background"
                         )
 
                         # Append model attribution to summary

@@ -288,7 +288,7 @@ Respond ONLY in JSON:
   "tags": ["tag1", "tag2", "tag3"]
 }}"""
 
-    result = await call_llm_json(system_prompt, user_prompt)
+    result = await call_llm_json(system_prompt, user_prompt, engine="ondemand")
 
     # Validate: only return tags that actually exist in the unassigned pool
     available = {row.tag for row in rows}
@@ -351,7 +351,7 @@ Respond ONLY in JSON:
   "orphan_tags": ["tag1", "tag2"]
 }}"""
 
-    result = await call_llm_json(system_prompt, user_prompt)
+    result = await call_llm_json(system_prompt, user_prompt, engine="ondemand")
 
     suggestions = []
     for item in result.get("topics", []):

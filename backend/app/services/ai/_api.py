@@ -44,8 +44,9 @@ from app.services.ai._types import (
 
 logger = logging.getLogger(__name__)
 
-# Global lock: only one AI API call at a time (LM Studio limitation)
-_api_lock = asyncio.Lock()
+# Global locks: separate locks so background batch processing doesn't block on-demand calls
+_api_lock_ondemand = asyncio.Lock()
+_api_lock_background = asyncio.Lock()
 
 
 def _get_api_base_url() -> str:
@@ -55,6 +56,40 @@ def _get_api_base_url() -> str:
     db = SessionLocal()
     try:
         return get_effective_api_base_url(db)
+    finally:
+        db.close()
+
+
+def _resolve_engine_settings(engine: str) -> tuple:
+    """Resolve API key, model, base URL, and timeout for the given engine.
+
+    Returns (api_key, model, base_url, timeout).
+    """
+    from app.routes.preferences import (
+        get_effective_ai_api_key,
+        get_effective_ai_model,
+        get_effective_api_base_url,
+        get_effective_ai_timeout,
+        get_effective_background_ai_api_key,
+        get_effective_background_ai_model,
+        get_effective_background_api_base_url,
+    )
+
+    db = SessionLocal()
+    try:
+        if engine == "background":
+            return (
+                get_effective_background_ai_api_key(db),
+                get_effective_background_ai_model(db),
+                get_effective_background_api_base_url(db),
+                get_effective_ai_timeout(db),
+            )
+        return (
+            get_effective_ai_api_key(db),
+            get_effective_ai_model(db),
+            get_effective_api_base_url(db),
+            get_effective_ai_timeout(db),
+        )
     finally:
         db.close()
 
@@ -69,20 +104,30 @@ def clear_models_cache():
     logger.info("Model cooldowns cleared")
 
 
-async def get_available_models() -> List[str]:
+async def get_available_models(engine: str = "ondemand") -> List[str]:
     """Fetch available model IDs from API. No cache — always fresh."""
-    from app.routes.preferences import get_effective_ai_api_key
+    from app.routes.preferences import (
+        get_effective_ai_api_key,
+        get_effective_api_base_url,
+        get_effective_background_ai_api_key,
+        get_effective_background_api_base_url,
+    )
 
     db = SessionLocal()
     try:
-        api_key = get_effective_ai_api_key(db)
+        if engine == "background":
+            api_key = get_effective_background_ai_api_key(db)
+            api_base = get_effective_background_api_base_url(db)
+        else:
+            api_key = get_effective_ai_api_key(db)
+            api_base = get_effective_api_base_url(db)
     finally:
         db.close()
 
     if not api_key:
         return []
 
-    api_url = f"{_get_api_base_url()}/models"
+    api_url = f"{api_base}/models"
 
     try:
         async with httpx.AsyncClient(
@@ -105,7 +150,7 @@ async def get_available_models() -> List[str]:
 
 
 async def _call_model(
-    model: str, api_key: str, key_index: int, messages: list, timeout: int = 30, max_tokens: int = 8192
+    model: str, api_key: str, key_index: int, messages: list, timeout: int = 30, max_tokens: int = 8192, base_url: str = None
 ) -> SummaryResult:
     """
     Make a single API call to a specific model and parse the response.
@@ -132,8 +177,9 @@ async def _call_model(
             timeout=timeout,
             headers={"User-Agent": USER_AGENT},
         ) as client:
+            target_url = (base_url or _get_api_base_url()).rstrip("/")
             response = await client.post(
-                f"{_get_api_base_url()}/chat/completions",
+                f"{target_url}/chat/completions",
                 headers=headers,
                 json=payload,
             )
@@ -161,7 +207,7 @@ async def _call_model(
 
                 print(
                     f"[API] HTTP {response.status_code} "
-                    f"from {_get_api_base_url()}: "
+                    f"from {target_url}: "
                     f"{response.text[:500]}",
                     flush=True,
                     file=sys.stderr,
@@ -269,20 +315,17 @@ async def _call_model(
 
 
 async def generate_summary(
-    content: str, title: str = "", title_only: bool = False
+    content: str, title: str = "", title_only: bool = False, engine: str = "ondemand"
 ) -> SummaryResult:
     """
-    Generate summary using Cerebras API with model fallback.
-
-    Tries the user's preferred model first. If it fails with a model-specific
-    error (bad response format, unknown structure), falls back to other
-    available models. Infrastructure errors (rate limit, timeout) are NOT
-    retried with different models.
+    Generate summary using AI API.
 
     Args:
         content: Article content to summarize
         title: Article title (for translation if needed)
         title_only: If True, skip garbage check (content is just the title)
+        engine: "ondemand" (default) or "background" — determines which
+                API key, model, and endpoint to use
 
     Returns:
         SummaryResult with summaries
@@ -297,45 +340,43 @@ async def generate_summary(
 
     import time
 
+    api_key, model, base_url, timeout = _resolve_engine_settings(engine)
+    if not api_key:
+        raise TemporaryError("No API key configured")
+
     start_time = time.time()
-    async with _api_lock:
-        result = await _generate_summary_locked(content, title, title_only)
+    lock = _api_lock_background if engine == "background" else _api_lock_ondemand
+    async with lock:
+        result = await _generate_summary_locked(
+            content, title, title_only,
+            api_key=api_key, model=model, base_url=base_url, timeout=timeout,
+        )
     result.duration = time.time() - start_time
     return result
 
 
 async def _generate_summary_locked(
-    content: str, title: str, title_only: bool
+    content: str, title: str, title_only: bool,
+    api_key: str, model: str, base_url: str, timeout: int,
 ) -> SummaryResult:
-    """Inner implementation, called under _api_lock."""
-    # Get API key
-    api_key, key_index = api_key_rotator.get_next_key()
-    if not api_key:
-        raise TemporaryError("No API key configured")
-
+    """Inner implementation, called under the appropriate lock."""
     # Truncate content if too large
     max_content_len = MAX_CONTENT_LENGTH
     if len(content) > max_content_len:
         content = content[:max_content_len] + "..."
 
-    # Get effective settings
+    # Get remaining settings (not engine-specific)
     from app.routes.preferences import (
-        get_effective_ai_model,
-        get_effective_ai_timeout,
         get_effective_ai_max_tokens,
         get_effective_summary_language,
     )
 
     db = SessionLocal()
     try:
-        preferred_model = get_effective_ai_model(db)
         effective_language = get_effective_summary_language(db)
-        ai_timeout = get_effective_ai_timeout(db)
         ai_max_tokens = get_effective_ai_max_tokens(db)
 
         # Build message list (reused across model attempts).
-        # System content uses array format so Anthropic prompt caching works.
-        # LiteLLM flattens this to a plain string for non-Anthropic backends.
         messages = [
             {
                 "role": "system",
@@ -357,7 +398,7 @@ async def _generate_summary_locked(
 
     # Use preferred model only (proxy handles fallback)
     result = await _call_model(
-        preferred_model, api_key, key_index, messages, ai_timeout, ai_max_tokens
+        model, api_key, 0, messages, timeout, ai_max_tokens, base_url=base_url
     )
 
     # Empty result means the model deemed the content unusable
@@ -372,10 +413,14 @@ async def call_llm_json(
     user_prompt: str,
     max_tokens: int = 4096,
     temperature: float = 0.3,
+    engine: str = "ondemand",
 ) -> dict:
     """
     Generic LLM call expecting a JSON response.
     Used for topic suggestions, curation, etc.
+
+    Args:
+        engine: "ondemand" (default) or "background"
 
     Returns:
         Parsed JSON dict from the LLM response.
@@ -384,9 +429,15 @@ async def call_llm_json(
         TemporaryError: Temporary error (retry possible)
         PermanentError: Permanent error
     """
-    async with _api_lock:
+    api_key, model, base_url, timeout = _resolve_engine_settings(engine)
+    if not api_key:
+        raise TemporaryError("No API key configured")
+
+    lock = _api_lock_background if engine == "background" else _api_lock_ondemand
+    async with lock:
         return await _call_llm_json_locked(
-            system_prompt, user_prompt, max_tokens, temperature
+            system_prompt, user_prompt, max_tokens, temperature,
+            api_key=api_key, model=model, base_url=base_url, timeout=timeout,
         )
 
 
@@ -395,23 +446,12 @@ async def _call_llm_json_locked(
     user_prompt: str,
     max_tokens: int,
     temperature: float,
+    api_key: str,
+    model: str,
+    base_url: str,
+    timeout: int,
 ) -> dict:
-    """Inner implementation, called under _api_lock."""
-    # Get API key
-    api_key, key_index = api_key_rotator.get_next_key()
-    if not api_key:
-        raise TemporaryError("No API key configured")
-
-    # Get preferred model (proxy handles fallback)
-    from app.routes.preferences import get_effective_ai_model, get_effective_ai_timeout
-
-    db = SessionLocal()
-    try:
-        model = get_effective_ai_model(db)
-        ai_timeout = get_effective_ai_timeout(db)
-    finally:
-        db.close()
-
+    """Inner implementation, called under the appropriate lock."""
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -428,13 +468,15 @@ async def _call_llm_json_locked(
         "max_tokens": max_tokens,
     }
 
+    target_url = base_url.rstrip("/")
+
     try:
         async with httpx.AsyncClient(
-            timeout=ai_timeout,
+            timeout=timeout,
             headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.post(
-                f"{_get_api_base_url()}/chat/completions",
+                f"{target_url}/chat/completions",
                 headers=headers,
                 json=payload,
             )
@@ -471,14 +513,24 @@ async def call_llm_text(
     user_prompt: str,
     max_tokens: int = 4096,
     temperature: float = 0.3,
+    engine: str = "ondemand",
 ) -> str:
     """
     Generic LLM call returning plain text content.
     Used for general summaries, consolidation, etc.
+
+    Args:
+        engine: "ondemand" (default) or "background"
     """
-    async with _api_lock:
+    api_key, model, base_url, timeout = _resolve_engine_settings(engine)
+    if not api_key:
+        raise TemporaryError("No API key configured")
+
+    lock = _api_lock_background if engine == "background" else _api_lock_ondemand
+    async with lock:
         return await _call_llm_text_locked(
-            system_prompt, user_prompt, max_tokens, temperature
+            system_prompt, user_prompt, max_tokens, temperature,
+            api_key=api_key, model=model, base_url=base_url, timeout=timeout,
         )
 
 
@@ -487,23 +539,12 @@ async def _call_llm_text_locked(
     user_prompt: str,
     max_tokens: int,
     temperature: float,
+    api_key: str,
+    model: str,
+    base_url: str,
+    timeout: int,
 ) -> str:
-    """Inner implementation of call_llm_text, called under _api_lock."""
-    # Get API key
-    api_key, key_index = api_key_rotator.get_next_key()
-    if not api_key:
-        raise TemporaryError("No API key configured")
-
-    # Get preferred model (proxy handles fallback)
-    from app.routes.preferences import get_effective_ai_model, get_effective_ai_timeout
-
-    db = SessionLocal()
-    try:
-        model = get_effective_ai_model(db)
-        ai_timeout = get_effective_ai_timeout(db)
-    finally:
-        db.close()
-
+    """Inner implementation of call_llm_text, called under the appropriate lock."""
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -520,13 +561,15 @@ async def _call_llm_text_locked(
         "max_tokens": max_tokens,
     }
 
+    target_url = base_url.rstrip("/")
+
     try:
         async with httpx.AsyncClient(
-            timeout=ai_timeout,
+            timeout=timeout,
             headers={"User-Agent": USER_AGENT},
         ) as client:
             response = await client.post(
-                f"{_get_api_base_url()}/chat/completions",
+                f"{target_url}/chat/completions",
                 headers=headers,
                 json=payload,
             )

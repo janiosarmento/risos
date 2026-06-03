@@ -12,6 +12,11 @@ document.addEventListener('alpine:init', () => {
         availableModels: [],
         janoSecretName: '',
         apiBaseUrl: 'https://api.cerebras.ai/v1',
+        // Background AI engine (batch processing)
+        backgroundAiModel: null,
+        backgroundAvailableModels: [],
+        backgroundJanoSecretName: '',
+        backgroundApiBaseUrl: 'https://api.cerebras.ai/v1',
         systemPrompt: '',
         userPrompt: '',
         defaultSystemPrompt: '',

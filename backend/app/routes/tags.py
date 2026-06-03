@@ -448,7 +448,7 @@ Respond ONLY in JSON format:
 
 If no true duplicates/synonyms are found, return {{"groups": []}}"""
 
-    result = await call_llm_json(system_prompt, user_prompt)
+    result = await call_llm_json(system_prompt, user_prompt, engine="ondemand")
 
     # Validate: only include tags that actually existed in the generated candidate groups
     available = {tag for g in groups_to_eval for tag in g}

@@ -907,7 +907,7 @@ async def regenerate_summary(
 
     try:
         logger.info(f"Regenerating summary for post {post_id}")
-        result = await generate_summary(content_for_summary, title=post.title)
+        result = await generate_summary(content_for_summary, title=post.title, engine="ondemand")
 
         # Check if summary already exists with this hash
         existing_summary = (
@@ -1142,7 +1142,7 @@ Respond in JSON:
   ],
 }}"""
 
-    result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192)
+    result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192, engine="ondemand")
 
     # Enrich result with post titles
     post_map = {p.id: p for p in posts}
@@ -1317,6 +1317,7 @@ async def get_related_posts(
                     user_prompt=source_aisummary.summary_pt,
                     max_tokens=100,
                     temperature=0.1,
+                    engine="ondemand",
                 )
                 parsed = [kw.strip().lower() for kw in resp.split(",") if kw.strip()]
                 topic_keywords = [
@@ -1730,6 +1731,10 @@ async def generate_related_summary(
         super_summary = await call_llm_text(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
+            max_tokens=4096,
+            temperature=0.3,
+            engine="ondemand",
+        )
             max_tokens=4096,
             temperature=0.3
         )

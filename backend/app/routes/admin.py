@@ -431,20 +431,31 @@ class ModelInfo(BaseModel):
 
 @router.get("/models")
 async def list_available_models(
+    engine: str = "ondemand",
     user: dict = Depends(get_current_user),
 ):
     """
     Fetch available models from AI API.
+    Use ?engine=background to list models from the background engine.
     Requires authentication.
     """
     from fastapi.responses import JSONResponse
 
-    from app.routes.preferences import get_effective_ai_api_key, get_effective_api_base_url
+    from app.routes.preferences import (
+        get_effective_ai_api_key,
+        get_effective_api_base_url,
+        get_effective_background_ai_api_key,
+        get_effective_background_api_base_url,
+    )
 
     db = next(get_db())
     try:
-        api_key = get_effective_ai_api_key(db)
-        api_url = get_effective_api_base_url(db)
+        if engine == "background":
+            api_key = get_effective_background_ai_api_key(db)
+            api_url = get_effective_background_api_base_url(db)
+        else:
+            api_key = get_effective_ai_api_key(db)
+            api_url = get_effective_api_base_url(db)
     finally:
         db.close()
 
