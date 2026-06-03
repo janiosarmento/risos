@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260603c';</script>
+    <script>var APP_VERSION = '20260603d';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1471,6 +1471,10 @@
 
                         <!-- AI Tab -->
                         <div x-show="settingsTab === 'ai'" class="space-y-4">
+
+                            <!-- ===== On-demand AI (interactive) ===== -->
+                            <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-0" x-text="t('settings.ondemandAiTitle')"></h4>
+
                             <!-- Jano Secret Name -->
                             <div>
                                 <label for="setting-jano-secret-name" class="block text-sm font-medium mb-1" x-text="t('settings.janoSecretName')"></label>
@@ -1625,6 +1629,68 @@
                                     >
                                     <span class="text-sm font-mono w-8 text-center" x-text="relatedPostsLimit"></span>
                                     <span class="text-sm text-gray-500" x-text="t('settings.posts')"></span>
+                                </div>
+                            </div>
+
+
+                            <!-- ===== Background AI (batch processing) ===== -->
+                            <div class="pt-3 border-t-2 border-gray-300 dark:border-gray-500">
+                                <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4" x-text="t('settings.backgroundAiTitle')"></h4>
+
+                                <!-- Background Jano Secret Name -->
+                                <div>
+                                    <label for="setting-background-jano-secret-name" class="block text-sm font-medium mb-1" x-text="t('settings.backgroundJanoSecretName')"></label>
+                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.backgroundJanoSecretNameDesc')"></p>
+                                    <input
+                                        id="setting-background-jano-secret-name"
+                                        type="text"
+                                        x-model="backgroundJanoSecretName"
+                                        :placeholder="t('settings.backgroundJanoSecretNamePlaceholder')"
+                                        class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                    />
+                                </div>
+
+                                <!-- Background API Base URL -->
+                                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <label for="setting-background-api-base-url" class="block text-sm font-medium mb-1" x-text="t('settings.backgroundApiBaseUrl')"></label>
+                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.backgroundApiBaseUrlDesc')"></p>
+                                    <input
+                                        id="setting-background-api-base-url"
+                                        type="url"
+                                        x-model="backgroundApiBaseUrl"
+                                        :placeholder="t('settings.apiBaseUrlPlaceholder')"
+                                        @change="onBackgroundApiBaseUrlChange()"
+                                        class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                    />
+                                </div>
+
+                                <!-- Background AI Model -->
+                                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <label for="setting-background-ai-model" class="block text-sm font-medium mb-1" x-text="t('settings.backgroundAiModel')"></label>
+                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.backgroundAiModelDesc')"></p>
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            id="setting-background-ai-model"
+                                            type="text"
+                                            x-model="backgroundAiModel"
+                                            @change="setBackgroundAiModel($event.target.value)"
+                                            :placeholder="t('settings.backgroundAiModelPlaceholder')"
+                                            class="flex-1 max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                            :list="'background-model-list'"
+                                        />
+                                        <datalist :id="'background-model-list'">
+                                            <template x-for="m in backgroundAvailableModels" :key="m.id">
+                                                <option :value="m.id"></option>
+                                            </template>
+                                        </datalist>
+                                        <button
+                                            @click="loadBackgroundAvailableModels()"
+                                            class="p-1.5 text-gray-500 hover:text-blue-600 transition-colors flex-shrink-0"
+                                            :title="t('settings.refreshModels') || 'Refresh model list'"
+                                        >
+                                            <svg class="w-4 h-4"><use href="#icon-refresh"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
