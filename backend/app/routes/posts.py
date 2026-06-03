@@ -1249,8 +1249,12 @@ class RelatedSummaryRequest(BaseModel):
     post_ids: List[int]
 
 
+# Cache para tópicos gerados por IA (chave = content_hash do post fonte)
+_topic_keywords_cache = {}
+
+
 @router.get("/{post_id}/related")
-def get_related_posts(
+async def get_related_posts(
     post_id: int,
     include_read: bool = True,
     include_unread: bool = True,
@@ -1269,6 +1273,7 @@ def get_related_posts(
 
     from app.models import AISummary, Feed, Post, PostTag
     from app.routes.preferences import get_effective_related_posts_limit
+    from app.services.ai import call_llm_text
 
     # 1. Validar se o post existe
     post = get_post_or_404(db, post_id)
@@ -1283,11 +1288,66 @@ def get_related_posts(
     # --- PARTE A: BUSCA TEXTUAL POR PALAVRAS-CHAVE ---
     posts_list = []
 
-    # Limpar e tokenizar o título do post atual
-    title_clean = re.sub(r"[^\w\s-]", "", post.title.lower())
-    words = [w for w in title_clean.split() if len(w) >= 3]
+    # 4. Carregar AISummary do post fonte para keywords adicionais
+    source_aisummary = None
+    if post.content_hash:
+        source_aisummary = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash == post.content_hash)
+            .first()
+        )
 
-    # Stop words comuns em inglês e português
+    # 5. Extrair tópicos semânticos via LLM (com cache por content_hash)
+    topic_keywords = []
+    if source_aisummary and source_aisummary.summary_pt:
+        ch = post.content_hash
+        if ch in _topic_keywords_cache:
+            topic_keywords = _topic_keywords_cache[ch]
+        else:
+            try:
+                sys_prompt = (
+                    "Extraia de 5 a 8 palavras-chave curtas que resumam os "
+                    "temas principais do texto abaixo. "
+                    "Responda APENAS com as palavras-chave separadas por "
+                    "vírgula, em português, sem numeração, formatação, "
+                    "introdução ou explicação."
+                )
+                resp = await call_llm_text(
+                    system_prompt=sys_prompt,
+                    user_prompt=source_aisummary.summary_pt,
+                    max_tokens=100,
+                    temperature=0.1,
+                )
+                parsed = [kw.strip().lower() for kw in resp.split(",") if kw.strip()]
+                topic_keywords = [
+                    kw for kw in parsed if len(kw) >= 3
+                ][:10]  # limite de 10 tópicos
+                _topic_keywords_cache[ch] = topic_keywords
+            except Exception:
+                logger.warning(
+                    "Falha ao extrair tópicos do post %d via LLM", post_id
+                )
+
+    # 6. Extrair keywords de múltiplas fontes (título + resumo IA + tópicos)
+    source_texts = [post.title or ""]
+    if source_aisummary:
+        if source_aisummary.one_line_summary:
+            source_texts.append(source_aisummary.one_line_summary)
+        if source_aisummary.summary_pt:
+            source_texts.append(source_aisummary.summary_pt)
+    if topic_keywords:
+        source_texts.append(" ".join(topic_keywords))
+
+    # Tokenizar todas as fontes (set elimina duplicatas entre fontes)
+    all_words = set()
+    for text in source_texts:
+        if text:
+            clean = re.sub(r"[^\w\s-]", "", text.lower())
+            for w in clean.split():
+                if len(w) >= 3:
+                    all_words.add(w)
+
+    # Stop words expandidas — removendo termos genéricos que poluem a busca
     stop_words = {
         "de", "do", "da", "em", "para", "com", "por", "um", "uma", "os", "as",
         "se", "ou", "o", "a", "que", "ao", "aos", "no", "na", "nos", "nas",
@@ -1296,63 +1356,115 @@ def get_related_posts(
         "that", "these", "those", "how", "why", "what", "where", "when", "who",
         "which", "released", "version", "new", "update", "novo", "nova",
         "atualizacao", "versao", "lancado", "lancada", "using", "usando",
-        "post", "article", "artigo", "feed", "blog", "site", "web"
+        "post", "article", "artigo", "feed", "blog", "site", "web",
+        "have", "has", "had", "having", "way", "ways", "their", "them", "they",
+        "its", "get", "gets", "got", "make", "makes", "made", "like", "just",
+        "also", "can", "will", "may", "said", "one", "time", "people", "many",
+        "much", "even", "still", "well", "first", "last", "next", "every",
+        "some", "any", "all", "been", "being", "done", "does", "did", "doing",
+        "over", "under", "into", "through", "during", "before", "after",
+        "between", "each", "few", "more", "most", "other", "such", "only",
+        "own", "same", "too", "very", "than", "then", "now", "here", "there",
+        "could", "would", "should", "might", "must", "shall", "about",
+        "above", "across", "after", "again", "against", "below", "because",
+        "been", "being", "both", "down", "further", "furthermore",
+        "herein", "hereby", "hereafter", "however", "indeed", "instead",
+        "meanwhile", "moreover", "neither", "never", "nonetheless",
+        "nor", "otherwise", "perhaps", "rather", "since", "somehow",
+        "somewhat", "thereafter", "thereby", "therefore", "therein",
+        "thereupon", "together", "toward", "towards", "throughout",
+        "unless", "unto", "upon", "whence", "whereas", "whereby",
+        "wherein", "whereupon", "wherever", "whether", "whichever",
+        "while", "whilst", "within", "without",
     }
 
-    keywords = [w for w in words if w not in stop_words]
-    if not keywords and words:
-        keywords = words
+    keywords = sorted(w for w in all_words if w not in stop_words)
+
+    # Se sobrou muito pouco (menos de 2 keywords), fallback para o título puro
+    if len(keywords) < 2 and post.title:
+        title_clean = re.sub(r"[^\w\s-]", "", post.title.lower())
+        title_words = [w for w in title_clean.split() if len(w) >= 3]
+        keywords = sorted(w for w in title_words if w not in stop_words)
+        if not keywords and title_words:
+            keywords = title_words
 
     if keywords:
+        # --- Batch IDF: frequência de cada keyword no título dos posts ---
+        # Uma única query calcula quantos posts contêm cada keyword.
+        # Palavras muito comuns (ex: "thing", "someone") ganham IDF baixo.
+        total_posts = db.query(func.count(Post.id)).scalar() or 1
+        freq_cases = [
+            func.sum(
+                case(
+                    (func.lower(Post.title).like(f"%{kw}%"), 1),
+                    else_=0,
+                )
+            )
+            for kw in keywords
+        ]
+        freq_row = db.query(*freq_cases).first()
+        kw_idf = {
+            kw: math.log(max(total_posts, 1) / (1 + (freq or 0)))
+            for kw, freq in zip(keywords, freq_row)
+        }
+
+        # --- Montar as condições SQL ---
         score_conditions = []
-        filter_conditions = []
+        keyword_or_groups = []  # um grupo OR por keyword
 
         for kw in keywords:
             term = f"%{kw}%"
-            # Condições de filtro para garantir que o post correspondido tenha algum termo
-            filter_conditions.append(func.lower(Post.title).like(term))
-            filter_conditions.append(func.lower(Post.content).like(term))
-            filter_conditions.append(
-                func.lower(AISummary.translated_title).like(term)
-            )
-            filter_conditions.append(
-                func.lower(AISummary.one_line_summary).like(term)
-            )
-            filter_conditions.append(
-                func.lower(AISummary.summary_pt).like(term)
-            )
+            idf = kw_idf[kw]
 
-            # Relevância alta para match no Título
+            # Condições OR para esta keyword (qualquer campo que case)
+            kw_matches = [
+                func.lower(Post.title).like(term),
+                func.lower(Post.content).like(term),
+                func.lower(AISummary.translated_title).like(term),
+                func.lower(AISummary.one_line_summary).like(term),
+                func.lower(AISummary.summary_pt).like(term),
+            ]
+            keyword_or_groups.append(kw_matches)
+
+            # Relevância alta para match no Título (peso 5.0 * IDF)
             title_match = or_(
                 func.lower(Post.title).like(term),
                 func.lower(AISummary.translated_title).like(term),
             )
-            # Relevância moderada para match no Conteúdo/Resumos
+            # Relevância moderada para match no Conteúdo/Resumos (peso 1.5 * IDF)
             content_match = or_(
                 func.lower(Post.content).like(term),
                 func.lower(AISummary.one_line_summary).like(term),
                 func.lower(AISummary.summary_pt).like(term),
             )
 
-            score_conditions.append(case((title_match, 5.0), else_=0.0))
-            score_conditions.append(case((content_match, 1.5), else_=0.0))
+            score_conditions.append(case((title_match, 5.0 * idf), else_=0.0))
+            score_conditions.append(case((content_match, 1.5 * idf), else_=0.0))
 
         text_score = sum(score_conditions)
 
-        # Executar a busca de texto
+        # --- Executar a busca ---
+        # Exigir que o post casado tenha PELO MENOS 2 keywords distintas
+        # (caso contrário, uma única palavra genérica não basta)
+        kw_any_match = [or_(*group) for group in keyword_or_groups]
+        match_count = sum(case((m, 1), else_=0) for m in kw_any_match)
+
         text_query = (
             db.query(
                 Post.id,
                 Post.title,
                 Feed.title.label("feed_title"),
+                AISummary.summary_pt,
             )
             .outerjoin(
                 AISummary, Post.content_hash == AISummary.content_hash
             )
             .join(Feed, Post.feed_id == Feed.id)
             .filter(Post.id != post_id)
-            .filter(or_(*filter_conditions))
         )
+
+        # Filtro de keywords: cada post precisa casar com ≥2 keywords
+        text_query = text_query.filter(match_count >= 2)
 
         if not include_read:
             text_query = text_query.filter(Post.is_read.is_(False))
@@ -1366,7 +1478,7 @@ def get_related_posts(
         text_results = text_query.all()
 
         if text_results:
-            # Encontramos posts por texto! Vamos calcular as tags em comum para a UI
+            # Encontramos posts por texto! Calcular tags em comum para a UI
             post_ids_found = [r.id for r in text_results]
             tag_counts_map = {}
             if active_tags:
@@ -1379,20 +1491,53 @@ def get_related_posts(
                 )
                 tag_counts_map = {p_id: count for p_id, count in tag_counts}
 
-            posts_list = []
+            # Re-ranqueamento TF-IDF em Python: calcular TF real no texto completo
+            # (título + summary_pt) de cada candidato, ponderado pelo IDF já calculado.
+            scored = []
             for r in text_results:
                 common_count = tag_counts_map.get(r.id, 0)
-                if common_count >= min_common_tags:
-                    posts_list.append({
-                        "id": r.id,
-                        "title": r.title,
-                        "feed_title": r.feed_title,
-                        "common_tags_count": common_count,
-                    })
+                if common_count < min_common_tags:
+                    continue
+
+                # Texto completo do candidato para TF
+                candidate_text = (r.title or "")
+                if r.summary_pt:
+                    candidate_text += " " + re.sub(r"<[^>]+>", "", r.summary_pt)
+                candidate_words = re.sub(r"[^\w\s-]", "", candidate_text.lower()).split()
+                candidate_len = max(len(candidate_words), 1)
+
+                # TF real: quantas vezes cada keyword aparece no texto do candidato
+                tfidf_score = 0.0
+                for kw in keywords:
+                    idf = kw_idf.get(kw, 1.0)
+                    tf = candidate_words.count(kw) / candidate_len
+                    tfidf_score += tf * idf
+
+                # Peso combinado: TF-IDF + (1 + 0.15 * tags_comuns) para priorizar
+                # posts do mesmo tópico (mesmas tags)
+                combined_score = tfidf_score * (1 + 0.15 * common_count)
+                scored.append((combined_score, r, common_count))
+
+            # Ordenar por score combinado descendente
+            scored.sort(key=lambda x: -x[0])
+
+            posts_list = [
+                {
+                    "id": r.id,
+                    "title": r.title,
+                    "feed_title": r.feed_title,
+                    "common_tags_count": common_count,
+                }
+                for _, r, common_count in scored
+            ]
 
     # --- PARTE B: FALLBACK PARA BUSCA POR TAGS (TF-IDF) ---
     # Se a busca textual não encontrou nada e o post tem tags, caímos para o TF-IDF
     if not posts_list and active_tags:
+        # Carregar sort_date e categoria do post fonte para boosts
+        source_sort_date = post.sort_date
+        source_feed_category_id = post.feed.category_id if post.feed else None
+
         tag_freqs = (
             db.query(PostTag.tag, func.count(PostTag.post_id))
             .filter(PostTag.tag.in_(active_tags))
@@ -1415,6 +1560,8 @@ def get_related_posts(
                 Post.id,
                 Post.title,
                 Feed.title.label("feed_title"),
+                Feed.category_id,
+                Post.sort_date,
                 func.count(PostTag.tag).label("common_tags_count"),
                 relevance_score.label("relevance_score"),
             )
@@ -1436,6 +1583,40 @@ def get_related_posts(
         )
         tag_results = related_query.all()
 
+        # Re-ranqueamento: combinar relevância de tags + proximidade temporal
+        # + mesma categoria (assuntos quentes aparecem próximos no tempo)
+        scored = []
+        for r in tag_results:
+            score = r.relevance_score
+
+            # Boost temporal: posts mais próximos da data do post fonte ganham peso
+            if source_sort_date and r.sort_date:
+                days_diff = abs((source_sort_date - r.sort_date).days)
+                if days_diff <= 1:
+                    temp_boost = 2.0
+                elif days_diff <= 3:
+                    temp_boost = 1.5
+                elif days_diff <= 7:
+                    temp_boost = 1.2
+                elif days_diff <= 14:
+                    temp_boost = 1.0
+                else:
+                    temp_boost = 0.5
+            else:
+                temp_boost = 1.0
+
+            # Boost de categoria: mesmo assunto → mesmo feed/categoria
+            cat_boost = 1.0
+            if source_feed_category_id and r.category_id:
+                if r.category_id == source_feed_category_id:
+                    cat_boost = 1.3  # +30% para mesma categoria
+
+            combined = score * temp_boost * cat_boost
+            scored.append((combined, r))
+
+        # Ordenar por score combinado
+        scored.sort(key=lambda x: -x[0])
+
         posts_list = [
             {
                 "id": r.id,
@@ -1443,7 +1624,7 @@ def get_related_posts(
                 "feed_title": r.feed_title,
                 "common_tags_count": r.common_tags_count,
             }
-            for r in tag_results
+            for _, r in scored
         ]
 
     return {"posts": posts_list}
