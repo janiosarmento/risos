@@ -1259,12 +1259,16 @@ async def get_related_posts(
     include_read: bool = True,
     include_unread: bool = True,
     min_common_tags: int = 0,
+    skip_tag_fallback: bool = False,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     """
     Fetch related posts using a hybrid textual keyword search
     with tag-similarity fallback.
+
+    Set skip_tag_fallback=True to disable the tag-based fallback
+    (Part B) and rely solely on keyword search (Part A).
     """
     import math
     import re
@@ -1538,7 +1542,7 @@ async def get_related_posts(
 
     # --- PARTE B: FALLBACK PARA BUSCA POR TAGS (TF-IDF) ---
     # Se a busca textual não encontrou nada e o post tem tags, caímos para o TF-IDF
-    if not posts_list and active_tags:
+    if not posts_list and active_tags and not skip_tag_fallback:
         # Carregar sort_date e categoria do post fonte para boosts
         source_sort_date = post.sort_date
         source_feed_category_id = post.feed.category_id if post.feed else None

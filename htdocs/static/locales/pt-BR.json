@@ -102,6 +102,8 @@
     "assistantIncludeRead": "Buscar lidos",
     "assistantIncludeUnread": "Buscar não lidos",
     "assistantIncludeZeroCommonTags": "Incluir posts com zero tags em comum",
+    "assistantSkipTagFallback": "Desativar fallback por tags",
+    "assistantSkipTagFallbackDesc": "Usar apenas busca por palavras-chave; pular busca por tags quando não houver resultados",
     "markedAsReadSuccess": "Posts marcados como lidos!",
     "markAsRead": "Marcar como lidos",
     "analyzingPost": "Analisando post:"

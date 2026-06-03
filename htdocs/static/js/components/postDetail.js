@@ -22,6 +22,7 @@ const postDetailMixin = {
     assistantIncludeRead: false,
     assistantIncludeUnread: true,
     assistantIncludeZeroCommonTags: false,
+    assistantSkipTagFallback: false,
     assistantMarkingRead: false,
 
     // Helpers
@@ -254,7 +255,8 @@ const postDetailMixin = {
             const params = new URLSearchParams({
                 include_read: this.assistantIncludeRead,
                 include_unread: this.assistantIncludeUnread,
-                min_common_tags: this.assistantIncludeZeroCommonTags ? 0 : 1
+                min_common_tags: this.assistantIncludeZeroCommonTags ? 0 : 1,
+                skip_tag_fallback: this.assistantSkipTagFallback,
             });
             const data = await this.fetchApi(`/posts/${this.currentPost.id}/related?${params.toString()}`);
             this.relatedPosts = data.posts || [];
