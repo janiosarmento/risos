@@ -337,12 +337,16 @@ const postDetailMixin = {
                 body: JSON.stringify({ post_ids: postIds }),
             });
 
-            // Atualiza o estado is_read local de cada post na lista de posts principal
+            // Atualiza o estado is_read local e ajusta contadores da sidebar
             postIds.forEach(id => {
-                const localPost = this.posts.find(p => p.id === id);
-                if (localPost) {
-                    localPost.is_read = true;
-                }
+                // Busca o post na lista principal ou nos relacionados
+                const post = this.posts.find(p => p.id === id) || this.relatedPosts.find(p => p.id === id);
+                if (!post) return;
+
+                // Atualiza na lista principal (se presente)
+                this.updatePost(id, { is_read: true });
+                // Ajusta contadores de não lidos (feed, sugeridos, tópicos)
+                this._adjustUnreadCounters(post, true);
             });
 
             this.showToast(this.t('modal.markedAsReadSuccess') || 'Posts marcados como lidos!');

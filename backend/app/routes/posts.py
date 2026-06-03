@@ -1453,6 +1453,8 @@ async def get_related_posts(
             db.query(
                 Post.id,
                 Post.title,
+                Post.feed_id,
+                Post.is_suggested,
                 Feed.title.label("feed_title"),
                 AISummary.summary_pt,
             )
@@ -1526,6 +1528,8 @@ async def get_related_posts(
                     "id": r.id,
                     "title": r.title,
                     "feed_title": r.feed_title,
+                    "feed_id": r.feed_id,
+                    "is_suggested": bool(r.is_suggested),
                     "common_tags_count": common_count,
                 }
                 for _, r, common_count in scored
@@ -1559,6 +1563,8 @@ async def get_related_posts(
             db.query(
                 Post.id,
                 Post.title,
+                Post.feed_id,
+                Post.is_suggested,
                 Feed.title.label("feed_title"),
                 Feed.category_id,
                 Post.sort_date,
@@ -1622,6 +1628,8 @@ async def get_related_posts(
                 "id": r.id,
                 "title": r.title,
                 "feed_title": r.feed_title,
+                "feed_id": r.feed_id,
+                "is_suggested": bool(r.is_suggested),
                 "common_tags_count": r.common_tags_count,
             }
             for _, r in scored

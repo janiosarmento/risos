@@ -488,6 +488,7 @@ function app() {
                 this.loadAvailableModels();
                 this.loadPromptDefaults();
                 this.setupIdleDetection();
+                this._startPeriodicRefresh();
             }
 
             // Setup keyboard shortcuts
@@ -1236,6 +1237,23 @@ function app() {
                 }
             }
             if (this.topicsExpanded) this.loadTopics();
+        },
+
+        // Periodic silent refresh of sidebar counts (every 60s)
+        _periodicRefreshInterval: null,
+        _startPeriodicRefresh() {
+            this._stopPeriodicRefresh();
+            this._periodicRefreshInterval = setInterval(() => {
+                if (!this.token) return;
+                this.loadFeeds().catch(() => {});
+                if (this.topicsExpanded) this.loadTopics().catch(() => {});
+            }, 60000);
+        },
+        _stopPeriodicRefresh() {
+            if (this._periodicRefreshInterval) {
+                clearInterval(this._periodicRefreshInterval);
+                this._periodicRefreshInterval = null;
+            }
         },
 
         async markAllRead(blockedOnly = false) {
