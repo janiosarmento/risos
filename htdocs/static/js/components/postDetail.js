@@ -22,7 +22,7 @@ const postDetailMixin = {
     assistantIncludeRead: false,
     assistantIncludeUnread: true,
     assistantIncludeZeroCommonTags: false,
-    assistantSkipTagFallback: false,
+    assistantUseTagFallback: false,
     assistantMarkingRead: false,
 
     // Helpers
@@ -241,7 +241,7 @@ const postDetailMixin = {
         this.assistantIncludeRead = false;
         this.assistantIncludeUnread = true;
         this.assistantIncludeZeroCommonTags = false;
-        this.assistantSkipTagFallback = false;
+        this.assistantUseTagFallback = false;
         this.assistantSummary = null;
     },
 
@@ -253,7 +253,7 @@ const postDetailMixin = {
         this.assistantIncludeRead = false;
         this.assistantIncludeUnread = true;
         this.assistantIncludeZeroCommonTags = false;
-        this.assistantSkipTagFallback = false;
+        this.assistantUseTagFallback = false;
     },
 
     async loadRelatedPosts() {
@@ -267,7 +267,7 @@ const postDetailMixin = {
                 include_read: this.assistantIncludeRead,
                 include_unread: this.assistantIncludeUnread,
                 min_common_tags: this.assistantIncludeZeroCommonTags ? 0 : 1,
-                skip_tag_fallback: this.assistantSkipTagFallback,
+                use_tag_fallback: this.assistantUseTagFallback,
             });
             const data = await this.fetchApi(`/posts/${this.currentPost.id}/related?${params.toString()}`);
             this.relatedPosts = data.posts || [];
