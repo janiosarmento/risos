@@ -505,8 +505,8 @@ async def get_post(
                 full_content = result.content
                 post.full_content = full_content
                 db.commit()
-        except Exception:
-            pass  # Use original content if extraction fails
+        except Exception as e:
+            logger.debug("Content extraction skipped for post %d: %s", post_id, e)
 
     # Fetch or generate AI summary on-demand
     summary_pt = None
@@ -869,9 +869,7 @@ async def regenerate_summary(
     - Updates or inserts into ai_summaries table
     - Returns the new summary
     """
-    import sys
-
-    print(f"[REGEN] Request received for post {post_id}", flush=True, file=sys.stderr)
+    logger.info("[REGEN] Request received for post %d", post_id)
 
     post = get_post_or_404(db, post_id)
 
@@ -952,15 +950,13 @@ async def regenerate_summary(
         }
 
     except CerebrasError as e:
-        print(f"[REGEN] CerebrasError: {e}", flush=True, file=sys.stderr)
+        logger.error("[REGEN] CerebrasError: %s", e)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"AI service error: {str(e)}",
         )
     except Exception as e:
-        print(
-            f"[REGEN] Exception: {type(e).__name__}: {e}", flush=True, file=sys.stderr
-        )
+        logger.exception("[REGEN] Exception: %s: %s", type(e).__name__, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to regenerate summary: {str(e)}",

@@ -452,7 +452,7 @@ function app() {
                 }
             } catch (e) {
                 // Use default if config fails to load
-                console.warn('Failed to load config, using defaults');
+                console.warn('Failed to load config, using defaults:', e);
             }
         },
 
@@ -861,7 +861,8 @@ function app() {
             try {
                 await this.fetchApi('/auth/logout', { method: 'POST' });
             } catch (e) {
-                // Ignore logout errors
+                // Ignore logout errors — network may be unavailable
+                console.debug('Logout request failed:', e);
             }
             this.token = null;
             sessionStorage.removeItem('rss_token');
@@ -1042,7 +1043,8 @@ function app() {
                 const data = await this.fetchApi('/admin/status');
                 this.healthWarning = data.health_warning;
             } catch (e) {
-                // Ignore health check errors
+                // Ignore health check errors — server may be temporarily unavailable
+                console.debug('Health check failed:', e);
             }
         },
 
@@ -1650,7 +1652,8 @@ function app() {
                 await this.loadFeeds();
                 if (this.topicsExpanded) this.loadTopics();
             } catch (e) {
-                // Ignore errors on idle refresh
+                // Ignore errors on idle refresh — will retry on next cycle
+                console.debug('Idle refresh failed:', e);
             }
 
             // Restart timer for next idle check

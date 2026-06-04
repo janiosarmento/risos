@@ -184,6 +184,6 @@ def extract_domain(url: str) -> Optional[str]:
         parsed = urlparse(url)
         if parsed.hostname:
             return parsed.hostname.lower()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Failed to extract hostname from URL: %s", e)
     return None

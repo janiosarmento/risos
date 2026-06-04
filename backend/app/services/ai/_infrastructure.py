@@ -1,7 +1,7 @@
 """Infrastructure: chave de API única e circuit breaker para o cliente de AI."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional, Tuple
 
 from app.database import SessionLocal

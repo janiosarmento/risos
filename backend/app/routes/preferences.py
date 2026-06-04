@@ -615,8 +615,8 @@ def get_effective_background_ai_api_key(db: Session) -> Optional[str]:
             val = get_jano_secret(secret_name)
             if val and val.strip():
                 return val.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logging.getLogger(__name__).debug("jano_secret lookup failed for %s: %s", secret_name, e)
     return get_effective_ai_api_key(db)
 
 

@@ -14,8 +14,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
+import logging
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 from app.config import USER_AGENT
 from app.database import SessionLocal
@@ -166,7 +169,7 @@ async def main():
         try:
             mapping = await translate_batch(batch, api_key, key_label)
         except Exception as e:
-            print(f"  ERROR [{key_label}]: {e}")
+            logger.error("Translation failed for key %s: %s", key_label, e)
             key_index += 1
             await asyncio.sleep(2)
             continue

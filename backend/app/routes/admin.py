@@ -454,8 +454,8 @@ def validate_secret(
             key = val.strip()
             masked = key[:5] + "****" + key[-4:] if len(key) > 12 else "****"
             return {"valid": True, "masked_key": masked}
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Secret validation skipped: %s", e)
 
     return {"valid": False, "masked_key": None}
 

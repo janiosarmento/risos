@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 
@@ -203,14 +203,11 @@ async def _call_model(
 
             # Handle client errors
             if response.status_code >= 400:
-                import sys
-
-                print(
-                    f"[API] HTTP {response.status_code} "
-                    f"from {target_url}: "
-                    f"{response.text[:500]}",
-                    flush=True,
-                    file=sys.stderr,
+                logger.error(
+                    "[API] HTTP %s from %s: %s",
+                    response.status_code,
+                    target_url,
+                    response.text[:500],
                 )
                 raise ModelSpecificError(f"Request error: HTTP {response.status_code}")
 
