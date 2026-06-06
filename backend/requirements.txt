@@ -22,7 +22,6 @@ bleach>=6.1.0
 apscheduler>=3.10.0
 
 # Autenticação
-python-jose[cryptography]>=3.3.0
 python-multipart>=0.0.6
 
 # Rate limiting
