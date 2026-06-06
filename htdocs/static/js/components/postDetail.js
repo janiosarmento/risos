@@ -243,6 +243,10 @@ const postDetailMixin = {
         this.assistantIncludeZeroCommonTags = false;
         this.assistantUseTagFallback = false;
         this.assistantSummary = null;
+        this.relatedPosts = [];
+        this.selectedRelatedPosts = new Set();
+        this.assistantLoading = false;
+        this.assistantGenerating = false;
     },
 
     closeAssistant() {
