@@ -28,13 +28,6 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class LoginResponse(BaseModel):
-    """Response do login com token JWT"""
-
-    token: str
-    expires_at: datetime
-
-
 class UserInfo(BaseModel):
     """Informações do usuário autenticado"""
 

@@ -1,61 +1,53 @@
 """
 Dependencies for FastAPI injection.
-Includes JWT authentication.
+Authenticates via httpOnly session cookie.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import TokenBlacklist
-
-# Bearer authentication scheme
-security = HTTPBearer()
+from app.models import UserSession
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict:
     """
-    Validate JWT token and return user info.
-    Checks:
-    - Valid token
-    - Token not expired
-    - Token not in blacklist
+    Validates session cookie and returns user info.
+    Slides the expiry window on each request.
     """
-    token = credentials.credentials
+    session_id = request.cookies.get("risos_session")
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+        detail="Not authenticated",
     )
 
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
-        jti: str = payload.get("jti")
-        exp: int = payload.get("exp")
-
-        if jti is None:
-            raise credentials_exception
-
-        # Check if token is in blacklist
-        blacklisted = db.query(TokenBlacklist).filter(TokenBlacklist.jti == jti).first()
-
-        if blacklisted:
-            raise credentials_exception
-
-        # Check expiration (jose already does this, but double-check)
-        if exp and datetime.utcnow().timestamp() > exp:
-            raise credentials_exception
-
-        return {"jti": jti, "authenticated": True}
-
-    except JWTError:
+    if not session_id:
         raise credentials_exception
+
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.id == session_id)
+        .first()
+    )
+
+    if not session:
+        raise credentials_exception
+
+    # Check expiry
+    if session.expires_at < datetime.utcnow():
+        db.delete(session)
+        db.commit()
+        raise credentials_exception
+
+    # Sliding window: extend expiry
+    session.expires_at = datetime.utcnow() + timedelta(hours=settings.session_ttl_hours)
+    db.commit()
+
+    return {"authenticated": True}

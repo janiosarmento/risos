@@ -247,14 +247,15 @@ class AppSettings(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-class TokenBlacklist(Base):
-    __tablename__ = "token_blacklist"
+class UserSession(Base):
+    __tablename__ = "user_sessions"
 
-    jti = Column(Text, primary_key=True)
+    id = Column(String(36), primary_key=True)  # UUID
     expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 
-Index("idx_blacklist_expires", TokenBlacklist.expires_at)
+Index("idx_session_expires", UserSession.expires_at)
 
 
 class SchedulerLock(Base):

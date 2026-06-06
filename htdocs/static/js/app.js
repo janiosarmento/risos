@@ -18,9 +18,9 @@ function app() {
         // App info
         appVersion: APP_VERSION,
 
-        // Authentication (token lives in Alpine.store('auth'))
+        // Authentication (cookie-based, no token management)
         get token() { return Alpine.store('auth').token; },
-        set token(v) { Alpine.store('auth').token = v; },
+        set token(v) { Alpine.store('auth').token = v; },  // Always null
         password: '',
         logging: false,
         loginError: null,
@@ -485,8 +485,10 @@ function app() {
                 }
             });
 
-            // Check for stored token (initialized by AuthStore from sessionStorage)
-            if (this.token) {
+            // Check session validity via /auth/me (cookie-based)
+            try {
+                await this.fetchApi('/auth/me');
+                // Valid session
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
@@ -498,6 +500,8 @@ function app() {
                 this.loadPromptDefaults();
                 this.setupIdleDetection();
                 this._startPeriodicRefresh();
+            } catch (e) {
+                // No valid session — login screen shows
             }
 
             // Setup keyboard shortcuts
@@ -837,9 +841,6 @@ function app() {
                     throw new Error(data.detail || this.t('errors.loginFailed'));
                 }
 
-                const data = await response.json();
-                this.token = data.token;
-                sessionStorage.setItem('rss_token', this.token);
                 this.password = '';
                 await this.loadData();
                 await this.syncPreferences();
@@ -865,7 +866,6 @@ function app() {
                 console.debug('Logout request failed:', e);
             }
             this.token = null;
-            sessionStorage.removeItem('rss_token');
             this.resetFontScale();
             this.feeds = [];
             this.categories = [];
@@ -1255,7 +1255,6 @@ function app() {
         _startPeriodicRefresh() {
             this._stopPeriodicRefresh();
             this._periodicRefreshInterval = setInterval(() => {
-                if (!this.token) return;
                 this.loadFeeds().catch(() => {});
                 if (this.topicsExpanded) this.loadTopics().catch(() => {});
             }, 60000);

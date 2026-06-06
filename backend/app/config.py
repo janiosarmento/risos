@@ -25,8 +25,7 @@ class Settings(BaseSettings):
 
     # Authentication
     app_password: str
-    jwt_secret: str
-    jwt_expiration_hours: int = 24
+    session_ttl_hours: int = 168  # 7 days sliding window
 
     # Rate Limiting HTTP
     login_rate_limit: int = 5
@@ -53,18 +52,6 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-
-    def __init__(self, **kwargs):
-        """Validate JWT_SECRET in __init__"""
-        super().__init__(**kwargs)
-
-        # Validate JWT_SECRET >= 32 characters
-        if len(self.jwt_secret) < 32:
-            raise ValueError(
-                f"JWT_SECRET must be at least 32 characters long. "
-                f"Current length: {len(self.jwt_secret)}"
-            )
-
 
 # Global configuration instance
 settings = Settings()
