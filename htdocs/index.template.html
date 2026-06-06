@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260606e';</script>
+    <script>var APP_VERSION = '20260606f';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -206,7 +206,7 @@
         </div>
 
         <!-- Login Screen -->
-        <template x-if="!$store.auth.token">
+        <template x-if="!$store.auth.authenticated">
             <main class="flex-1 flex items-center justify-center">
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
                     <h1 class="text-2xl font-bold mb-6 text-center" x-text="t('app.title')"></h1>
@@ -251,7 +251,7 @@
         </template>
 
         <!-- Main App -->
-        <template x-if="$store.auth.token">
+        <template x-if="$store.auth.authenticated">
             <div class="flex-1 flex overflow-hidden relative">
 
                 <!-- Mobile Sidebar Overlay -->

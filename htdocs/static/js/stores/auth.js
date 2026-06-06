@@ -4,7 +4,7 @@
  */
 document.addEventListener('alpine:init', () => {
     Alpine.store('auth', {
-        token: null,  // Always null — auth is cookie-based
+        authenticated: false,  // Tracks login state (cookie-based, no token)
 
         async fetchApi(endpoint, options = {}) {
             const headers = {

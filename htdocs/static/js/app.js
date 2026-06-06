@@ -19,8 +19,8 @@ function app() {
         appVersion: APP_VERSION,
 
         // Authentication (cookie-based, no token management)
-        get token() { return Alpine.store('auth').token; },
-        set token(v) { Alpine.store('auth').token = v; },  // Always null
+        get authenticated() { return Alpine.store('auth').authenticated; },
+        set authenticated(v) { Alpine.store('auth').authenticated = v; }
         password: '',
         logging: false,
         loginError: null,
@@ -488,6 +488,7 @@ function app() {
             // Check session validity via /auth/me (cookie-based)
             try {
                 await this.fetchApi('/auth/me');
+                Alpine.store('auth').authenticated = true;
                 // Valid session
                 await this.loadData();
                 await this.syncPreferences();
@@ -842,6 +843,7 @@ function app() {
                 }
 
                 this.password = '';
+                Alpine.store('auth').authenticated = true;
                 await this.loadData();
                 await this.syncPreferences();
                 this.loadIgnoredTags();
@@ -865,7 +867,7 @@ function app() {
                 // Ignore logout errors — network may be unavailable
                 console.debug('Logout request failed:', e);
             }
-            this.token = null;
+            Alpine.store('auth').authenticated = false;
             this.resetFontScale();
             this.feeds = [];
             this.categories = [];
@@ -878,8 +880,9 @@ function app() {
             try {
                 return await Alpine.store('auth').fetchApi(endpoint, options);
             } catch (error) {
-                // Handle 401 — store already cleared token
-                if (!Alpine.store('auth').token && error.message === 'Session expired') {
+                // Handle 401 — session expired
+                if (Alpine.store('auth').authenticated && error.message === 'Session expired') {
+                    Alpine.store('auth').authenticated = false;
                     this.feeds = [];
                     this.categories = [];
                     this.posts = [];
