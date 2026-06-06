@@ -20,7 +20,7 @@ function app() {
 
         // Authentication (cookie-based, no token management)
         get authenticated() { return Alpine.store('auth').authenticated; },
-        set authenticated(v) { Alpine.store('auth').authenticated = v; }
+        set authenticated(v) { Alpine.store('auth').authenticated = v; },
         password: '',
         logging: false,
         loginError: null,
