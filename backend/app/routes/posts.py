@@ -1245,10 +1245,6 @@ class RelatedSummaryRequest(BaseModel):
     post_ids: List[int]
 
 
-# Cache para tópicos gerados por IA (chave = content_hash do post fonte)
-_topic_keywords_cache = {}
-
-
 @router.get("/{post_id}/related")
 async def get_related_posts(
     post_id: int,
@@ -1271,9 +1267,8 @@ async def get_related_posts(
 
     from sqlalchemy import case, func, or_
 
-    from app.models import AISummary, Feed, Post, PostTag
+    from app.models import Feed, Post, PostTag
     from app.routes.preferences import get_effective_related_posts_limit
-    from app.services.ai import call_llm_text
 
     # 1. Validar se o post existe
     post = get_post_or_404(db, post_id)
@@ -1288,56 +1283,9 @@ async def get_related_posts(
     # --- PARTE A: BUSCA TEXTUAL POR PALAVRAS-CHAVE ---
     posts_list = []
 
-    # 4. Carregar AISummary do post fonte para keywords adicionais
-    source_aisummary = None
-    if post.content_hash:
-        source_aisummary = (
-            db.query(AISummary)
-            .filter(AISummary.content_hash == post.content_hash)
-            .first()
-        )
-
-    # 5. Extrair tópicos semânticos via LLM (com cache por content_hash)
-    topic_keywords = []
-    if source_aisummary and source_aisummary.summary_pt:
-        ch = post.content_hash
-        if ch in _topic_keywords_cache:
-            topic_keywords = _topic_keywords_cache[ch]
-        else:
-            try:
-                sys_prompt = (
-                    "Extraia de 5 a 8 palavras-chave curtas que resumam os "
-                    "temas principais do texto abaixo. "
-                    "Responda APENAS com as palavras-chave separadas por "
-                    "vírgula, em português, sem numeração, formatação, "
-                    "introdução ou explicação."
-                )
-                resp = await call_llm_text(
-                    system_prompt=sys_prompt,
-                    user_prompt=source_aisummary.summary_pt,
-                    max_tokens=100,
-                    temperature=0.1,
-                    engine="ondemand",
-                )
-                parsed = [kw.strip().lower() for kw in resp.split(",") if kw.strip()]
-                topic_keywords = [
-                    kw for kw in parsed if len(kw) >= 3
-                ][:10]  # limite de 10 tópicos
-                _topic_keywords_cache[ch] = topic_keywords
-            except Exception:
-                logger.warning(
-                    "Falha ao extrair tópicos do post %d via LLM", post_id
-                )
-
-    # 6. Extrair keywords de múltiplas fontes (título + resumo IA + tópicos)
+    # 4. Extrair keywords do título (fonte principal de busca)
     source_texts = [post.title or ""]
-    if source_aisummary:
-        if source_aisummary.one_line_summary:
-            source_texts.append(source_aisummary.one_line_summary)
-        if source_aisummary.summary_pt:
-            source_texts.append(source_aisummary.summary_pt)
-    if topic_keywords:
-        source_texts.append(" ".join(topic_keywords))
+    source_texts = [post.title or ""]
 
     # Tokenizar todas as fontes (set elimina duplicatas entre fontes)
     all_words = set()
