@@ -4,12 +4,12 @@ Single-user with password configured via .env
 Uses httpOnly session cookie instead of JWT.
 """
 
+import json
 import secrets
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from starlette.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -48,7 +48,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     db.add(session)
     db.commit()
 
-    response = JSONResponse({"success": True})
+    response = Response(content=json.dumps({"success": True}), media_type="application/json")
     response.set_cookie(
         key="risos_session",
         value=session_id,
@@ -72,7 +72,7 @@ def logout(request: Request, db: Session = Depends(get_db)):
         db.query(UserSession).filter(UserSession.id == session_id).delete()
         db.commit()
 
-    response = JSONResponse({"message": "Successfully logged out"})
+    response = Response(content=json.dumps({"message": "Successfully logged out"}), media_type="application/json")
     response.delete_cookie(key="risos_session", path="/")
     return response
 
