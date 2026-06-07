@@ -114,7 +114,7 @@
     "tabs": {
       "categories": "Categories",
       "feeds": "Feeds",
-      "opml": "OPML",
+      "opml": "Import/Export",
       "ai": "AI",
       "topics": "Topics",
       "general": "General",
@@ -348,6 +348,8 @@
     "exportTitle": "Export OPML",
     "exportDesc": "Export your feeds to use in another reader.",
     "download": "Download OPML",
+    "mimirExport": "Export starred to Mímir",
+    "mimirExportDesc": "Downloads a TXT file with starred post URLs, one per line, in chronological order.",
     "imported": "imported",
     "duplicates": "duplicates",
     "errors": "errors"

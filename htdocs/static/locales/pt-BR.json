@@ -114,7 +114,7 @@
     "tabs": {
       "categories": "Categorias",
       "feeds": "Feeds",
-      "opml": "OPML",
+      "opml": "Importar/Exportar",
       "ai": "IA",
       "topics": "Tópicos",
       "general": "Geral",
@@ -348,6 +348,8 @@
     "exportTitle": "Exportar OPML",
     "exportDesc": "Exporte seus feeds para usar em outro leitor.",
     "download": "Baixar OPML",
+    "mimirExport": "Exportar favoritos para Mímir",
+    "mimirExportDesc": "Baixa um arquivo TXT com URLs dos posts favoritados, uma por linha, em ordem cronológica.",
     "imported": "importados",
     "duplicates": "duplicados",
     "errors": "erros"

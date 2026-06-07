@@ -373,6 +373,21 @@ const settingsMixin = {
         }
     },
 
+    async exportMimir() {
+        try {
+            const response = await this.fetchApi('/posts/export-mimir');
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mimir.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Failed to export Mímir:', error);
+        }
+    },
+
     // --- Tag consolidation (merge + purge) ---
     async previewRareTags() {
         this.purgeLoading = true;
