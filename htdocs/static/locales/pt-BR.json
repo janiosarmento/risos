@@ -350,6 +350,10 @@
     "download": "Baixar OPML",
     "mimirExport": "Exportar favoritos para Mímir",
     "mimirExportDesc": "Baixa um arquivo TXT com URLs dos posts favoritados, uma por linha, em ordem cronológica.",
+    "unstarAll": "Desfavoritar todos",
+    "unstarConfirm": "Desfavoritar todos os posts favoritados? Eles continuarão existindo, mas deixarão de ser favoritos.",
+    "unstarring": "Desfavoritando...",
+    "unstarSuccess": "Posts desfavoritados com sucesso!",
     "imported": "importados",
     "duplicates": "duplicados",
     "errors": "erros"

@@ -389,6 +389,22 @@ const settingsMixin = {
         }
     },
 
+    async unstarAllMimir() {
+        if (!await this.showConfirm(this.t('opml.unstarConfirm'))) return;
+        this.confirmLoading(this.t('opml.unstarring'));
+        try {
+            const data = await this.fetchApi('/posts/unstar-all', { method: 'POST' });
+            this.confirmDone();
+            if (data.count > 0) {
+                this.showSuccess(this.t('opml.unstarSuccess'));
+            }
+        } catch (error) {
+            this.confirmDone();
+            console.error('Failed to unstar all:', error);
+            this.showError(error.message);
+        }
+    },
+
     // --- Tag consolidation (merge + purge) ---
     async previewRareTags() {
         this.purgeLoading = true;

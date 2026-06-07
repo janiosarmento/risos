@@ -350,6 +350,10 @@
     "download": "Download OPML",
     "mimirExport": "Export starred to Mímir",
     "mimirExportDesc": "Downloads a TXT file with starred post URLs, one per line, in chronological order.",
+    "unstarAll": "Unstar all",
+    "unstarConfirm": "Unstar all favorited posts? They will still exist but will no longer be favorites.",
+    "unstarring": "Unstarring...",
+    "unstarSuccess": "Posts unstarred successfully!",
     "imported": "imported",
     "duplicates": "duplicates",
     "errors": "errors"

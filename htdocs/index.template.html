@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260607b';</script>
+    <script>var APP_VERSION = '20260607c';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1486,11 +1486,18 @@
                             <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
                                 <h3 class="text-lg font-medium mb-3" x-text="t('opml.mimirExport')"></h3>
                                 <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('opml.mimirExportDesc')"></p>
-                                <button
-                                    @click="exportMimir()"
-                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
-                                    x-text="t('opml.mimirExport')"
-                                ></button>
+                                <div class="flex items-center gap-3">
+                                    <button
+                                        @click="exportMimir()"
+                                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
+                                        x-text="t('opml.mimirExport')"
+                                    ></button>
+                                    <button
+                                        @click="unstarAllMimir()"
+                                        class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium text-white"
+                                        x-text="t('opml.unstarAll')"
+                                    ></button>
+                                </div>
                             </div>
                         </div>
 

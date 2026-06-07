@@ -513,6 +513,23 @@ def export_mimir(
     )
 
 
+@router.post("/unstar-all")
+def unstar_all(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Unstar all starred posts at once."""
+    count = (
+        db.query(Post)
+        .filter(Post.is_starred.is_(True))
+        .update(
+            {"is_starred": False, "starred_at": None},
+            synchronize_session="fetch",
+        )
+    )
+    db.commit()
+    return {"success": True, "count": count}
+
 
 @router.get("/{post_id}", response_model=PostDetail)
 async def get_post(
