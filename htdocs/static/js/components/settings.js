@@ -375,7 +375,8 @@ const settingsMixin = {
 
     async exportMimir() {
         try {
-            const response = await this.fetchApi('/posts/export-mimir');
+            const response = await fetch(`${API_BASE}/posts/export-mimir`);
+            if (!response.ok) throw new Error('Export failed');
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');

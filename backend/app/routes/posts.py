@@ -483,6 +483,37 @@ def export_starred(
     )
 
 
+
+@router.get("/export-mimir")
+def export_mimir(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Export starred post URLs as plain text for Mímir, one per line, oldest first."""
+    posts = (
+        db.query(Post)
+        .filter(Post.is_starred.is_(True), Post.url.isnot(None))
+        .order_by(Post.starred_at.asc())
+        .all()
+    )
+
+    if not posts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No starred posts found",
+        )
+
+    lines = [post.url for post in posts]
+    content = "\n".join(lines) + "\n"
+
+    return Response(
+        content=content,
+        media_type="text/plain",
+        headers={"Content-Disposition": 'attachment; filename="mimir.txt"'},
+    )
+
+
+
 @router.get("/{post_id}", response_model=PostDetail)
 async def get_post(
     post_id: int,
@@ -1691,33 +1722,5 @@ async def generate_related_summary(
             detail=f"Erro ao processar consolidação no LLM: {str(e)}",
         )
 
-
-@router.get("/export-mimir")
-def export_mimir(
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """Export starred post URLs as plain text for Mímir, one per line, oldest first."""
-    posts = (
-        db.query(Post)
-        .filter(Post.is_starred.is_(True), Post.url.isnot(None))
-        .order_by(Post.starred_at.asc())
-        .all()
-    )
-
-    if not posts:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No starred posts found",
-        )
-
-    lines = [post.url for post in posts]
-    content = "\n".join(lines) + "\n"
-
-    return Response(
-        content=content,
-        media_type="text/plain",
-        headers={"Content-Disposition": 'attachment; filename="mimir.txt"'},
-    )
 
 
