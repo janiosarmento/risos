@@ -7,13 +7,14 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import httpx
 
 from app.config import USER_AGENT
 from app.database import SessionLocal
 from app.services.ai._constants import (
+    DEFAULT_API_BASE_URL,
     MAX_CONTENT_LENGTH,
     MAX_ONE_LINE_LENGTH,
     MAX_TAGS,
@@ -22,6 +23,18 @@ from app.services.ai._constants import (
     SUMMARY_MAX_TOKENS,
     SUMMARY_TEMPERATURE,
 )
+
+# Sentinel key used for local endpoints (e.g. LM Studio) that don't require auth.
+_LOCAL_API_KEY_SENTINEL = "lm-studio"
+
+
+def _resolve_api_key(api_key: Optional[str], base_url: str) -> Optional[str]:
+    """Return api_key, falling back to sentinel for non-default (local) endpoints."""
+    if api_key:
+        return api_key
+    if base_url and base_url.rstrip("/") != DEFAULT_API_BASE_URL.rstrip("/"):
+        return _LOCAL_API_KEY_SENTINEL
+    return None
 from app.services.ai._infrastructure import (  # noqa: F401
     api_key_rotator,
 )
@@ -90,6 +103,8 @@ async def _resolve_engine_settings(engine: str) -> tuple:
     finally:
         db.close()
 
+    api_key = _resolve_api_key(api_key, base_url)
+
     if model == "auto":
         available = await get_available_models(engine)
         model = available[0] if available else model
@@ -138,6 +153,7 @@ async def get_available_models(engine: str = "ondemand") -> List[str]:
     finally:
         db.close()
 
+    api_key = _resolve_api_key(api_key, api_base)
     if not api_key:
         return []
 
