@@ -1000,7 +1000,7 @@ async def regenerate_summary(
     except CerebrasError as e:
         logger.error("[REGEN] CerebrasError: %s", e)
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"AI service error: {str(e)}",
         )
     except Exception as e:

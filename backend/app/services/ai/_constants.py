@@ -1,4 +1,4 @@
-"""Constants for the Cerebras client."""
+"""Constants for the AI client."""
 
 from datetime import timedelta
 

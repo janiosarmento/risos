@@ -1,4 +1,4 @@
-"""Cerebras AI client for summary generation."""
+"""AI client for summary generation."""
 
 # Public API re-exported from submodules
 from app.services.ai._api import (  # noqa: F401
@@ -19,7 +19,8 @@ from app.services.ai._prompts import (  # noqa: F401
     get_user_prompt,
 )
 from app.services.ai._types import (  # noqa: F401
-    CerebrasError,
+    AIError,
+    CerebrasError,  # legacy alias
     CircuitState,
     GarbageContentError,
     ModelSpecificError,
@@ -35,6 +36,7 @@ __all__ = [
     "call_llm_text",
     "circuit_breaker",
     "api_key_rotator",
+    "AIError",
     "CerebrasError",
     "TemporaryError",
     "PermanentError",

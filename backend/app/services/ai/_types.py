@@ -1,4 +1,4 @@
-"""Types, exceptions, and data classes for the Cerebras client."""
+"""Types, exceptions, and data classes for the AI client."""
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -11,19 +11,23 @@ class CircuitState(Enum):
     HALF = "half"  # Testing if service recovered
 
 
-class CerebrasError(Exception):
-    """Base Cerebras client error."""
+class AIError(Exception):
+    """Base AI client error."""
 
     pass
 
 
-class TemporaryError(CerebrasError):
+# Keep legacy alias so callers don't break until fully migrated
+CerebrasError = AIError
+
+
+class TemporaryError(AIError):
     """Temporary error (timeout, 429, 5xx)."""
 
     pass
 
 
-class PermanentError(CerebrasError):
+class PermanentError(AIError):
     """Permanent error (invalid payload, empty response after retries)."""
 
     pass
