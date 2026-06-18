@@ -108,17 +108,6 @@ async def _resolve_engine_settings(engine: str) -> tuple:
     if model == "auto":
         available = await get_available_models(engine)
         model = available[0] if available else model
-    else:
-        # Validate saved model — fall back to first available if not found.
-        # This self-heals when the API endpoint is changed (e.g. DeepSeek → LM Studio).
-        available = await get_available_models(engine)
-        if available and model not in available:
-            logger.warning(
-                "Saved model '%s' not in available models for engine '%s'; "
-                "falling back to '%s'",
-                model, engine, available[0],
-            )
-            model = available[0]
 
     return (api_key, model, base_url, timeout)
 
