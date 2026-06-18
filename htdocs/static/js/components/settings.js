@@ -951,6 +951,8 @@ const settingsMixin = {
                 user_prompt: this.userPrompt,
                 jano_secret_name: this.janoSecretName || '',
                 background_jano_secret_name: this.backgroundJanoSecretName || '',
+                ai_model: this.aiModel || null,
+                background_ai_model: this.backgroundAiModel || null,
             };
             payload.api_base_url = this.apiBaseUrl;
             payload.background_api_base_url = this.backgroundApiBaseUrl;
@@ -1124,7 +1126,7 @@ const settingsMixin = {
                 }),
             });
         } catch (e) {
-            console.warn('Failed to save preferences to server:', e);
+            console.error('Failed to save preferences to server:', e);
         }
     },
 
