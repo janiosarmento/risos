@@ -875,23 +875,15 @@ const settingsMixin = {
     async _validateAndReloadModels(engine) {
         const label = engine === 'background' ? 'Background' : 'On-demand';
         const result = await this._validateSecret(engine);
-        if (!result.valid) {
-            if (result.reason === 'empty') {
-                // No secret name provided — clear models, let user know they need to configure
-                if (engine === 'background') {
-                    this.backgroundAvailableModels = [];
-                } else {
-                    this.availableModels = [];
-                }
-                return;
+        if (result.reason === 'empty') {
+            if (engine === 'background') {
+                this.backgroundAvailableModels = [];
+            } else {
+                this.availableModels = [];
             }
-            this.showToast(
-                `${label}: ${this.t('settings.secretNotFound') || 'Secret not found'} — ${this.t('settings.checkSecretName') || 'check the name and try again'}`,
-                'error'
-            );
             return;
         }
-        // Valid secret — clear and reload models
+        // Always reload models — secret may be hardcoded (e.g. LM Studio), not in vault
         if (engine === 'background') {
             this.backgroundAvailableModels = [];
             await this.loadBackgroundAvailableModels();
@@ -899,15 +891,28 @@ const settingsMixin = {
             this.availableModels = [];
             await this.loadAvailableModels();
         }
-        this.showToast(`${label}: ${this.t('settings.secretValid') || 'Secret found'} (${result.masked_key})`);
+        if (result.valid) {
+            this.showToast(`${label}: ${this.t('settings.secretValid') || 'Secret found'} (${result.masked_key})`);
+        }
+    },
+
+    _resetModelForEngine(engine) {
+        if (engine === 'background') {
+            this.backgroundAiModel = 'auto';
+        } else {
+            this.aiModel = 'auto';
+        }
+        if (this.token) this.savePreferencesToServer();
     },
 
     async onJanoSecretNameChange() {
+        this._resetModelForEngine('ondemand');
         await this.saveAiSettings();
         await this._validateAndReloadModels('ondemand');
     },
 
     async onBackgroundJanoSecretNameChange() {
+        this._resetModelForEngine('background');
         await this.saveAiSettings();
         await this._validateAndReloadModels('background');
     },
@@ -928,8 +933,15 @@ const settingsMixin = {
     },
 
     async onApiBaseUrlChange() {
+        this._resetModelForEngine('ondemand');
         await this.saveAiSettings();
         await this.clearModelsCache();
+    },
+
+    async onBackgroundApiBaseUrlChange() {
+        this._resetModelForEngine('background');
+        await this.saveAiSettings();
+        await this._validateAndReloadModels('background');
     },
 
     async saveAiSettings() {
