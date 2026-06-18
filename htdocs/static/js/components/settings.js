@@ -815,7 +815,9 @@ const settingsMixin = {
                 if (savedExists) {
                     this.$nextTick(() => { this.aiModel = saved; });
                 } else if (models && models.length > 0) {
-                    this.setAiModel(models[0].id);
+                    // Saved model not in new provider's list — show first in UI but don't auto-save.
+                    // User must explicitly pick from the dropdown.
+                    this.$nextTick(() => { this.aiModel = models[0].id; });
                 }
             }
         } catch (e) {
@@ -846,8 +848,8 @@ const settingsMixin = {
                 if (savedExists) {
                     this.$nextTick(() => { this.backgroundAiModel = saved; });
                 } else if (models && models.length > 0) {
+                    // Saved model not in new provider's list — show first in UI but don't auto-save.
                     this.backgroundAiModel = models[0].id;
-                    if (this.token) this.savePreferencesToServer();
                 }
             }
         } catch (e) {

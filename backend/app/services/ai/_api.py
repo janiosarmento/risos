@@ -105,18 +105,9 @@ async def _resolve_engine_settings(engine: str) -> tuple:
 
     api_key = _resolve_api_key(api_key, base_url)
 
-    available = await get_available_models(engine)
-
     if model == "auto":
+        available = await get_available_models(engine)
         model = available[0] if available else model
-    elif available and model not in available:
-        # Saved model doesn't exist on this endpoint (e.g. provider was changed).
-        # Fall back to first available rather than sending an invalid model.
-        logger.warning(
-            "Model '%s' not found for engine '%s'; using '%s'",
-            model, engine, available[0],
-        )
-        model = available[0]
 
     return (api_key, model, base_url, timeout)
 
