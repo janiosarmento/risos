@@ -93,7 +93,7 @@ const settingsMixin = {
 
     _closeSettingsInternal() {
         // Auto-save AI settings (prompts/keys) on close if logged in
-        if (this.token) {
+        if (this.authenticated) {
             this.saveAiSettings();
         }
         this.showSettings = false;
@@ -433,7 +433,7 @@ const settingsMixin = {
 
         try {
             const headers = { 'Content-Type': 'application/json' };
-            if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+            if (this.authenticated) headers['Authorization'] = `Bearer ${this.token}`;
 
             const response = await fetch(`${API_BASE}/tags/purge-rare`, {
                 method: 'POST',
@@ -828,12 +828,12 @@ const settingsMixin = {
 
     setSummaryLanguage(language) {
         this.summaryLanguage = language;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setAiModel(model) {
         this.aiModel = model;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     async loadBackgroundAvailableModels() {
@@ -860,7 +860,7 @@ const settingsMixin = {
 
     setBackgroundAiModel(model) {
         this.backgroundAiModel = model;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     async _validateSecret(engine) {
@@ -904,7 +904,7 @@ const settingsMixin = {
         } else {
             this.aiModel = 'auto';
         }
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     async onJanoSecretNameChange() {
@@ -973,79 +973,79 @@ const settingsMixin = {
     // --- Locale / theme setters ---
     async setLocale(locale) {
         await this.loadLocale(locale);
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setTheme(theme) {
         this.theme = theme;
         localStorage.setItem('rss_theme', theme);
         this.applyTheme();
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     // --- Data settings setters ---
     setFeedUpdateInterval(value) {
         this.feedUpdateInterval = parseInt(value) || 30;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setMaxPostsPerFeed(value) {
         this.maxPostsPerFeed = parseInt(value) || 500;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setMaxPostAgeDays(value) {
         this.maxPostAgeDays = parseInt(value) || 365;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setMaxUnreadDays(value) {
         this.maxUnreadDays = parseInt(value) || 90;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     // --- Interface settings setters ---
     setToastTimeout(value) {
         this.toastTimeoutSeconds = parseInt(value) || 2;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setRelatedPostsLimit(value) {
         this.relatedPostsLimit = parseInt(value) || 30;
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setIdleRefresh(value) {
         this.idleRefreshSeconds = parseInt(value) || 180;
         this.resetIdleTimer();
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setSuggestionMinTags(value) {
         this.suggestionMinTags = Math.max(1, Math.min(this.tagsPerPost, parseInt(value) || 3));
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setProfileMinTagFreq(value) {
         this.profileMinTagFreq = Math.max(1, Math.min(20, parseInt(value) || 2));
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setTagsPerPost(value) {
         this.tagsPerPost = Math.max(3, Math.min(15, parseInt(value) || 7));
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setModelCooldown(value) {
         this.modelCooldownMinutes = Math.max(5, Math.min(120, parseInt(value) || 30));
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     setBlockedTerms(value) {
         const lines = value.split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
         const unique = [...new Set(lines)].sort();
         this.blockedTerms = unique.join('\n');
-        if (this.token) {
+        if (this.authenticated) {
             this.savePreferencesToServer();
             // Reload posts so is_blocked is recalculated by backend
             this.loadPosts(true);
@@ -1057,7 +1057,7 @@ const settingsMixin = {
         if (this.currentPost) {
             this.currentPost = null;
         }
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     // --- Split view resize ---
@@ -1094,7 +1094,7 @@ const settingsMixin = {
         document.removeEventListener('touchcancel', this._stopResize);
         document.body.style.userSelect = '';
         document.body.style.cursor = '';
-        if (this.token) this.savePreferencesToServer();
+        if (this.authenticated) this.savePreferencesToServer();
     },
 
     // --- Preferences sync ---
