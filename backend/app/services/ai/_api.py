@@ -60,9 +60,10 @@ def _get_api_base_url() -> str:
         db.close()
 
 
-def _resolve_engine_settings(engine: str) -> tuple:
+async def _resolve_engine_settings(engine: str) -> tuple:
     """Resolve API key, model, base URL, and timeout for the given engine.
 
+    When saved model is "auto", fetches available models and uses the first one.
     Returns (api_key, model, base_url, timeout).
     """
     from app.routes.preferences import (
@@ -78,20 +79,22 @@ def _resolve_engine_settings(engine: str) -> tuple:
     db = SessionLocal()
     try:
         if engine == "background":
-            return (
-                get_effective_background_ai_api_key(db),
-                get_effective_background_ai_model(db),
-                get_effective_background_api_base_url(db),
-                get_effective_ai_timeout(db),
-            )
-        return (
-            get_effective_ai_api_key(db),
-            get_effective_ai_model(db),
-            get_effective_api_base_url(db),
-            get_effective_ai_timeout(db),
-        )
+            api_key = get_effective_background_ai_api_key(db)
+            model = get_effective_background_ai_model(db)
+            base_url = get_effective_background_api_base_url(db)
+        else:
+            api_key = get_effective_ai_api_key(db)
+            model = get_effective_ai_model(db)
+            base_url = get_effective_api_base_url(db)
+        timeout = get_effective_ai_timeout(db)
     finally:
         db.close()
+
+    if model == "auto":
+        available = await get_available_models(engine)
+        model = available[0] if available else model
+
+    return (api_key, model, base_url, timeout)
 
 
 # Model cooldown: models that returned errors are paused for a grace period
@@ -337,7 +340,7 @@ async def generate_summary(
 
     import time
 
-    api_key, model, base_url, timeout = _resolve_engine_settings(engine)
+    api_key, model, base_url, timeout = await _resolve_engine_settings(engine)
     if not api_key:
         raise TemporaryError("No API key configured")
 
@@ -426,7 +429,7 @@ async def call_llm_json(
         TemporaryError: Temporary error (retry possible)
         PermanentError: Permanent error
     """
-    api_key, model, base_url, timeout = _resolve_engine_settings(engine)
+    api_key, model, base_url, timeout = await _resolve_engine_settings(engine)
     if not api_key:
         raise TemporaryError("No API key configured")
 
@@ -519,7 +522,7 @@ async def call_llm_text(
     Args:
         engine: "ondemand" (default) or "background"
     """
-    api_key, model, base_url, timeout = _resolve_engine_settings(engine)
+    api_key, model, base_url, timeout = await _resolve_engine_settings(engine)
     if not api_key:
         raise TemporaryError("No API key configured")
 

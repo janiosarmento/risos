@@ -135,6 +135,7 @@
     "aiModelDesc": "Model used for generating summaries",
     "aiTimeout": "AI Timeout",
     "aiMaxTokens": "AI Max Tokens",
+    "autoModel": "Auto (use loaded model)",
     "loadingModels": "Loading models...",
     "data": "Data",
     "feedUpdateInterval": "Feed Update Interval",

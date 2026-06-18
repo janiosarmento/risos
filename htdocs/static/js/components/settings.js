@@ -808,11 +808,15 @@ const settingsMixin = {
             const models = await this.fetchApi('/admin/models?_t=' + Date.now());
             this.availableModels = models || [];
             const saved = this.aiModel;
-            const savedExists = models && models.some(m => m.id === saved);
-            if (savedExists) {
-                this.$nextTick(() => { this.aiModel = saved; });
-            } else if (models && models.length > 0) {
-                this.setAiModel(models[0].id);
+            if (saved === 'auto') {
+                this.$nextTick(() => { this.aiModel = 'auto'; });
+            } else {
+                const savedExists = models && models.some(m => m.id === saved);
+                if (savedExists) {
+                    this.$nextTick(() => { this.aiModel = saved; });
+                } else if (models && models.length > 0) {
+                    this.setAiModel(models[0].id);
+                }
             }
         } catch (e) {
             console.error('Failed to load AI models:', e);
@@ -835,12 +839,16 @@ const settingsMixin = {
             const models = await this.fetchApi('/admin/models?engine=background&_t=' + Date.now());
             this.backgroundAvailableModels = models || [];
             const saved = this.backgroundAiModel;
-            const savedExists = models && models.some(m => m.id === saved);
-            if (savedExists) {
-                this.$nextTick(() => { this.backgroundAiModel = saved; });
-            } else if (models && models.length > 0) {
-                this.backgroundAiModel = models[0].id;
-                if (this.token) this.savePreferencesToServer();
+            if (saved === 'auto') {
+                this.$nextTick(() => { this.backgroundAiModel = 'auto'; });
+            } else {
+                const savedExists = models && models.some(m => m.id === saved);
+                if (savedExists) {
+                    this.$nextTick(() => { this.backgroundAiModel = saved; });
+                } else if (models && models.length > 0) {
+                    this.backgroundAiModel = models[0].id;
+                    if (this.token) this.savePreferencesToServer();
+                }
             }
         } catch (e) {
             console.warn('Failed to load background AI models:', e);
@@ -892,16 +900,6 @@ const settingsMixin = {
             await this.loadAvailableModels();
         }
         this.showToast(`${label}: ${this.t('settings.secretValid') || 'Secret found'} (${result.masked_key})`);
-    },
-
-    async onApiBaseUrlChange() {
-        await this.saveAiSettings();
-        await this._validateAndReloadModels('ondemand');
-    },
-
-    async onBackgroundApiBaseUrlChange() {
-        await this.saveAiSettings();
-        await this._validateAndReloadModels('background');
     },
 
     async onJanoSecretNameChange() {
