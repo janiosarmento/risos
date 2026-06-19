@@ -1057,7 +1057,7 @@ function app() {
         },
 
         // Filters
-        navigateToFeed(feedId, postId) {
+        navigateToFeed(feedId, postId, postData = null) {
             if (this.filter === 'feed' && this.filterId === feedId) return;
             // Expand the feed's category if it's collapsed
             const feed = this.feeds.find(f => f.id === feedId);
@@ -1068,7 +1068,8 @@ function app() {
                 this.collapsedCategories = new Set(this.collapsedCategories);
             }
             this._pendingPostId = postId;
-            this._pendingPost = this.posts.find(p => p.id === postId) || null;
+            // Use post from current list, or fall back to caller-supplied data (e.g. from relatedPosts)
+            this._pendingPost = this.posts.find(p => p.id === postId) || postData || null;
             this.setFilter('feed', feedId);
         },
 

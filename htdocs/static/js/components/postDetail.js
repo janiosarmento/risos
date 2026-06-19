@@ -253,7 +253,7 @@ const postDetailMixin = {
         this.closeAssistant();
         this.currentPost = null;
         if (this.isSplitMode) this._pendingOpenPost = post;
-        this.navigateToFeed(post.feed_id, post.id);
+        this.navigateToFeed(post.feed_id, post.id, post);
     },
 
     closeAssistant() {
