@@ -1,6 +1,6 @@
                                 <div class="flex-1 flex flex-col overflow-hidden">
                                     <!-- Compact header -->
-                                    <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
+                                    <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
                                         <div class="flex-1 min-w-0">
                                             <h2 class="font-bold truncate" x-text="currentPost.title"></h2>
                                             <template x-if="currentPost.translated_title">
@@ -13,7 +13,7 @@
                                             </div>
                                         </div>
                                         <!-- Action buttons -->
-                                        <div class="flex items-center gap-1 flex-shrink-0">
+                                        <div class="flex items-center gap-1 flex-wrap">
                                             <!-- Nav buttons -->
                                             <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.prevPost')" :aria-label="t('modal.prevPost')">
                                                 <svg class="w-4 h-4"><use href="#icon-chevron-left"/></svg>

@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260618m">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260618m">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260618m">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260619a">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260619a">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260619a">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260618m">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260619a">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260618m">
+    <link rel="manifest" href="/manifest.json?v=20260619a">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -48,19 +48,19 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260618m in all ?v= below -->
-    <script>var APP_VERSION = '20260618m';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260618m">
+    <!-- App version — single source of truth. Assembler replaces 20260619a in all ?v= below -->
+    <script>var APP_VERSION = '20260619a';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260619a">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260618m"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260618m"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260618m"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260618m"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260618m"></script>
-    <script defer src="/static/js/components/settings.js?v=20260618m"></script>
-    <script defer src="/static/js/components/curation.js?v=20260618m"></script>
-    <script defer src="/static/js/app.js?v=20260618m"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260619a"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260619a"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260619a"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260619a"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260619a"></script>
+    <script defer src="/static/js/components/settings.js?v=20260619a"></script>
+    <script defer src="/static/js/components/curation.js?v=20260619a"></script>
+    <script defer src="/static/js/app.js?v=20260619a"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -963,7 +963,7 @@
                             <template x-if="currentPost">
                                                             <div class="flex-1 flex flex-col overflow-hidden">
                                     <!-- Compact header -->
-                                    <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
+                                    <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
                                         <div class="flex-1 min-w-0">
                                             <h2 class="font-bold truncate" x-text="currentPost.title"></h2>
                                             <template x-if="currentPost.translated_title">
@@ -976,7 +976,7 @@
                                             </div>
                                         </div>
                                         <!-- Action buttons -->
-                                        <div class="flex items-center gap-1 flex-shrink-0">
+                                        <div class="flex items-center gap-1 flex-wrap">
                                             <!-- Nav buttons -->
                                             <button @click="prevPost()" :disabled="!canGoPrev()" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30" :data-tip="t('modal.prevPost')" :aria-label="t('modal.prevPost')">
                                                 <svg class="w-4 h-4"><use href="#icon-chevron-left"/></svg>
@@ -1145,7 +1145,7 @@
                 @keydown.escape.window="closePost()"
             >
                 <!-- Modal Header -->
-                <div class="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-start md:items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
+                <div class="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between bg-white dark:bg-gray-800 flex-shrink-0 gap-2">
                     <div class="flex-1 min-w-0">
                         <h2 class="text-base md:text-lg font-bold line-clamp-2 md:truncate" x-text="currentPost.title"></h2>
                         <template x-if="currentPost.translated_title">
@@ -1170,7 +1170,7 @@
                             </template>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    <div class="flex items-center gap-1 md:gap-2 flex-wrap">
                         <!-- Navegacao anterior/proximo -->
                         <div class="flex items-center">
                             <button
