@@ -1232,12 +1232,15 @@ const settingsMixin = {
     },
 
     async deleteUnreadSummaries() {
-        if (!confirm(this.t('settings.status.deleteUnreadSummariesConfirm'))) return;
+        if (!await this.showConfirm(this.t('settings.status.deleteUnreadSummariesConfirm'))) return;
+        this.confirmLoading(this.t('settings.status.deleteUnreadSummaries') + '...');
         try {
             const result = await this.fetchApi('/admin/summaries/unread', { method: 'DELETE' });
+            this.confirmDone();
             this.showToast(this.t('settings.status.deleteUnreadSummariesDone').replace('{n}', result.deleted));
             await this.loadSystemStatus();
         } catch (error) {
+            this.confirmDone();
             console.error('Failed to delete unread summaries:', error);
             this.showError(error.message);
         }
