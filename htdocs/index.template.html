@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260619a';</script>
+    <script>var APP_VERSION = '20260619b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1100,7 +1100,12 @@
                                                 class="mt-1 rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                                             >
                                             <div class="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 leading-tight">
-                                                <span x-text="p.title"></span>
+                                                <button
+                                                    @click.stop="goToRelatedPost(p)"
+                                                    class="text-left hover:text-purple-700 dark:hover:text-purple-300 hover:underline transition-colors"
+                                                    :data-tip="t('modal.goToPost')"
+                                                    x-text="p.title"
+                                                ></button>
                                                 <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ' • ' + t('modal.commonTags').replace('{count}', p.common_tags_count) + ')'"></span>
                                             </div>
                                         </label>

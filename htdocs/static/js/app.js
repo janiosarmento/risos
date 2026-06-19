@@ -59,6 +59,7 @@ function app() {
         searchQuery: '',
         _searchTimeout: null,
         _pendingReload: false,  // Reagendar loadPosts quando chamado durante outro load
+        _pendingOpenPost: null, // Post para abrir no split view após navegação por feed
         // Health
         healthWarning: null,
 
@@ -1026,9 +1027,13 @@ function app() {
                     if (idx !== -1) {
                         this.selectedIndex = idx;
                         this.$nextTick(() => this.scrollToSelected());
+                        if (this._pendingOpenPost) {
+                            this.$nextTick(() => this.openPost(this.posts[idx] || this._pendingOpenPost));
+                        }
                     }
                     this._pendingPostId = null;
                     this._pendingPost = null;
+                    this._pendingOpenPost = null;
                 }
             } catch (error) {
                 console.error('Failed to load posts:', error);

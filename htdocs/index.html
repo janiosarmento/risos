@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260619a">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260619a">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260619a">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260619b">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260619b">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260619b">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260619a">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260619b">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260619a">
+    <link rel="manifest" href="/manifest.json?v=20260619b">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -48,19 +48,19 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260619a in all ?v= below -->
-    <script>var APP_VERSION = '20260619a';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260619a">
+    <!-- App version — single source of truth. Assembler replaces 20260619b in all ?v= below -->
+    <script>var APP_VERSION = '20260619b';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260619b">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260619a"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260619a"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260619a"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260619a"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260619a"></script>
-    <script defer src="/static/js/components/settings.js?v=20260619a"></script>
-    <script defer src="/static/js/components/curation.js?v=20260619a"></script>
-    <script defer src="/static/js/app.js?v=20260619a"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260619b"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260619b"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260619b"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260619b"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260619b"></script>
+    <script defer src="/static/js/components/settings.js?v=20260619b"></script>
+    <script defer src="/static/js/components/curation.js?v=20260619b"></script>
+    <script defer src="/static/js/app.js?v=20260619b"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1526,7 +1526,12 @@
                                                 class="mt-1 rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                                             >
                                             <div class="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 leading-tight">
-                                                <span x-text="p.title"></span>
+                                                <button
+                                                    @click.stop="goToRelatedPost(p)"
+                                                    class="text-left hover:text-purple-700 dark:hover:text-purple-300 hover:underline transition-colors"
+                                                    :data-tip="t('modal.goToPost')"
+                                                    x-text="p.title"
+                                                ></button>
                                                 <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ' • ' + t('modal.commonTags').replace('{count}', p.common_tags_count) + ')'"></span>
                                             </div>
                                         </label>

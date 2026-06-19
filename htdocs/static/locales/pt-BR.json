@@ -98,6 +98,7 @@
     "selectNoneRelated": "Desmarcar Todos",
     "noRelatedPosts": "Nenhum post relacionado encontrado no banco de dados.",
     "commonTags": "{count} tag(s) em comum",
+    "goToPost": "Ir para este post no feed",
     "assistantFilters": "Filtros de Leitura:",
     "assistantIncludeRead": "Buscar lidos",
     "assistantIncludeUnread": "Buscar não lidos",

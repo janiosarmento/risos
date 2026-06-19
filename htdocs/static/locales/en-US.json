@@ -98,6 +98,7 @@
     "selectNoneRelated": "Deselect All",
     "noRelatedPosts": "No related posts found in the database.",
     "commonTags": "{count} tag(s) in common",
+    "goToPost": "Go to this post in the feed",
     "assistantFilters": "Read Status Filters:",
     "assistantIncludeRead": "Include read",
     "assistantIncludeUnread": "Include unread",
