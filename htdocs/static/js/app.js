@@ -1026,7 +1026,7 @@ function app() {
                     }
                     if (idx !== -1) {
                         this.selectedIndex = idx;
-                        this.$nextTick(() => this.scrollToSelected());
+                        this.$nextTick(() => this.scrollToSelected(true));
                         if (this._pendingOpenPost) {
                             this.$nextTick(() => this.openPost(this.posts[idx] || this._pendingOpenPost));
                         }
@@ -1415,14 +1415,14 @@ function app() {
             }
         },
 
-        scrollToSelected() {
+        scrollToSelected(toTop = false) {
             // Use setTimeout to ensure DOM is fully updated (more reliable on mobile)
             setTimeout(() => {
                 const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
                 if (!el) return;
 
                 try {
-                    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                    el.scrollIntoView({ block: toTop ? 'start' : 'nearest', behavior: 'smooth' });
                 } catch (e) {
                     el.scrollIntoView(false);
                 }
