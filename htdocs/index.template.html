@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260618k';</script>
+    <script>var APP_VERSION = '20260618l';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -2512,6 +2512,23 @@
                                                 <span x-text="systemStatus.health_warning"></span>
                                             </div>
                                         </template>
+                                    </div>
+
+                                    <!-- Manutenção de Resumos -->
+                                    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/20">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-700 dark:text-gray-300" x-text="t('settings.status.summaryMaintenance')"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="t('settings.status.summaryMaintenanceDesc')"></p>
+                                            </div>
+                                            <button
+                                                @click="deleteUnreadSummaries()"
+                                                class="px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                                            >
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                <span x-text="t('settings.status.deleteUnreadSummaries')"></span>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <!-- Agendamento & Busca de Feeds -->

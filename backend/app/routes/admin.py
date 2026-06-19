@@ -408,6 +408,41 @@ def reset_circuit_breaker(
     return {"ok": True, "queue_cooldowns_cleared": in_cooldown}
 
 
+@router.delete("/summaries/unread")
+def delete_unread_summaries(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Delete AI summaries for all unread posts, forcing LLM regeneration.
+    Also clears their queue entries so they are re-enqueued fresh.
+    """
+    unread_hashes = [
+        row[0]
+        for row in db.query(Post.content_hash)
+        .filter(Post.is_read.is_(False), Post.content_hash.isnot(None))
+        .all()
+    ]
+
+    if not unread_hashes:
+        return {"ok": True, "deleted": 0}
+
+    deleted = (
+        db.query(AISummary)
+        .filter(AISummary.content_hash.in_(unread_hashes))
+        .delete(synchronize_session=False)
+    )
+
+    # Clear queue entries so posts are re-enqueued without old error state
+    db.query(SummaryQueue).filter(
+        SummaryQueue.content_hash.in_(unread_hashes)
+    ).delete(synchronize_session=False)
+
+    db.commit()
+
+    logger.info("Deleted %d AI summaries for unread posts", deleted)
+    return {"ok": True, "deleted": deleted}
+
+
 @router.post("/clear-models-cache")
 def clear_models_cache_endpoint(
     user: dict = Depends(get_current_user),
