@@ -68,9 +68,14 @@ def _check_duplicate_by_guid(
 
 
 def _check_duplicate_by_url(
-    db: Session, feed: Feed, normalized_url: Optional[str]
+    db: Session, feed: Feed, normalized_url: Optional[str], raw_url: Optional[str] = None
 ) -> bool:
-    """Check for duplicates by normalized URL."""
+    """Check for duplicates by normalized URL, with raw URL fallback.
+
+    The raw-URL fallback catches posts that were stored before URL normalization
+    was implemented (normalized_url = NULL) or where normalization produced a
+    different result between the original and current ingest.
+    """
     if not normalized_url or feed.allow_duplicate_urls:
         return False
 
@@ -79,8 +84,20 @@ def _check_duplicate_by_url(
         .filter(Post.feed_id == feed.id, Post.normalized_url == normalized_url)
         .first()
     )
+    if existing:
+        return True
 
-    return existing is not None
+    # Fallback: match by raw URL for posts with normalized_url = NULL
+    if raw_url:
+        existing_by_raw = (
+            db.query(Post)
+            .filter(Post.feed_id == feed.id, Post.url == raw_url, Post.normalized_url.is_(None))
+            .first()
+        )
+        if existing_by_raw:
+            return True
+
+    return False
 
 
 def _check_duplicate_by_hash(
@@ -108,6 +125,7 @@ def _check_duplicate_by_hash(
     )
 
     return existing is not None
+
 
 
 def _process_entry(
@@ -147,7 +165,7 @@ def _process_entry(
         return None, None
 
     # Check for duplicates by URL
-    if _check_duplicate_by_url(db, feed, normalized_url):
+    if _check_duplicate_by_url(db, feed, normalized_url, raw_url=entry_url):
         return None, None
 
     # Check for duplicates by hash (fallback)
