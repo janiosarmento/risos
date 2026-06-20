@@ -1058,7 +1058,28 @@ function app() {
 
         // Filters
         navigateToFeed(feedId, postId, postData = null) {
-            if (this.filter === 'feed' && this.filterId === feedId) return;
+            // Already on this feed — no reload needed, just find/scroll/open the post
+            if (this.filter === 'feed' && this.filterId === feedId) {
+                let idx = this.posts.findIndex(p => p.id === postId);
+                if (idx === -1 && postData) {
+                    const postDate = postData.published_at || postData.fetched_at || '';
+                    idx = this.posts.findIndex(p => (p.published_at || p.fetched_at || '') < postDate);
+                    if (idx === -1) idx = this.posts.length;
+                    this.posts.splice(idx, 0, postData);
+                    this.offset += 1;
+                }
+                if (idx !== -1) {
+                    this.selectedIndex = idx;
+                    this.$nextTick(() => {
+                        this.scrollToSelected(true);
+                        if (this._pendingOpenPost) {
+                            this.openPost(this.posts[idx] || postData);
+                            this._pendingOpenPost = null;
+                        }
+                    });
+                }
+                return;
+            }
             // Expand the feed's category if it's collapsed
             const feed = this.feeds.find(f => f.id === feedId);
             if (feed && this.collapsedCategories.has(feed.category_id)) {
