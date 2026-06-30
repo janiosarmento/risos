@@ -367,8 +367,44 @@ async def generate_summary(
             content, title, title_only,
             api_key=api_key, model=model, base_url=base_url, timeout=timeout,
         )
+
+    # Post-process: ensure the summary body is entirely in the target language.
+    # Runs outside the lock because the cleanup makes its own locked LLM call.
+    # No-op (detection only) when the body is already clean.
+    if result.summary_pt:
+        result.summary_pt = await _enforce_summary_language(
+            result.summary_pt, engine
+        )
+
     result.duration = time.time() - start_time
     return result
+
+
+async def _enforce_summary_language(summary: str, engine: str) -> str:
+    """Run the language gate on a summary body using the engine's own model."""
+    from app.routes.preferences import get_effective_summary_language
+    from app.services.ai._constants import (
+        LANGUAGE_GATE_CLEANUP_MAX_TOKENS,
+        LANGUAGE_GATE_CLEANUP_TEMPERATURE,
+    )
+    from app.services.ai._language_gate import enforce_language
+
+    db = SessionLocal()
+    try:
+        language = get_effective_summary_language(db)
+    finally:
+        db.close()
+
+    async def _translate(system_prompt: str, user_prompt: str) -> str:
+        return await call_llm_text(
+            system_prompt,
+            user_prompt,
+            max_tokens=LANGUAGE_GATE_CLEANUP_MAX_TOKENS,
+            temperature=LANGUAGE_GATE_CLEANUP_TEMPERATURE,
+            engine=engine,
+        )
+
+    return await enforce_language(summary, language, _translate)
 
 
 async def _generate_summary_locked(

@@ -10,6 +10,9 @@ alembic>=1.13.0
 # Configuração
 pydantic-settings>=2.0.0
 
+# Detecção de idioma (gate pós-sumarização contra mistura de idiomas)
+langdetect>=1.0.9
+
 # Parsing de feeds e conteúdo
 feedparser>=6.0.0
 httpx>=0.26.0

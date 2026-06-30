@@ -82,6 +82,31 @@ def split_into_paragraphs(summary: str) -> str:
     return "\n\n".join(_split_block(p) for p in re.split(r"\n\s*\n", summary))
 
 
+def split_into_sentences(text: str) -> List[str]:
+    """Split text into individual sentences, preserving abbreviations.
+
+    Splits on existing line breaks first (so bullets stay separate) and then on
+    sentence boundaries within each line. Returns a flat list of stripped,
+    non-empty sentences. Used by the language gate to inspect each span on its
+    own."""
+    if not text:
+        return []
+
+    sentences: List[str] = []
+    for line in re.split(r"\n+", text):
+        line = line.strip()
+        if not line:
+            continue
+        masked = _ABBREV_PATTERN.sub(
+            lambda m: m.group(0).replace(".", _PLACEHOLDER), line
+        )
+        for sentence in _SENTENCE_BOUNDARY.split(masked):
+            sentence = sentence.replace(_PLACEHOLDER, ".").strip()
+            if sentence:
+                sentences.append(sentence)
+    return sentences
+
+
 # Tags too generic to be useful
 GENERIC_TAGS = frozenset({"news", "article", "technology", "update", "post"})
 
