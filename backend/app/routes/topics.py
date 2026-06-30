@@ -31,11 +31,6 @@ class TagsAdd(BaseModel):
     tags: List[str]
 
 
-class TopicSuggestion(BaseModel):
-    name: str
-    tags: List[str]
-
-
 @router.get("")
 def list_topics(
     db: Session = Depends(get_db),

@@ -164,16 +164,6 @@ def _filter_attributes(tag: str, name: str, value: str) -> bool:
     return True
 
 
-def _add_link_attributes(attrs, new=False):
-    """
-    Callback to add rel and target to links.
-    """
-    # Add/overwrite rel and target
-    attrs[(None, "rel")] = "noopener noreferrer"
-    attrs[(None, "target")] = "_blank"
-    return attrs
-
-
 def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
     """
     Sanitize HTML removing dangerous content.

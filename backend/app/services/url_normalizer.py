@@ -168,22 +168,3 @@ def normalize_url(url: Optional[str]) -> Optional[str]:
     )
 
     return normalized
-
-
-def extract_domain(url: str) -> Optional[str]:
-    """
-    Extract domain from a URL.
-
-    Args:
-        url: URL to extract domain from
-
-    Returns:
-        Domain in lowercase or None if invalid
-    """
-    try:
-        parsed = urlparse(url)
-        if parsed.hostname:
-            return parsed.hostname.lower()
-    except Exception as e:
-        logger.debug("Failed to extract hostname from URL: %s", e)
-    return None
