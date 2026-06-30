@@ -22,13 +22,11 @@ document.addEventListener('alpine:init', () => {
         defaultSystemPrompt: '',
         defaultUserPrompt: '',
         tagsPerPost: 7,
-        modelCooldownMinutes: 30,
         aiTimeout: 30,
         aiMaxTokens: 8192,
 
         // Data Settings
         feedUpdateInterval: 30,
-        maxPostsPerFeed: 500,
         maxPostAgeDays: 365,
         maxUnreadDays: 90,
 

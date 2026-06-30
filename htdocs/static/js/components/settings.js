@@ -989,11 +989,6 @@ const settingsMixin = {
         if (this.authenticated) this.savePreferencesToServer();
     },
 
-    setMaxPostsPerFeed(value) {
-        this.maxPostsPerFeed = parseInt(value) || 500;
-        if (this.authenticated) this.savePreferencesToServer();
-    },
-
     setMaxPostAgeDays(value) {
         this.maxPostAgeDays = parseInt(value) || 365;
         if (this.authenticated) this.savePreferencesToServer();
@@ -1033,11 +1028,6 @@ const settingsMixin = {
 
     setTagsPerPost(value) {
         this.tagsPerPost = Math.max(3, Math.min(15, parseInt(value) || 7));
-        if (this.authenticated) this.savePreferencesToServer();
-    },
-
-    setModelCooldown(value) {
-        this.modelCooldownMinutes = Math.max(5, Math.min(120, parseInt(value) || 30));
         if (this.authenticated) this.savePreferencesToServer();
     },
 
@@ -1108,7 +1098,6 @@ const settingsMixin = {
                     summary_language: this.summaryLanguage,
                     ai_model: this.aiModel,
                     feed_update_interval: this.feedUpdateInterval,
-                    max_posts_per_feed: this.maxPostsPerFeed,
                     max_post_age_days: this.maxPostAgeDays,
                     max_unread_days: this.maxUnreadDays,
                     toast_timeout_seconds: this.toastTimeoutSeconds,
@@ -1118,7 +1107,6 @@ const settingsMixin = {
                     suggestion_min_tags: this.suggestionMinTags,
                     profile_min_tag_freq: this.profileMinTagFreq,
                     tags_per_post: this.tagsPerPost,
-                    model_cooldown_minutes: this.modelCooldownMinutes,
                     blocked_terms: this.blockedTerms,
                     api_base_url: this.apiBaseUrl,
                     background_jano_secret_name: this.backgroundJanoSecretName || '',
@@ -1161,7 +1149,6 @@ const settingsMixin = {
 
             // Data settings
             if (serverPrefs.feed_update_interval) this.feedUpdateInterval = serverPrefs.feed_update_interval;
-            if (serverPrefs.max_posts_per_feed) this.maxPostsPerFeed = serverPrefs.max_posts_per_feed;
             if (serverPrefs.max_post_age_days) this.maxPostAgeDays = serverPrefs.max_post_age_days;
             if (serverPrefs.max_unread_days) this.maxUnreadDays = serverPrefs.max_unread_days;
 
@@ -1181,9 +1168,6 @@ const settingsMixin = {
             }
             if (serverPrefs.tags_per_post !== null && serverPrefs.tags_per_post !== undefined) {
                 this.tagsPerPost = serverPrefs.tags_per_post;
-            }
-            if (serverPrefs.model_cooldown_minutes !== null && serverPrefs.model_cooldown_minutes !== undefined) {
-                this.modelCooldownMinutes = serverPrefs.model_cooldown_minutes;
             }
             if (serverPrefs.reading_mode) this.readingMode = serverPrefs.reading_mode;
             if (serverPrefs.split_ratio !== null && serverPrefs.split_ratio !== undefined) {

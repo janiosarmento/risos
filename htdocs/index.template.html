@@ -49,7 +49,7 @@
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
     <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260619e';</script>
+    <script>var APP_VERSION = '20260630a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1635,24 +1635,6 @@
                                 </div>
                             </div>
 
-                            <!-- Model Cooldown -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-model-cooldown" class="block text-sm font-medium mb-1" x-text="t('settings.modelCooldown')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.modelCooldownDesc')"></p>
-                                <div class="flex items-center gap-2">
-                                    <input
-                                        id="setting-model-cooldown"
-                                        type="range"
-                                        min="5" max="120" step="5"
-                                        :value="modelCooldownMinutes"
-                                        @input="setModelCooldown($event.target.value)"
-                                        class="flex-1"
-                                    >
-                                    <span class="text-sm font-mono w-8 text-center" x-text="modelCooldownMinutes"></span>
-                                    <span class="text-sm text-gray-500">min</span>
-                                </div>
-                            </div>
-
                             <!-- Related Posts Limit for Assistant -->
                             <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <label for="setting-related-posts-limit" class="block text-sm font-medium mb-1" x-text="t('settings.relatedPostsLimit')"></label>
@@ -2071,23 +2053,6 @@
                                                 class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
                                             >
                                             <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.minutes')"></span>
-                                        </div>
-                                    </div>
-                                    <!-- Max Posts per Feed -->
-                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label for="setting-max-posts-per-feed" class="block text-sm font-medium mb-1" x-text="t('settings.maxPostsPerFeed')"></label>
-                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.maxPostsPerFeedDesc')"></p>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                id="setting-max-posts-per-feed"
-                                                type="number"
-                                                min="10"
-                                                max="10000"
-                                                :value="maxPostsPerFeed"
-                                                @change="setMaxPostsPerFeed($event.target.value)"
-                                                class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
-                                            >
-                                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="t('settings.posts')"></span>
                                         </div>
                                     </div>
                                     <!-- Max Post Age -->

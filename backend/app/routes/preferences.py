@@ -25,7 +25,6 @@ PREF_SUMMARY_LANGUAGE = "pref_summary_language"
 PREF_AI_MODEL = "pref_ai_model"
 # Data settings
 PREF_FEED_UPDATE_INTERVAL = "pref_feed_update_interval"
-PREF_MAX_POSTS_PER_FEED = "pref_max_posts_per_feed"
 PREF_MAX_POST_AGE_DAYS = "pref_max_post_age_days"
 PREF_MAX_UNREAD_DAYS = "pref_max_unread_days"
 # Interface settings
@@ -39,7 +38,6 @@ PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
 # AI keys and prompts
 PREF_JANO_SECRET_NAME = "pref_jano_secret_name"
 PREF_TAGS_PER_POST = "pref_tags_per_post"
-PREF_MODEL_COOLDOWN = "pref_model_cooldown_minutes"
 PREF_SYSTEM_PROMPT = "pref_system_prompt"
 PREF_USER_PROMPT = "pref_user_prompt"
 # Blocked terms
@@ -63,7 +61,6 @@ class PreferencesResponse(BaseModel):
     ai_model: Optional[str] = None
     # Data settings (returned as integers)
     feed_update_interval: Optional[int] = None
-    max_posts_per_feed: Optional[int] = None
     max_post_age_days: Optional[int] = None
     max_unread_days: Optional[int] = None
     # Interface settings
@@ -79,9 +76,6 @@ class PreferencesResponse(BaseModel):
     # AI keys and prompts
     jano_secret_name: Optional[str] = None
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
-    model_cooldown_minutes: Optional[int] = (
-        None  # grace period for failed models (5-120)
-    )
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
     # Blocked terms (newline-separated)
@@ -104,7 +98,6 @@ class PreferencesUpdate(BaseModel):
     ai_model: Optional[str] = None
     # Data settings
     feed_update_interval: Optional[int] = None
-    max_posts_per_feed: Optional[int] = None
     max_post_age_days: Optional[int] = None
     max_unread_days: Optional[int] = None
     # Interface settings
@@ -118,7 +111,6 @@ class PreferencesUpdate(BaseModel):
     # AI keys and prompts
     jano_secret_name: Optional[str] = None
     tags_per_post: Optional[int] = None
-    model_cooldown_minutes: Optional[int] = None
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
     blocked_terms: Optional[str] = None
@@ -162,7 +154,6 @@ def get_preferences(
         PREF_SUMMARY_LANGUAGE,
         PREF_AI_MODEL,
         PREF_FEED_UPDATE_INTERVAL,
-        PREF_MAX_POSTS_PER_FEED,
         PREF_MAX_POST_AGE_DAYS,
         PREF_MAX_UNREAD_DAYS,
         PREF_TOAST_TIMEOUT,
@@ -173,7 +164,6 @@ def get_preferences(
         PREF_PROFILE_MIN_TAG_FREQ,
         PREF_JANO_SECRET_NAME,
         PREF_TAGS_PER_POST,
-        PREF_MODEL_COOLDOWN,
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
         PREF_BLOCKED_TERMS,
@@ -213,7 +203,6 @@ def get_preferences(
             prefs[PREF_FEED_UPDATE_INTERVAL],
             30,
         ),
-        max_posts_per_feed=int_or_default(prefs[PREF_MAX_POSTS_PER_FEED], 500),
         max_post_age_days=int_or_default(prefs[PREF_MAX_POST_AGE_DAYS], 365),
         max_unread_days=int_or_default(prefs[PREF_MAX_UNREAD_DAYS], 90),
         # Interface settings
@@ -227,7 +216,6 @@ def get_preferences(
         # AI keys and prompts
         jano_secret_name=prefs[PREF_JANO_SECRET_NAME],
         tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
-        model_cooldown_minutes=int_or_default(prefs[PREF_MODEL_COOLDOWN], 30),
         system_prompt=prefs[PREF_SYSTEM_PROMPT]
         or load_prompts().get("system_prompt", ""),
         user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
@@ -268,9 +256,6 @@ def update_preferences(
     # Data settings (store as string)
     if prefs.feed_update_interval is not None:
         _set_setting(db, PREF_FEED_UPDATE_INTERVAL, str(prefs.feed_update_interval))
-
-    if prefs.max_posts_per_feed is not None:
-        _set_setting(db, PREF_MAX_POSTS_PER_FEED, str(prefs.max_posts_per_feed))
 
     if prefs.max_post_age_days is not None:
         _set_setting(db, PREF_MAX_POST_AGE_DAYS, str(prefs.max_post_age_days))
@@ -321,10 +306,6 @@ def update_preferences(
     if prefs.tags_per_post is not None:
         tags_per_post = max(3, min(15, prefs.tags_per_post))
         _set_setting(db, PREF_TAGS_PER_POST, str(tags_per_post))
-
-    if prefs.model_cooldown_minutes is not None:
-        cooldown = max(5, min(120, prefs.model_cooldown_minutes))
-        _set_setting(db, PREF_MODEL_COOLDOWN, str(cooldown))
 
     if prefs.system_prompt is not None:
         _set_setting(db, PREF_SYSTEM_PROMPT, prefs.system_prompt)
@@ -464,16 +445,6 @@ def get_effective_feed_update_interval(db: Session) -> int:
     return 30
 
 
-def get_effective_max_posts_per_feed(db: Session) -> int:
-    saved = _get_setting(db, PREF_MAX_POSTS_PER_FEED)
-    if saved:
-        try:
-            return int(saved)
-        except (ValueError, TypeError):
-            pass
-    return 500
-
-
 def get_effective_max_post_age_days(db: Session) -> int:
     saved = _get_setting(db, PREF_MAX_POST_AGE_DAYS)
     if saved:
@@ -523,16 +494,6 @@ def get_effective_tags_per_post(db: Session) -> int:
         except (ValueError, TypeError):
             pass
     return 7  # Default: 7 tags per post
-
-
-def get_effective_model_cooldown(db: Session) -> int:
-    saved = _get_setting(db, PREF_MODEL_COOLDOWN)
-    if saved:
-        try:
-            return max(5, min(120, int(saved)))
-        except (ValueError, TypeError):
-            pass
-    return 30
 
 
 def get_effective_suggestion_min_tags(db: Session) -> int:
