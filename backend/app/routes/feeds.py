@@ -96,7 +96,6 @@ def list_feeds(
             "last_fetched_at": feed.last_fetched_at,
             "error_count": feed.error_count or 0,
             "last_error": feed.last_error,
-            "disabled_at": feed.disabled_at,
             "created_at": feed.created_at,
             "unread_count": unread_count,
             "starred_count": starred_count,
@@ -280,7 +279,6 @@ async def create_feed(
         last_fetched_at=db_feed.last_fetched_at,
         error_count=db_feed.error_count or 0,
         last_error=db_feed.last_error,
-        disabled_at=db_feed.disabled_at,
         created_at=db_feed.created_at,
         unread_count=unread_count,
         weight=db_feed.weight or 0,
@@ -497,7 +495,6 @@ def get_feed(
         last_fetched_at=feed.last_fetched_at,
         error_count=feed.error_count or 0,
         last_error=feed.last_error,
-        disabled_at=feed.disabled_at,
         created_at=feed.created_at,
         unread_count=unread_count,
         weight=feed.weight or 0,
@@ -571,7 +568,6 @@ def update_feed(
         last_fetched_at=feed.last_fetched_at,
         error_count=feed.error_count or 0,
         last_error=feed.last_error,
-        disabled_at=feed.disabled_at,
         created_at=feed.created_at,
         unread_count=unread_count,
     )
@@ -632,11 +628,6 @@ async def refresh_feed(
             status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
         )
 
-    if feed.disabled_at:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Feed is disabled"
-        )
-
     result = await ingest_feed(db, feed)
 
     return {
@@ -647,30 +638,3 @@ async def refresh_feed(
         "feed_title_updated": result.feed_title_updated,
         "site_url_updated": result.site_url_updated,
     }
-
-
-@router.post("/{feed_id}/enable")
-def enable_feed(
-    feed_id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """
-    Re-enable a disabled feed.
-    Resets error_count, disabled_at and next_retry_at.
-    """
-    feed = db.query(Feed).filter(Feed.id == feed_id).first()
-    if not feed:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Feed not found"
-        )
-
-    feed.error_count = 0
-    feed.disabled_at = None
-    feed.disable_reason = None
-    feed.next_retry_at = None
-    feed.last_error = None
-
-    db.commit()
-
-    return {"ok": True, "feed_id": feed_id}

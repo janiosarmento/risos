@@ -223,12 +223,8 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
     # Fetching metrics
     feed_update_interval = get_effective_feed_update_interval(db)
 
-    # Last successful fetch time among active feeds
-    last_fetched_val = (
-        db.query(func.max(Feed.last_fetched_at))
-        .filter(Feed.disabled_at.is_(None))
-        .scalar()
-    )
+    # Last successful fetch time
+    last_fetched_val = db.query(func.max(Feed.last_fetched_at)).scalar()
     last_fetched_date = last_fetched_val.isoformat() if last_fetched_val else None
 
     # Check background scheduler status

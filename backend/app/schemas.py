@@ -104,7 +104,6 @@ class FeedResponse(BaseModel):
     last_fetched_at: Optional[datetime]
     error_count: int
     last_error: Optional[str]
-    disabled_at: Optional[datetime]
     created_at: datetime
     unread_count: Optional[int] = 0
     starred_count: Optional[int] = 0

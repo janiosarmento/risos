@@ -233,7 +233,6 @@ class Scheduler:
                     feeds = (
                         db.query(Feed)
                         .filter(
-                            Feed.disabled_at.is_(None),
                             (Feed.next_retry_at.is_(None))
                             | (Feed.next_retry_at <= now),
                         )

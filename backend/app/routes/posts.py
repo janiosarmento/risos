@@ -819,54 +819,6 @@ def mark_read_batch(
     return {"marked_read": count}
 
 
-@router.get("/{post_id}/full-content")
-async def get_full_content(
-    post_id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """
-    Extract full content from the original article.
-
-    - Uses readability-lxml for extraction
-    - Sanitizes HTML
-    - Caches in posts.full_content
-    """
-    post = get_post_or_404(db, post_id)
-
-    if not post.url:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Post has no URL"
-        )
-
-    # Check cache
-    if post.full_content:
-        return {
-            "id": post_id,
-            "full_content": post.full_content,
-            "cached": True,
-        }
-
-    # Extract content
-    result = await extract_full_content(post.url)
-
-    if not result.success:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to extract content: {result.error}",
-        )
-
-    # Save to cache
-    post.full_content = result.content
-    db.commit()
-
-    return {
-        "id": post_id,
-        "full_content": result.content,
-        "cached": False,
-    }
-
-
 @router.get("/{post_id}/redirect")
 def redirect_to_post(
     post_id: int,
