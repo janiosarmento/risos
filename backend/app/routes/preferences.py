@@ -3,6 +3,7 @@ User preferences routes.
 Stores locale, theme, AI settings, and data settings in app_settings table.
 """
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -404,20 +405,6 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
 # =============================================================================
 
 
-def _mask_keys(raw: str) -> str:
-    """Mask API keys for display: show first 5 and last 4 chars."""
-    if not raw:
-        return ""
-    keys = [k.strip() for k in raw.split(",") if k.strip()]
-    masked = []
-    for k in keys:
-        if len(k) > 12:
-            masked.append(k[:5] + "****" + k[-4:])
-        else:
-            masked.append("****")
-    return ", ".join(masked)
-
-
 def get_effective_ai_api_key(db: Session) -> Optional[str]:
     """Retorna a chave de API única configurada via Jano, ou None."""
     secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
@@ -429,12 +416,6 @@ def get_effective_ai_api_key(db: Session) -> Optional[str]:
         return val.strip() if val and val.strip() else None
     except Exception:
         return None
-
-
-def get_effective_ai_api_keys(db: Session) -> list:
-    """Retorna lista com a chave única (compat. com callers antigos)."""
-    key = get_effective_ai_api_key(db)
-    return [key] if key else []
 
 
 def get_effective_system_prompt(db: Session) -> str:
