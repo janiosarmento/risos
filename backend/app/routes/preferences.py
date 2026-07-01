@@ -358,12 +358,6 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 
-def _int_clamp(sp: "PrefSpec", val: Any) -> Any:
-    if sp.clamp is not None:
-        return sp.clamp(val)
-    return val
-
-
 def _cast_int(val: Any) -> int | None:
     if val is None:
         return None
@@ -440,7 +434,7 @@ def _get_effective(db: Session, name: str) -> Any:
     val = spec.cast(saved) if saved is not None else None
     if val is not None:
         if spec.clamp is not None:
-            return spec.clamp(val)
+            return spec.clamp(spec, val)
         return val
     return spec.default
 
@@ -455,7 +449,7 @@ def _resolve_spec(prefs: dict, name: str) -> Any:
         val = spec.cast(raw)
         if val is not None:
             if spec.clamp is not None:
-                return spec.clamp(val)
+                return spec.clamp(spec, val)
             return val
     return spec.default
 
