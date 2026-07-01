@@ -187,23 +187,33 @@ function app() {
         t(key, fallback = null) { return Alpine.store('i18n').t(key, fallback); },
         async loadLocale(locale) { return Alpine.store('i18n').loadLocale(locale); },
 
-        // Render markdown to HTML
+        // Render markdown to HTML. Output is untrusted (LLM-generated from
+        // feed content, which may itself be attacker-controlled), so it is
+        // always run through DOMPurify before being used with x-html.
         renderMarkdown(text) {
             if (!text) return '';
+            let html;
             if (typeof marked !== 'undefined') {
                 // Configure marked for safe rendering
                 marked.setOptions({
                     breaks: true,  // Convert \n to <br>
                     gfm: true,     // GitHub Flavored Markdown
                 });
-                return marked.parse(text);
+                html = marked.parse(text);
+            } else {
+                // Fallback: basic conversion if marked not loaded
+                html = text
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/^• /gm, '<li>')
+                    .replace(/\n/g, '<br>');
             }
-            // Fallback: basic conversion if marked not loaded
-            return text
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/^• /gm, '<li>')
-                .replace(/\n/g, '<br>');
+            if (typeof DOMPurify !== 'undefined') {
+                return DOMPurify.sanitize(html);
+            }
+            // DOMPurify failed to load — fail closed to plain text rather
+            // than risk injecting unsanitized HTML.
+            return this._escHtml(text);
         },
 
         // Filter posts by tag (composable with feed/category)

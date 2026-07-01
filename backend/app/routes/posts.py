@@ -11,7 +11,6 @@ import unicodedata
 import zipfile
 from datetime import datetime
 from typing import List, Optional
-from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
@@ -46,6 +45,7 @@ from app.services.ai._parsing import split_into_paragraphs
 from app.services.content_extractor import extract_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
+from app.services.url_safety import is_safe_external_url
 
 logger = logging.getLogger(__name__)
 
@@ -106,37 +106,6 @@ def get_post_or_404(db: Session, post_id: int) -> Post:
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
     return post
-
-
-def is_safe_redirect_url(url: str) -> bool:
-    """
-    Validate URL is safe for redirect (prevents open redirect attacks).
-    Only allows http/https schemes and blocks localhost/private IPs.
-    """
-    try:
-        parsed = urlparse(url)
-
-        # Must be http or https
-        if parsed.scheme not in ("http", "https"):
-            return False
-
-        # Must have a hostname
-        hostname = parsed.hostname or ""
-        if not hostname:
-            return False
-
-        # Block localhost and private IPs
-        if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
-            return False
-
-        # Block common private IP ranges
-        if hostname.startswith(("10.", "192.168.", "172.16.", "172.17.", "172.18.")):
-            return False
-
-        return True
-
-    except Exception:
-        return False
 
 
 def get_summary_status(db: Session, post: Post) -> str:
@@ -840,7 +809,7 @@ def redirect_to_post(
         )
 
     # Validate URL to prevent open redirect attacks
-    if not is_safe_redirect_url(post.url):
+    if not is_safe_external_url(post.url):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or unsafe URL",
