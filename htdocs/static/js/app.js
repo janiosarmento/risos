@@ -158,10 +158,6 @@ function app() {
         suggestedCount: 0,
 
         // Post lookup helpers
-        getPostById(id) {
-            return this.posts.find(p => p.id === id);
-        },
-
         getPostIndex(id) {
             return this.posts.findIndex(p => p.id === id);
         },
@@ -1617,12 +1613,6 @@ function app() {
             });
         },
 
-        // Returns a date group key for separating posts visually
-        // Uses the same logic as formatDate() so groups match displayed values
-        getDateGroup(dateStr) {
-            return this.formatDate(dateStr);
-        },
-
         // Check if we should show a date separator before a post
         shouldShowDateSeparator(index) {
             if (index === 0) return true;
@@ -1630,23 +1620,10 @@ function app() {
             const currentPost = this.posts[index];
             const prevPost = this.posts[index - 1];
 
-            const currentGroup = this.getDateGroup(currentPost.published_at || currentPost.fetched_at);
-            const prevGroup = this.getDateGroup(prevPost.published_at || prevPost.fetched_at);
+            const currentGroup = this.formatDate(currentPost.published_at || currentPost.fetched_at);
+            const prevGroup = this.formatDate(prevPost.published_at || prevPost.fetched_at);
 
             return currentGroup !== prevGroup;
-        },
-
-        // Get the separator label for a post at a given index
-        getDateSeparatorLabel(index) {
-            const post = this.posts[index];
-            const group = this.getDateGroup(post.published_at || post.fetched_at);
-
-            // Translate common groups
-            if (group === 'now') return this.t('time.now');
-            if (group.endsWith('h')) return this.t('time.hoursAgo').replace('{n}', group.replace('h', ''));
-            if (group.endsWith('d')) return this.t('time.daysAgo').replace('{n}', group.replace('d', ''));
-
-            return group; // For date strings like "15 jan"
         },
 
 

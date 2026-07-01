@@ -29,8 +29,6 @@ class Settings(BaseSettings):
 
     # Rate Limiting HTTP
     login_rate_limit: int = 5
-    api_rate_limit: int = 100
-    feeds_refresh_rate_limit: int = 10
 
     # Retention
     max_db_size_mb: int = 1024

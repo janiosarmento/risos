@@ -51,8 +51,6 @@ class Feed(Base):
     last_error = Column(Text)
     last_error_at = Column(DateTime)
     next_retry_at = Column(DateTime)
-    disabled_at = Column(DateTime)
-    disable_reason = Column(Text)
 
     # Unstable GUID detection
     guid_unreliable = Column(Boolean, default=False)
@@ -94,7 +92,6 @@ class Post(Base):
     read_at = Column(DateTime)
     is_starred = Column(Boolean, default=False)
     starred_at = Column(DateTime)
-    fetch_full_attempted_at = Column(DateTime)
     skip_summary = Column(Boolean, default=False)
     keep_unread = Column(Boolean, default=False, nullable=False)
 
@@ -280,7 +277,6 @@ class CleanupLog(Base):
     unread_removed = Column(Integer, default=0)
     bytes_freed = Column(Integer, default=0)
     duration_seconds = Column(Float)
-    notes = Column(Text)
 
 
 Index("idx_cleanup_executed", CleanupLog.executed_at.desc())
