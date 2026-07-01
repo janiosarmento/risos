@@ -56,8 +56,6 @@ def main():
         )
         print(f"Total unique tags in DB: {len(all_rows)}")
 
-        t_pre = time.monotonic()
-
         # 1. Pre-compute metadata ONCE
         tag_metadata = {}
         for r in all_rows:

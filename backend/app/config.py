@@ -45,6 +45,8 @@ class Settings(BaseSettings):
 
     # Security
     cors_origins: str = "https://rss.sarmento.org"
+    cookie_secure: bool = True  # Set to false only for local HTTP development
+    jano_secret_prefix: str = "risos."  # Namespace allowed in /admin/validate-secret
 
     model_config = SettingsConfigDict(
         env_file=".env",

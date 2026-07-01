@@ -16,6 +16,7 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import UserSession
+from app.rate_limiter import limiter
 from app.schemas import LoginRequest, UserInfo
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -24,13 +25,15 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 90  # 90 days
 
 
 @router.post("/login")
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit(f"{settings.login_rate_limit}/minute")
+def login(request: Request, credentials: LoginRequest, db: Session = Depends(get_db)):
     """
     Authenticate with password, create session, set httpOnly cookie.
     Uses constant-time comparison to prevent timing attacks.
+    Rate limited per IP to prevent brute force.
     """
     password_valid = secrets.compare_digest(
-        request.password.encode("utf-8"), settings.app_password.encode("utf-8")
+        credentials.password.encode("utf-8"), settings.app_password.encode("utf-8")
     )
 
     if not password_valid:
@@ -54,7 +57,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         value=session_id,
         httponly=True,
         samesite="lax",
-        secure=False,  # Allow HTTP for local dev — reverse proxy handles HTTPS
+        secure=settings.cookie_secure,  # True in production; set COOKIE_SECURE=false for local HTTP dev
         max_age=COOKIE_MAX_AGE,
         path="/",
     )

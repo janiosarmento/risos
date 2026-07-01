@@ -20,7 +20,6 @@ from app.services.ai._constants import (
     MAX_TAGS,
     MODELS_FETCH_TIMEOUT,
     RATE_LIMIT_COOLDOWN_SECONDS,
-    SUMMARY_MAX_TOKENS,
     SUMMARY_TEMPERATURE,
 )
 
