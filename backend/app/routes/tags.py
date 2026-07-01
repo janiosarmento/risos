@@ -11,13 +11,14 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import func, text
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Feed, IgnoredTag, Post, PostTag, TopicTag
 from app.services.suggestions import clear_all_suggestions
+from app.services.tags import apply_tag_merge
 from app.services.user_profile import invalidate_user_profile
 
 logger = logging.getLogger(__name__)
@@ -491,45 +492,7 @@ def apply_merges(
             if not source or source == canonical:
                 continue
 
-            # --- post_tags ---
-            # Delete rows where the canonical already exists for the same post
-            db.execute(
-                text(
-                    "DELETE FROM post_tags WHERE tag = :source "
-                    "AND post_id IN ("
-                    "  SELECT post_id FROM post_tags WHERE tag = :canonical"
-                    ")"
-                ),
-                {"source": source, "canonical": canonical},
-            )
-            # Rename remaining source → canonical
-            result = db.execute(
-                text("UPDATE post_tags SET tag = :canonical WHERE tag = :source"),
-                {"source": source, "canonical": canonical},
-            )
-            posts_affected += result.rowcount
-
-            # --- topic_tags ---
-            db.execute(
-                text(
-                    "DELETE FROM topic_tags WHERE tag = :source "
-                    "AND topic_id IN ("
-                    "  SELECT topic_id FROM topic_tags WHERE tag = :canonical"
-                    ")"
-                ),
-                {"source": source, "canonical": canonical},
-            )
-            db.execute(
-                text("UPDATE topic_tags SET tag = :canonical WHERE tag = :source"),
-                {"source": source, "canonical": canonical},
-            )
-
-            # --- ignored_tags ---
-            db.execute(
-                text("DELETE FROM ignored_tags WHERE tag = :source"),
-                {"source": source},
-            )
-
+            posts_affected += apply_tag_merge(db, source, canonical)
             tags_removed += 1
 
     db.commit()

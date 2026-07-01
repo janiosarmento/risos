@@ -42,7 +42,7 @@ from app.services.ai import (
     generate_summary,
 )
 from app.services.ai._parsing import split_into_paragraphs
-from app.services.content_extractor import extract_full_content
+from app.services.content_extractor import ensure_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
 from app.services.url_safety import is_safe_external_url
@@ -514,16 +514,8 @@ async def get_post(
     post = get_post_or_404(db, post_id)
 
     # Extract full_content on-demand if not cached
+    await ensure_full_content(db, post)
     full_content = post.full_content
-    if not full_content and post.url:
-        try:
-            result = await extract_full_content(post.url)
-            if result.success:
-                full_content = result.content
-                post.full_content = full_content
-                db.commit()
-        except Exception as e:
-            logger.debug("Content extraction skipped for post %d: %s", post_id, e)
 
     # Fetch or generate AI summary on-demand
     summary_pt = None
@@ -844,17 +836,9 @@ async def regenerate_summary(
 
     # Get content for summary
     content_for_summary = post.full_content or post.content
-
-    # If no content, try to extract
     if not content_for_summary and post.url:
-        try:
-            result = await extract_full_content(post.url)
-            if result.success:
-                content_for_summary = result.content
-                post.full_content = content_for_summary
-                db.commit()
-        except Exception as e:
-            logger.error(f"Failed to extract content for post {post_id}: {e}")
+        await ensure_full_content(db, post)
+        content_for_summary = post.full_content
 
     if not content_for_summary or len(content_for_summary.strip()) < 100:
         raise HTTPException(

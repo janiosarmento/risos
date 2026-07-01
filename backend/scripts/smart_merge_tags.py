@@ -24,14 +24,15 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import httpx
-from sqlalchemy import func, text
+from app.services.ollama._api import OLLAMA_MODEL, OLLAMA_TIMEOUT, OLLAMA_URL
+from sqlalchemy import func
 
 from app.config import USER_AGENT
 from app.database import SessionLocal
 from app.models import PostTag
 from app.services.ai._parsing import normalize_tag, parse_json_response
-from app.services.ollama._api import OLLAMA_MODEL, OLLAMA_TIMEOUT, OLLAMA_URL
 from app.services.suggestions import clear_all_suggestions
+from app.services.tags import apply_tag_merge
 from app.services.user_profile import invalidate_user_profile
 from scripts.lib import log as _log
 
@@ -415,43 +416,7 @@ def apply_merges_to_db(db, merge_groups: list) -> tuple:
             if not source or source == canonical:
                 continue
 
-            # post_tags: delete conflicts, then rename
-            db.execute(
-                text(
-                    "DELETE FROM post_tags WHERE tag = :source "
-                    "AND post_id IN ("
-                    "  SELECT post_id FROM post_tags WHERE tag = :canonical"
-                    ")"
-                ),
-                {"source": source, "canonical": canonical},
-            )
-            result = db.execute(
-                text("UPDATE post_tags SET tag = :canonical WHERE tag = :source"),
-                {"source": source, "canonical": canonical},
-            )
-            posts_affected += result.rowcount
-
-            # topic_tags
-            db.execute(
-                text(
-                    "DELETE FROM topic_tags WHERE tag = :source "
-                    "AND topic_id IN ("
-                    "  SELECT topic_id FROM topic_tags WHERE tag = :canonical"
-                    ")"
-                ),
-                {"source": source, "canonical": canonical},
-            )
-            db.execute(
-                text("UPDATE topic_tags SET tag = :canonical WHERE tag = :source"),
-                {"source": source, "canonical": canonical},
-            )
-
-            # ignored_tags
-            db.execute(
-                text("DELETE FROM ignored_tags WHERE tag = :source"),
-                {"source": source},
-            )
-
+            posts_affected += apply_tag_merge(db, source, canonical)
             tags_removed += 1
 
     db.commit()

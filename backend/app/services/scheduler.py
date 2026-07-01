@@ -539,7 +539,7 @@ class Scheduler:
             circuit_breaker,
             generate_summary,
         )
-        from app.services.content_extractor import extract_full_content
+        from app.services.content_extractor import ensure_full_content
         from app.services.tags import save_post_tags
 
         # Interval based on rate limit (with safety margin)
@@ -665,20 +665,10 @@ class Scheduler:
                     # Fetch full_content if not available
                     content = post.full_content
                     if not content and post.url:
-                        try:
-                            logger.info(f"Fetching full content for post {post.id}...")
-                            result = await extract_full_content(post.url)
-                            if result.success and result.content:
-                                content = result.content
-                                post.full_content = content
-                                db.commit()
-                                logger.info(f"Full content saved for post {post.id}")
-                            # Delay to avoid rate limit (429)
-                            await asyncio.sleep(2)
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to extract content from post {post.id}: {e}"
-                            )
+                        await ensure_full_content(db, post)
+                        content = post.full_content
+                        # Delay to avoid rate limit (429)
+                        await asyncio.sleep(2)
 
                     # Fallback to RSS content
                     if not content:

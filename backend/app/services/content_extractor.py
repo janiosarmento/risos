@@ -360,3 +360,32 @@ async def extract_full_content(url: str) -> ExtractedContent:
         success=False,
         error="No content fetched",
     )
+
+
+async def ensure_full_content(db, post: "Post") -> str | None:  # noqa: F821 — Post imported at call site
+    """Fetch and cache full_content for *post* if not already cached.
+
+    Returns the current full_content (after possibly extracting it) or
+    ``None`` if no content could be obtained.  Updates *post.full_content*
+    and commits the session on success.
+
+    This is the single place for "try to fetch full_content" — used by
+    get_post, regenerate_summary, and _job_process_summaries.
+    (REFACTOR.md D4)
+    """
+    if post.full_content is not None:
+        return post.full_content
+
+    if not post.url:
+        return None
+
+    try:
+        result = await extract_full_content(post.url)
+        if result.success and result.content:
+            post.full_content = result.content
+            db.commit()
+            return result.content
+    except Exception:
+        logger = logging.getLogger(__name__)
+        logger.debug("Content extraction skipped for post %s", getattr(post, "id", "?"))
+    return None

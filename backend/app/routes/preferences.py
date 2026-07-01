@@ -148,83 +148,51 @@ def get_preferences(
     Get user preferences.
     Settings return env defaults if not overridden.
     """
-    all_keys = [
+    # Gather every key referenced in PREF_SPEC plus the special/non-spec keys.
+    all_keys = [sp.key for sp in PREF_SPEC.values()] + [
         PREF_LOCALE,
         PREF_THEME,
-        PREF_SUMMARY_LANGUAGE,
-        PREF_AI_MODEL,
-        PREF_FEED_UPDATE_INTERVAL,
-        PREF_MAX_POST_AGE_DAYS,
-        PREF_MAX_UNREAD_DAYS,
-        PREF_TOAST_TIMEOUT,
-        PREF_IDLE_REFRESH,
-        PREF_READING_MODE,
-        PREF_SPLIT_RATIO,
         PREF_SUGGESTION_MIN_TAGS,
-        PREF_PROFILE_MIN_TAG_FREQ,
         PREF_JANO_SECRET_NAME,
-        PREF_TAGS_PER_POST,
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
         PREF_BLOCKED_TERMS,
         PREF_API_BASE_URL,
-        PREF_AI_TIMEOUT,
-        PREF_RELATED_POSTS_LIMIT,
-        PREF_AI_MAX_TOKENS,
         PREF_BACKGROUND_JANO_SECRET_NAME,
         PREF_BACKGROUND_API_BASE_URL,
         PREF_BACKGROUND_AI_MODEL,
     ]
-
     prefs = {k: None for k in all_keys}
-
-    rows = db.query(AppSettings).filter(AppSettings.key.in_(all_keys)).all()
-
-    for row in rows:
+    for row in db.query(AppSettings).filter(AppSettings.key.in_(all_keys)).all():
         prefs[row.key] = row.value
 
-    # Helper to get int or default
-    def int_or_default(val, default):
-        if val is not None:
-            try:
-                return int(val)
-            except (ValueError, TypeError):
-                pass
-        return default
+    prompts = load_prompts()
+    def r(name): return _resolve_spec(prefs, name)
+    def i(name, default): return _resolve_spec(prefs, name) if name in PREF_SPEC else default
 
     return PreferencesResponse(
         locale=prefs[PREF_LOCALE],
         theme=prefs[PREF_THEME],
-        # AI settings
-        summary_language=prefs[PREF_SUMMARY_LANGUAGE] or "Brazilian Portuguese",
-        ai_model=prefs[PREF_AI_MODEL] or "llama-3.3-70b",
-        # Data settings
-        feed_update_interval=int_or_default(
-            prefs[PREF_FEED_UPDATE_INTERVAL],
-            30,
-        ),
-        max_post_age_days=int_or_default(prefs[PREF_MAX_POST_AGE_DAYS], 365),
-        max_unread_days=int_or_default(prefs[PREF_MAX_UNREAD_DAYS], 90),
-        # Interface settings
-        toast_timeout_seconds=int_or_default(prefs[PREF_TOAST_TIMEOUT], 2),
-        idle_refresh_seconds=int_or_default(prefs[PREF_IDLE_REFRESH], 180),
-        reading_mode=prefs[PREF_READING_MODE] or "fullscreen",
-        split_ratio=int_or_default(prefs[PREF_SPLIT_RATIO], 40),
-        # Suggestions
-        suggestion_min_tags=int_or_default(prefs[PREF_SUGGESTION_MIN_TAGS], 3),
-        profile_min_tag_freq=int_or_default(prefs[PREF_PROFILE_MIN_TAG_FREQ], 2),
-        # AI keys and prompts
+        summary_language=r("summary_language"),
+        ai_model=r("ai_model"),
+        feed_update_interval=r("feed_update_interval"),
+        max_post_age_days=r("max_post_age_days"),
+        max_unread_days=r("max_unread_days"),
+        toast_timeout_seconds=r("toast_timeout_seconds"),
+        idle_refresh_seconds=r("idle_refresh_seconds"),
+        reading_mode=r("reading_mode"),
+        split_ratio=r("split_ratio"),
+        suggestion_min_tags=get_effective_suggestion_min_tags(db),
+        profile_min_tag_freq=r("profile_min_tag_freq"),
         jano_secret_name=prefs[PREF_JANO_SECRET_NAME],
-        tags_per_post=int_or_default(prefs[PREF_TAGS_PER_POST], 7),
-        system_prompt=prefs[PREF_SYSTEM_PROMPT]
-        or load_prompts().get("system_prompt", ""),
-        user_prompt=prefs[PREF_USER_PROMPT] or load_prompts().get("user_prompt", ""),
+        tags_per_post=r("tags_per_post"),
+        system_prompt=prefs[PREF_SYSTEM_PROMPT] or prompts.get("system_prompt", ""),
+        user_prompt=prefs[PREF_USER_PROMPT] or prompts.get("user_prompt", ""),
         blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
         api_base_url=prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
-        ai_timeout=int_or_default(prefs[PREF_AI_TIMEOUT], 30),
-        related_posts_limit=int_or_default(prefs[PREF_RELATED_POSTS_LIMIT], 30),
-        ai_max_tokens=int_or_default(prefs[PREF_AI_MAX_TOKENS], 8192),
-        # Background AI settings
+        ai_timeout=r("ai_timeout"),
+        related_posts_limit=r("related_posts_limit"),
+        ai_max_tokens=r("ai_max_tokens"),
         background_jano_secret_name=prefs[PREF_BACKGROUND_JANO_SECRET_NAME],
         background_api_base_url=prefs[PREF_BACKGROUND_API_BASE_URL] or prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
         background_ai_model=prefs[PREF_BACKGROUND_AI_MODEL] or prefs[PREF_AI_MODEL] or "llama-3.3-70b",
@@ -382,8 +350,120 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
 
 
 # =============================================================================
+# Preference spec table — single source of truth for key / type / default.
+# Used by get_preferences(), update_preferences(), and every get_effective_*().
+# =============================================================================
+
+from dataclasses import dataclass
+from typing import Any, Callable
+
+
+def _int_clamp(sp: "PrefSpec", val: Any) -> Any:
+    if sp.clamp is not None:
+        return sp.clamp(val)
+    return val
+
+
+def _cast_int(val: Any) -> int | None:
+    if val is None:
+        return None
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return None
+
+
+@dataclass
+class PrefSpec:
+    key: str
+    default: Any
+    cast: Callable[[Any], Any | None] = lambda v: v
+    clamp: Callable[["PrefSpec", Any], Any] | None = None
+
+
+PREF_SPEC: dict[str, PrefSpec] = {
+    "summary_language": PrefSpec(
+        PREF_SUMMARY_LANGUAGE, "Brazilian Portuguese"
+    ),
+    "ai_model": PrefSpec(
+        PREF_AI_MODEL, "llama-3.3-70b"
+    ),
+    "feed_update_interval": PrefSpec(
+        PREF_FEED_UPDATE_INTERVAL, 30, cast=_cast_int,
+    ),
+    "max_post_age_days": PrefSpec(
+        PREF_MAX_POST_AGE_DAYS, 365, cast=_cast_int,
+    ),
+    "max_unread_days": PrefSpec(
+        PREF_MAX_UNREAD_DAYS, 90, cast=_cast_int,
+    ),
+    "toast_timeout_seconds": PrefSpec(
+        PREF_TOAST_TIMEOUT, 2, cast=_cast_int,
+    ),
+    "idle_refresh_seconds": PrefSpec(
+        PREF_IDLE_REFRESH, 180, cast=_cast_int,
+    ),
+    "reading_mode": PrefSpec(
+        PREF_READING_MODE, "fullscreen",
+    ),
+    "split_ratio": PrefSpec(
+        PREF_SPLIT_RATIO, 40, cast=_cast_int,
+        clamp=lambda sp, v: max(20, min(80, v)),
+    ),
+    "profile_min_tag_freq": PrefSpec(
+        PREF_PROFILE_MIN_TAG_FREQ, 2, cast=_cast_int,
+        clamp=lambda sp, v: max(1, min(20, v)),
+    ),
+    "tags_per_post": PrefSpec(
+        PREF_TAGS_PER_POST, 7, cast=_cast_int,
+        clamp=lambda sp, v: max(3, min(15, v)),
+    ),
+    "ai_timeout": PrefSpec(
+        PREF_AI_TIMEOUT, 30, cast=_cast_int,
+        clamp=lambda sp, v: max(5, v),
+    ),
+    "ai_max_tokens": PrefSpec(
+        PREF_AI_MAX_TOKENS, 8192, cast=_cast_int,
+        clamp=lambda sp, v: max(256, min(32768, v)),
+    ),
+    "related_posts_limit": PrefSpec(
+        PREF_RELATED_POSTS_LIMIT, 30, cast=_cast_int,
+        clamp=lambda sp, v: max(5, min(100, v)),
+    ),
+}
+
+
+def _get_effective(db: Session, name: str) -> Any:
+    """Resolve one preference from db or fall back to its spec default."""
+    spec = PREF_SPEC[name]
+    saved = _get_setting(db, spec.key)
+    val = spec.cast(saved) if saved is not None else None
+    if val is not None:
+        if spec.clamp is not None:
+            return spec.clamp(val)
+        return val
+    return spec.default
+
+
+def _resolve_spec(prefs: dict, name: str) -> Any:
+    """Like _get_effective but from a pre-fetched key→value dict (avoids N+1 queries)."""
+    spec = PREF_SPEC.get(name)
+    if spec is None:
+        return None
+    raw = prefs.get(spec.key)
+    if raw is not None:
+        val = spec.cast(raw)
+        if val is not None:
+            if spec.clamp is not None:
+                return spec.clamp(val)
+            return val
+    return spec.default
+
+
+# =============================================================================
 # Helper for other modules to get settings
 # =============================================================================
+
 
 
 def get_effective_ai_api_key(db: Session) -> Optional[str]:
@@ -426,74 +506,36 @@ def get_effective_user_prompt(db: Session) -> str:
 
 
 def get_effective_summary_language(db: Session) -> str:
-    saved = _get_setting(db, PREF_SUMMARY_LANGUAGE)
-    return saved or "Brazilian Portuguese"
+    return _get_effective(db, "summary_language")
 
 
 def get_effective_ai_model(db: Session) -> str:
-    saved = _get_setting(db, PREF_AI_MODEL)
-    return saved or "llama-3.3-70b"
+    return _get_effective(db, "ai_model")
 
 
 def get_effective_feed_update_interval(db: Session) -> int:
-    saved = _get_setting(db, PREF_FEED_UPDATE_INTERVAL)
-    if saved:
-        try:
-            return int(saved)
-        except (ValueError, TypeError):
-            pass
-    return 30
+    return _get_effective(db, "feed_update_interval")
 
 
 def get_effective_max_post_age_days(db: Session) -> int:
-    saved = _get_setting(db, PREF_MAX_POST_AGE_DAYS)
-    if saved:
-        try:
-            return int(saved)
-        except (ValueError, TypeError):
-            pass
-    return 365
+    return _get_effective(db, "max_post_age_days")
 
 
 def get_effective_max_unread_days(db: Session) -> int:
-    saved = _get_setting(db, PREF_MAX_UNREAD_DAYS)
-    if saved:
-        try:
-            return int(saved)
-        except (ValueError, TypeError):
-            pass
-    return 90
+    return _get_effective(db, "max_unread_days")
 
 
 def get_effective_toast_timeout(db: Session) -> int:
-    saved = _get_setting(db, PREF_TOAST_TIMEOUT)
-    if saved:
-        try:
-            return int(saved)
-        except (ValueError, TypeError):
-            pass
-    return 2
+    return _get_effective(db, "toast_timeout_seconds")
 
 
 def get_effective_idle_refresh(db: Session) -> int:
-    saved = _get_setting(db, PREF_IDLE_REFRESH)
-    if saved:
-        try:
-            return int(saved)
-        except (ValueError, TypeError):
-            pass
-    return 180
+    return _get_effective(db, "idle_refresh_seconds")
 
 
 def get_effective_tags_per_post(db: Session) -> int:
     """Get number of tags per post from app_settings or default (7)."""
-    saved = _get_setting(db, PREF_TAGS_PER_POST)
-    if saved:
-        try:
-            return max(3, min(15, int(saved)))
-        except (ValueError, TypeError):
-            pass
-    return 7  # Default: 7 tags per post
+    return _get_effective(db, "tags_per_post")
 
 
 def get_effective_suggestion_min_tags(db: Session) -> int:
@@ -510,35 +552,17 @@ def get_effective_suggestion_min_tags(db: Session) -> int:
 
 def get_effective_profile_min_tag_freq(db: Session) -> int:
     """Get minimum tag frequency for profile inclusion (default: 2)."""
-    saved = _get_setting(db, PREF_PROFILE_MIN_TAG_FREQ)
-    if saved:
-        try:
-            return max(1, min(20, int(saved)))
-        except (ValueError, TypeError):
-            pass
-    return 2  # Default: tag must appear in at least 2 liked posts
+    return _get_effective(db, "profile_min_tag_freq")
 
 
 def get_effective_ai_timeout(db: Session) -> int:
     """Get AI request timeout from app_settings or default 30s."""
-    saved = _get_setting(db, PREF_AI_TIMEOUT)
-    if saved:
-        try:
-            return max(5, int(saved))
-        except (ValueError, TypeError):
-            pass
-    return 30
+    return _get_effective(db, "ai_timeout")
 
 
 def get_effective_ai_max_tokens(db: Session) -> int:
     """Get AI request max tokens from app_settings or default 8192."""
-    saved = _get_setting(db, PREF_AI_MAX_TOKENS)
-    if saved:
-        try:
-            return max(256, min(32768, int(saved)))
-        except (ValueError, TypeError):
-            pass
-    return 8192
+    return _get_effective(db, "ai_max_tokens")
 
 
 def get_effective_api_base_url(db: Session) -> str:
@@ -585,10 +609,4 @@ def get_effective_blocked_terms(db: Session) -> list:
 
 
 def get_effective_related_posts_limit(db: Session) -> int:
-    saved = _get_setting(db, PREF_RELATED_POSTS_LIMIT)
-    if saved:
-        try:
-            return max(5, min(100, int(saved)))
-        except (ValueError, TypeError):
-            pass
-    return 30
+    return _get_effective(db, "related_posts_limit")

@@ -5,11 +5,65 @@ Tag management for the post suggestions system.
 import logging
 from typing import List
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models import PostTag
 
 logger = logging.getLogger(__name__)
+
+
+def apply_tag_merge(db: Session, source: str, canonical: str) -> int:
+    """Merge *source* tag into *canonical* across all tables that reference tags.
+
+    - post_tags: delete rows where the same post already has both tags, then
+      rename remaining source → canonical.
+    - topic_tags: same dedup-then-rename.
+    - ignored_tags: delete source (the canonical may or may not be in
+      ignored_tags; we don't touch it).
+
+    Returns the number of post_tags rows updated (0 if the source didn't
+    exist at all).  The caller owns the transaction — this function does NOT
+    commit.
+    """
+    # --- post_tags ---
+    db.execute(
+        text(
+            "DELETE FROM post_tags WHERE tag = :source "
+            "AND post_id IN ("
+            "  SELECT post_id FROM post_tags WHERE tag = :canonical"
+            ")"
+        ),
+        {"source": source, "canonical": canonical},
+    )
+    result = db.execute(
+        text("UPDATE post_tags SET tag = :canonical WHERE tag = :source"),
+        {"source": source, "canonical": canonical},
+    )
+    posts_affected = result.rowcount
+
+    # --- topic_tags ---
+    db.execute(
+        text(
+            "DELETE FROM topic_tags WHERE tag = :source "
+            "AND topic_id IN ("
+            "  SELECT topic_id FROM topic_tags WHERE tag = :canonical"
+            ")"
+        ),
+        {"source": source, "canonical": canonical},
+    )
+    db.execute(
+        text("UPDATE topic_tags SET tag = :canonical WHERE tag = :source"),
+        {"source": source, "canonical": canonical},
+    )
+
+    # --- ignored_tags ---
+    db.execute(
+        text("DELETE FROM ignored_tags WHERE tag = :source"),
+        {"source": source},
+    )
+
+    return posts_affected
 
 
 def save_post_tags(db: Session, post_id: int, tags: List[str]) -> int:
