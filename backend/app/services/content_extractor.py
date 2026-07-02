@@ -16,6 +16,7 @@ from readability import Document
 
 from app.config import USER_AGENT
 from app.services.html_sanitizer import sanitize_html
+from app.services.url_safety import is_safe_external_url
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +250,11 @@ async def extract_full_content(url: str) -> ExtractedContent:
     Returns:
         ExtractedContent with title and sanitized HTML content
     """
+    if not is_safe_external_url(url):
+        return ExtractedContent(
+            title="", content="", success=False, error="Unsafe or internal URL"
+        )
+
     html = None
     use_curl_fallback = False
 

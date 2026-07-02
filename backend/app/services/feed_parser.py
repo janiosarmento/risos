@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 from app.config import USER_AGENT
+from app.services.url_safety import is_safe_external_url
 
 TIMEOUT_SECONDS = 10
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
@@ -126,6 +127,9 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
     Raises:
         FeedFetchError: If unable to fetch the feed
     """
+    if not is_safe_external_url(url):
+        raise FeedFetchError("Unsafe or internal URL")
+
     final_url = url
     redirects_followed = 0
 
