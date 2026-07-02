@@ -168,22 +168,73 @@ async def get_available_models(engine: str = "ondemand") -> List[str]:
     return []
 
 
-async def _call_model(
-    model: str, api_key: str, key_index: int, messages: list, timeout: int = 30, max_tokens: int = 8192, base_url: str = None
-) -> SummaryResult:
-    """
-    Make a single API call to a specific model and parse the response.
+def _extract_content_from_choice(choice: dict) -> str:
+    """Pull the text content from any of the known OpenAI-compatible response shapes."""
+    message = choice.get("message", {})
+    for key in ("content", "reasoning"):
+        if key in message:
+            return message[key]
+    for key in ("text", "content"):
+        if key in choice:
+            return choice[key]
+    raise ModelSpecificError(f"Unknown response structure: {list(choice.keys())}")
 
-    Raises:
-        TemporaryError: Infrastructure error (rate limit, timeout, server error)
-        ModelSpecificError: Error likely caused by the model (bad response format)
-        PermanentError: Other permanent errors
-    """
+
+def _parse_summary_result(
+    content_response: str, was_truncated: bool, model: str
+) -> SummaryResult:
+    """Parse the JSON payload inside the LLM response into a SummaryResult."""
+    result = parse_json_response(content_response)
+
+    summary_pt = result.get("summary_pt", "").strip().replace("\\n", "\n")
+    one_line = result.get("one_line_summary", "").strip().replace("\\n", "\n")
+
+    translated_title = result.get("translated_title")
+    if translated_title and isinstance(translated_title, str):
+        translated_title = translated_title.strip()
+        if translated_title.lower() in ("null", "none", ""):
+            translated_title = None
+
+    tags = normalize_tags(result.get("tags", []), MAX_TAGS)
+
+    if bool(summary_pt) != bool(one_line):
+        raise ValueError("Inconsistent fields (one empty, other not)")
+
+    if len(one_line) > MAX_ONE_LINE_LENGTH:
+        one_line = one_line[: MAX_ONE_LINE_LENGTH - 3] + "..."
+
+    if summary_pt:
+        last_char = summary_pt.rstrip()[-1] if summary_pt.strip() else ""
+        ends_properly = last_char in ".!?:;)\"'»"
+        if was_truncated or (not ends_properly and not tags):
+            raise ModelSpecificError(
+                f"Incomplete summary: truncated={was_truncated}, "
+                f"tags={len(tags)}, ends_with='{last_char}'"
+            )
+
+    return SummaryResult(
+        summary_pt=summary_pt,
+        one_line_summary=one_line,
+        translated_title=translated_title,
+        tags=tags,
+        model=model,
+    )
+
+
+async def _call_model(
+    model: str,
+    api_key: str,
+    key_index: int,
+    messages: list,
+    timeout: int = 30,
+    max_tokens: int = 8192,
+    base_url: str = None,
+) -> SummaryResult:
+    """Make a single API call to a specific model and parse the response."""
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-
     payload = {
         "model": model,
         "messages": messages,
@@ -193,139 +244,61 @@ async def _call_model(
 
     try:
         async with httpx.AsyncClient(
-            timeout=timeout,
-            headers={"User-Agent": USER_AGENT},
+            timeout=timeout, headers={"User-Agent": USER_AGENT}
         ) as client:
             target_url = (base_url or _get_api_base_url()).rstrip("/")
             response = await client.post(
-                f"{target_url}/chat/completions",
-                headers=headers,
-                json=payload,
+                f"{target_url}/chat/completions", headers=headers, json=payload
             )
 
-            # Handle rate limit (cooldown specific to this key, does not affect circuit breaker)
             if response.status_code == 429:
                 retry_after = response.headers.get("retry-after", "unknown")
                 logger.warning(
-                    f"Rate limit 429 on key {key_index + 1}: "
-                    f"retry-after={retry_after}, "
-                    f"headers={dict(response.headers)}"
+                    "Rate limit 429 on key %s: retry-after=%s, headers=%s",
+                    key_index + 1, retry_after, dict(response.headers),
                 )
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
                 )
                 raise RateLimited(f"Rate limit reached on key {key_index + 1}")
 
-            # Handle server errors
             if response.status_code >= 500:
                 raise TemporaryError(f"Server error: HTTP {response.status_code}")
 
-            # Handle client errors
             if response.status_code >= 400:
                 logger.error(
                     "[API] HTTP %s from %s: %s",
-                    response.status_code,
-                    target_url,
-                    response.text[:500],
+                    response.status_code, target_url, response.text[:500],
                 )
                 raise ModelSpecificError(f"Request error: HTTP {response.status_code}")
 
-            # Parse response
             data = response.json()
-            logger.debug(f"API response keys: {data.keys()}")
-
             if "choices" not in data or not data["choices"]:
-                logger.error(f"Response without choices: {data}")
+                logger.error("Response without choices: %s", data)
                 raise ModelSpecificError("Empty API response")
 
             choice = data["choices"][0]
-            logger.debug(f"Choice keys: {choice.keys()}")
-
-            # Check if response was truncated
             was_truncated = choice.get("finish_reason") == "length"
             if was_truncated:
                 logger.warning("Response truncated by API (finish_reason=length)")
 
-            # Try different response structures
-            message = choice.get("message", {})
-            if "content" in message:
-                content_response = message["content"]
-            elif "reasoning" in message:
-                content_response = message["reasoning"]
-            elif "text" in choice:
-                content_response = choice["text"]
-            elif "content" in choice:
-                content_response = choice["content"]
-            else:
-                logger.error(f"Unknown response structure: {choice}")
-                raise ModelSpecificError(
-                    f"Unknown response structure: {list(choice.keys())}"
-                )
+            content_response = _extract_content_from_choice(choice)
 
-            # Parse JSON from response
             try:
-                result = parse_json_response(content_response)
-
-                summary_pt = result.get("summary_pt", "").strip()
-                one_line = result.get("one_line_summary", "").strip()
-                translated_title = result.get("translated_title")
-
-                # Fix double-escaped newlines
-                summary_pt = summary_pt.replace("\\n", "\n")
-                one_line = one_line.replace("\\n", "\n")
-
-                # Clean translated_title if "null" string or empty
-                if translated_title and isinstance(translated_title, str):
-                    translated_title = translated_title.strip()
-                    if translated_title.lower() in ("null", "none", ""):
-                        translated_title = None
-
-                # Extract and normalize tags
-                tags = normalize_tags(result.get("tags", []), MAX_TAGS)
-
-                # Allow both empty (error pages) or both filled
-                if bool(summary_pt) != bool(one_line):
-                    raise ValueError("Inconsistent fields (one empty, other not)")
-
-                # Truncate one_line if needed
-                if len(one_line) > MAX_ONE_LINE_LENGTH:
-                    one_line = one_line[: MAX_ONE_LINE_LENGTH - 3] + "..."
-
-                # Detect incomplete/truncated summaries
-                if summary_pt:
-                    last_char = summary_pt.rstrip()[-1] if summary_pt.strip() else ""
-                    ends_properly = last_char in ".!?:;)\"'»"
-                    if was_truncated or (not ends_properly and not tags):
-                        raise ModelSpecificError(
-                            f"Incomplete summary: "
-                            f"truncated={was_truncated}, "
-                            f"tags={len(tags)}, "
-                            f"ends_with='{last_char}'"
-                        )
-
-                # Use actual model from response (proxy may fallback)
                 actual_model = data.get("model", model)
                 if "oxit_model" in data:
                     logger.info(
-                        f"Proxy fallback: requested {model}, used {data['oxit_model']}"
+                        "Proxy fallback: requested %s, used %s",
+                        model, data["oxit_model"],
                     )
-
-                return SummaryResult(
-                    summary_pt=summary_pt,
-                    one_line_summary=one_line,
-                    translated_title=translated_title,
-                    tags=tags,
-                    model=actual_model,
-                )
-
+                return _parse_summary_result(content_response, was_truncated, actual_model)
             except (json.JSONDecodeError, ValueError) as e:
-                logger.error(f"Error parsing response from model {model}: {e}")
-                logger.error(f"Raw response: {content_response[:500]}")
+                logger.error("Error parsing response from model %s: %s", model, e)
+                logger.error("Raw response: %s", content_response[:500])
                 raise ModelSpecificError(f"Invalid response: {e}")
 
     except httpx.TimeoutException:
         raise TemporaryError(f"Timeout after {timeout}s")
-
     except httpx.RequestError as e:
         raise TemporaryError(f"Connection error: {e}")
 
