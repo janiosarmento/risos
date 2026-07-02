@@ -132,6 +132,76 @@ def get_summary_status(db: Session, post: Post) -> str:
     return "not_configured"
 
 
+def _apply_post_filters(
+    query,
+    db: Session,
+    *,
+    feed_id: Optional[int] = None,
+    category_id: Optional[int] = None,
+    tag: Optional[str] = None,
+    topic_id: Optional[int] = None,
+    unread_only: bool = False,
+    starred_only: bool = False,
+    suggested_only: bool = False,
+    search: Optional[str] = None,
+):
+    """Apply the standard post list filters to *query* and return (query, relevant_feed_ids)."""
+    relevant_feed_ids: set[int] = set()
+
+    # topic / tag (mutually exclusive; topic wins)
+    if topic_id is not None:
+        topic_tags = [
+            row.tag
+            for row in db.query(TopicTag.tag)
+            .filter(TopicTag.topic_id == topic_id)
+            .all()
+        ]
+        if topic_tags:
+            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
+        else:
+            query = query.filter(Post.id == -1)
+    elif tag:
+        query = query.join(PostTag).filter(PostTag.tag == tag.strip().lower())
+
+    # feed / category
+    if feed_id is not None:
+        query = query.filter(Post.feed_id == feed_id)
+        relevant_feed_ids.add(feed_id)
+    elif category_id is not None:
+        category_feeds = (
+            db.query(Feed.id).filter(Feed.category_id == category_id).all()
+        )
+        feed_ids_list = [f.id for f in category_feeds]
+        relevant_feed_ids.update(feed_ids_list)
+        feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
+        query = query.filter(Post.feed_id.in_(feed_ids))
+
+    # boolean flags
+    if starred_only:
+        query = query.filter(Post.is_starred.is_(True))
+    if suggested_only:
+        query = query.filter(Post.is_suggested.is_(True))
+    if unread_only:
+        query = query.filter(Post.is_read.is_(False))
+
+    # search
+    if search and search.strip():
+        term = f"%{search.strip().lower()}%"
+        query = query.outerjoin(
+            AISummary, Post.content_hash == AISummary.content_hash
+        ).filter(
+            or_(
+                func.lower(Post.title).like(term),
+                func.lower(Post.content).like(term),
+                func.lower(AISummary.translated_title).like(term),
+                func.lower(AISummary.one_line_summary).like(term),
+                func.lower(AISummary.summary_pt).like(term),
+            )
+        )
+
+    return query, relevant_feed_ids
+
+
 @router.get("", response_model=PostListResponse)
 def list_posts(
     feed_id: Optional[int] = Query(None, description="Filter by feed"),
@@ -149,68 +219,21 @@ def list_posts(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    """
-    List posts with pagination.
-    Ordered by sort_date DESC (newest first).
-    Also returns updated unread counts for relevant feeds.
-    """
+    """List posts with pagination. Ordered by sort_date DESC (newest first)."""
     query = db.query(Post).options(subqueryload(Post.tags))
+    query, relevant_feed_ids = _apply_post_filters(
+        query,
+        db,
+        feed_id=feed_id,
+        category_id=category_id,
+        tag=tag,
+        topic_id=topic_id,
+        unread_only=unread_only,
+        starred_only=starred_only,
+        suggested_only=suggested_only,
+        search=search,
+    )
 
-    # Track which feeds to return unread counts for
-    relevant_feed_ids = set()
-
-    # Apply topic or tag filter (mutually exclusive; topic_id takes precedence)
-    if topic_id is not None:
-        topic_tags = [
-            row.tag
-            for row in db.query(TopicTag.tag)
-            .filter(TopicTag.topic_id == topic_id)
-            .all()
-        ]
-        if topic_tags:
-            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
-        else:
-            # Empty topic — no posts match
-            query = query.filter(Post.id == -1)
-    elif tag:
-        query = query.join(PostTag).filter(PostTag.tag == tag.strip().lower())
-
-    # Apply feed/category filter first
-    if feed_id is not None:
-        query = query.filter(Post.feed_id == feed_id)
-        relevant_feed_ids.add(feed_id)
-    elif category_id is not None:
-        # Get feeds from the category
-        category_feeds = db.query(Feed.id).filter(Feed.category_id == category_id).all()
-        feed_ids_list = [f.id for f in category_feeds]
-        relevant_feed_ids.update(feed_ids_list)
-        feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
-        query = query.filter(Post.feed_id.in_(feed_ids))
-
-    # Apply filters (can be combined)
-    if starred_only:
-        query = query.filter(Post.is_starred.is_(True))
-    if suggested_only:
-        query = query.filter(Post.is_suggested.is_(True))
-    if unread_only:
-        query = query.filter(Post.is_read.is_(False))
-
-    # Apply search filter (title + AI summary fields)
-    if search and search.strip():
-        term = f"%{search.strip().lower()}%"
-        query = query.outerjoin(
-            AISummary, Post.content_hash == AISummary.content_hash
-        ).filter(
-            or_(
-                func.lower(Post.title).like(term),
-                func.lower(Post.content).like(term),
-                func.lower(AISummary.translated_title).like(term),
-                func.lower(AISummary.one_line_summary).like(term),
-                func.lower(AISummary.summary_pt).like(term),
-            )
-        )
-
-    # Count total
     total = query.count()
 
     # Fetch sorted posts
