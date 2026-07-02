@@ -494,6 +494,7 @@ def validate_secret(
 @router.get("/models")
 async def list_available_models(
     engine: str = "ondemand",
+    db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     """
@@ -510,16 +511,12 @@ async def list_available_models(
         get_effective_background_api_base_url,
     )
 
-    db = next(get_db())
-    try:
-        if engine == "background":
-            api_key = get_effective_background_ai_api_key(db)
-            api_url = get_effective_background_api_base_url(db)
-        else:
-            api_key = get_effective_ai_api_key(db)
-            api_url = get_effective_api_base_url(db)
-    finally:
-        db.close()
+    if engine == "background":
+        api_key = get_effective_background_ai_api_key(db)
+        api_url = get_effective_background_api_base_url(db)
+    else:
+        api_key = get_effective_ai_api_key(db)
+        api_url = get_effective_api_base_url(db)
 
     if not api_key:
         return JSONResponse(
