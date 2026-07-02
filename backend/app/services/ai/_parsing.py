@@ -57,7 +57,7 @@ _ABBREVIATIONS = sorted(
 _PLACEHOLDER = "\x00"
 
 _ABBREV_PATTERN = re.compile(
-    r"\b(" + "|".join(re.escape(abbr) for abbr in _ABBREVIATIONS) + r")"
+    r"\b(?:[A-Z]\.|" + "|".join(re.escape(abbr) for abbr in _ABBREVIATIONS) + r")"
 )
 
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÝÇ0-9])")
