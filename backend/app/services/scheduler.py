@@ -528,9 +528,152 @@ class Scheduler:
 
             await asyncio.sleep(interval)
 
+    def _claim_queue_item(self, db):
+        """Claim the highest-priority eligible item from the summary queue.
+
+        Returns (candidate, now) on success, or (None, None) when the
+        queue is empty or another worker beat us to the lock.
+        """
+        from app.models import Feed, Post, SummaryQueue
+
+        now = datetime.utcnow()
+        lock_timeout = now - timedelta(seconds=SUMMARY_LOCK_TIMEOUT_SECONDS)
+
+        candidate = (
+            db.query(SummaryQueue)
+            .join(Post, SummaryQueue.post_id == Post.id)
+            .join(Feed, Post.feed_id == Feed.id)
+            .filter(
+                (SummaryQueue.locked_at.is_(None))
+                | (SummaryQueue.locked_at < lock_timeout),
+                (SummaryQueue.cooldown_until.is_(None))
+                | (SummaryQueue.cooldown_until < now),
+            )
+            .order_by(
+                SummaryQueue.priority.desc(),
+                Feed.weight.desc(),
+                Post.published_at.desc(),
+            )
+            .first()
+        )
+        if not candidate:
+            return None, now
+
+        result = (
+            db.query(SummaryQueue)
+            .filter(
+                SummaryQueue.id == candidate.id,
+                (SummaryQueue.locked_at.is_(None))
+                | (SummaryQueue.locked_at < lock_timeout),
+            )
+            .update({"locked_at": now})
+        )
+        if result == 0:
+            db.rollback()
+            return None, now
+
+        db.commit()
+        return candidate, now
+
+    def _validate_and_prepare_post(self, db, candidate):
+        """Check that the post behind *candidate* is still valid and has content.
+
+        Returns (post, content, title_only) when ready to generate, or
+        (None, None, None) when the item should be skipped (the caller
+        continues the main loop).
+        """
+        from app.models import AISummary, Post, SummaryQueue
+
+        # Already summarized?
+        existing = (
+            db.query(AISummary)
+            .filter(AISummary.content_hash == candidate.content_hash)
+            .first()
+        )
+        if existing:
+            db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+            db.commit()
+            return None, None, None
+
+        post = db.query(Post).filter(Post.id == candidate.post_id).first()
+        if not post or post.skip_summary:
+            db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+            db.commit()
+            return None, None, None
+
+        if post.is_read and not post.is_starred:
+            db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+            db.commit()
+            return None, None, None
+
+        content = post.full_content or post.content
+        title_only = False
+
+        if not content:
+            if post.title:
+                content = post.title
+                title_only = True
+            else:
+                post.skip_summary = True
+                db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                db.commit()
+                return None, None, None
+
+        return post, content, title_only
+
+    def _handle_summary_error(self, db, post, candidate, error):
+        """Update queue state after a failed generation attempt."""
+        from app.models import SummaryQueue
+        from app.services.ai import (
+            GarbageContentError,
+            TemporaryError,
+        )
+
+        now = datetime.utcnow()
+
+        if isinstance(error, GarbageContentError):
+            post.skip_summary = True
+            db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+            db.commit()
+            logger.info("Post %s: %s, marked skip_summary", post.id, error)
+            return
+
+        candidate.attempts = (candidate.attempts or 0) + 1
+        candidate.last_error = str(error)
+        candidate.locked_at = None
+
+        if isinstance(error, TemporaryError):
+            err_msg = str(error)
+            # "All API keys are in cooldown" is not the item's fault — retry
+            if "API keys" in err_msg and "cooldown" in err_msg:
+                candidate.locked_at = None
+                candidate.last_error = err_msg
+                candidate.attempts = (candidate.attempts or 1) - 1  # don't count
+                db.commit()
+                return
+
+            candidate.error_type = "temporary"
+            if candidate.attempts >= 5:
+                candidate.cooldown_until = now + timedelta(hours=24)
+                candidate.attempts = 0
+                logger.warning("Post %s: 5 errors, 24h cooldown", post.id)
+        else:
+            candidate.error_type = "permanent"
+            if candidate.attempts >= 5:
+                db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+                logger.error(
+                    "Post %s: removed from queue after 5 attempts (not marked skip)",
+                    post.id,
+                )
+
+        db.commit()
+        logger.warning(
+            "%s error post %s: %s", type(error).__name__, post.id, error
+        )
+
     async def _job_process_summaries(self):
         """Job to process AI summary queue."""
-        from app.models import AISummary, Feed, Post, SummaryQueue
+        from app.models import AISummary, SummaryQueue
         from app.services.ai import (
             GarbageContentError,
             PermanentError,
@@ -542,268 +685,73 @@ class Scheduler:
         from app.services.content_extractor import ensure_full_content
         from app.services.tags import save_post_tags
 
-        # Interval based on rate limit (with safety margin)
         interval = max(5, 60 // AI_MAX_RPM + 1)
 
         while self._running and self.is_leader:
             try:
-                # Check if API can be called
-                can_call, reason = circuit_breaker.can_call()
-                if not can_call:
-                    logger.debug(f"Job process_summaries: {reason}")
+                if not circuit_breaker.can_call()[0]:
                     await asyncio.sleep(interval)
                     continue
 
-                # Check if any API key is available BEFORE grabbing a queue item
-                # This prevents wasting attempts when all keys are rate-limited
                 if not api_key_rotator.has_available_key():
-                    logger.debug(
-                        "Job process_summaries: all API keys in cooldown, waiting..."
-                    )
-                    await asyncio.sleep(30)  # Wait longer when all keys are blocked
+                    await asyncio.sleep(30)
                     continue
 
                 db = SessionLocal()
                 try:
-                    now = datetime.utcnow()
-                    lock_timeout = now - timedelta(seconds=SUMMARY_LOCK_TIMEOUT_SECONDS)
-
-                    # Find next eligible item.
-                    # Re-evaluated every iteration so high-weight posts added
-                    # after queue start immediately preempt lower-weight ones.
-                    # Order: user-requested (priority) → feed weight → newest first
-                    candidate = (
-                        db.query(SummaryQueue)
-                        .join(Post, SummaryQueue.post_id == Post.id)
-                        .join(Feed, Post.feed_id == Feed.id)
-                        .filter(
-                            (SummaryQueue.locked_at.is_(None))
-                            | (SummaryQueue.locked_at < lock_timeout),
-                            (SummaryQueue.cooldown_until.is_(None))
-                            | (SummaryQueue.cooldown_until < now),
-                        )
-                        .order_by(
-                            SummaryQueue.priority.desc(),
-                            Feed.weight.desc(),
-                            Post.published_at.desc(),
-                        )
-                        .first()
-                    )
-
+                    candidate, now = self._claim_queue_item(db)
                     if not candidate:
-                        logger.debug("Job process_summaries: queue empty")
                         await asyncio.sleep(interval)
                         continue
 
-                    # Try to acquire lock atomically
-                    result = (
-                        db.query(SummaryQueue)
-                        .filter(
-                            SummaryQueue.id == candidate.id,
-                            (SummaryQueue.locked_at.is_(None))
-                            | (SummaryQueue.locked_at < lock_timeout),
-                        )
-                        .update({"locked_at": now})
-                    )
-
-                    if result == 0:
-                        # Another worker got it
-                        db.rollback()
-                        continue
-
-                    db.commit()
-
-                    # Check if summary already exists for this hash
-                    existing_summary = (
-                        db.query(AISummary)
-                        .filter(AISummary.content_hash == candidate.content_hash)
-                        .first()
-                    )
-
-                    if existing_summary:
-                        # Summary already exists, remove from queue
-                        db.query(SummaryQueue).filter(
-                            SummaryQueue.id == candidate.id
-                        ).delete()
-                        db.commit()
-                        logger.debug(
-                            f"Summary already exists for hash {candidate.content_hash[:16]}..."
-                        )
-                        continue
-
-                    # Get post for content
-                    post = db.query(Post).filter(Post.id == candidate.post_id).first()
+                    post, content, title_only = self._validate_and_prepare_post(db, candidate)
                     if not post:
-                        # Post was deleted, remove from queue
-                        db.query(SummaryQueue).filter(
-                            SummaryQueue.id == candidate.id
-                        ).delete()
-                        db.commit()
                         continue
 
-                    # Skip posts marked as "skip summary" by user
-                    if post.skip_summary:
-                        db.query(SummaryQueue).filter(
-                            SummaryQueue.id == candidate.id
-                        ).delete()
-                        db.commit()
-                        logger.debug(
-                            f"Post {post.id} marked skip_summary, removing from queue"
-                        )
-                        continue
-
-                    # Skip already read posts (not worth spending API on them)
-                    # But always generate for favorites (needed for tags/suggestions)
-                    if post.is_read and not post.is_starred:
-                        db.query(SummaryQueue).filter(
-                            SummaryQueue.id == candidate.id
-                        ).delete()
-                        db.commit()
-                        logger.debug(f"Post {post.id} already read, skipping summary")
-                        continue
-
-                    # Fetch full_content if not available
-                    content = post.full_content
-                    if not content and post.url:
+                    # Fetch full_content if not already cached
+                    if not post.full_content and post.url:
                         await ensure_full_content(db, post)
-                        content = post.full_content
-                        # Delay to avoid rate limit (429)
+                        content = post.full_content or content
                         await asyncio.sleep(2)
 
-                    # Fallback to RSS content
-                    if not content:
-                        content = post.content
-
-                    title_only = False
-                    if not content:
-                        if post.title:
-                            # No content but has title — use title as content
-                            # so the AI can at least translate the title
-                            content = post.title
-                            title_only = True
-                        else:
-                            # No content and no title, skip permanently
-                            post.skip_summary = True
-                            db.query(SummaryQueue).filter(
-                                SummaryQueue.id == candidate.id
-                            ).delete()
-                            db.commit()
-                            logger.debug(
-                                f"Post {post.id}: no content, marked skip_summary"
-                            )
-                            continue
-
-                    # Call API
                     try:
-                        logger.info(f"Generating summary for post {post.id}...")
+                        logger.info("Generating summary for post %s...", post.id)
                         summary_result = await generate_summary(
-                            content, title=post.title, title_only=title_only, engine="background"
+                            content, title=post.title, title_only=title_only,
+                            engine="background",
                         )
-
-                        # Append model attribution to summary
                         summary_text = summary_result.get_summary_with_signature()
 
-                        # Save summary
-                        ai_summary = AISummary(
+                        db.add(AISummary(
                             content_hash=candidate.content_hash,
                             summary_pt=summary_text,
                             one_line_summary=summary_result.one_line_summary,
                             translated_title=summary_result.translated_title,
-                        )
-                        db.add(ai_summary)
-
-                        # Save tags for recommendations
+                        ))
                         if summary_result.tags:
-                            tag_count = save_post_tags(db, post.id, summary_result.tags)
-                            logger.debug(f"Saved {tag_count} tags for post {post.id}")
-
-                        # Remove from queue
+                            save_post_tags(db, post.id, summary_result.tags)
                         db.query(SummaryQueue).filter(
                             SummaryQueue.id == candidate.id
                         ).delete()
                         db.commit()
+                        logger.info("Summary generated for post %s", post.id)
 
-                        logger.info(
-                            f"Summary generated successfully for post {post.id}"
-                        )
-
-                        # Throttle automatic queue to reduce rate limit pressure.
-                        # Manual requests (generate/regenerate) bypass this.
-                        from app.services.ai._constants import (
-                            SUMMARY_QUEUE_SLEEP_SECONDS,
-                        )
-
+                        from app.services.ai._constants import SUMMARY_QUEUE_SLEEP_SECONDS
                         await asyncio.sleep(SUMMARY_QUEUE_SLEEP_SECONDS)
 
-                    except GarbageContentError as e:
-                        # Content is unusable — mark skip and remove from queue
-                        post.skip_summary = True
-                        db.query(SummaryQueue).filter(
-                            SummaryQueue.id == candidate.id
-                        ).delete()
-                        db.commit()
-                        logger.info(f"Post {post.id}: {e}, marked skip_summary")
-
-                    except TemporaryError as e:
-                        error_msg = str(e)
-
-                        # Special case: "All API keys are in cooldown" is NOT the item's fault
-                        # Don't count it as an attempt - just release the lock
-                        if "API keys" in error_msg and "cooldown" in error_msg:
-                            candidate.locked_at = None
-                            candidate.last_error = error_msg
-                            db.commit()
-                            logger.debug(
-                                f"Post {post.id}: API keys unavailable, will retry"
-                            )
-                            continue
-
-                        # Normal temporary error - increment attempts
-                        candidate.attempts = (candidate.attempts or 0) + 1
-                        candidate.last_error = error_msg
-                        candidate.error_type = "temporary"
-
-                        if candidate.attempts >= 5:
-                            # 24h cooldown
-                            candidate.cooldown_until = now + timedelta(hours=24)
-                            candidate.attempts = 0
-                            logger.warning(f"Post {post.id}: 5 errors, 24h cooldown")
-
-                        candidate.locked_at = None
-                        db.commit()
-                        logger.warning(f"Temporary error post {post.id}: {e}")
-
-                    except PermanentError as e:
-                        # API/infrastructure error — not the content's fault
-                        candidate.attempts = (candidate.attempts or 0) + 1
-                        candidate.last_error = str(e)
-                        candidate.error_type = "permanent"
-                        candidate.locked_at = None
-
-                        if candidate.attempts >= 5:
-                            # Too many failures — remove from queue but
-                            # do NOT mark skip_summary (user can retry)
-                            db.query(SummaryQueue).filter(
-                                SummaryQueue.id == candidate.id
-                            ).delete()
-                            logger.error(
-                                f"Post {post.id}: removed from queue "
-                                f"after 5 attempts (not marked skip)"
-                            )
-
-                        db.commit()
-                        logger.error(f"Permanent error post {post.id}: {e}")
+                    except (GarbageContentError, TemporaryError, PermanentError) as e:
+                        self._handle_summary_error(db, post, candidate, e)
 
                 except Exception as e:
                     db.rollback()
-                    logger.error(f"Error in job process_summaries: {e}")
+                    logger.error("Error in job process_summaries: %s", e)
                 finally:
                     db.close()
 
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in job process_summaries: {e}")
+                logger.error("Error in job process_summaries: %s", e)
 
             await asyncio.sleep(interval)
 
