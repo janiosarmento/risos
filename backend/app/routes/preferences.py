@@ -199,129 +199,95 @@ def get_preferences(
     )
 
 
+# Mapping from PreferencesUpdate field → app_settings key, grouped by
+# transform.  (K4 — the simple cases use a loop; special cases stay explicit.)
+_UPDATE_FIELDS_AS_IS: list[tuple[str, str]] = [
+    ("locale", PREF_LOCALE),
+    ("theme", PREF_THEME),
+    ("summary_language", PREF_SUMMARY_LANGUAGE),
+    ("ai_model", PREF_AI_MODEL),
+    ("reading_mode", PREF_READING_MODE),
+    ("system_prompt", PREF_SYSTEM_PROMPT),
+    ("user_prompt", PREF_USER_PROMPT),
+    ("background_ai_model", PREF_BACKGROUND_AI_MODEL),
+]
+_UPDATE_FIELDS_STRINT: list[tuple[str, str]] = [
+    ("feed_update_interval", PREF_FEED_UPDATE_INTERVAL),
+    ("max_post_age_days", PREF_MAX_POST_AGE_DAYS),
+    ("max_unread_days", PREF_MAX_UNREAD_DAYS),
+    ("toast_timeout_seconds", PREF_TOAST_TIMEOUT),
+    ("idle_refresh_seconds", PREF_IDLE_REFRESH),
+    ("ai_timeout", PREF_AI_TIMEOUT),
+]
+
+
 @router.put("", response_model=PreferencesResponse)
 def update_preferences(
     prefs: PreferencesUpdate,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    """
-    Update user preferences.
-    Only updates fields that are provided (not None).
-    """
-    if prefs.locale is not None:
-        _set_setting(db, PREF_LOCALE, prefs.locale)
+    """Update user preferences.  Only fields that are provided (not None)."""
 
-    if prefs.theme is not None:
-        _set_setting(db, PREF_THEME, prefs.theme)
+    # ---- simple fields (no transform) ----
+    for field, key in _UPDATE_FIELDS_AS_IS:
+        val = getattr(prefs, field, None)
+        if val is not None:
+            _set_setting(db, key, val)
 
-    if prefs.summary_language is not None:
-        _set_setting(db, PREF_SUMMARY_LANGUAGE, prefs.summary_language)
+    # ---- simple int fields (store as string) ----
+    for field, key in _UPDATE_FIELDS_STRINT:
+        val = getattr(prefs, field, None)
+        if val is not None:
+            _set_setting(db, key, str(val))
 
-    if prefs.ai_model is not None:
-        _set_setting(db, PREF_AI_MODEL, prefs.ai_model)
-
-    # Data settings (store as string)
-    if prefs.feed_update_interval is not None:
-        _set_setting(db, PREF_FEED_UPDATE_INTERVAL, str(prefs.feed_update_interval))
-
-    if prefs.max_post_age_days is not None:
-        _set_setting(db, PREF_MAX_POST_AGE_DAYS, str(prefs.max_post_age_days))
-
-    if prefs.max_unread_days is not None:
-        _set_setting(db, PREF_MAX_UNREAD_DAYS, str(prefs.max_unread_days))
-
-    # Interface settings (store as string)
-    if prefs.toast_timeout_seconds is not None:
-        _set_setting(db, PREF_TOAST_TIMEOUT, str(prefs.toast_timeout_seconds))
-
-    if prefs.idle_refresh_seconds is not None:
-        _set_setting(db, PREF_IDLE_REFRESH, str(prefs.idle_refresh_seconds))
-
-    if prefs.reading_mode is not None:
-        _set_setting(db, PREF_READING_MODE, prefs.reading_mode)
+    # ---- special cases (clamping, trimming, side effects) ----
 
     if prefs.split_ratio is not None:
-        # Clamp to valid range
-        ratio = max(20, min(80, prefs.split_ratio))
-        _set_setting(db, PREF_SPLIT_RATIO, str(ratio))
+        _set_setting(db, PREF_SPLIT_RATIO, str(max(20, min(80, prefs.split_ratio))))
 
-    # Suggestions settings
     if prefs.suggestion_min_tags is not None:
-        # Clamp to valid range (1 to tags_per_post)
         max_tags = get_effective_tags_per_post(db)
-        min_tags = max(1, min(max_tags, prefs.suggestion_min_tags))
-        _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(min_tags))
-        # Clear all suggestions so they get re-evaluated with the new threshold
+        clamped = max(1, min(max_tags, prefs.suggestion_min_tags))
+        _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(clamped))
         from app.services.suggestions import clear_all_suggestions
-
         clear_all_suggestions(db)
 
     if prefs.profile_min_tag_freq is not None:
-        freq = max(1, min(20, prefs.profile_min_tag_freq))
-        _set_setting(db, PREF_PROFILE_MIN_TAG_FREQ, str(freq))
-        # Rebuild profile and re-evaluate suggestions
+        clamped = max(1, min(20, prefs.profile_min_tag_freq))
+        _set_setting(db, PREF_PROFILE_MIN_TAG_FREQ, str(clamped))
         from app.services.suggestions import clear_all_suggestions
         from app.services.user_profile import invalidate_user_profile
-
         clear_all_suggestions(db)
         invalidate_user_profile(db)
 
-    # AI keys and prompts
     if prefs.jano_secret_name is not None:
         _set_setting(db, PREF_JANO_SECRET_NAME, prefs.jano_secret_name.strip())
 
     if prefs.tags_per_post is not None:
-        tags_per_post = max(3, min(15, prefs.tags_per_post))
-        _set_setting(db, PREF_TAGS_PER_POST, str(tags_per_post))
-
-    if prefs.system_prompt is not None:
-        _set_setting(db, PREF_SYSTEM_PROMPT, prefs.system_prompt)
-
-    if prefs.user_prompt is not None:
-        _set_setting(db, PREF_USER_PROMPT, prefs.user_prompt)
+        _set_setting(db, PREF_TAGS_PER_POST, str(max(3, min(15, prefs.tags_per_post))))
 
     if prefs.api_base_url is not None:
-        cleaned_url = prefs.api_base_url.strip().rstrip("/")
-        _set_setting(db, PREF_API_BASE_URL, cleaned_url)
-
-    if prefs.ai_timeout is not None:
-        _set_setting(db, PREF_AI_TIMEOUT, str(prefs.ai_timeout))
+        _set_setting(db, PREF_API_BASE_URL, prefs.api_base_url.strip().rstrip("/"))
 
     if prefs.related_posts_limit is not None:
-        limit = max(5, min(100, prefs.related_posts_limit))
-        _set_setting(db, PREF_RELATED_POSTS_LIMIT, str(limit))
+        _set_setting(db, PREF_RELATED_POSTS_LIMIT, str(max(5, min(100, prefs.related_posts_limit))))
 
     if prefs.ai_max_tokens is not None:
-        max_tokens = max(256, min(32768, prefs.ai_max_tokens))
-        _set_setting(db, PREF_AI_MAX_TOKENS, str(max_tokens))
+        _set_setting(db, PREF_AI_MAX_TOKENS, str(max(256, min(32768, prefs.ai_max_tokens))))
 
     if prefs.blocked_terms is not None:
-        # Clean, sort, and store
-        lines = [
-            line.strip().lower()
-            for line in prefs.blocked_terms.splitlines()
-            if line.strip()
-        ]
-        cleaned = "\n".join(sorted(set(lines)))
-        _set_setting(db, PREF_BLOCKED_TERMS, cleaned)
-        # Remove existing suggestions for newly-blocked posts
+        lines = [ln.strip().lower() for ln in prefs.blocked_terms.splitlines() if ln.strip()]
+        _set_setting(db, PREF_BLOCKED_TERMS, "\n".join(sorted(set(lines))))
         _unsuggest_blocked_posts(db, lines)
 
-    # Background AI settings
     if prefs.background_jano_secret_name is not None:
         _set_setting(db, PREF_BACKGROUND_JANO_SECRET_NAME, prefs.background_jano_secret_name.strip())
 
     if prefs.background_api_base_url is not None:
-        cleaned_url = prefs.background_api_base_url.strip().rstrip("/")
-        _set_setting(db, PREF_BACKGROUND_API_BASE_URL, cleaned_url)
-
-    if prefs.background_ai_model is not None:
-        _set_setting(db, PREF_BACKGROUND_AI_MODEL, prefs.background_ai_model)
+        _set_setting(db, PREF_BACKGROUND_API_BASE_URL, prefs.background_api_base_url.strip().rstrip("/"))
 
     db.commit()
-
-    # Return updated preferences
     return get_preferences(db, user)
 
 
