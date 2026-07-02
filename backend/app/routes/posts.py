@@ -145,8 +145,15 @@ def _apply_post_filters(
     suggested_only: bool = False,
     search: Optional[str] = None,
 ):
-    """Apply the standard post list filters to *query* and return (query, relevant_feed_ids)."""
+    """Apply the standard post list filters to *query*.
+
+    Returns (query, relevant_feed_ids, topic_tags, feed_ids_list) — the
+    last two are needed by the caller for auxiliary count queries
+    (starred count, etc.) that mirror the same filter dimension.
+    """
     relevant_feed_ids: set[int] = set()
+    topic_tags: list[str] = []
+    feed_ids_list: list[int] = []
 
     # topic / tag (mutually exclusive; topic wins)
     if topic_id is not None:
@@ -199,7 +206,7 @@ def _apply_post_filters(
             )
         )
 
-    return query, relevant_feed_ids
+    return query, relevant_feed_ids, topic_tags, feed_ids_list
 
 
 @router.get("", response_model=PostListResponse)
@@ -221,7 +228,7 @@ def list_posts(
 ):
     """List posts with pagination. Ordered by sort_date DESC (newest first)."""
     query = db.query(Post).options(subqueryload(Post.tags))
-    query, relevant_feed_ids = _apply_post_filters(
+    query, relevant_feed_ids, topic_tags, feed_ids_list = _apply_post_filters(
         query,
         db,
         feed_id=feed_id,
