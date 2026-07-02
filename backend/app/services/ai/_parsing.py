@@ -60,7 +60,11 @@ _ABBREV_PATTERN = re.compile(
     r"\b(?:[A-Z]\.|" + "|".join(re.escape(abbr) for abbr in _ABBREVIATIONS) + r")"
 )
 
-_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-ÝÇ0-9])")
+# Sentence boundary: punctuation + whitespace + capital letter/digit.
+# The negative lookbehind prevents false splits on single-letter initials
+# ("Robert X. Cringely", "Dorothy A. Yule") — the period after a lone
+# uppercase letter at a word boundary is a middle initial, not a sentence end.
+_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])(?<!\b[A-Z]\.)\s+(?=[A-ZÀ-ÝÇ0-9])")
 
 
 def split_into_paragraphs(summary: str) -> str:
