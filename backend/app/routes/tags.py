@@ -234,6 +234,63 @@ def remove_ignored_tag(
     return {"success": True}
 
 
+def _build_tag_indexes(all_rows) -> dict:
+    """Build O(1) lookup indexes for tag merge candidate detection.
+
+    Returns a dict with: metadata, clean_to_original, segment_to_tags,
+    generic_segments, hyphenless_to_tags, initials_to_tags,
+    tags_by_len_and_first_char.
+    """
+    from collections import defaultdict
+
+    tag_metadata = {}
+    for r in all_rows:
+        t = r.tag
+        t_clean = t.strip().lower()
+        tag_metadata[t] = {
+            "count": r.count,
+            "clean": t_clean,
+            "digits": _get_digits(t_clean),
+            "initials": _get_initials(t_clean),
+            "parts": [p for p in t_clean.split("-") if p],
+        }
+
+    clean_to_original = {meta["clean"]: tag for tag, meta in tag_metadata.items()}
+
+    segment_to_tags = defaultdict(set)
+    for tag, meta in tag_metadata.items():
+        for p in meta["parts"]:
+            if len(p) >= 3:
+                segment_to_tags[p].add(tag)
+    generic_segments = {seg for seg, tags in segment_to_tags.items() if len(tags) > 5}
+
+    hyphenless_to_tags = defaultdict(set)
+    for tag, meta in tag_metadata.items():
+        hyphenless_to_tags[meta["clean"].replace("-", "")].add(tag)
+
+    initials_to_tags = defaultdict(set)
+    for tag, meta in tag_metadata.items():
+        initials = meta["initials"]
+        if initials:
+            initials_to_tags[initials].add(tag)
+
+    tags_by_len_and_first_char = defaultdict(list)
+    for tag, meta in tag_metadata.items():
+        clean = meta["clean"]
+        if clean:
+            tags_by_len_and_first_char[(len(clean), clean[0])].append(tag)
+
+    return {
+        "metadata": tag_metadata,
+        "clean_to_original": clean_to_original,
+        "segment_to_tags": segment_to_tags,
+        "generic_segments": generic_segments,
+        "hyphenless_to_tags": hyphenless_to_tags,
+        "initials_to_tags": initials_to_tags,
+        "tags_by_len_and_first_char": tags_by_len_and_first_char,
+    }
+
+
 @router.post("/suggest-merges")
 async def suggest_merges(
     body: SuggestMergesRequest,
@@ -269,52 +326,15 @@ async def suggest_merges(
         .all()
     )
 
-    # Pre-compute tag metadata ONCE to avoid heavy string/regex overhead in the O(N*M) search loop
-    tag_metadata = {}
-    for r in all_rows:
-        t = r.tag
-        t_clean = t.strip().lower()
-        tag_metadata[t] = {
-            "count": r.count,
-            "clean": t_clean,
-            "digits": _get_digits(t_clean),
-            "initials": _get_initials(t_clean),
-            "parts": [p for p in t_clean.split("-") if p],
-        }
-
-    # Build clean_to_original map for fast direct O(1) lookups
-    clean_to_original = {meta["clean"]: tag for tag, meta in tag_metadata.items()}
-
-    # Index segments to identify high-fan-out (generic) categories
-    from collections import defaultdict
-
-    segment_to_tags = defaultdict(set)
-    for tag, meta in tag_metadata.items():
-        for p in meta["parts"]:
-            if len(p) >= 3:
-                segment_to_tags[p].add(tag)
-
-    # Segments that appear in more than 5 tags are considered generic category suffixes/prefixes
-    generic_segments = {seg for seg, tags in segment_to_tags.items() if len(tags) > 5}
-
-    # Build hyphenless_to_tags index (For exact hyphen difference)
-    hyphenless_to_tags = defaultdict(set)
-    for tag, meta in tag_metadata.items():
-        hyphenless_to_tags[meta["clean"].replace("-", "")].add(tag)
-
-    # Build initials_to_tags index (For acronym matching)
-    initials_to_tags = defaultdict(set)
-    for tag, meta in tag_metadata.items():
-        initials = meta["initials"]
-        if initials:
-            initials_to_tags[initials].add(tag)
-
-    # Build tags_by_len_and_first_char index (Massive Levenshtein optimization)
-    tags_by_len_and_first_char = defaultdict(list)
-    for tag, meta in tag_metadata.items():
-        clean = meta["clean"]
-        if clean:
-            tags_by_len_and_first_char[(len(clean), clean[0])].append(tag)
+    # Pre-compute O(1) lookup indexes once for all tags (K3)
+    idx = _build_tag_indexes(all_rows)
+    tag_metadata = idx["metadata"]
+    clean_to_original = idx["clean_to_original"]
+    segment_to_tags = idx["segment_to_tags"]
+    generic_segments = idx["generic_segments"]
+    hyphenless_to_tags = idx["hyphenless_to_tags"]
+    initials_to_tags = idx["initials_to_tags"]
+    tags_by_len_and_first_char = idx["tags_by_len_and_first_char"]
 
     # Find candidate groups for the active batch using O(1) index lookups
     groups_to_eval = []
