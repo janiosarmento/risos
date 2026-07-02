@@ -4,6 +4,7 @@ Removes scripts, event handlers and dangerous URLs.
 """
 
 import re
+from html.parser import HTMLParser
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -54,7 +55,7 @@ ALLOWED_TAGS = [
 # Allowed attributes per tag
 ALLOWED_ATTRIBUTES = {
     "*": ["class", "id"],
-    "a": ["href", "title", "rel", "target"],
+    "a": ["href", "title"],
     "img": ["src", "alt", "title", "width", "height"],
     "td": ["colspan", "rowspan"],
     "th": ["colspan", "rowspan"],
@@ -62,6 +63,29 @@ ALLOWED_ATTRIBUTES = {
 
 # Maximum length for content (summary)
 MAX_CONTENT_LENGTH = 500
+
+_VOID_ELEMENTS = frozenset(
+    {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+)
+
+
+class _OpenTagTracker(HTMLParser):
+    """Collects the stack of currently-open tags in an HTML fragment."""
+
+    def __init__(self):
+        super().__init__()
+        self._stack: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag not in _VOID_ELEMENTS:
+            self._stack.append(tag)
+
+    def handle_endtag(self, tag):
+        # Pop the nearest matching tag (handles malformed nesting)
+        for i in range(len(self._stack) - 1, -1, -1):
+            if self._stack[i] == tag:
+                self._stack = self._stack[:i]
+                return
 
 
 def _is_safe_href(url: str) -> bool:
@@ -164,17 +188,24 @@ def _filter_attributes(tag: str, name: str, value: str) -> bool:
     return True
 
 
+def _close_open_tags(html: str) -> str:
+    """Append closing tags for any elements that are still open."""
+    tracker = _OpenTagTracker()
+    tracker.feed(html)
+    return html + "".join(f"</{t}>" for t in reversed(tracker._stack))
+
+
 def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
     """
     Sanitize HTML removing dangerous content.
 
     Rules:
-    - Remove disallowed tags
-    - Remove event handlers (onclick, onerror, etc.)
-    - Remove javascript:, data: (except images), vbscript:
+    - Remove disallowed tags, event handlers, comments (bleach)
+    - Remove javascript:, data: (except images), vbscript: from href/src
     - Remove http:// in image src (mixed content)
-    - Add rel="noopener noreferrer" target="_blank" to links
-    - Truncate to MAX_CONTENT_LENGTH if truncate=True
+    - Add rel="noopener noreferrer" target="_blank" to every <a>
+    - Truncate to MAX_CONTENT_LENGTH if truncate=True, safely closing
+      any open tags so formatting doesn't leak into surrounding content.
 
     Args:
         html: HTML to sanitize
@@ -186,51 +217,31 @@ def sanitize_html(html: Optional[str], truncate: bool = True) -> Optional[str]:
     if not html:
         return None
 
-    # First pass: remove scripts and styles
-    html = re.sub(
-        r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE
-    )
-    html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
-
-    # Remove HTML comments
-    html = re.sub(r"<!--.*?-->", "", html, flags=re.DOTALL)
-
-    # Sanitize with bleach
-    cleaner = bleach.Cleaner(
+    sanitized = bleach.clean(
+        html,
         tags=ALLOWED_TAGS,
         attributes=_filter_attributes,
         strip=True,
         strip_comments=True,
     )
 
-    sanitized = cleaner.clean(html)
+    # Add rel/target to every <a>.  rel / target are already stripped by
+    # _filter_attributes (they're no longer in ALLOWED_ATTRIBUTES for <a>),
+    # so there is no old value to clean up — we just insert ours.
+    sanitized = re.sub(
+        r"<a\s", '<a rel="noopener noreferrer" target="_blank" ', sanitized
+    )
 
-    # Add rel and target to links using linkify with callback
-    # First, process existing links manually
-    def fix_links(match):
-        tag = match.group(0)
-        # Remove existing rel and target
-        tag = re.sub(r'\s+rel="[^"]*"', "", tag)
-        tag = re.sub(r'\s+target="[^"]*"', "", tag)
-        # Add new ones
-        tag = tag.replace("<a ", '<a rel="noopener noreferrer" target="_blank" ')
-        return tag
-
-    sanitized = re.sub(r"<a\s[^>]*>", fix_links, sanitized)
-
-    # Truncate if needed
+    # Truncate if needed, keeping tag structure intact
     if truncate and len(sanitized) > MAX_CONTENT_LENGTH:
-        # Try to truncate at a safe point (not in the middle of a tag)
         truncated = sanitized[:MAX_CONTENT_LENGTH]
-
-        # Close open tags (simplified)
-        # Remove last incomplete tag
+        # Snip any trailing incomplete tag
         last_lt = truncated.rfind("<")
         last_gt = truncated.rfind(">")
         if last_lt > last_gt:
             truncated = truncated[:last_lt]
-
-        sanitized = truncated + "..."
+        # Close any tags that were left open by the truncation
+        sanitized = _close_open_tags(truncated) + "&#8202;…"
 
     # Clean excessive whitespace
     sanitized = re.sub(r"\s+", " ", sanitized).strip()
