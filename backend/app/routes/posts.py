@@ -1221,6 +1221,282 @@ class RelatedSummaryRequest(BaseModel):
     post_ids: List[int]
 
 
+# ---------------------------------------------------------------------------
+# Related posts — keyword-search engine with tag-similarity fallback.
+# Split into three helpers + a thin orchestrating endpoint (K1).
+# ---------------------------------------------------------------------------
+
+_RELATED_STOP_WORDS: set[str] = {
+    "a", "about", "above", "across", "after", "again", "against", "all",
+    "also", "an", "and", "any", "are", "article", "artigo", "as", "at",
+    "atualizacao", "because", "been", "before", "being", "below",
+    "between", "blog", "both", "by", "can", "com", "could", "da",
+    "de", "did", "do", "does", "doing", "done", "down", "during",
+    "each", "em", "even", "every", "feed", "few", "first", "for",
+    "from", "further", "furthermore", "get", "gets", "got", "has",
+    "had", "have", "having", "here", "hereafter", "hereby", "herein",
+    "how", "however", "in", "indeed", "instead", "into", "is", "it",
+    "its", "just", "lancada", "lancado", "last", "like", "made",
+    "make", "makes", "many", "may", "meanwhile", "might", "more",
+    "moreover", "most", "much", "must", "na", "nas", "neither",
+    "never", "new", "next", "no", "nonetheless", "nor", "nos",
+    "not", "nova", "novo", "now", "o", "of", "on", "one", "only",
+    "or", "os", "other", "otherwise", "ou", "over", "own", "para",
+    "people", "perhaps", "por", "post", "que", "rather", "released",
+    "said", "same", "se", "shall", "should", "since", "site",
+    "some", "somehow", "somewhat", "still", "such", "than", "that",
+    "the", "their", "them", "then", "there", "thereafter", "thereby",
+    "therefore", "therein", "thereupon", "these", "they", "this",
+    "those", "through", "throughout", "time", "to", "together",
+    "too", "toward", "towards", "um", "uma", "under", "unless",
+    "unto", "update", "upon", "usando", "using", "version", "versao",
+    "very", "was", "way", "ways", "web", "well", "were", "what",
+    "when", "whence", "where", "whereas", "whereby", "wherein",
+    "whereupon", "wherever", "whether", "which", "whichever",
+    "while", "whilst", "who", "why", "will", "with", "within",
+    "without", "would",
+}
+
+
+def _keywords_from_title(title: str | None) -> list[str]:
+    """Tokenise *title*, drop stop-words and short tokens, return sorted list."""
+    if not title:
+        return []
+    clean = re.sub(r"[^\w\s-]", "", title.lower())
+    words = [w for w in clean.split() if len(w) >= 3 and w not in _RELATED_STOP_WORDS]
+    return sorted(words)
+
+
+def _text_search_related(
+    db: Session,
+    post_id: int,
+    keywords: list[str],
+    active_tags: list[str],
+    limit: int,
+    include_read: bool,
+    include_unread: bool,
+    min_common_tags: int,
+) -> list[dict]:
+    """Keyword TF-IDF search (Part A).  Returns scored post dicts or []."""
+    import math
+
+    from sqlalchemy import case, or_
+
+    if not keywords:
+        return []
+
+    # Batch IDF per keyword
+    total_posts = db.query(func.count(Post.id)).scalar() or 1
+    freq_cases = [
+        func.sum(case((func.lower(Post.title).like(f"%{kw}%"), 1), else_=0))
+        for kw in keywords
+    ]
+    freq_row = db.query(*freq_cases).first()
+    kw_idf = {
+        kw: math.log(max(total_posts, 1) / (1 + (freq or 0)))
+        for kw, freq in zip(keywords, freq_row)
+    }
+
+    score_conditions = []
+    keyword_or_groups = []
+
+    for kw in keywords:
+        term = f"%{kw}%"
+        idf = kw_idf[kw]
+
+        kw_matches = [
+            func.lower(Post.title).like(term),
+            func.lower(Post.content).like(term),
+            func.lower(AISummary.translated_title).like(term),
+            func.lower(AISummary.one_line_summary).like(term),
+            func.lower(AISummary.summary_pt).like(term),
+        ]
+        keyword_or_groups.append(kw_matches)
+
+        title_match = or_(
+            func.lower(Post.title).like(term),
+            func.lower(AISummary.translated_title).like(term),
+        )
+        content_match = or_(
+            func.lower(Post.content).like(term),
+            func.lower(AISummary.one_line_summary).like(term),
+            func.lower(AISummary.summary_pt).like(term),
+        )
+        score_conditions.append(case((title_match, 5.0 * idf), else_=0.0))
+        score_conditions.append(case((content_match, 1.5 * idf), else_=0.0))
+
+    text_score = sum(score_conditions)
+    kw_any_match = [or_(*group) for group in keyword_or_groups]
+    match_count = sum(case((m, 1), else_=0) for m in kw_any_match)
+
+    text_query = (
+        db.query(
+            Post.id,
+            Post.title,
+            Post.feed_id,
+            Post.is_suggested,
+            Feed.title.label("feed_title"),
+            AISummary.summary_pt,
+        )
+        .outerjoin(AISummary, Post.content_hash == AISummary.content_hash)
+        .join(Feed, Post.feed_id == Feed.id)
+        .filter(Post.id != post_id)
+        .filter(match_count >= 2)
+    )
+    if not include_read:
+        text_query = text_query.filter(Post.is_read.is_(False))
+    if not include_unread:
+        text_query = text_query.filter(Post.is_read.is_(True))
+    text_results = text_query.order_by(text_score.desc(), Post.sort_date.desc()).limit(limit).all()
+
+    if not text_results:
+        return []
+
+    # Post-ID → common-tag count (for UI)
+    post_ids_found = [r.id for r in text_results]
+    tag_counts_map: dict[int, int] = {}
+    if active_tags:
+        tag_counts = (
+            db.query(PostTag.post_id, func.count(PostTag.tag))
+            .filter(PostTag.tag.in_(active_tags))
+            .filter(PostTag.post_id.in_(post_ids_found))
+            .group_by(PostTag.post_id)
+            .all()
+        )
+        tag_counts_map = {p_id: count for p_id, count in tag_counts}
+
+    # Python-side TF-IDF re-ranking
+    scored = []
+    for r in text_results:
+        common_count = tag_counts_map.get(r.id, 0)
+        if common_count < min_common_tags:
+            continue
+
+        candidate_text = r.title or ""
+        if r.summary_pt:
+            candidate_text += " " + re.sub(r"<[^>]+>", "", r.summary_pt)
+        candidate_words = re.sub(r"[^\w\s-]", "", candidate_text.lower()).split()
+        candidate_len = max(len(candidate_words), 1)
+
+        tfidf_score = 0.0
+        for kw in keywords:
+            idf_val = kw_idf.get(kw, 1.0)
+            tf = candidate_words.count(kw) / candidate_len
+            tfidf_score += tf * idf_val
+        combined_score = tfidf_score * (1 + 0.15 * common_count)
+        scored.append((combined_score, r, common_count))
+
+    scored.sort(key=lambda x: -x[0])
+    return [
+        {
+            "id": r.id,
+            "title": r.title,
+            "feed_title": r.feed_title,
+            "feed_id": r.feed_id,
+            "is_suggested": bool(r.is_suggested),
+            "common_tags_count": common_count,
+        }
+        for _, r, common_count in scored
+    ]
+
+
+def _tag_search_related(
+    db: Session,
+    post_id: int,
+    post: Post,
+    active_tags: list[str],
+    limit: int,
+    include_read: bool,
+    include_unread: bool,
+) -> list[dict]:
+    """Tag-overlap fallback with temporal + category boosts (Part B)."""
+    import math
+
+    from sqlalchemy import case
+
+    source_sort_date = post.sort_date
+    source_feed_category_id = post.feed.category_id if post.feed else None
+
+    tag_freqs = (
+        db.query(PostTag.tag, func.count(PostTag.post_id))
+        .filter(PostTag.tag.in_(active_tags))
+        .group_by(PostTag.tag)
+        .all()
+    )
+    tag_weights = {
+        tag: 1.0 / math.log(freq + 1) if freq > 0 else 0.1
+        for tag, freq in tag_freqs
+    }
+    if not tag_weights:
+        relevance_score = func.count(PostTag.tag)
+    else:
+        w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
+        relevance_score = func.sum(case(*w_cases, else_=0.0))
+
+    related_query = (
+        db.query(
+            Post.id,
+            Post.title,
+            Post.feed_id,
+            Post.is_suggested,
+            Feed.title.label("feed_title"),
+            Feed.category_id,
+            Post.sort_date,
+            func.count(PostTag.tag).label("common_tags_count"),
+            relevance_score.label("relevance_score"),
+        )
+        .join(PostTag, Post.id == PostTag.post_id)
+        .join(Feed, Post.feed_id == Feed.id)
+        .filter(PostTag.tag.in_(active_tags))
+        .filter(Post.id != post_id)
+    )
+    if not include_read:
+        related_query = related_query.filter(Post.is_read.is_(False))
+    if not include_unread:
+        related_query = related_query.filter(Post.is_read.is_(True))
+    tag_results = (
+        related_query.group_by(Post.id)
+        .order_by(relevance_score.desc(), Post.sort_date.desc())
+        .limit(limit)
+        .all()
+    )
+
+    scored = []
+    for r in tag_results:
+        score = r.relevance_score
+        if source_sort_date and r.sort_date:
+            days_diff = abs((source_sort_date - r.sort_date).days)
+            if days_diff <= 1:
+                temp_boost = 2.0
+            elif days_diff <= 3:
+                temp_boost = 1.5
+            elif days_diff <= 7:
+                temp_boost = 1.2
+            elif days_diff <= 14:
+                temp_boost = 1.0
+            else:
+                temp_boost = 0.5
+        else:
+            temp_boost = 1.0
+        cat_boost = 1.0
+        if source_feed_category_id and r.category_id and r.category_id == source_feed_category_id:
+            cat_boost = 1.3
+        scored.append((score * temp_boost * cat_boost, r))
+
+    scored.sort(key=lambda x: -x[0])
+    return [
+        {
+            "id": r.id,
+            "title": r.title,
+            "feed_title": r.feed_title,
+            "feed_id": r.feed_id,
+            "is_suggested": bool(r.is_suggested),
+            "common_tags_count": r.common_tags_count,
+        }
+        for _, r in scored
+    ]
+
+
 @router.get("/{post_id}/related")
 async def get_related_posts(
     post_id: int,
@@ -1231,334 +1507,31 @@ async def get_related_posts(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    """
-    Fetch related posts using a hybrid textual keyword search
-    with tag-similarity fallback.
-
-    Set use_tag_fallback=True to enable the tag-based fallback
-    (Part B) when keyword search yields no results.
-    """
-    import math
-    import re
-
-    from sqlalchemy import case, func, or_
-
-    from app.models import Feed, Post, PostTag
+    """Fetch related posts via keyword search with tag-similarity fallback."""
     from app.routes.preferences import get_effective_related_posts_limit
 
-    # 1. Validar se o post existe
     post = get_post_or_404(db, post_id)
-
-    # 2. Obter as tags do post atual (usadas para o fallback)
-    tags_query = db.query(PostTag.tag).filter(PostTag.post_id == post_id)
-    active_tags = [t[0] for t in tags_query.all()]
-
-    # 3. Determinar limite das preferências
+    active_tags = [t[0] for t in db.query(PostTag.tag).filter(PostTag.post_id == post_id).all()]
     limit = get_effective_related_posts_limit(db)
 
-    # --- PARTE A: BUSCA TEXTUAL POR PALAVRAS-CHAVE ---
-    posts_list = []
-
-    # 4. Extrair keywords do título (fonte principal de busca)
-    source_texts = [post.title or ""]
-    source_texts = [post.title or ""]
-
-    # Tokenizar todas as fontes (set elimina duplicatas entre fontes)
-    all_words = set()
-    for text in source_texts:
-        if text:
-            clean = re.sub(r"[^\w\s-]", "", text.lower())
-            for w in clean.split():
-                if len(w) >= 3:
-                    all_words.add(w)
-
-    # Stop words expandidas — removendo termos genéricos que poluem a busca
-    stop_words = {
-        "de", "do", "da", "em", "para", "com", "por", "um", "uma", "os", "as",
-        "se", "ou", "o", "a", "que", "ao", "aos", "no", "na", "nos", "nas",
-        "and", "the", "a", "an", "of", "to", "in", "for", "with", "on", "at",
-        "by", "from", "about", "as", "is", "are", "was", "were", "it", "this",
-        "that", "these", "those", "how", "why", "what", "where", "when", "who",
-        "which", "released", "version", "new", "update", "novo", "nova",
-        "atualizacao", "versao", "lancado", "lancada", "using", "usando",
-        "post", "article", "artigo", "feed", "blog", "site", "web",
-        "have", "has", "had", "having", "way", "ways", "their", "them", "they",
-        "its", "get", "gets", "got", "make", "makes", "made", "like", "just",
-        "also", "can", "will", "may", "said", "one", "time", "people", "many",
-        "much", "even", "still", "well", "first", "last", "next", "every",
-        "some", "any", "all", "been", "being", "done", "does", "did", "doing",
-        "over", "under", "into", "through", "during", "before", "after",
-        "between", "each", "few", "more", "most", "other", "such", "only",
-        "own", "same", "too", "very", "than", "then", "now", "here", "there",
-        "could", "would", "should", "might", "must", "shall", "about",
-        "above", "across", "after", "again", "against", "below", "because",
-        "been", "being", "both", "down", "further", "furthermore",
-        "herein", "hereby", "hereafter", "however", "indeed", "instead",
-        "meanwhile", "moreover", "neither", "never", "nonetheless",
-        "nor", "otherwise", "perhaps", "rather", "since", "somehow",
-        "somewhat", "thereafter", "thereby", "therefore", "therein",
-        "thereupon", "together", "toward", "towards", "throughout",
-        "unless", "unto", "upon", "whence", "whereas", "whereby",
-        "wherein", "whereupon", "wherever", "whether", "whichever",
-        "while", "whilst", "within", "without",
-    }
-
-    keywords = sorted(w for w in all_words if w not in stop_words)
-
-    # Se sobrou muito pouco (menos de 2 keywords), fallback para o título puro
+    keywords = _keywords_from_title(post.title)
     if len(keywords) < 2 and post.title:
-        title_clean = re.sub(r"[^\w\s-]", "", post.title.lower())
-        title_words = [w for w in title_clean.split() if len(w) >= 3]
-        keywords = sorted(w for w in title_words if w not in stop_words)
-        if not keywords and title_words:
-            keywords = title_words
-
-    if keywords:
-        # --- Batch IDF: frequência de cada keyword no título dos posts ---
-        # Uma única query calcula quantos posts contêm cada keyword.
-        # Palavras muito comuns (ex: "thing", "someone") ganham IDF baixo.
-        total_posts = db.query(func.count(Post.id)).scalar() or 1
-        freq_cases = [
-            func.sum(
-                case(
-                    (func.lower(Post.title).like(f"%{kw}%"), 1),
-                    else_=0,
-                )
-            )
-            for kw in keywords
-        ]
-        freq_row = db.query(*freq_cases).first()
-        kw_idf = {
-            kw: math.log(max(total_posts, 1) / (1 + (freq or 0)))
-            for kw, freq in zip(keywords, freq_row)
-        }
-
-        # --- Montar as condições SQL ---
-        score_conditions = []
-        keyword_or_groups = []  # um grupo OR por keyword
-
-        for kw in keywords:
-            term = f"%{kw}%"
-            idf = kw_idf[kw]
-
-            # Condições OR para esta keyword (qualquer campo que case)
-            kw_matches = [
-                func.lower(Post.title).like(term),
-                func.lower(Post.content).like(term),
-                func.lower(AISummary.translated_title).like(term),
-                func.lower(AISummary.one_line_summary).like(term),
-                func.lower(AISummary.summary_pt).like(term),
-            ]
-            keyword_or_groups.append(kw_matches)
-
-            # Relevância alta para match no Título (peso 5.0 * IDF)
-            title_match = or_(
-                func.lower(Post.title).like(term),
-                func.lower(AISummary.translated_title).like(term),
-            )
-            # Relevância moderada para match no Conteúdo/Resumos (peso 1.5 * IDF)
-            content_match = or_(
-                func.lower(Post.content).like(term),
-                func.lower(AISummary.one_line_summary).like(term),
-                func.lower(AISummary.summary_pt).like(term),
-            )
-
-            score_conditions.append(case((title_match, 5.0 * idf), else_=0.0))
-            score_conditions.append(case((content_match, 1.5 * idf), else_=0.0))
-
-        text_score = sum(score_conditions)
-
-        # --- Executar a busca ---
-        # Exigir que o post casado tenha PELO MENOS 2 keywords distintas
-        # (caso contrário, uma única palavra genérica não basta)
-        kw_any_match = [or_(*group) for group in keyword_or_groups]
-        match_count = sum(case((m, 1), else_=0) for m in kw_any_match)
-
-        text_query = (
-            db.query(
-                Post.id,
-                Post.title,
-                Post.feed_id,
-                Post.is_suggested,
-                Feed.title.label("feed_title"),
-                AISummary.summary_pt,
-            )
-            .outerjoin(
-                AISummary, Post.content_hash == AISummary.content_hash
-            )
-            .join(Feed, Post.feed_id == Feed.id)
-            .filter(Post.id != post_id)
+        # Fall back to all non-stop title tokens (any length)
+        keywords = sorted(
+            w for w in re.sub(r"[^\w\s-]", "", post.title.lower()).split()
+            if w not in _RELATED_STOP_WORDS
         )
 
-        # Filtro de keywords: cada post precisa casar com ≥2 keywords
-        text_query = text_query.filter(match_count >= 2)
+    posts_list = _text_search_related(
+        db, post_id, keywords, active_tags, limit,
+        include_read, include_unread, min_common_tags,
+    )
 
-        if not include_read:
-            text_query = text_query.filter(Post.is_read.is_(False))
-        if not include_unread:
-            text_query = text_query.filter(Post.is_read.is_(True))
-
-        text_query = (
-            text_query.order_by(text_score.desc(), Post.sort_date.desc())
-            .limit(limit)
-        )
-        text_results = text_query.all()
-
-        if text_results:
-            # Encontramos posts por texto! Calcular tags em comum para a UI
-            post_ids_found = [r.id for r in text_results]
-            tag_counts_map = {}
-            if active_tags:
-                tag_counts = (
-                    db.query(PostTag.post_id, func.count(PostTag.tag))
-                    .filter(PostTag.tag.in_(active_tags))
-                    .filter(PostTag.post_id.in_(post_ids_found))
-                    .group_by(PostTag.post_id)
-                    .all()
-                )
-                tag_counts_map = {p_id: count for p_id, count in tag_counts}
-
-            # Re-ranqueamento TF-IDF em Python: calcular TF real no texto completo
-            # (título + summary_pt) de cada candidato, ponderado pelo IDF já calculado.
-            scored = []
-            for r in text_results:
-                common_count = tag_counts_map.get(r.id, 0)
-                if common_count < min_common_tags:
-                    continue
-
-                # Texto completo do candidato para TF
-                candidate_text = (r.title or "")
-                if r.summary_pt:
-                    candidate_text += " " + re.sub(r"<[^>]+>", "", r.summary_pt)
-                candidate_words = re.sub(r"[^\w\s-]", "", candidate_text.lower()).split()
-                candidate_len = max(len(candidate_words), 1)
-
-                # TF real: quantas vezes cada keyword aparece no texto do candidato
-                tfidf_score = 0.0
-                for kw in keywords:
-                    idf = kw_idf.get(kw, 1.0)
-                    tf = candidate_words.count(kw) / candidate_len
-                    tfidf_score += tf * idf
-
-                # Peso combinado: TF-IDF + (1 + 0.15 * tags_comuns) para priorizar
-                # posts do mesmo tópico (mesmas tags)
-                combined_score = tfidf_score * (1 + 0.15 * common_count)
-                scored.append((combined_score, r, common_count))
-
-            # Ordenar por score combinado descendente
-            scored.sort(key=lambda x: -x[0])
-
-            posts_list = [
-                {
-                    "id": r.id,
-                    "title": r.title,
-                    "feed_title": r.feed_title,
-                    "feed_id": r.feed_id,
-                    "is_suggested": bool(r.is_suggested),
-                    "common_tags_count": common_count,
-                }
-                for _, r, common_count in scored
-            ]
-
-    # --- PARTE B: FALLBACK PARA BUSCA POR TAGS (TF-IDF) ---
-    # Se a busca textual não encontrou nada e o post tem tags, caímos para o TF-IDF
     if not posts_list and active_tags and use_tag_fallback:
-        # Carregar sort_date e categoria do post fonte para boosts
-        source_sort_date = post.sort_date
-        source_feed_category_id = post.feed.category_id if post.feed else None
-
-        tag_freqs = (
-            db.query(PostTag.tag, func.count(PostTag.post_id))
-            .filter(PostTag.tag.in_(active_tags))
-            .group_by(PostTag.tag)
-            .all()
+        posts_list = _tag_search_related(
+            db, post_id, post, active_tags, limit,
+            include_read, include_unread,
         )
-
-        tag_weights = {}
-        for tag, freq in tag_freqs:
-            tag_weights[tag] = 1.0 / math.log(freq + 1) if freq > 0 else 0.1
-
-        if not tag_weights:
-            relevance_score = func.count(PostTag.tag)
-        else:
-            w_cases = [(PostTag.tag == t, w) for t, w in tag_weights.items()]
-            relevance_score = func.sum(case(*w_cases, else_=0.0))
-
-        related_query = (
-            db.query(
-                Post.id,
-                Post.title,
-                Post.feed_id,
-                Post.is_suggested,
-                Feed.title.label("feed_title"),
-                Feed.category_id,
-                Post.sort_date,
-                func.count(PostTag.tag).label("common_tags_count"),
-                relevance_score.label("relevance_score"),
-            )
-            .join(PostTag, Post.id == PostTag.post_id)
-            .join(Feed, Post.feed_id == Feed.id)
-            .filter(PostTag.tag.in_(active_tags))
-            .filter(Post.id != post_id)
-        )
-
-        if not include_read:
-            related_query = related_query.filter(Post.is_read.is_(False))
-        if not include_unread:
-            related_query = related_query.filter(Post.is_read.is_(True))
-
-        related_query = (
-            related_query.group_by(Post.id)
-            .order_by(relevance_score.desc(), Post.sort_date.desc())
-            .limit(limit)
-        )
-        tag_results = related_query.all()
-
-        # Re-ranqueamento: combinar relevância de tags + proximidade temporal
-        # + mesma categoria (assuntos quentes aparecem próximos no tempo)
-        scored = []
-        for r in tag_results:
-            score = r.relevance_score
-
-            # Boost temporal: posts mais próximos da data do post fonte ganham peso
-            if source_sort_date and r.sort_date:
-                days_diff = abs((source_sort_date - r.sort_date).days)
-                if days_diff <= 1:
-                    temp_boost = 2.0
-                elif days_diff <= 3:
-                    temp_boost = 1.5
-                elif days_diff <= 7:
-                    temp_boost = 1.2
-                elif days_diff <= 14:
-                    temp_boost = 1.0
-                else:
-                    temp_boost = 0.5
-            else:
-                temp_boost = 1.0
-
-            # Boost de categoria: mesmo assunto → mesmo feed/categoria
-            cat_boost = 1.0
-            if source_feed_category_id and r.category_id:
-                if r.category_id == source_feed_category_id:
-                    cat_boost = 1.3  # +30% para mesma categoria
-
-            combined = score * temp_boost * cat_boost
-            scored.append((combined, r))
-
-        # Ordenar por score combinado
-        scored.sort(key=lambda x: -x[0])
-
-        posts_list = [
-            {
-                "id": r.id,
-                "title": r.title,
-                "feed_title": r.feed_title,
-                "feed_id": r.feed_id,
-                "is_suggested": bool(r.is_suggested),
-                "common_tags_count": r.common_tags_count,
-            }
-            for _, r in scored
-        ]
 
     return {"posts": posts_list}
 
