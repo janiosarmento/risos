@@ -27,8 +27,26 @@ class TemporaryError(AIError):
     pass
 
 
+class CircuitBreakerOpen(TemporaryError):
+    """Circuit breaker is open — service is paused after repeated failures."""
+
+    pass
+
+
+class RateLimited(TemporaryError):
+    """API key is rate-limited (HTTP 429 or cooldown active)."""
+
+    pass
+
+
 class PermanentError(AIError):
     """Permanent error (invalid payload, empty response after retries)."""
+
+    pass
+
+
+class ModelNotFound(PermanentError):
+    """The configured model does not exist at the provider."""
 
     pass
 

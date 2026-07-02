@@ -20,7 +20,13 @@ from alembic import command
 from app.config import settings
 from app.database import engine
 from app.rate_limiter import limiter
-from app.services.ai._types import PermanentError, TemporaryError
+from app.services.ai._types import (
+    CircuitBreakerOpen,
+    ModelNotFound,
+    PermanentError,
+    RateLimited,
+    TemporaryError,
+)
 
 # Configure logging — force=True ensures this overrides any prior config
 # (e.g. from uvicorn or alembic importing first)
@@ -192,30 +198,53 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # AI error handlers — log technical detail, return user-friendly message
+@app.exception_handler(CircuitBreakerOpen)
+async def handle_circuit_breaker_open(request: Request, exc: CircuitBreakerOpen):
+    logger.warning(f"CircuitBreakerOpen on {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=502,
+        content={
+            "detail": "AI is temporarily paused after repeated errors. Try again in a few minutes."
+        },
+    )
+
+
+@app.exception_handler(RateLimited)
+async def handle_rate_limited(request: Request, exc: RateLimited):
+    logger.warning(f"RateLimited on {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=502,
+        content={"detail": "AI rate limit reached. Try again in a few minutes."},
+    )
+
+
 @app.exception_handler(TemporaryError)
 async def handle_temporary_error(request: Request, exc: TemporaryError):
     logger.warning(f"AI TemporaryError on {request.url.path}: {exc}")
-    msg = str(exc)
-    if "circuit breaker" in msg.lower():
-        detail = "AI is temporarily paused after repeated errors. Try again in a few minutes."
-    elif "cooldown" in msg.lower() or "rate limit" in msg.lower():
-        detail = "AI rate limit reached. Try again in a few minutes."
-    else:
-        detail = "AI temporarily unavailable. Try again shortly."
-    return JSONResponse(status_code=502, content={"detail": detail})
+    return JSONResponse(
+        status_code=502,
+        content={"detail": "AI temporarily unavailable. Try again shortly."},
+    )
+
+
+@app.exception_handler(ModelNotFound)
+async def handle_model_not_found(request: Request, exc: ModelNotFound):
+    logger.error(f"ModelNotFound on {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=502,
+        content={
+            "detail": "The configured AI model is unavailable. Check Settings > AI."
+        },
+    )
 
 
 @app.exception_handler(PermanentError)
 async def handle_permanent_error(request: Request, exc: PermanentError):
     logger.error(f"AI PermanentError on {request.url.path}: {exc}")
-    msg = str(exc)
-    if "model_not_found" in msg or "does not exist" in msg:
-        detail = "The configured AI model is unavailable. Check Settings > AI."
-    elif "all models failed" in msg.lower():
-        detail = "All AI models failed. Try again later or check Settings > AI."
-    else:
-        detail = "AI could not process this request."
-    return JSONResponse(status_code=502, content={"detail": detail})
+    return JSONResponse(
+        status_code=502,
+        content={"detail": "AI could not process this request."},
+    )
 
 
 # CORS

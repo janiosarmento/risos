@@ -21,10 +21,13 @@ from app.services.ai._prompts import (  # noqa: F401
 from app.services.ai._types import (  # noqa: F401
     AIError,
     CerebrasError,  # legacy alias
+    CircuitBreakerOpen,
     CircuitState,
     GarbageContentError,
+    ModelNotFound,
     ModelSpecificError,
     PermanentError,
+    RateLimited,
     SummaryResult,
     TemporaryError,
 )
@@ -38,8 +41,11 @@ __all__ = [
     "api_key_rotator",
     "AIError",
     "CerebrasError",
+    "CircuitBreakerOpen",
     "TemporaryError",
+    "RateLimited",
     "PermanentError",
+    "ModelNotFound",
     "ModelSpecificError",
     "GarbageContentError",
     "SummaryResult",

@@ -50,6 +50,7 @@ from app.services.ai._types import (
     GarbageContentError,
     ModelSpecificError,
     PermanentError,
+    RateLimited,
     SummaryResult,
     TemporaryError,
 )
@@ -213,7 +214,7 @@ async def _call_model(
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
                 )
-                raise TemporaryError(f"Rate limit reached on key {key_index + 1}")
+                raise RateLimited(f"Rate limit reached on key {key_index + 1}")
 
             # Handle server errors
             if response.status_code >= 500:
@@ -536,7 +537,7 @@ async def _call_llm_json_locked(
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
                 )
-                raise TemporaryError("Rate limit reached")
+                raise RateLimited("Rate limit reached")
 
             if response.status_code != 200:
                 raise PermanentError(
@@ -629,7 +630,7 @@ async def _call_llm_text_locked(
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
                 )
-                raise TemporaryError("Rate limit reached")
+                raise RateLimited("Rate limit reached")
 
             if response.status_code != 200:
                 raise PermanentError(
