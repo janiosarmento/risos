@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260701c">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260701c">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260701c">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260712a">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260712a">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260712a">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260701c">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260712a">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260701c">
+    <link rel="manifest" href="/manifest.json?v=20260712a">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -46,23 +46,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260701c"></script>
-    <script src="/static/vendor/popper.min.js?v=20260701c"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260701c"></script>
-    <script src="/static/vendor/purify.min.js?v=20260701c"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260701c in all ?v= below -->
-    <script>var APP_VERSION = '20260701c';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260701c">
+    <script src="/static/vendor/marked.min.js?v=20260712a"></script>
+    <script src="/static/vendor/popper.min.js?v=20260712a"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260712a"></script>
+    <script src="/static/vendor/purify.min.js?v=20260712a"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260712a in all ?v= below -->
+    <script>var APP_VERSION = '20260712a';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260712a">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260701c"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260701c"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260701c"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260701c"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260701c"></script>
-    <script defer src="/static/js/components/settings.js?v=20260701c"></script>
-    <script defer src="/static/js/components/curation.js?v=20260701c"></script>
-    <script defer src="/static/js/app.js?v=20260701c"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260712a"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260712a"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260712a"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260712a"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260712a"></script>
+    <script defer src="/static/js/components/settings.js?v=20260712a"></script>
+    <script defer src="/static/js/components/curation.js?v=20260712a"></script>
+    <script defer src="/static/js/app.js?v=20260712a"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -271,8 +271,11 @@
 
                 <!-- Sidebar -->
                 <aside
-                    class="w-64 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-200 dark:border-gray-700 fixed md:relative inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0"
-                    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+                    class="w-64 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-200 dark:border-gray-700 fixed md:relative inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out overflow-hidden"
+                    :class="[
+                        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+                        desktopSidebarOpen ? 'md:w-64' : 'md:w-0 md:border-r-0'
+                    ]"
                 >
                     <!-- Header -->
                     <header class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -568,6 +571,15 @@
                                     :aria-label="t('sidebar.openMenu')"
                                 >
                                     <svg class="w-6 h-6"><use href="#icon-hamburger"/></svg>
+                                </button>
+                                <!-- Sidebar toggle (desktop only) -->
+                                <button
+                                    @click="toggleDesktopSidebar()"
+                                    class="hidden md:flex p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    :data-tip="desktopSidebarOpen ? t('sidebar.collapseMenu') : t('sidebar.openMenu')"
+                                    :aria-label="desktopSidebarOpen ? t('sidebar.collapseMenu') : t('sidebar.openMenu')"
+                                >
+                                    <svg class="w-5 h-5"><use :href="desktopSidebarOpen ? '#icon-chevron-left' : '#icon-chevron-right'"/></svg>
                                 </button>
                                 <h2 class="font-medium">
                                     <a

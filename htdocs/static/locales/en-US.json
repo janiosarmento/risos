@@ -24,6 +24,7 @@
   "sidebar": {
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
+    "collapseMenu": "Collapse menu",
     "unread": "Unread",
     "all": "All",
     "starred": "Starred",

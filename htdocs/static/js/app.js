@@ -45,6 +45,7 @@ function app() {
         selectMode: false,
         collapsedCategories: new Set(JSON.parse(localStorage.getItem('rss_collapsed_categories') || '[]')),
         sidebarOpen: false,
+        desktopSidebarOpen: localStorage.getItem('rss_sidebar_open') !== '0',
         dragFeedId: null,
         dragOverCategoryId: null,
         lastNavMode: 'posts', // 'posts' (J/K) or 'sidebar' ([/])
@@ -238,6 +239,12 @@ function app() {
             if (this.topTagsExpanded && this.popularTags.length === 0) {
                 await this.loadPopularTags();
             }
+        },
+
+        // Toggle sidebar visibility (desktop only, persisted)
+        toggleDesktopSidebar() {
+            this.desktopSidebarOpen = !this.desktopSidebarOpen;
+            localStorage.setItem('rss_sidebar_open', this.desktopSidebarOpen ? '1' : '0');
         },
 
         // Load popular tags scoped to current context
