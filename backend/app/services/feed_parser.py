@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 from app.config import USER_AGENT
+from app.services.ssh_fallback import socks_tunnel
 from app.services.url_safety import is_safe_external_url
 
 TIMEOUT_SECONDS = 30
@@ -117,9 +118,16 @@ def _is_http_to_https(original: str, redirect: str) -> bool:
         return False
 
 
-async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
+async def _fetch_feed_content_once(
+    url: str, proxy: Optional[str] = None
+) -> Tuple[bytes, Optional[str]]:
     """
-    Fetch feed content via HTTP.
+    Make a single fetch attempt for feed content via HTTP.
+
+    Args:
+        url: Feed URL
+        proxy: Optional proxy URL (e.g. "socks5://127.0.0.1:1080") to route
+            this attempt through
 
     Returns:
         Tuple of (content in bytes, final URL after redirects)
@@ -127,9 +135,6 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
     Raises:
         FeedFetchError: If unable to fetch the feed
     """
-    if not is_safe_external_url(url):
-        raise FeedFetchError("Unsafe or internal URL")
-
     final_url = url
     redirects_followed = 0
 
@@ -137,6 +142,7 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
         timeout=TIMEOUT_SECONDS,
         follow_redirects=False,  # Manual redirect control
         headers={"User-Agent": USER_AGENT},
+        proxy=proxy,
     ) as client:
         current_url = url
 
@@ -201,6 +207,35 @@ async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
                 raise FeedFetchError(f"Connection error: {e}")
 
         raise FeedFetchError(f"Too many redirects (> {MAX_REDIRECTS})")
+
+
+async def fetch_feed_content(url: str) -> Tuple[bytes, Optional[str]]:
+    """
+    Fetch feed content via HTTP, retrying once through an SSH SOCKS fallback
+    tunnel if the direct attempt fails.
+
+    Returns:
+        Tuple of (content in bytes, final URL after redirects)
+
+    Raises:
+        FeedFetchError: If unable to fetch the feed directly and (if
+            configured) via the fallback tunnel
+    """
+    if not is_safe_external_url(url):
+        raise FeedFetchError("Unsafe or internal URL")
+
+    try:
+        return await _fetch_feed_content_once(url, proxy=None)
+    except FeedFetchError as direct_error:
+        async with socks_tunnel() as proxy_url:
+            if proxy_url is None:
+                raise
+            try:
+                return await _fetch_feed_content_once(url, proxy=proxy_url)
+            except FeedFetchError as proxy_error:
+                raise FeedFetchError(
+                    f"{direct_error}; fallback also failed: {proxy_error}"
+                ) from proxy_error
 
 
 def parse_feed_content(content: bytes) -> ParsedFeed:
