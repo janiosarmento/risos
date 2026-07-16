@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 from app.config import USER_AGENT
 from app.services.url_safety import is_safe_external_url
 
-TIMEOUT_SECONDS = 10
+TIMEOUT_SECONDS = 30
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_REDIRECTS = 3
 
