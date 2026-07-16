@@ -3,6 +3,7 @@ Bootstrap configuration — operational settings live in the database.
 """
 
 from pathlib import Path
+from typing import Optional
 
 import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,6 +37,13 @@ class Settings(BaseSettings):
     # Proxy
     proxy_timeout_seconds: int = 10
     proxy_max_size_bytes: int = 5_242_880  # 5MB
+
+    # SSH Fallback (feed fetch) — retry via SOCKS tunnel when direct fetch fails.
+    # Unset (default) disables the fallback entirely.
+    ssh_fallback_host: Optional[str] = None
+    ssh_fallback_user: Optional[str] = None
+    ssh_fallback_port: int = 22
+    ssh_fallback_key_path: Optional[str] = None
 
     # Logging
     log_level: str = "INFO"

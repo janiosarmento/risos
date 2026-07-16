@@ -15,11 +15,14 @@ langdetect>=1.0.9
 
 # Parsing de feeds e conteúdo
 feedparser>=6.0.0
-httpx>=0.26.0
+httpx[socks]>=0.26.0
 readability-lxml>=0.8.0
 lxml>=5.0.0
 lxml-html-clean>=0.1.0
 bleach>=6.1.0
+
+# SSH SOCKS fallback for blocked feed fetches (opened on demand, per attempt)
+asyncssh>=2.14.0
 
 # Background jobs
 apscheduler>=3.10.0
