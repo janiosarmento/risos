@@ -33,6 +33,7 @@
     "regenerating": "Regenerando...",
     "suggestionsFound": "{count} sugestões encontradas (baseado em {tags} tags)",
     "toggleCategory": "Expandir/recolher categoria",
+    "feedError": "Erro no feed",
     "noCategory": "Sem categoria",
     "settings": "Configurações",
     "refresh": "Atualizar",

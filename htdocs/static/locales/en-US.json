@@ -33,6 +33,7 @@
     "regenerating": "Regenerating...",
     "suggestionsFound": "{count} suggestions found (based on {tags} tags)",
     "toggleCategory": "Expand/collapse category",
+    "feedError": "Feed error",
     "noCategory": "Uncategorized",
     "settings": "Settings",
     "refresh": "Refresh",
