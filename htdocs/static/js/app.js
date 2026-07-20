@@ -75,6 +75,8 @@ function app() {
         set suggestionMinTags(v) { Alpine.store('prefs').suggestionMinTags = v; },
         get profileMinTagFreq() { return Alpine.store('prefs').profileMinTagFreq; },
         set profileMinTagFreq(v) { Alpine.store('prefs').profileMinTagFreq = v; },
+        get suggestionMinSummaryLength() { return Alpine.store('prefs').suggestionMinSummaryLength; },
+        set suggestionMinSummaryLength(v) { Alpine.store('prefs').suggestionMinSummaryLength = v; },
         ignoredTags: new Set(), // Tags ignored for suggestions (loaded from server)
         get blockedTerms() { return Alpine.store('prefs').blockedTerms; },
         set blockedTerms(v) { Alpine.store('prefs').blockedTerms = v; },

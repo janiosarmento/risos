@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from typing import List, Tuple
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import AISummary, IgnoredTag, Post
@@ -70,7 +71,11 @@ def get_suggestion_candidates(
     )
 
     # Get unread posts with their tags
-    # Posts must have a summary (join with AISummary)
+    # Posts must have a summary (join with AISummary) long enough to be useful
+    from app.routes.preferences import get_effective_suggestion_min_summary_length
+
+    min_summary_length = get_effective_suggestion_min_summary_length(db)
+
     unread_posts = (
         db.query(Post)
         .join(AISummary, Post.content_hash == AISummary.content_hash)
@@ -79,6 +84,7 @@ def get_suggestion_candidates(
             Post.is_suggested == 0,
             Post.is_read == 0,
             Post.is_liked == 0,  # Don't suggest posts user already liked
+            func.length(AISummary.summary_pt) >= min_summary_length,
         )
         .all()
     )

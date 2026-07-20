@@ -35,6 +35,7 @@ PREF_SPLIT_RATIO = "pref_split_ratio"
 # Suggestions settings
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
+PREF_SUGGESTION_MIN_SUMMARY_LENGTH = "pref_suggestion_min_summary_length"
 # AI keys and prompts
 PREF_JANO_SECRET_NAME = "pref_jano_secret_name"
 PREF_TAGS_PER_POST = "pref_tags_per_post"
@@ -73,6 +74,9 @@ class PreferencesResponse(BaseModel):
     profile_min_tag_freq: Optional[int] = (
         None  # min liked posts for a tag to enter profile
     )
+    suggestion_min_summary_length: Optional[int] = (
+        None  # min translated summary length (chars) to be eligible for suggestions
+    )
     # AI keys and prompts
     jano_secret_name: Optional[str] = None
     tags_per_post: Optional[int] = None  # number of tags per AI summary (3-15)
@@ -108,6 +112,7 @@ class PreferencesUpdate(BaseModel):
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None
     profile_min_tag_freq: Optional[int] = None
+    suggestion_min_summary_length: Optional[int] = None
     # AI keys and prompts
     jano_secret_name: Optional[str] = None
     tags_per_post: Optional[int] = None
@@ -184,6 +189,7 @@ def get_preferences(
         split_ratio=r("split_ratio"),
         suggestion_min_tags=get_effective_suggestion_min_tags(db),
         profile_min_tag_freq=r("profile_min_tag_freq"),
+        suggestion_min_summary_length=r("suggestion_min_summary_length"),
         jano_secret_name=prefs[PREF_JANO_SECRET_NAME],
         tags_per_post=r("tags_per_post"),
         system_prompt=prefs[PREF_SYSTEM_PROMPT] or prompts.get("system_prompt", ""),
@@ -260,6 +266,12 @@ def update_preferences(
         from app.services.user_profile import invalidate_user_profile
         clear_all_suggestions(db)
         invalidate_user_profile(db)
+
+    if prefs.suggestion_min_summary_length is not None:
+        clamped = max(0, min(2000, prefs.suggestion_min_summary_length))
+        _set_setting(db, PREF_SUGGESTION_MIN_SUMMARY_LENGTH, str(clamped))
+        from app.services.suggestions import clear_all_suggestions
+        clear_all_suggestions(db)
 
     if prefs.jano_secret_name is not None:
         _set_setting(db, PREF_JANO_SECRET_NAME, prefs.jano_secret_name.strip())
@@ -373,6 +385,10 @@ PREF_SPEC: dict[str, PrefSpec] = {
     "profile_min_tag_freq": PrefSpec(
         PREF_PROFILE_MIN_TAG_FREQ, 2, cast=_cast_int,
         clamp=lambda sp, v: max(1, min(20, v)),
+    ),
+    "suggestion_min_summary_length": PrefSpec(
+        PREF_SUGGESTION_MIN_SUMMARY_LENGTH, 100, cast=_cast_int,
+        clamp=lambda sp, v: max(0, min(2000, v)),
     ),
     "tags_per_post": PrefSpec(
         PREF_TAGS_PER_POST, 7, cast=_cast_int,
@@ -516,6 +532,11 @@ def get_effective_suggestion_min_tags(db: Session) -> int:
 def get_effective_profile_min_tag_freq(db: Session) -> int:
     """Get minimum tag frequency for profile inclusion (default: 2)."""
     return _get_effective(db, "profile_min_tag_freq")
+
+
+def get_effective_suggestion_min_summary_length(db: Session) -> int:
+    """Min translated summary length (chars) for a post to be eligible for suggestions (default: 100)."""
+    return _get_effective(db, "suggestion_min_summary_length")
 
 
 def get_effective_ai_timeout(db: Session) -> int:

@@ -1026,6 +1026,11 @@ const settingsMixin = {
         if (this.authenticated) this.savePreferencesToServer();
     },
 
+    setSuggestionMinSummaryLength(value) {
+        this.suggestionMinSummaryLength = Math.max(0, Math.min(2000, parseInt(value) || 0));
+        if (this.authenticated) this.savePreferencesToServer();
+    },
+
     setTagsPerPost(value) {
         this.tagsPerPost = Math.max(3, Math.min(15, parseInt(value) || 7));
         if (this.authenticated) this.savePreferencesToServer();
@@ -1106,6 +1111,7 @@ const settingsMixin = {
                     split_ratio: this.splitRatio,
                     suggestion_min_tags: this.suggestionMinTags,
                     profile_min_tag_freq: this.profileMinTagFreq,
+                    suggestion_min_summary_length: this.suggestionMinSummaryLength,
                     tags_per_post: this.tagsPerPost,
                     blocked_terms: this.blockedTerms,
                     api_base_url: this.apiBaseUrl,
@@ -1165,6 +1171,9 @@ const settingsMixin = {
             }
             if (serverPrefs.profile_min_tag_freq !== null && serverPrefs.profile_min_tag_freq !== undefined) {
                 this.profileMinTagFreq = serverPrefs.profile_min_tag_freq;
+            }
+            if (serverPrefs.suggestion_min_summary_length !== null && serverPrefs.suggestion_min_summary_length !== undefined) {
+                this.suggestionMinSummaryLength = serverPrefs.suggestion_min_summary_length;
             }
             if (serverPrefs.tags_per_post !== null && serverPrefs.tags_per_post !== undefined) {
                 this.tagsPerPost = serverPrefs.tags_per_post;

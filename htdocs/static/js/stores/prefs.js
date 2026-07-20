@@ -37,6 +37,7 @@ document.addEventListener('alpine:init', () => {
         splitRatio: 40,
         suggestionMinTags: 3,
         profileMinTagFreq: 2,
+        suggestionMinSummaryLength: 100,
         blockedTerms: '',
     });
 });
