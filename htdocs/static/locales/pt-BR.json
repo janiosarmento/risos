@@ -161,6 +161,8 @@
     "readingModeFullscreen": "Tela Cheia",
     "readingModeSplit": "Dividido",
     "readingModeSplitNote": "Modo dividido só disponível em telas de 1024px ou mais",
+    "feedReverseOrder": "Inverter ordem do feed",
+    "feedReverseOrderDesc": "Exibe os itens mais antigos primeiro, em vez da ordem cronológica inversa padrão",
     "suggestionMinTags": "Sensibilidade das Sugestões",
     "suggestionMinTagsDesc": "Mínimo de tags em comum para sugerir um post (1=mais sugestões, máx=mais precisas)",
     "tags": "tags",

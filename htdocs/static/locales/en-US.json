@@ -161,6 +161,8 @@
     "readingModeFullscreen": "Fullscreen",
     "readingModeSplit": "Split View",
     "readingModeSplitNote": "Split view only available on screens 1024px or wider",
+    "feedReverseOrder": "Reverse feed order",
+    "feedReverseOrderDesc": "Show oldest items first, instead of the default newest-first order",
     "suggestionMinTags": "Suggestion Sensitivity",
     "suggestionMinTagsDesc": "Minimum tags in common to suggest a post (1=more suggestions, max=more precise)",
     "tags": "tags",

@@ -1055,6 +1055,14 @@ const settingsMixin = {
         if (this.authenticated) this.savePreferencesToServer();
     },
 
+    setFeedReverseOrder(value) {
+        this.feedReverseOrder = !!value;
+        if (this.authenticated) {
+            this.savePreferencesToServer();
+            this.loadPosts(true);
+        }
+    },
+
     // --- Split view resize ---
     startResize(e) {
         e.preventDefault();
@@ -1109,6 +1117,7 @@ const settingsMixin = {
                     idle_refresh_seconds: this.idleRefreshSeconds,
                     reading_mode: this.readingMode,
                     split_ratio: this.splitRatio,
+                    feed_reverse_order: this.feedReverseOrder,
                     suggestion_min_tags: this.suggestionMinTags,
                     profile_min_tag_freq: this.profileMinTagFreq,
                     suggestion_min_summary_length: this.suggestionMinSummaryLength,
@@ -1181,6 +1190,9 @@ const settingsMixin = {
             if (serverPrefs.reading_mode) this.readingMode = serverPrefs.reading_mode;
             if (serverPrefs.split_ratio !== null && serverPrefs.split_ratio !== undefined) {
                 this.splitRatio = serverPrefs.split_ratio;
+            }
+            if (serverPrefs.feed_reverse_order !== null && serverPrefs.feed_reverse_order !== undefined) {
+                this.feedReverseOrder = serverPrefs.feed_reverse_order;
             }
 
             // AI keys and prompts

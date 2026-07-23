@@ -226,7 +226,8 @@ def list_posts(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    """List posts with pagination. Ordered by sort_date DESC (newest first)."""
+    """List posts with pagination. Ordered by sort_date, newest first unless
+    the feed_reverse_order preference is set."""
     query = db.query(Post).options(subqueryload(Post.tags))
     query, relevant_feed_ids, topic_tags, feed_ids_list = _apply_post_filters(
         query,
@@ -244,7 +245,11 @@ def list_posts(
     total = query.count()
 
     # Fetch sorted posts
-    posts = query.order_by(Post.sort_date.desc()).offset(offset).limit(limit).all()
+    from app.routes.preferences import get_effective_feed_reverse_order
+
+    reverse_order = get_effective_feed_reverse_order(db)
+    sort_col = Post.sort_date.asc() if reverse_order else Post.sort_date.desc()
+    posts = query.order_by(sort_col).offset(offset).limit(limit).all()
 
     # Fetch summaries for posts (by content_hash)
     content_hashes = [p.content_hash for p in posts if p.content_hash]

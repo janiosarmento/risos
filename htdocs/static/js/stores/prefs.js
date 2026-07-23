@@ -35,6 +35,7 @@ document.addEventListener('alpine:init', () => {
         idleRefreshSeconds: 180,
         readingMode: 'fullscreen',
         splitRatio: 40,
+        feedReverseOrder: false,
         suggestionMinTags: 3,
         profileMinTagFreq: 2,
         suggestionMinSummaryLength: 100,

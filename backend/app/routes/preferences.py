@@ -32,6 +32,7 @@ PREF_TOAST_TIMEOUT = "pref_toast_timeout"
 PREF_IDLE_REFRESH = "pref_idle_refresh"
 PREF_READING_MODE = "pref_reading_mode"
 PREF_SPLIT_RATIO = "pref_split_ratio"
+PREF_FEED_REVERSE_ORDER = "pref_feed_reverse_order"
 # Suggestions settings
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
@@ -69,6 +70,7 @@ class PreferencesResponse(BaseModel):
     idle_refresh_seconds: Optional[int] = None
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
+    feed_reverse_order: bool = False  # True = oldest first
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions
     profile_min_tag_freq: Optional[int] = (
@@ -109,6 +111,7 @@ class PreferencesUpdate(BaseModel):
     idle_refresh_seconds: Optional[int] = None
     reading_mode: Optional[str] = None
     split_ratio: Optional[int] = None
+    feed_reverse_order: Optional[bool] = None
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None
     profile_min_tag_freq: Optional[int] = None
@@ -187,6 +190,7 @@ def get_preferences(
         idle_refresh_seconds=r("idle_refresh_seconds"),
         reading_mode=r("reading_mode"),
         split_ratio=r("split_ratio"),
+        feed_reverse_order=r("feed_reverse_order"),
         suggestion_min_tags=get_effective_suggestion_min_tags(db),
         profile_min_tag_freq=r("profile_min_tag_freq"),
         suggestion_min_summary_length=r("suggestion_min_summary_length"),
@@ -248,6 +252,10 @@ def update_preferences(
             _set_setting(db, key, str(val))
 
     # ---- special cases (clamping, trimming, side effects) ----
+
+    if prefs.feed_reverse_order is not None:
+        _val = "1" if prefs.feed_reverse_order else "0"
+        _set_setting(db, PREF_FEED_REVERSE_ORDER, _val)
 
     if prefs.split_ratio is not None:
         _set_setting(db, PREF_SPLIT_RATIO, str(max(20, min(80, prefs.split_ratio))))
@@ -345,6 +353,12 @@ def _cast_int(val: Any) -> int | None:
         return None
 
 
+def _cast_bool(val: Any) -> bool | None:
+    if val is None:
+        return None
+    return str(val) in ("1", "true", "True")
+
+
 @dataclass
 class PrefSpec:
     key: str
@@ -381,6 +395,9 @@ PREF_SPEC: dict[str, PrefSpec] = {
     "split_ratio": PrefSpec(
         PREF_SPLIT_RATIO, 40, cast=_cast_int,
         clamp=lambda sp, v: max(20, min(80, v)),
+    ),
+    "feed_reverse_order": PrefSpec(
+        PREF_FEED_REVERSE_ORDER, False, cast=_cast_bool,
     ),
     "profile_min_tag_freq": PrefSpec(
         PREF_PROFILE_MIN_TAG_FREQ, 2, cast=_cast_int,
@@ -594,3 +611,8 @@ def get_effective_blocked_terms(db: Session) -> list:
 
 def get_effective_related_posts_limit(db: Session) -> int:
     return _get_effective(db, "related_posts_limit")
+
+
+def get_effective_feed_reverse_order(db: Session) -> bool:
+    """True = feed lists oldest-first instead of the default newest-first."""
+    return _get_effective(db, "feed_reverse_order")
