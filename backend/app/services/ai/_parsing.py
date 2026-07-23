@@ -21,6 +21,7 @@ _ABBREVIATIONS = sorted(
     [
         "etc.",
         "vs.",
+        "v.",
         "p.ex.",
         "Inc.",
         "Ltd.",
