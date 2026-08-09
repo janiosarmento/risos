@@ -24,6 +24,8 @@ document.addEventListener('alpine:init', () => {
         tagsPerPost: 7,
         aiTimeout: 30,
         aiMaxTokens: 8192,
+        summaryTemperature: 0.3,
+        summaryPresencePenalty: 0.0,
 
         // Data Settings
         feedUpdateInterval: 30,

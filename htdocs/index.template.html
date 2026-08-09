@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260722b';</script>
+    <script>var APP_VERSION = '20260809a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1613,6 +1613,38 @@
                                         class="w-32 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
                                     >
                                     <span class="text-sm text-gray-500">tokens</span>
+                                </div>
+                            </div>
+
+                            <!-- Summary Temperature -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label for="setting-summary-temperature" class="block text-sm font-medium mb-1" x-text="t('settings.summaryTemperature')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryTemperatureDesc')"></p>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        id="setting-summary-temperature"
+                                        type="number"
+                                        min="0" max="2" step="0.1"
+                                        x-model.number="summaryTemperature"
+                                        @change="saveAiSettings()"
+                                        class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- Summary Presence Penalty -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label for="setting-summary-presence-penalty" class="block text-sm font-medium mb-1" x-text="t('settings.summaryPresencePenalty')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryPresencePenaltyDesc')"></p>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        id="setting-summary-presence-penalty"
+                                        type="number"
+                                        min="-2" max="2" step="0.1"
+                                        x-model.number="summaryPresencePenalty"
+                                        @change="saveAiSettings()"
+                                        class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                    >
                                 </div>
                             </div>
 

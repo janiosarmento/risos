@@ -229,6 +229,8 @@ async def _call_model(
     timeout: int = 30,
     max_tokens: int = 8192,
     base_url: str = None,
+    temperature: float = SUMMARY_TEMPERATURE,
+    presence_penalty: float = 0.0,
 ) -> SummaryResult:
     """Make a single API call to a specific model and parse the response."""
     headers = {
@@ -238,9 +240,13 @@ async def _call_model(
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": SUMMARY_TEMPERATURE,
+        "temperature": temperature,
         "max_tokens": max_tokens,
     }
+    # Omitted unless explicitly set: some backends (e.g. Gemini's OpenAI-compat
+    # endpoint) reject this field outright on models that don't support it.
+    if presence_penalty:
+        payload["presence_penalty"] = presence_penalty
 
     try:
         async with httpx.AsyncClient(
@@ -394,12 +400,16 @@ async def _generate_summary_locked(
     from app.routes.preferences import (
         get_effective_ai_max_tokens,
         get_effective_summary_language,
+        get_effective_summary_presence_penalty,
+        get_effective_summary_temperature,
     )
 
     db = SessionLocal()
     try:
         effective_language = get_effective_summary_language(db)
         ai_max_tokens = get_effective_ai_max_tokens(db)
+        temperature = get_effective_summary_temperature(db)
+        presence_penalty = get_effective_summary_presence_penalty(db)
 
         # Build message list (reused across model attempts).
         messages = [
@@ -423,7 +433,8 @@ async def _generate_summary_locked(
 
     # Use preferred model only (proxy handles fallback)
     result = await _call_model(
-        model, api_key, 0, messages, timeout, ai_max_tokens, base_url=base_url
+        model, api_key, 0, messages, timeout, ai_max_tokens, base_url=base_url,
+        temperature=temperature, presence_penalty=presence_penalty,
     )
 
     # Empty result means the model deemed the content unusable

@@ -14,7 +14,7 @@ from app.config import load_prompts
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import AppSettings
-from app.services.ai._constants import DEFAULT_API_BASE_URL
+from app.services.ai._constants import DEFAULT_API_BASE_URL, SUMMARY_TEMPERATURE
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -33,6 +33,8 @@ PREF_IDLE_REFRESH = "pref_idle_refresh"
 PREF_READING_MODE = "pref_reading_mode"
 PREF_SPLIT_RATIO = "pref_split_ratio"
 PREF_FEED_REVERSE_ORDER = "pref_feed_reverse_order"
+PREF_SUMMARY_TEMPERATURE = "pref_summary_temperature"
+PREF_SUMMARY_PRESENCE_PENALTY = "pref_summary_presence_penalty"
 # Suggestions settings
 PREF_SUGGESTION_MIN_TAGS = "pref_suggestion_min_tags"
 PREF_PROFILE_MIN_TAG_FREQ = "pref_profile_min_tag_freq"
@@ -71,6 +73,8 @@ class PreferencesResponse(BaseModel):
     reading_mode: Optional[str] = None  # 'fullscreen' or 'split'
     split_ratio: Optional[int] = None  # percentage for posts panel (20-80)
     feed_reverse_order: bool = False  # True = oldest first
+    summary_temperature: float = SUMMARY_TEMPERATURE
+    summary_presence_penalty: float = 0.0  # 0.0 = omit from request (disabled)
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None  # minimum tag overlap for suggestions
     profile_min_tag_freq: Optional[int] = (
@@ -112,6 +116,8 @@ class PreferencesUpdate(BaseModel):
     reading_mode: Optional[str] = None
     split_ratio: Optional[int] = None
     feed_reverse_order: Optional[bool] = None
+    summary_temperature: Optional[float] = None
+    summary_presence_penalty: Optional[float] = None
     # Suggestions settings
     suggestion_min_tags: Optional[int] = None
     profile_min_tag_freq: Optional[int] = None
@@ -191,6 +197,8 @@ def get_preferences(
         reading_mode=r("reading_mode"),
         split_ratio=r("split_ratio"),
         feed_reverse_order=r("feed_reverse_order"),
+        summary_temperature=r("summary_temperature"),
+        summary_presence_penalty=r("summary_presence_penalty"),
         suggestion_min_tags=get_effective_suggestion_min_tags(db),
         profile_min_tag_freq=r("profile_min_tag_freq"),
         suggestion_min_summary_length=r("suggestion_min_summary_length"),
@@ -259,6 +267,14 @@ def update_preferences(
 
     if prefs.split_ratio is not None:
         _set_setting(db, PREF_SPLIT_RATIO, str(max(20, min(80, prefs.split_ratio))))
+
+    if prefs.summary_temperature is not None:
+        clamped = max(0.0, min(2.0, prefs.summary_temperature))
+        _set_setting(db, PREF_SUMMARY_TEMPERATURE, str(clamped))
+
+    if prefs.summary_presence_penalty is not None:
+        clamped = max(-2.0, min(2.0, prefs.summary_presence_penalty))
+        _set_setting(db, PREF_SUMMARY_PRESENCE_PENALTY, str(clamped))
 
     if prefs.suggestion_min_tags is not None:
         max_tags = get_effective_tags_per_post(db)
@@ -359,6 +375,15 @@ def _cast_bool(val: Any) -> bool | None:
     return str(val) in ("1", "true", "True")
 
 
+def _cast_float(val: Any) -> float | None:
+    if val is None:
+        return None
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
+
+
 @dataclass
 class PrefSpec:
     key: str
@@ -398,6 +423,14 @@ PREF_SPEC: dict[str, PrefSpec] = {
     ),
     "feed_reverse_order": PrefSpec(
         PREF_FEED_REVERSE_ORDER, False, cast=_cast_bool,
+    ),
+    "summary_temperature": PrefSpec(
+        PREF_SUMMARY_TEMPERATURE, SUMMARY_TEMPERATURE, cast=_cast_float,
+        clamp=lambda sp, v: max(0.0, min(2.0, v)),
+    ),
+    "summary_presence_penalty": PrefSpec(
+        PREF_SUMMARY_PRESENCE_PENALTY, 0.0, cast=_cast_float,
+        clamp=lambda sp, v: max(-2.0, min(2.0, v)),
     ),
     "profile_min_tag_freq": PrefSpec(
         PREF_PROFILE_MIN_TAG_FREQ, 2, cast=_cast_int,
@@ -616,3 +649,15 @@ def get_effective_related_posts_limit(db: Session) -> int:
 def get_effective_feed_reverse_order(db: Session) -> bool:
     """True = feed lists oldest-first instead of the default newest-first."""
     return _get_effective(db, "feed_reverse_order")
+
+
+def get_effective_summary_temperature(db: Session) -> float:
+    """Sampling temperature for summary generation (default 0.3)."""
+    return _get_effective(db, "summary_temperature")
+
+
+def get_effective_summary_presence_penalty(db: Session) -> float:
+    """Presence penalty for summary generation. 0.0 means disabled/omitted —
+    some backends (e.g. Gemini's OpenAI-compat endpoint) reject the field
+    outright on models that don't support it, so it's only sent when non-zero."""
+    return _get_effective(db, "summary_presence_penalty")
