@@ -219,13 +219,8 @@ if [ ! -f "$BACKEND_DIR/.env" ]; then
     if [ -f "$BACKEND_DIR/.env.example" ]; then
         cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
 
-        # Generate a random JWT secret
-        JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))")
-        sed -i "s|your_secret_key_minimum_32_characters_long|$JWT_SECRET|" "$BACKEND_DIR/.env"
-
         echo_warn ".env created from .env.example - please edit it with your settings!"
         echo_warn "At minimum, set APP_PASSWORD and CEREBRAS_API_KEY"
-        echo_warn "JWT_SECRET has been auto-generated."
     else
         echo_error ".env.example not found!"
         exit 1
