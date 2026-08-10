@@ -257,6 +257,22 @@ async def _call_model(
                 f"{target_url}/chat/completions", headers=headers, json=payload
             )
 
+            # Some backends (e.g. Gemini's OpenAI-compat endpoint) 400 outright
+            # on presence_penalty for models that don't support it. Retry once
+            # without it rather than failing the whole summary.
+            if response.status_code == 400 and "presence_penalty" in payload:
+                logger.warning(
+                    "HTTP 400 with presence_penalty set (base_url=%s), "
+                    "retrying without it: %s",
+                    target_url, response.text[:300],
+                )
+                payload = {
+                    k: v for k, v in payload.items() if k != "presence_penalty"
+                }
+                response = await client.post(
+                    f"{target_url}/chat/completions", headers=headers, json=payload
+                )
+
             if response.status_code == 429:
                 retry_after = response.headers.get("retry-after", "unknown")
                 logger.warning(
