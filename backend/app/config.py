@@ -52,7 +52,11 @@ class Settings(BaseSettings):
     # Security
     cors_origins: str = "https://rss.sarmento.org"
     cookie_secure: bool = True  # Set to false only for local HTTP development
-    jano_secret_prefix: str = "risos."  # Namespace allowed in /admin/validate-secret
+    # Comma-separated Jano secret names the app is allowed to resolve as an AI
+    # API key (via /preferences jano_secret_name / background_jano_secret_name,
+    # and /admin/validate-secret). Prevents a compromised session from making
+    # the app decrypt unrelated host secrets (passwords, other apps' keys).
+    jano_ai_secret_allowlist: str = "deepseek.api_key,gemini.api_key"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -60,6 +64,14 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @property
+    def jano_ai_secret_allowlist_set(self) -> set[str]:
+        return {
+            name.strip()
+            for name in self.jano_ai_secret_allowlist.split(",")
+            if name.strip()
+        }
 
 # Global configuration instance
 settings = Settings()

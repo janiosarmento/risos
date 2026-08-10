@@ -470,13 +470,13 @@ def validate_secret(
     Validate that a Jano secret exists and can be resolved.
     Use ?engine=background to validate against the background engine.
     Returns masked key preview so user can verify it's the right one.
-    Only secrets under the app's own namespace can be probed.
+    Only secrets on the AI allowlist can be probed.
     """
     # Resolve the named secret directly (not the saved preference)
     from app.services.jano_client import get_jano_secret
 
-    # Restrict to this app's namespace — prevents probing other apps' secrets
-    if not name.startswith(settings.jano_secret_prefix):
+    # Restrict to the configured AI allowlist — prevents probing other secrets
+    if name not in settings.jano_ai_secret_allowlist_set:
         return {"valid": False, "masked_key": None}
 
     try:

@@ -6,15 +6,16 @@ Stores locale, theme, AI settings, and data settings in app_settings table.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.config import load_prompts
+from app.config import load_prompts, settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import AppSettings
 from app.services.ai._constants import DEFAULT_API_BASE_URL, SUMMARY_TEMPERATURE
+from app.services.url_safety import is_cloud_metadata_url
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -239,6 +240,31 @@ _UPDATE_FIELDS_STRINT: list[tuple[str, str]] = [
 ]
 
 
+def _validate_jano_secret(name: str) -> str:
+    """Only allow secrets on the AI allowlist — an empty string clears the
+    setting (e.g. a local LM Studio endpoint needs no key). Prevents a
+    compromised session from making the app decrypt unrelated host secrets."""
+    name = name.strip()
+    if name and name not in settings.jano_ai_secret_allowlist_set:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Jano secret '{name}' is not on the AI allowlist",
+        )
+    return name
+
+
+def _validate_api_base_url(url: str) -> str:
+    """Reject cloud instance-metadata endpoints. Other private/loopback
+    addresses stay allowed — self-hosted backends (LM Studio) legitimately
+    run on localhost or the LAN."""
+    url = url.strip().rstrip("/")
+    if url and is_cloud_metadata_url(url):
+        raise HTTPException(
+            status_code=422, detail="api_base_url may not target a metadata endpoint"
+        )
+    return url
+
+
 @router.put("", response_model=PreferencesResponse)
 def update_preferences(
     prefs: PreferencesUpdate,
@@ -298,13 +324,15 @@ def update_preferences(
         clear_all_suggestions(db)
 
     if prefs.jano_secret_name is not None:
-        _set_setting(db, PREF_JANO_SECRET_NAME, prefs.jano_secret_name.strip())
+        _set_setting(
+            db, PREF_JANO_SECRET_NAME, _validate_jano_secret(prefs.jano_secret_name)
+        )
 
     if prefs.tags_per_post is not None:
         _set_setting(db, PREF_TAGS_PER_POST, str(max(3, min(15, prefs.tags_per_post))))
 
     if prefs.api_base_url is not None:
-        _set_setting(db, PREF_API_BASE_URL, prefs.api_base_url.strip().rstrip("/"))
+        _set_setting(db, PREF_API_BASE_URL, _validate_api_base_url(prefs.api_base_url))
 
     if prefs.related_posts_limit is not None:
         _set_setting(db, PREF_RELATED_POSTS_LIMIT, str(max(5, min(100, prefs.related_posts_limit))))
@@ -318,10 +346,18 @@ def update_preferences(
         _unsuggest_blocked_posts(db, lines)
 
     if prefs.background_jano_secret_name is not None:
-        _set_setting(db, PREF_BACKGROUND_JANO_SECRET_NAME, prefs.background_jano_secret_name.strip())
+        _set_setting(
+            db,
+            PREF_BACKGROUND_JANO_SECRET_NAME,
+            _validate_jano_secret(prefs.background_jano_secret_name),
+        )
 
     if prefs.background_api_base_url is not None:
-        _set_setting(db, PREF_BACKGROUND_API_BASE_URL, prefs.background_api_base_url.strip().rstrip("/"))
+        _set_setting(
+            db,
+            PREF_BACKGROUND_API_BASE_URL,
+            _validate_api_base_url(prefs.background_api_base_url),
+        )
 
     db.commit()
     return get_preferences(db, user)
