@@ -551,8 +551,8 @@ class Scheduler:
             )
             .order_by(
                 SummaryQueue.priority.desc(),
-                Feed.weight.desc(),
-                Post.published_at.desc(),
+                Post.published_at.desc(),  # Newer posts ALWAYS first
+                Feed.weight.desc(),  # Tie-breaker only (same publish time)
             )
             .first()
         )
