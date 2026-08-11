@@ -212,10 +212,14 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
     feeds_count = db.query(Feed).count()
     posts_count = db.query(Post).count()
     unread_count = db.query(Post).filter(Post.is_read.is_(False)).count()
-    queue_size = db.query(SummaryQueue).count()
-    unread_queue_size = (
-        db.query(SummaryQueue).join(Post).filter(Post.is_read.is_(False)).count()
+    # Queue size — only unread posts (read posts don't need summaries)
+    queue_size = (
+        db.query(SummaryQueue)
+        .join(Post, SummaryQueue.post_id == Post.id)
+        .filter(Post.is_read.is_(False))
+        .count()
     )
+    unread_queue_size = queue_size  # Same as queue_size (already filtered unread)
     starred_count = db.query(Post).filter(Post.is_starred.is_(True)).count()
     summaries_count = db.query(AISummary).count()
     failures_count = db.query(SummaryFailure).count()
