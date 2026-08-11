@@ -555,6 +555,66 @@ async def list_available_models(
         )
 
 
+@router.post("/recover-orphaned-queue")
+def recover_orphaned_queue(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Recovery endpoint: enqueue all posts with content_hash that are not in queue.
+    Fixes orphaned posts that have content but were never enqueued.
+    """
+    from sqlalchemy import func
+    from app.models import AISummary
+
+    # Find posts with content_hash but no queue entry and no summary
+    orphaned_posts = (
+        db.query(Post)
+        .filter(
+            Post.content_hash.isnot(None),
+            ~Post.id.in_(db.query(SummaryQueue.post_id)),
+            ~Post.content_hash.in_(db.query(AISummary.content_hash)),
+            Post.skip_summary.is_(False),
+        )
+        .all()
+    )
+
+    created_count = 0
+    for post in orphaned_posts:
+        try:
+            # Check if queue entry already exists (race condition)
+            existing = db.query(SummaryQueue).filter(
+                SummaryQueue.post_id == post.id
+            ).first()
+            if existing:
+                continue
+
+            # Create queue entry
+            queue_entry = SummaryQueue(
+                post_id=post.id,
+                content_hash=post.content_hash,
+                priority=0,  # Background priority
+            )
+            db.add(queue_entry)
+            created_count += 1
+        except Exception as e:
+            logger.error(f"Error recovering post {post.id}: {e}")
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        return {
+            "error": f"Failed to commit: {e}",
+            "created": created_count,
+        }
+
+    return {
+        "status": "success",
+        "orphaned_posts_recovered": created_count,
+        "message": f"Enqueued {created_count} orphaned posts for background processing",
+    }
+
+
 @router.get("/diagnose-queue")
 def diagnose_queue(
     db: Session = Depends(get_db), user: dict = Depends(get_current_user)
