@@ -560,17 +560,19 @@ def recover_orphaned_queue(
     db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
     """
-    Recovery endpoint: enqueue all posts with content_hash that are not in queue.
-    Fixes orphaned posts that have content but were never enqueued.
+    Recovery endpoint: enqueue all unread posts with content_hash that are not in queue.
+    Fixes orphaned unread posts that have content but were never enqueued for summary.
+    Read posts are excluded (no need to summarize).
     """
     from sqlalchemy import func
     from app.models import AISummary
 
-    # Find posts with content_hash but no queue entry and no summary
+    # Find unread posts with content_hash but no queue entry and no summary
     orphaned_posts = (
         db.query(Post)
         .filter(
             Post.content_hash.isnot(None),
+            Post.is_read.is_(False),  # Only unread posts
             ~Post.id.in_(db.query(SummaryQueue.post_id)),
             ~Post.content_hash.in_(db.query(AISummary.content_hash)),
             Post.skip_summary.is_(False),

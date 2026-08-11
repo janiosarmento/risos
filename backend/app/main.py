@@ -148,21 +148,22 @@ def reset_ai_state():
 
 def recover_orphaned_queue():
     """
-    Enqueue all posts with content_hash that are not in summary_queue.
-    Fixes posts created without content_hash or updated outside feed_ingestion
+    Enqueue all unread posts with content_hash that are not in summary_queue.
+    Fixes unread posts created without content_hash or updated outside feed_ingestion
     that were never enqueued for background AI processing.
-    Runs once at startup for recovery.
+    Read posts are excluded (no need to summarize).
     """
     from app.database import SessionLocal
     from app.models import AISummary, Post, SummaryQueue
 
     db = SessionLocal()
     try:
-        # Find posts with content_hash but no queue entry and no summary
+        # Find unread posts with content_hash but no queue entry and no summary
         orphaned_posts = (
             db.query(Post)
             .filter(
                 Post.content_hash.isnot(None),
+                Post.is_read.is_(False),  # Only unread posts
                 ~Post.id.in_(db.query(SummaryQueue.post_id)),
                 ~Post.content_hash.in_(db.query(AISummary.content_hash)),
                 Post.skip_summary.is_(False),
