@@ -5665,3 +5665,80 @@ Ready pra revisar prioridade. Quer remover algum desses 8 agora, ou quer que ide
 **You:** Esse de select redundant posts seria uma funcionalidade muito interessante para diminuir a sobrecarga cognitiva, mas não cheguei a imaginar como funcionaria.
   - `Read: /Users/janiosarmento/projects/risos/htdocs/static/js/components/curation.js`
   - `Read: /Users/janiosarmento/projects/risos/htdocs/static/js/components/curation.js`
+
+**Claude:** Entendi. Feature é boa demais pra remover.
+
+**selectRedundantPosts()** + **curatePosts()** formam workflow:
+1. Clica "Curate" → `/posts/curate` classifica posts em essential/redundant/situational com motivos
+2. UI exibe badges nos posts + stats (N redundantes, M essenciais)
+3. Clica "Selecionar Redundantes" → `selectRedundantPosts()` marca todos os classificados como redundant
+4. Clica "Desativar" → `batchUnstar()` remove tudo de uma vez
+
+Reduz sobrecarga massivamente — IA faz triagem, usuário confirma em 2 clics ao invés de marcar cada um.
+
+**Problema**: botão "Selecionar Redundantes" nunca foi implementado na UI. Código está pronto, mas órfão.
+
+**Opções**:
+A. Remover `selectRedundantPosts()` (feature incompleta)
+B. Restaurar botão na UI (terminar a implementação)
+C. Manter código como está (future feature)
+
+Qual caminho?
+
+**You:** B
+  - `Bash: grep -r "curationStats\|curationResults" /Users/janiosarmento/projects/risos/htdocs --include="*.html" --include="*.js" | grep -v ".recall" | head -20`
+  - `Bash: grep -n "curationResults" /Users/janiosarmento/projects/risos/htdocs/index.template.html | head -5`
+  - `Read: /Users/janiosarmento/projects/risos/htdocs/index.template.html`
+  - `Edit: /Users/janiosarmento/projects/risos/htdocs/index.template.html`
+  - `Bash: grep -n "downloadSelected\|archiveSelected" /Users/janiosarmento/projects/risos/htdocs/static/locales/pt-BR.json`
+  - `Read: /Users/janiosarmento/projects/risos/htdocs/static/locales/pt-BR.json`
+  - `Bash: grep -n "selectRedundant" /Users/janiosarmento/projects/risos/htdocs/static/locales/en-US.json`
+  - `Bash: cd /Users/janiosarmento/projects/risos/backend && python -m app.html_assembler`
+  - `Bash: git log --oneline -5`
+  - `Bash: git add -A && git commit -m "feat: add select redundant posts button to curation UI Restore UI control for selectRedundantPosts() method that was implemented bu`
+  - `Bash: git push`
+
+**Claude:** ✅ Restaurado. Botão "Selecionar Redundantes" agora conectado na UI curação.
+
+**Workflow completo agora:**
+1. Clica "Curate"
+2. AI analisa favoritos → exibe badges (★ essencial, ? situacional, ✗ redundante)
+3. Novo botão "Selecionar Redundantes" aparece (só se houver redundantes)
+4. Um clique marca todos os redundantes → "Arquivar Selecionados" remove em batch
+
+Reduza sobrecarga: IA faz triagem, você confirma com 2 clics ao invés de marcar cada post.
+
+Traduções (PT-BR e EN-US) já existiam — feature só precisava UI ligada.
+  - `Bash: bd remember --key "curation-feature-restored" "selectRedundantPosts() UI button restored. Users can now batch-select all AI-classified redundant posts in one cl`
+
+**Claude:** Pronto. Back pra lista de mortos — 8 problemas restantes.
+
+Quer remover logo, ou revisar risco/impacto de cada um antes?
+
+**You:** Tem algo errado. Tem mais de 50 posts sem resumo no Risos, e a página de status diz que apenas 31 estão na fila para ser processados.
+
+**Claude:** Fila desincronizada. Posts criados não entram na queue?
+
+Preciso de dois dados:
+1. **Query que mostra 50+ posts sem resumo** — qual filtro/endpoint você está vendo?
+2. **Endpoint status** — está vendo `/admin/status`? POST? Que diz exatamente?
+
+Enquanto isso, vou revisar lógica de enfileiramento:
+  - `Bash: grep -rn "summary_queue\|enqueue" /Users/janiosarmento/projects/risos/backend/app --include="*.py" | grep -v ".recall" | head -30`
+  - `Bash: grep -rn "summary_queue" /Users/janiosarmento/projects/risos/backend/app/routes --include="*.py" | grep -E "insert|add|create|append" | head -20`
+  - `Read: /Users/janiosarmento/projects/risos/backend/app/routes/posts.py`
+  - `Bash: grep -n "SummaryQueue\|summary_queue" /Users/janiosarmento/projects/risos/backend/app/services/feed_processor.py 2>/dev/null | head -20`
+  - `Bash: find /Users/janiosarmento/projects/risos/backend/app/services -name "*.py" -type f 2>/dev/null | head -20`
+  - `Bash: grep -n "SummaryQueue\|summary_queue" /Users/janiosarmento/projects/risos/backend/app/services/feed_ingestion.py`
+  - `Read: /Users/janiosarmento/projects/risos/backend/app/services/feed_ingestion.py`
+  - `Bash: grep -n "queue-status\|queue_status" /Users/janiosarmento/projects/risos/backend/app/routes/admin.py | head -10`
+  - `Read: /Users/janiosarmento/projects/risos/backend/app/routes/admin.py`
+
+**Claude:** Achei culpado. `/queue-status` conta APENAS `SummaryQueue.count()` (linha 299). Mas posts podem existir em `posts` table SEM estar na queue.
+
+Posts sem resumo vs. queue:
+  - `Bash: sqlite3 /Users/janiosarmento/projects/risos/backend/data/reader.db << 'EOF' -- Posts sem resumo SELECT 'Posts sem resumo:' AS metric, COUNT(*) as count FROM pos`
+
+**You:** [Request interrupted by user for tool use]
+
+**You:** Aqui é só desenvolvimento, não tem os dados do app

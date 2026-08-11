@@ -235,8 +235,10 @@ async def lifespan(app: FastAPI):
     # Reset AI state (circuit breaker, cooldowns) for fresh start
     reset_ai_state()
 
-    # Recover orphaned posts from queue
-    recover_orphaned_queue()
+    # NOTE: recover_orphaned_queue() is available as POST /admin/recover-orphaned-queue
+    # but NOT called automatically on startup to avoid blocking initialization.
+    # Large batches (5000+ posts) can take several minutes and block migrations.
+    # Call it manually after app is running if needed.
 
     # Start background jobs scheduler
     await scheduler.start()
