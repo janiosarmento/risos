@@ -562,16 +562,24 @@ def diagnose_queue(
     """
     Diagnose queue state: count posts without summaries vs. queued items.
     Helps identify orphaned posts or enqueuing bugs.
+    Summaries are stored in ai_summaries (matched via content_hash from posts).
     """
     from sqlalchemy import func
+    from app.models import AISummary
 
     now = datetime.utcnow()
 
-    # Posts without any summary
-    posts_without_summary = db.query(func.count(Post.id)).filter(
-        Post.summary_en.is_(None),
-        Post.summary_pt.is_(None),
-    ).scalar() or 0
+    # Posts without summary: posts whose content_hash is NOT in ai_summaries
+    posts_without_summary = (
+        db.query(func.count(Post.id))
+        .filter(
+            Post.content_hash.isnot(None),
+            ~Post.content_hash.in_(
+                db.query(AISummary.content_hash)
+            ),
+        )
+        .scalar() or 0
+    )
 
     # Total in queue
     total_queued = db.query(func.count(SummaryQueue.id)).scalar() or 0
@@ -580,8 +588,10 @@ def diagnose_queue(
     orphaned = (
         db.query(func.count(Post.id))
         .filter(
-            Post.summary_en.is_(None),
-            Post.summary_pt.is_(None),
+            Post.content_hash.isnot(None),
+            ~Post.content_hash.in_(
+                db.query(AISummary.content_hash)
+            ),
             ~Post.id.in_(db.query(SummaryQueue.post_id)),
         )
         .scalar() or 0
@@ -604,25 +614,17 @@ def diagnose_queue(
     # Posts ready to process (not in cooldown, not locked)
     ready_count = total_queued - cooldown_count - locked_count
 
-    # Posts without content_hash (likely skipped)
+    # Posts without content_hash (likely skipped or incomplete)
     no_content_hash = (
         db.query(func.count(Post.id))
-        .filter(
-            Post.summary_en.is_(None),
-            Post.summary_pt.is_(None),
-            Post.content_hash.is_(None),
-        )
+        .filter(Post.content_hash.is_(None))
         .scalar() or 0
     )
 
     # Skip_summary flag count
     skip_summary_count = (
         db.query(func.count(Post.id))
-        .filter(
-            Post.skip_summary.is_(True),
-            Post.summary_en.is_(None),
-            Post.summary_pt.is_(None),
-        )
+        .filter(Post.skip_summary.is_(True))
         .scalar() or 0
     )
 
@@ -639,7 +641,7 @@ def diagnose_queue(
         "note": (
             "Healthy: orphaned_posts ≈ 0, discrepancy ≈ 0. "
             "If orphaned_posts > 0: posts created but never enqueued. "
-            "If no_content_hash > 0: posts missing content (likely incomplete). "
+            "If no_content_hash > 0: posts missing content extraction. "
             "If skip_summary_flag > 0: posts explicitly skipped."
         ),
     }
