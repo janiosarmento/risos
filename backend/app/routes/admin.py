@@ -555,6 +555,96 @@ async def list_available_models(
         )
 
 
+@router.get("/diagnose-queue")
+def diagnose_queue(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+):
+    """
+    Diagnose queue state: count posts without summaries vs. queued items.
+    Helps identify orphaned posts or enqueuing bugs.
+    """
+    from sqlalchemy import func
+
+    now = datetime.utcnow()
+
+    # Posts without any summary
+    posts_without_summary = db.query(func.count(Post.id)).filter(
+        Post.summary_en.is_(None),
+        Post.summary_pt.is_(None),
+    ).scalar() or 0
+
+    # Total in queue
+    total_queued = db.query(func.count(SummaryQueue.id)).scalar() or 0
+
+    # Posts without summary that are NOT in queue (orphaned)
+    orphaned = (
+        db.query(func.count(Post.id))
+        .filter(
+            Post.summary_en.is_(None),
+            Post.summary_pt.is_(None),
+            ~Post.id.in_(db.query(SummaryQueue.post_id)),
+        )
+        .scalar() or 0
+    )
+
+    # Posts in cooldown (waiting to retry)
+    cooldown_count = (
+        db.query(func.count(SummaryQueue.id))
+        .filter(SummaryQueue.cooldown_until > now)
+        .scalar() or 0
+    )
+
+    # Posts currently locked (being processed)
+    locked_count = (
+        db.query(func.count(SummaryQueue.id))
+        .filter(SummaryQueue.locked_at.isnot(None))
+        .scalar() or 0
+    )
+
+    # Posts ready to process (not in cooldown, not locked)
+    ready_count = total_queued - cooldown_count - locked_count
+
+    # Posts without content_hash (likely skipped)
+    no_content_hash = (
+        db.query(func.count(Post.id))
+        .filter(
+            Post.summary_en.is_(None),
+            Post.summary_pt.is_(None),
+            Post.content_hash.is_(None),
+        )
+        .scalar() or 0
+    )
+
+    # Skip_summary flag count
+    skip_summary_count = (
+        db.query(func.count(Post.id))
+        .filter(
+            Post.skip_summary.is_(True),
+            Post.summary_en.is_(None),
+            Post.summary_pt.is_(None),
+        )
+        .scalar() or 0
+    )
+
+    return {
+        "posts_without_summary": posts_without_summary,
+        "total_queued": total_queued,
+        "orphaned_posts": orphaned,
+        "queued_ready": ready_count,
+        "queued_cooldown": cooldown_count,
+        "queued_locked": locked_count,
+        "no_content_hash": no_content_hash,
+        "skip_summary_flag": skip_summary_count,
+        "discrepancy": posts_without_summary - total_queued,
+        "note": (
+            "Healthy: orphaned_posts ≈ 0, discrepancy ≈ 0. "
+            "If orphaned_posts > 0: posts created but never enqueued. "
+            "If no_content_hash > 0: posts missing content (likely incomplete). "
+            "If skip_summary_flag > 0: posts explicitly skipped."
+        ),
+    }
+
+
 # Static list of target languages for AI summaries
 # Key: English name (used in prompts), Value: Native name (for display)
 SUMMARY_LANGUAGES = {
