@@ -295,18 +295,41 @@ def get_queue_status(
 
     now = datetime.utcnow()
 
-    # Queue stats
-    total = db.query(SummaryQueue).count()
-    in_cooldown = (
-        db.query(SummaryQueue).filter(SummaryQueue.cooldown_until > now).count()
+    # Queue stats — only unread posts (read posts don't need summaries)
+    total = (
+        db.query(SummaryQueue)
+        .join(Post, SummaryQueue.post_id == Post.id)
+        .filter(Post.is_read.is_(False))
+        .count()
     )
-    locked = db.query(SummaryQueue).filter(SummaryQueue.locked_at.isnot(None)).count()
+    in_cooldown = (
+        db.query(SummaryQueue)
+        .join(Post, SummaryQueue.post_id == Post.id)
+        .filter(
+            Post.is_read.is_(False),
+            SummaryQueue.cooldown_until > now,
+        )
+        .count()
+    )
+    locked = (
+        db.query(SummaryQueue)
+        .join(Post, SummaryQueue.post_id == Post.id)
+        .filter(
+            Post.is_read.is_(False),
+            SummaryQueue.locked_at.isnot(None),
+        )
+        .count()
+    )
     ready = total - in_cooldown - locked
 
-    # Get items in cooldown (first 10)
+    # Get items in cooldown (first 10, unread only)
     cooldown_items = (
         db.query(SummaryQueue)
-        .filter(SummaryQueue.cooldown_until > now)
+        .join(Post, SummaryQueue.post_id == Post.id)
+        .filter(
+            Post.is_read.is_(False),
+            SummaryQueue.cooldown_until > now,
+        )
         .order_by(SummaryQueue.cooldown_until.asc())
         .limit(10)
         .all()
