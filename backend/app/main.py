@@ -146,6 +146,67 @@ def reset_ai_state():
         db.close()
 
 
+def recover_orphaned_queue():
+    """
+    Enqueue all posts with content_hash that are not in summary_queue.
+    Fixes posts created without content_hash or updated outside feed_ingestion
+    that were never enqueued for background AI processing.
+    Runs once at startup for recovery.
+    """
+    from app.database import SessionLocal
+    from app.models import AISummary, Post, SummaryQueue
+
+    db = SessionLocal()
+    try:
+        # Find posts with content_hash but no queue entry and no summary
+        orphaned_posts = (
+            db.query(Post)
+            .filter(
+                Post.content_hash.isnot(None),
+                ~Post.id.in_(db.query(SummaryQueue.post_id)),
+                ~Post.content_hash.in_(db.query(AISummary.content_hash)),
+                Post.skip_summary.is_(False),
+            )
+            .all()
+        )
+
+        if not orphaned_posts:
+            logger.info("No orphaned posts found in queue recovery")
+            return
+
+        created_count = 0
+        for post in orphaned_posts:
+            try:
+                # Double-check no race condition
+                existing = db.query(SummaryQueue).filter(
+                    SummaryQueue.post_id == post.id
+                ).first()
+                if existing:
+                    continue
+
+                queue_entry = SummaryQueue(
+                    post_id=post.id,
+                    content_hash=post.content_hash,
+                    priority=0,  # Background priority
+                )
+                db.add(queue_entry)
+                created_count += 1
+            except Exception as e:
+                logger.error(f"Error recovering post {post.id}: {e}")
+
+        db.commit()
+        if created_count > 0:
+            logger.info(
+                f"Queue recovery: enqueued {created_count} orphaned posts"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in queue recovery: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -173,6 +234,9 @@ async def lifespan(app: FastAPI):
 
     # Reset AI state (circuit breaker, cooldowns) for fresh start
     reset_ai_state()
+
+    # Recover orphaned posts from queue
+    recover_orphaned_queue()
 
     # Start background jobs scheduler
     await scheduler.start()
