@@ -488,7 +488,7 @@ PREF_SPEC: dict[str, PrefSpec] = {
         clamp=lambda sp, v: max(3, min(15, v)),
     ),
     "ai_timeout": PrefSpec(
-        PREF_AI_TIMEOUT, 600, cast=_cast_int,
+        PREF_AI_TIMEOUT, 900, cast=_cast_int,
         clamp=lambda sp, v: max(5, v),
     ),
     "ai_max_tokens": PrefSpec(

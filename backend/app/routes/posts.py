@@ -1080,11 +1080,10 @@ async def curate_starred(
         one_line = (
             summary.one_line_summary
             if summary
-            else (p.content[:100] if p.content else "No summary")
+            else (p.content[:80] if p.content else "")
         )
-        tags = ", ".join(t.tag for t in p.tags)
         posts_text.append(
-            f"- ID: {p.id} | Title: {p.title} | Summary: {one_line} | Tags: {tags}"
+            f"- ID: {p.id} | {p.title} | {one_line}"
         )
 
     posts_with_summaries = "\n".join(posts_text)
