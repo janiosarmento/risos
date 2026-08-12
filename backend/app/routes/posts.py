@@ -1088,7 +1088,7 @@ async def curate_starred(
             else (p.content[:80] if p.content else "")
         )
         posts_text.append(
-            f"- ID: {p.id} | {p.title} | {one_line}"
+            f"{p.id}: {one_line}"
         )
 
     posts_with_summaries = "\n".join(posts_text)
