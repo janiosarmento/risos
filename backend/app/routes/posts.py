@@ -992,10 +992,15 @@ async def curate_starred(
     user: dict = Depends(get_current_user),
 ):
     """Analyze starred posts with AI to identify essential vs redundant."""
+    import logging
     from app.routes.preferences import get_effective_summary_language
     from app.services.ai._api import call_llm_json
 
+    logger = logging.getLogger(__name__)
+    logger.info("=== CURATE START ===")
+
     language = get_effective_summary_language(db)
+    logger.info(f"Language: {language}")
 
     query = (
         db.query(Post)
@@ -1128,7 +1133,13 @@ Respond in JSON:
     from app.routes.preferences import get_effective_curation_engine
 
     engine = get_effective_curation_engine(db)
-    result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192, engine=engine)
+    logger.info(f"Calling curate LLM: engine={engine}, posts={len(posts)}, prompt_size_approx={len(posts_with_summaries)}")
+    try:
+        result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192, engine=engine)
+        logger.info(f"LLM call succeeded")
+    except Exception as e:
+        logger.error(f"LLM call failed: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
     # Enrich result with post titles
     post_map = {p.id: p for p in posts}
@@ -1138,6 +1149,7 @@ Respond in JSON:
             if pid and pid in post_map:
                 item["title"] = post_map[pid].title
 
+    logger.info(f"Curation complete: {len(result.get('essential', []))} essential, {len(result.get('redundant', []))} redundant")
     return {
         "topic": context_name,
         "total_posts": len(posts),
