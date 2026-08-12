@@ -56,7 +56,8 @@ const curationMixin = {
             this.curationResults = map;
             this.curationStats = stats;
         } catch (e) {
-            this.showToast(e.message, 'error');
+            console.error('Curation error:', e);
+            this.showToast(e.message || 'Request failed', 'error');
         } finally {
             this.curatingPosts = false;
         }
