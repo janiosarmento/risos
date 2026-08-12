@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260811b">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260811b">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260811b">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260811c">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260811c">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260811c">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260811b">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260811c">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260811b">
+    <link rel="manifest" href="/manifest.json?v=20260811c">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -46,23 +46,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260811b"></script>
-    <script src="/static/vendor/popper.min.js?v=20260811b"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260811b"></script>
-    <script src="/static/vendor/purify.min.js?v=20260811b"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260811b in all ?v= below -->
-    <script>var APP_VERSION = '20260811b';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260811b">
+    <script src="/static/vendor/marked.min.js?v=20260811c"></script>
+    <script src="/static/vendor/popper.min.js?v=20260811c"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260811c"></script>
+    <script src="/static/vendor/purify.min.js?v=20260811c"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260811c in all ?v= below -->
+    <script>var APP_VERSION = '20260811c';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260811c">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260811b"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260811b"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260811b"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260811b"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260811b"></script>
-    <script defer src="/static/js/components/settings.js?v=20260811b"></script>
-    <script defer src="/static/js/components/curation.js?v=20260811b"></script>
-    <script defer src="/static/js/app.js?v=20260811b"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260811c"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260811c"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260811c"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260811c"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260811c"></script>
+    <script defer src="/static/js/components/settings.js?v=20260811c"></script>
+    <script defer src="/static/js/components/curation.js?v=20260811c"></script>
+    <script defer src="/static/js/app.js?v=20260811c"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -2093,6 +2093,36 @@
                                         <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
                                     </template>
                                 </select>
+                            </div>
+
+                            <!-- Curation Engine -->
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <label class="block text-sm font-medium mb-2" x-text="t('settings.curationEngine')"></label>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-3" x-text="t('settings.curationEngineDesc')"></p>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="curation-engine"
+                                            value="ondemand"
+                                            :checked="curationEngine === 'ondemand'"
+                                            @change="setCurationEngine('ondemand')"
+                                            class="w-4 h-4"
+                                        >
+                                        <span class="text-sm" x-text="t('settings.curationEngineOndemand')"></span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="curation-engine"
+                                            value="background"
+                                            :checked="curationEngine === 'background'"
+                                            @change="setCurationEngine('background')"
+                                            class="w-4 h-4"
+                                        >
+                                        <span class="text-sm" x-text="t('settings.curationEngineBackground')"></span>
+                                    </label>
+                                </div>
                             </div>
 
                             <!-- Tags per Post -->

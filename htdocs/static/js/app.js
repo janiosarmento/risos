@@ -120,6 +120,8 @@ function app() {
         set summaryTemperature(v) { Alpine.store('prefs').summaryTemperature = v; },
         get summaryPresencePenalty() { return Alpine.store('prefs').summaryPresencePenalty; },
         set summaryPresencePenalty(v) { Alpine.store('prefs').summaryPresencePenalty = v; },
+        get curationEngine() { return Alpine.store('prefs').curationEngine; },
+        set curationEngine(v) { Alpine.store('prefs').curationEngine = v; },
         get availableSummaryLanguages() { return Alpine.store('prefs').availableSummaryLanguages; },
         set availableSummaryLanguages(v) { Alpine.store('prefs').availableSummaryLanguages = v; },
         get availableModels() { return Alpine.store('prefs').availableModels; },

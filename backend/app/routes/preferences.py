@@ -58,6 +58,9 @@ PREF_BACKGROUND_JANO_SECRET_NAME = "pref_background_jano_secret_name"
 PREF_BACKGROUND_API_BASE_URL = "pref_background_api_base_url"
 PREF_BACKGROUND_AI_MODEL = "pref_background_ai_model"
 
+# Curation settings
+PREF_CURATION_ENGINE = "pref_curation_engine"
+
 
 class PreferencesResponse(BaseModel):
     locale: Optional[str] = None
@@ -100,6 +103,8 @@ class PreferencesResponse(BaseModel):
     background_jano_secret_name: Optional[str] = None
     background_api_base_url: Optional[str] = None
     background_ai_model: Optional[str] = None
+    # Curation settings
+    curation_engine: str = "ondemand"  # "ondemand" or "background"
 
 
 class PreferencesUpdate(BaseModel):
@@ -137,6 +142,8 @@ class PreferencesUpdate(BaseModel):
     background_jano_secret_name: Optional[str] = None
     background_api_base_url: Optional[str] = None
     background_ai_model: Optional[str] = None
+    # Curation settings
+    curation_engine: Optional[str] = None
 
 
 def _get_setting(db: Session, key: str) -> Optional[str]:
@@ -492,6 +499,9 @@ PREF_SPEC: dict[str, PrefSpec] = {
         PREF_RELATED_POSTS_LIMIT, 30, cast=_cast_int,
         clamp=lambda sp, v: max(5, min(100, v)),
     ),
+    "curation_engine": PrefSpec(
+        PREF_CURATION_ENGINE, "ondemand",
+    ),
 }
 
 
@@ -662,6 +672,11 @@ def get_effective_background_api_base_url(db: Session) -> str:
     if row and row.value:
         return row.value.rstrip("/")
     return get_effective_api_base_url(db)
+
+
+def get_effective_curation_engine(db: Session) -> str:
+    """Get curation engine preference: 'ondemand' or 'background'."""
+    return _get_effective(db, "curation_engine")
 
 
 def get_effective_background_ai_model(db: Session) -> str:

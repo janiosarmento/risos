@@ -1126,7 +1126,10 @@ Respond in JSON:
   ],
 }}"""
 
-    result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192, engine="ondemand")
+    from app.routes.preferences import get_effective_curation_engine
+
+    engine = get_effective_curation_engine(db)
+    result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192, engine=engine)
 
     # Enrich result with post titles
     post_map = {p.id: p for p in posts}

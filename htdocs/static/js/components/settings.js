@@ -831,6 +831,11 @@ const settingsMixin = {
         if (this.authenticated) this.savePreferencesToServer();
     },
 
+    setCurationEngine(engine) {
+        this.curationEngine = engine;
+        if (this.authenticated) this.savePreferencesToServer();
+    },
+
     setAiModel(model) {
         this.aiModel = model;
         if (this.authenticated) this.savePreferencesToServer();
@@ -962,6 +967,7 @@ const settingsMixin = {
             payload.ai_max_tokens = parseInt(this.aiMaxTokens) || 8192;
             payload.summary_temperature = parseFloat(this.summaryTemperature) || 0.3;
             payload.summary_presence_penalty = parseFloat(this.summaryPresencePenalty) || 0.0;
+            payload.curation_engine = this.curationEngine || 'ondemand';
             await this.fetchApi('/preferences', {
                 method: 'PUT',
                 body: JSON.stringify(payload),
@@ -1130,6 +1136,7 @@ const settingsMixin = {
                     background_api_base_url: this.backgroundApiBaseUrl,
                     background_ai_model: this.backgroundAiModel || null,
                     related_posts_limit: this.relatedPostsLimit,
+                    curation_engine: this.curationEngine,
                 }),
             });
         } catch (e) {
@@ -1157,6 +1164,7 @@ const settingsMixin = {
 
             // AI settings
             if (serverPrefs.summary_language) this.summaryLanguage = serverPrefs.summary_language;
+            if (serverPrefs.curation_engine) this.curationEngine = serverPrefs.curation_engine;
             if (serverPrefs.ai_model) this.aiModel = serverPrefs.ai_model;
             if (serverPrefs.ai_timeout) this.aiTimeout = serverPrefs.ai_timeout;
             if (serverPrefs.ai_max_tokens) this.aiMaxTokens = serverPrefs.ai_max_tokens;

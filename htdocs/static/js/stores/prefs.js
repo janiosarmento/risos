@@ -26,6 +26,7 @@ document.addEventListener('alpine:init', () => {
         aiMaxTokens: 8192,
         summaryTemperature: 0.3,
         summaryPresencePenalty: 0.0,
+        curationEngine: 'ondemand',
 
         // Data Settings
         feedUpdateInterval: 30,
