@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # API key (via /preferences jano_secret_name / background_jano_secret_name,
     # and /admin/validate-secret). Prevents a compromised session from making
     # the app decrypt unrelated host secrets (passwords, other apps' keys).
-    jano_ai_secret_allowlist: str = "deepseek.api_key,gemini.api_key"
+    jano_ai_secret_allowlist: str = "deepseek.api_key,gemini.api_key,openrouter.api_key"
 
     model_config = SettingsConfigDict(
         env_file=".env",
