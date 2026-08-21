@@ -803,10 +803,16 @@ const settingsMixin = {
         }
     },
 
+    _sortModelsById(models) {
+        return (models || []).slice().sort((a, b) =>
+            String(a.id).localeCompare(String(b.id), undefined, { numeric: true, sensitivity: 'base' })
+        );
+    },
+
     async loadAvailableModels() {
         try {
             const models = await this.fetchApi('/admin/models?_t=' + Date.now());
-            this.availableModels = models || [];
+            this.availableModels = this._sortModelsById(models);
             const saved = this.aiModel;
             if (saved === 'auto') {
                 this.$nextTick(() => { this.aiModel = 'auto'; });
@@ -817,7 +823,7 @@ const settingsMixin = {
                 } else if (models && models.length > 0) {
                     // Saved model not in new provider's list — show first in UI but don't auto-save.
                     // User must explicitly pick from the dropdown.
-                    this.$nextTick(() => { this.aiModel = models[0].id; });
+                    this.$nextTick(() => { this.aiModel = this.availableModels[0].id; });
                 }
             }
         } catch (e) {
@@ -844,7 +850,7 @@ const settingsMixin = {
     async loadBackgroundAvailableModels() {
         try {
             const models = await this.fetchApi('/admin/models?engine=background&_t=' + Date.now());
-            this.backgroundAvailableModels = models || [];
+            this.backgroundAvailableModels = this._sortModelsById(models);
             const saved = this.backgroundAiModel;
             if (saved === 'auto') {
                 this.$nextTick(() => { this.backgroundAiModel = 'auto'; });
@@ -854,7 +860,7 @@ const settingsMixin = {
                     this.$nextTick(() => { this.backgroundAiModel = saved; });
                 } else if (models && models.length > 0) {
                     // Saved model not in new provider's list — show first in UI but don't auto-save.
-                    this.backgroundAiModel = models[0].id;
+                    this.backgroundAiModel = this.backgroundAvailableModels[0].id;
                 }
             }
         } catch (e) {
