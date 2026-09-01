@@ -428,6 +428,14 @@ class Scheduler:
 
                     db.commit()
 
+                    # These bulk deletes bypass the post routes, so the topic
+                    # count cache would otherwise serve stale unread badges
+                    # until its TTL expires.
+                    if posts_removed or unread_removed:
+                        from app import topics_cache
+
+                        topics_cache.invalidate()
+
                     # Log in cleanup_logs
                     duration = (datetime.utcnow() - start_time).total_seconds()
                     log = CleanupLog(
