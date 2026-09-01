@@ -1317,15 +1317,21 @@ function app() {
                     this.suggestedCount++;
                 }
             }
-            // Adjust topic unread counts locally (a post counts once per topic
-            // whose tags it shares) instead of refetching the whole list.
-            if (this.topicsExpanded && Array.isArray(post.tags) && post.tags.length) {
-                const postTags = new Set(post.tags);
-                const delta = isRead ? -1 : 1;
-                for (const topic of this.topics) {
-                    if ((topic.tags || []).some(t => postTags.has(t))) {
-                        topic.unread_count = Math.max(0, (topic.unread_count || 0) + delta);
-                    }
+            this._adjustTopicUnread(post, isRead ? -1 : 1);
+        },
+
+        // Adjust sidebar topic unread counts locally for one post's read-state
+        // change. A post counts once per topic whose tag set it intersects, and
+        // the same post can belong to several topics (e.g. "Apple", "AI",
+        // "Hardware") — every matching topic is adjusted. Runs instead of
+        // refetching the whole topic list on every read.
+        _adjustTopicUnread(post, delta) {
+            if (!this.topicsExpanded) return;
+            if (!Array.isArray(post.tags) || !post.tags.length) return;
+            const postTags = new Set(post.tags);
+            for (const topic of this.topics) {
+                if ((topic.tags || []).some(t => postTags.has(t))) {
+                    topic.unread_count = Math.max(0, (topic.unread_count || 0) + delta);
                 }
             }
         },
@@ -1350,9 +1356,9 @@ function app() {
             // Get unread posts currently visible in the interface
             // This ensures we only mark posts the user has seen, not new ones
             // that may have arrived via background refresh
-            const visibleUnreadIds = this.posts
-                .filter(p => !p.is_read && !p.keep_unread && (!blockedOnly || p.is_blocked))
-                .map(p => p.id);
+            const visibleUnread = this.posts
+                .filter(p => !p.is_read && !p.keep_unread && (!blockedOnly || p.is_blocked));
+            const visibleUnreadIds = visibleUnread.map(p => p.id);
 
             if (visibleUnreadIds.length === 0) return;
 
@@ -1399,6 +1405,10 @@ function app() {
                     method: 'POST',
                     body: JSON.stringify({ post_ids: visibleUnreadIds }),
                 });
+
+                // Drop these posts from every topic they belong to before the
+                // list reload discards the post objects (each carries its tags).
+                for (const p of visibleUnread) this._adjustTopicUnread(p, -1);
 
                 // Reload data
                 await this.loadFeeds();
@@ -1557,11 +1567,13 @@ function app() {
                     body: JSON.stringify({ post_ids: postIds }),
                 });
 
-                // Update local state (only non-protected posts)
+                // Update local state (only non-protected posts). Adjust topic
+                // counts for posts that were actually unread before this.
+                const idSet = new Set(postIds);
                 this.posts.forEach(p => {
-                    if (postIds.includes(p.id)) {
-                        p.is_read = true;
-                    }
+                    if (!idSet.has(p.id)) return;
+                    if (!p.is_read) this._adjustTopicUnread(p, -1);
+                    p.is_read = true;
                 });
 
                 // Update feed and topic unread counts

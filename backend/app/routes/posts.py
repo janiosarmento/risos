@@ -46,6 +46,7 @@ from app.services.content_extractor import ensure_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
 from app.services.url_safety import is_safe_external_url
+from app.topics_cache import invalidate as invalidate_topics_cache
 
 logger = logging.getLogger(__name__)
 
@@ -664,6 +665,7 @@ def toggle_read(
         post.read_at = datetime.utcnow()
 
     db.commit()
+    invalidate_topics_cache()
 
     return {"id": post_id, "is_read": post.is_read, "read_at": post.read_at}
 
@@ -762,6 +764,7 @@ def toggle_keep_unread(
             post.read_at = None
 
     db.commit()
+    invalidate_topics_cache()
 
     return {
         "id": post_id,
@@ -811,6 +814,8 @@ def mark_read_batch(
 
     count = query.update({"is_read": True, "read_at": now}, synchronize_session=False)
     db.commit()
+    if count:
+        invalidate_topics_cache()
 
     return {"marked_read": count}
 
@@ -847,6 +852,7 @@ def redirect_to_post(
         post.is_read = True
         post.read_at = datetime.utcnow()
         db.commit()
+        invalidate_topics_cache()
 
     return RedirectResponse(url=post.url, status_code=status.HTTP_302_FOUND)
 

@@ -3,7 +3,6 @@ Topic management routes.
 Topics are named groups of tags for content organization.
 """
 
-import time
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,19 +13,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Post, PostTag, Topic, TopicTag
+from app.topics_cache import (
+    get_cached,
+    invalidate as _invalidate_topics_cache,
+    set_cached,
+)
 
 router = APIRouter(prefix="/topics", tags=["topics"])
-
-# Short-lived in-process cache for the topic list. Computing post/unread
-# counts scans a large post_tags table; the sidebar polls this often and
-# slightly stale counts are fine (the frontend also adjusts them locally).
-_TOPICS_CACHE_TTL = 60.0
-_topics_cache: dict = {"data": None, "ts": 0.0}
-
-
-def _invalidate_topics_cache() -> None:
-    _topics_cache["data"] = None
-    _topics_cache["ts"] = 0.0
 
 
 class TopicCreate(BaseModel):
@@ -49,12 +42,9 @@ def list_topics(
     user: dict = Depends(get_current_user),
 ):
     """List all topics with tags, post count, and unread count."""
-    now = time.monotonic()
-    if (
-        _topics_cache["data"] is not None
-        and now - _topics_cache["ts"] < _TOPICS_CACHE_TTL
-    ):
-        return _topics_cache["data"]
+    cached = get_cached()
+    if cached is not None:
+        return cached
 
     topics = db.query(Topic).order_by(Topic.name).all()
 
@@ -102,8 +92,7 @@ def list_topics(
             }
         )
 
-    _topics_cache["data"] = result
-    _topics_cache["ts"] = now
+    set_cached(result)
     return result
 
 
