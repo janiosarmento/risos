@@ -309,7 +309,8 @@
   },
   "topics": {
     "clearFilter": "Clear topic filter",
-    "addToTopic": "Add tag to topic"
+    "addToTopic": "Add tag to topic",
+    "empty": "No topics yet — add them in Settings."
   },
   "curation": {
     "curate": "Curate",

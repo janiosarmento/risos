@@ -309,7 +309,8 @@
   },
   "topics": {
     "clearFilter": "Limpar filtro de tópico",
-    "addToTopic": "Adicionar tag ao tópico"
+    "addToTopic": "Adicionar tag ao tópico",
+    "empty": "Nenhum tópico ainda — adicione em Configurações."
   },
   "curation": {
     "curate": "Curadoria",
