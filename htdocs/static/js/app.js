@@ -349,6 +349,11 @@ function app() {
             } else {
                 this.selectedTopicId = topicId;
                 this.tagFilter = null; // Mutually exclusive with tag filter
+                // A topic is a standalone scope: drop any feed/category scope so
+                // the list matches the sidebar badge (which counts the topic
+                // across all feeds), not the intersection of the two.
+                this.filter = 'unread';
+                this.filterId = null;
             }
             this.clearCuration();
             this.loadPosts(true);
