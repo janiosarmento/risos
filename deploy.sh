@@ -26,18 +26,19 @@ SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]:-$0}")"
 REPO_DIR="$(dirname "$SCRIPT_PATH")"
 cd "$REPO_DIR"
 
-if ! git rev-parse --git-dir >/dev/null 2>&1; then
-    echo "deploy: '$REPO_DIR' is not a git repository" >&2
-    exit 1
-fi
-
 # --- run git as whoever owns the checkout (the repo is www-data's; running
-#     git as root would create root-owned objects and wedge future pulls) ---
+#     git as the invoking user trips git's dubious-ownership guard, and running
+#     it as root would create root-owned objects and wedge future pulls) ---
 REPO_OWNER="$(stat -c '%U' "$REPO_DIR")"
 if [ "$REPO_OWNER" = "$(id -un)" ]; then
     run_git() { git "$@"; }
 else
     run_git() { sudo -u "$REPO_OWNER" -H git "$@"; }
+fi
+
+if ! run_git rev-parse --git-dir >/dev/null 2>&1; then
+    echo "deploy: '$REPO_DIR' is not a git repository (as user $REPO_OWNER)" >&2
+    exit 1
 fi
 
 echo "deploy: repo=$REPO_DIR owner=$REPO_OWNER branch=$BRANCH service=$SERVICE"
