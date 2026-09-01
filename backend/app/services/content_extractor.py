@@ -4,10 +4,12 @@ Uses readability-lxml to extract articles from web pages.
 Falls back to curl-impersonate for Cloudflare-protected sites (if installed).
 """
 
+import asyncio
 import logging
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -70,8 +72,34 @@ def _is_non_article_content(text: str) -> bool:
 
 
 # Configuration
-TIMEOUT = 20.0  # seconds
+TIMEOUT = 8.0  # seconds — this fetch runs synchronously inside GET /posts/{id},
+# so a slow origin must not stall the request (and a gunicorn worker) for long.
+# On failure the caller falls back to the stored feed snippet.
 MAX_CONTENT_SIZE = 5 * 1024 * 1024  # 5MB
+
+# Short-lived negative cache: URLs whose extraction just failed or timed out.
+# Without this, every re-open of the same article re-runs the full fetch chain
+# (httpx + curl-impersonate fallback), so a slow site is slow on every click.
+_EXTRACTION_FAIL_TTL = 900.0  # 15 minutes
+_recent_extraction_failures: dict[str, float] = {}
+
+
+def _recently_failed(url: str) -> bool:
+    expiry = _recent_extraction_failures.get(url)
+    if expiry is None:
+        return False
+    if time.monotonic() > expiry:
+        _recent_extraction_failures.pop(url, None)
+        return False
+    return True
+
+
+def _mark_extraction_failed(url: str) -> None:
+    now = time.monotonic()
+    _recent_extraction_failures[url] = now + _EXTRACTION_FAIL_TTL
+    if len(_recent_extraction_failures) > 500:
+        for k in [k for k, exp in _recent_extraction_failures.items() if exp < now]:
+            _recent_extraction_failures.pop(k, None)
 
 # Cloudflare detection patterns
 CLOUDFLARE_PATTERNS = [
@@ -142,14 +170,14 @@ def _fetch_with_curl_impersonate(url: str) -> Tuple[bool, str, Optional[str]]:
                 "-s",  # Silent mode
                 "-L",  # Follow redirects
                 "--max-time",
-                "30",  # Timeout
+                "12",  # Timeout — kept short: this runs inside the request
                 "--max-redirs",
                 "5",  # Max redirects
                 url,
             ],
             capture_output=True,
             text=True,
-            timeout=35,  # subprocess timeout (slightly higher than curl)
+            timeout=15,  # subprocess timeout (slightly higher than curl)
         )
 
         if result.returncode != 0:
@@ -356,9 +384,11 @@ async def extract_full_content(url: str) -> ExtractedContent:
                 error=error or "curl-impersonate fallback failed",
             )
 
-    # Extract content from HTML
+    # Extract content from HTML. readability + sanitize is pure CPU on a page
+    # up to 5 MB; run it off the event loop so it can't stall the worker that
+    # also serves requests (the scheduler shares that process).
     if html:
-        return _extract_from_html(html)
+        return await asyncio.to_thread(_extract_from_html, html)
 
     return ExtractedContent(
         title="",
@@ -385,13 +415,19 @@ async def ensure_full_content(db, post: "Post") -> str | None:  # noqa: F821 —
     if not post.url:
         return None
 
+    # Don't re-run the fetch chain for a URL that just failed — serve the snippet.
+    if _recently_failed(post.url):
+        return None
+
     try:
         result = await extract_full_content(post.url)
         if result.success and result.content:
             post.full_content = result.content
             db.commit()
             return result.content
+        _mark_extraction_failed(post.url)
     except Exception:
+        _mark_extraction_failed(post.url)
         logger = logging.getLogger(__name__)
         logger.debug("Content extraction skipped for post %s", getattr(post, "id", "?"))
     return None
