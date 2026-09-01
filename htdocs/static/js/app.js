@@ -313,12 +313,14 @@ function app() {
         // Deduped: concurrent callers share the in-flight request instead of
         // each spawning another (expensive) /topics query on the backend.
         _topicsInflight: null,
+        topicsLoaded: false, // false until the first /topics response lands (gates the empty state)
         loadTopics() {
             if (this._topicsInflight) return this._topicsInflight;
             this._topicsInflight = (async () => {
                 try {
                     const data = await this.fetchApi('/topics');
                     this.topics = data || [];
+                    this.topicsLoaded = true;
                 } catch (e) {
                     console.warn('Failed to load topics:', e);
                 } finally {

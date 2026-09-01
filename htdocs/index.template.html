@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260901b';</script>
+    <script>var APP_VERSION = '20260901c';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -466,7 +466,7 @@
                                     </button>
                                 </template>
                                 <div
-                                    x-show="topics.length === 0"
+                                    x-show="topicsLoaded && topics.length === 0"
                                     class="px-2 py-1 text-xs text-gray-400 dark:text-gray-500"
                                     x-text="t('topics.empty')"
                                 ></div>
