@@ -202,17 +202,87 @@ def normalize_tags(raw_tags: list, max_tags: int = 15) -> List[str]:
     return tags[:max_tags]
 
 
+def _strip_reasoning(content: str) -> str:
+    """Drop chain-of-thought wrappers that reasoning models (many free
+    OpenRouter ones) emit before the JSON: <think>...</think>,
+    <thinking>...</thinking>, and a trailing lone </think>."""
+    content = re.sub(
+        r"<(think|thinking|reasoning)>[\s\S]*?</\1>", "", content, flags=re.IGNORECASE
+    )
+    # Unbalanced closer left behind ("... reasoning ...</think>\n{json}")
+    m = re.search(r"</(?:think|thinking|reasoning)>", content, re.IGNORECASE)
+    if m:
+        content = content[m.end():]
+    # Unbalanced opener with no closer: reasoning ran to the end, no JSON after
+    m = re.search(r"<(?:think|thinking|reasoning)>", content, re.IGNORECASE)
+    if m and "{" not in content[m.end():] and "[" not in content[m.end():]:
+        content = content[: m.start()]
+    return content
+
+
+def _balance_json(s: str) -> str:
+    """Best-effort repair of malformed JSON from weaker models: trailing commas
+    before a closer, and structures truncated mid-value (finish_reason=length).
+    Walks the text tracking string/escape state so edits never touch string
+    contents, then closes any still-open string, arrays, and objects."""
+    out: List[str] = []
+    stack: List[str] = []
+    in_string = False
+    escaped = False
+    for ch in s:
+        if in_string:
+            out.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch in "}]":
+            # Drop a comma (and whitespace) sitting just before this closer.
+            while out and out[-1].isspace():
+                out.pop()
+            if out and out[-1] == ",":
+                out.pop()
+            if stack and (
+                (ch == "}" and stack[-1] == "{") or (ch == "]" and stack[-1] == "[")
+            ):
+                stack.pop()
+        elif ch == '"':
+            in_string = True
+        elif ch in "{[":
+            stack.append(ch)
+        out.append(ch)
+
+    repaired = "".join(out)
+    if in_string:
+        repaired += '"'
+    repaired = re.sub(r",\s*$", "", repaired.rstrip())
+    for opener in reversed(stack):
+        repaired += "}" if opener == "{" else "]"
+    return repaired
+
+
 def parse_json_response(content: str) -> dict:
     """
     Parse JSON response robustly.
-    Handles markdown code blocks, incorrect escapes, etc.
+    Handles reasoning wrappers, markdown code blocks, truncation, and bad escapes.
     """
+    if not content:
+        raise ValueError("Empty response content")
 
-    # Remove markdown code blocks if present
-    # Pattern: ```json ... ``` or ``` ... ```
+    content = _strip_reasoning(content)
+
+    # Remove markdown code fences if present: ```json ... ``` or ``` ... ```.
+    # Also handle a fence that opened but never closed (response truncated).
     code_block_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
     if code_block_match:
         content = code_block_match.group(1)
+    else:
+        open_fence = re.search(r"```(?:json)?\s*", content)
+        if open_fence:
+            content = content[open_fence.end():]
 
     # Try direct parse first
     try:
@@ -220,18 +290,29 @@ def parse_json_response(content: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Try to extract JSON from within text
-    json_start = content.find("{")
-    json_end = content.rfind("}") + 1
+    # Extract the outermost JSON value (object or bare array) from within text
+    starts = [p for p in (content.find("{"), content.find("[")) if p >= 0]
+    ends = [p for p in (content.rfind("}"), content.rfind("]")) if p >= 0]
+    json_start = min(starts) if starts else -1
+    json_end = (max(ends) + 1) if ends else -1
 
-    if json_start < 0 or json_end <= json_start:
+    if json_start < 0:
         raise ValueError("JSON not found in response")
-
-    json_str = content[json_start:json_end]
+    if json_end <= json_start:
+        # Opening brace but no closing one at all — truncated hard. Repair.
+        json_str = content[json_start:]
+    else:
+        json_str = content[json_start:json_end]
 
     # Try parse
     try:
         return json.loads(json_str)
+    except json.JSONDecodeError:
+        pass
+
+    # Repair truncated structure (unclosed strings / arrays / objects) and retry
+    try:
+        return json.loads(_balance_json(json_str))
     except json.JSONDecodeError:
         pass
 
@@ -252,6 +333,11 @@ def parse_json_response(content: str) -> dict:
 
     try:
         return json.loads(json_str_fixed)
+    except json.JSONDecodeError:
+        pass
+
+    try:
+        return json.loads(_balance_json(json_str_fixed))
     except json.JSONDecodeError:
         pass
 
@@ -277,4 +363,4 @@ def parse_json_response(content: str) -> dict:
         )
         return {"summary_pt": summary, "one_line_summary": one_line}
 
-    raise ValueError(f"Could not parse JSON: {json_str[:200]}...")
+    raise ValueError(f"Could not parse JSON: {json_str[:500]}...")

@@ -312,7 +312,11 @@ Respond ONLY in JSON:
   "tags": ["tag1", "tag2", "tag3"]
 }}"""
 
-    result = await call_llm_json(system_prompt, user_prompt, engine="ondemand")
+    # Generous output budget: reasoning models spend tokens thinking before
+    # the JSON, and a truncated reply is unparseable.
+    result = await call_llm_json(
+        system_prompt, user_prompt, max_tokens=8000, engine="ondemand"
+    )
 
     # Validate: only return tags that actually exist in the unassigned pool
     available = {row.tag for row in rows}
@@ -375,7 +379,11 @@ Respond ONLY in JSON:
   "orphan_tags": ["tag1", "tag2"]
 }}"""
 
-    result = await call_llm_json(system_prompt, user_prompt, engine="ondemand")
+    # Generous output budget: this reply lists many tags across 5-12 topics,
+    # and reasoning models burn tokens before emitting the JSON.
+    result = await call_llm_json(
+        system_prompt, user_prompt, max_tokens=8000, engine="ondemand"
+    )
 
     suggestions = []
     for item in result.get("topics", []):

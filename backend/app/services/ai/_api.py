@@ -169,13 +169,16 @@ async def get_available_models(engine: str = "ondemand") -> List[str]:
 
 
 def _extract_content_from_choice(choice: dict) -> str:
-    """Pull the text content from any of the known OpenAI-compatible response shapes."""
+    """Pull the text content from any of the known OpenAI-compatible response
+    shapes. Skips empty values so a reasoning model that leaves `content` null
+    but fills `reasoning` still yields text."""
     message = choice.get("message", {})
-    for key in ("content", "reasoning"):
-        if key in message:
-            return message[key]
+    for key in ("content", "reasoning", "reasoning_content"):
+        value = message.get(key)
+        if value:
+            return value
     for key in ("text", "content"):
-        if key in choice:
+        if choice.get(key):
             return choice[key]
     raise ModelSpecificError(f"Unknown response structure: {list(choice.keys())}")
 
@@ -518,6 +521,10 @@ async def _call_llm_json_locked(
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
+        # Ask the backend to constrain output to JSON. Providers that support
+        # it (OpenAI, Gemini, DeepSeek, most OpenRouter routes) stop wrapping
+        # the object in prose or markdown; those that don't 400, handled below.
+        "response_format": {"type": "json_object"},
     }
 
     target_url = base_url.rstrip("/")
@@ -533,6 +540,23 @@ async def _call_llm_json_locked(
                 json=payload,
             )
 
+            # Some models/providers reject response_format outright. Retry once
+            # without it rather than failing the whole request.
+            if response.status_code == 400 and "response_format" in payload:
+                logger.warning(
+                    "HTTP 400 with response_format set (model=%s), retrying "
+                    "without it: %s",
+                    model, response.text[:300],
+                )
+                payload = {
+                    k: v for k, v in payload.items() if k != "response_format"
+                }
+                response = await client.post(
+                    f"{target_url}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                )
+
             if response.status_code == 429:
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
@@ -545,9 +569,25 @@ async def _call_llm_json_locked(
                 )
 
             data = response.json()
-            content = data["choices"][0]["message"]["content"]
+            content = _extract_content_from_choice(data["choices"][0])
 
-        result = parse_json_response(content)
+        try:
+            result = parse_json_response(content)
+        except ValueError as e:
+            finish = data["choices"][0].get("finish_reason")
+            logger.error(
+                "call_llm_json parse failure (model=%s, finish_reason=%s): %s\n"
+                "Raw response: %s",
+                data.get("model", model), finish, e, (content or "")[:800],
+            )
+            hint = (
+                " — response was truncated (raise the token limit or pick a "
+                "model with a larger output budget)"
+                if finish == "length"
+                else " — the model did not return valid JSON"
+            )
+            raise PermanentError(f"LLM returned unparseable JSON{hint}")
+
         actual_model = data.get("model", model)
         if "oxit_model" in data:
             logger.info(f"Proxy fallback: requested {model}, used {data['oxit_model']}")
@@ -638,7 +678,7 @@ async def _call_llm_text_locked(
                 )
 
             data = response.json()
-            content = data["choices"][0]["message"]["content"]
+            content = _extract_content_from_choice(data["choices"][0])
 
         actual_model = data.get("model", model)
         if "oxit_model" in data:
