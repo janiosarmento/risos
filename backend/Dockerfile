@@ -30,4 +30,5 @@ ENV LOG_FILE=/app/data/app.log
 EXPOSE 8000
 
 # Run with gunicorn (timeout prevents hung workers, max-requests prevents memory leaks)
-CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "1", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "50"]
+# 2 workers so a worker recycle/restart doesn't leave zero workers serving.
+CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "2", "--timeout", "120", "--max-requests", "1000", "--max-requests-jitter", "50"]

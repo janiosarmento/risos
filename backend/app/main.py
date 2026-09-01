@@ -3,6 +3,7 @@ Main FastAPI application.
 RSS Reader backend with AI.
 """
 
+import fcntl
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -47,20 +48,34 @@ def run_migrations():
     """
     Run Alembic migrations automatically.
     Critical failure if unable to apply.
+
+    Serialized with a file lock so that with more than one gunicorn worker
+    only one process migrates at a time; the others block briefly and then
+    find the schema already at head.
     """
-    try:
-        # Find alembic.ini relative to project directory
-        base_dir = Path(__file__).resolve().parent.parent
-        alembic_cfg = Config(str(base_dir / "alembic.ini"))
-        alembic_cfg.set_main_option("script_location", str(base_dir / "alembic"))
+    data_dir = Path(settings.database_path).parent
+    data_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = data_dir / ".migrate.lock"
 
-        logger.info("Running database migrations...")
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Migrations completed successfully")
+    with open(lock_path, "w") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            # Find alembic.ini relative to project directory
+            base_dir = Path(__file__).resolve().parent.parent
+            alembic_cfg = Config(str(base_dir / "alembic.ini"))
+            alembic_cfg.set_main_option(
+                "script_location", str(base_dir / "alembic")
+            )
 
-    except Exception as e:
-        logger.critical(f"Failed to run migrations: {e}")
-        sys.exit(1)
+            logger.info("Running database migrations...")
+            command.upgrade(alembic_cfg, "head")
+            logger.info("Migrations completed successfully")
+
+        except Exception as e:
+            logger.critical(f"Failed to run migrations: {e}")
+            sys.exit(1)
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 
 def check_database_integrity():
