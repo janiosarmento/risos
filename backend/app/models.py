@@ -173,6 +173,8 @@ class PostTag(Base):
 
 Index("idx_post_tags_tag", PostTag.tag)
 Index("idx_post_tags_post_id", PostTag.post_id)
+# Covering index for tag -> post_id lookups (topic post/unread counts).
+Index("idx_post_tags_tag_post", PostTag.tag, PostTag.post_id)
 
 
 class IgnoredTag(Base):

@@ -309,14 +309,35 @@ function app() {
             }
         },
 
-        // Load topics from server
-        async loadTopics() {
-            try {
-                const data = await this.fetchApi('/topics');
-                this.topics = data || [];
-            } catch (e) {
-                console.warn('Failed to load topics:', e);
-            }
+        // Load topics from server.
+        // Deduped: concurrent callers share the in-flight request instead of
+        // each spawning another (expensive) /topics query on the backend.
+        _topicsInflight: null,
+        loadTopics() {
+            if (this._topicsInflight) return this._topicsInflight;
+            this._topicsInflight = (async () => {
+                try {
+                    const data = await this.fetchApi('/topics');
+                    this.topics = data || [];
+                } catch (e) {
+                    console.warn('Failed to load topics:', e);
+                } finally {
+                    this._topicsInflight = null;
+                }
+            })();
+            return this._topicsInflight;
+        },
+
+        // Debounced topic refresh. Bursts of actions (marking a run of posts
+        // read, bulk ops, periodic timers) collapse into a single request.
+        _topicsRefreshTimer: null,
+        scheduleTopicsRefresh(delay = 1500) {
+            if (!this.topicsExpanded) return;
+            if (this._topicsRefreshTimer) clearTimeout(this._topicsRefreshTimer);
+            this._topicsRefreshTimer = setTimeout(() => {
+                this._topicsRefreshTimer = null;
+                this.loadTopics().catch(() => {});
+            }, delay);
         },
 
         // Select a topic to filter posts
@@ -1296,7 +1317,17 @@ function app() {
                     this.suggestedCount++;
                 }
             }
-            if (this.topicsExpanded) this.loadTopics();
+            // Adjust topic unread counts locally (a post counts once per topic
+            // whose tags it shares) instead of refetching the whole list.
+            if (this.topicsExpanded && Array.isArray(post.tags) && post.tags.length) {
+                const postTags = new Set(post.tags);
+                const delta = isRead ? -1 : 1;
+                for (const topic of this.topics) {
+                    if ((topic.tags || []).some(t => postTags.has(t))) {
+                        topic.unread_count = Math.max(0, (topic.unread_count || 0) + delta);
+                    }
+                }
+            }
         },
 
         // Periodic silent refresh of sidebar counts (every 60s)
@@ -1305,7 +1336,7 @@ function app() {
             this._stopPeriodicRefresh();
             this._periodicRefreshInterval = setInterval(() => {
                 this.loadFeeds().catch(() => {});
-                if (this.topicsExpanded) this.loadTopics().catch(() => {});
+                this.scheduleTopicsRefresh();
             }, 60000);
         },
         _stopPeriodicRefresh() {
@@ -1371,7 +1402,7 @@ function app() {
 
                 // Reload data
                 await this.loadFeeds();
-                if (this.topicsExpanded) this.loadTopics();
+                this.scheduleTopicsRefresh(0);
                 await this.loadPosts(true);
             } catch (error) {
                 console.error('Failed to mark all read:', error);
@@ -1408,7 +1439,7 @@ function app() {
                 // Only reload UI if there are new posts
                 if (totalNew > 0) {
                     await this.loadFeeds();
-                    if (this.topicsExpanded) this.loadTopics();
+                    this.scheduleTopicsRefresh(0);
                     await this.loadPosts(true);
                     this.showSuccess(this.t('refresh.newPosts').replace('{count}', totalNew));
 
@@ -1535,7 +1566,7 @@ function app() {
 
                 // Update feed and topic unread counts
                 await this.loadFeeds();
-                if (this.topicsExpanded) this.loadTopics();
+                this.scheduleTopicsRefresh(0);
 
                 // Clear selection
                 this.selectedPosts.clear();
@@ -1679,7 +1710,7 @@ function app() {
             // Refresh feed and topic unread counts silently
             try {
                 await this.loadFeeds();
-                if (this.topicsExpanded) this.loadTopics();
+                this.scheduleTopicsRefresh();
             } catch (e) {
                 // Ignore errors on idle refresh — will retry on next cycle
                 console.debug('Idle refresh failed:', e);

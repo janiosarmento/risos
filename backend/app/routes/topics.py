@@ -3,11 +3,12 @@ Topic management routes.
 Topics are named groups of tags for content organization.
 """
 
+import time
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import case, distinct, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,6 +16,17 @@ from app.dependencies import get_current_user
 from app.models import Post, PostTag, Topic, TopicTag
 
 router = APIRouter(prefix="/topics", tags=["topics"])
+
+# Short-lived in-process cache for the topic list. Computing post/unread
+# counts scans a large post_tags table; the sidebar polls this often and
+# slightly stale counts are fine (the frontend also adjusts them locally).
+_TOPICS_CACHE_TTL = 60.0
+_topics_cache: dict = {"data": None, "ts": 0.0}
+
+
+def _invalidate_topics_cache() -> None:
+    _topics_cache["data"] = None
+    _topics_cache["ts"] = 0.0
 
 
 class TopicCreate(BaseModel):
@@ -37,38 +49,61 @@ def list_topics(
     user: dict = Depends(get_current_user),
 ):
     """List all topics with tags, post count, and unread count."""
+    now = time.monotonic()
+    if (
+        _topics_cache["data"] is not None
+        and now - _topics_cache["ts"] < _TOPICS_CACHE_TTL
+    ):
+        return _topics_cache["data"]
+
     topics = db.query(Topic).order_by(Topic.name).all()
+
+    # Tags per topic, in one query.
+    tags_by_topic: dict[int, list[str]] = {topic.id: [] for topic in topics}
+    for topic_id, tag in (
+        db.query(TopicTag.topic_id, TopicTag.tag)
+        .order_by(TopicTag.topic_id, TopicTag.tag)
+        .all()
+    ):
+        tags_by_topic.setdefault(topic_id, []).append(tag)
+
+    # Post and unread counts for every topic in a single grouped query,
+    # driven by the post_tags(tag, post_id) index. COUNT(DISTINCT ...)
+    # matches the previous per-topic semantics (a post is counted once per
+    # topic regardless of how many of its tags match).
+    counts: dict[int, tuple[int, int]] = {}
+    rows = (
+        db.query(
+            TopicTag.topic_id.label("topic_id"),
+            func.count(distinct(PostTag.post_id)).label("post_count"),
+            func.count(
+                distinct(case((Post.is_read.is_(False), PostTag.post_id)))
+            ).label("unread_count"),
+        )
+        .join(PostTag, PostTag.tag == TopicTag.tag)
+        .join(Post, Post.id == PostTag.post_id)
+        .group_by(TopicTag.topic_id)
+        .all()
+    )
+    for row in rows:
+        counts[row.topic_id] = (row.post_count or 0, row.unread_count or 0)
 
     result = []
     for topic in topics:
-        tag_names = [tt.tag for tt in topic.tags]
-
-        post_count = 0
-        unread_count = 0
-        if tag_names:
-            post_count = (
-                db.query(func.count(func.distinct(PostTag.post_id)))
-                .filter(PostTag.tag.in_(tag_names))
-                .scalar()
-            ) or 0
-            unread_count = (
-                db.query(func.count(func.distinct(PostTag.post_id)))
-                .join(Post, Post.id == PostTag.post_id)
-                .filter(PostTag.tag.in_(tag_names), Post.is_read.is_(False))
-                .scalar()
-            ) or 0
-
+        post_count, unread_count = counts.get(topic.id, (0, 0))
         result.append(
             {
                 "id": topic.id,
                 "name": topic.name,
                 "position": topic.position,
-                "tags": tag_names,
+                "tags": tags_by_topic.get(topic.id, []),
                 "post_count": post_count,
                 "unread_count": unread_count,
             }
         )
 
+    _topics_cache["data"] = result
+    _topics_cache["ts"] = now
     return result
 
 
@@ -103,6 +138,7 @@ def create_topic(
 
     db.commit()
     db.refresh(topic)
+    _invalidate_topics_cache()
 
     return {
         "id": topic.id,
@@ -141,6 +177,7 @@ def update_topic(
         topic.position = body.position
 
     db.commit()
+    _invalidate_topics_cache()
 
     return {
         "id": topic.id,
@@ -163,6 +200,7 @@ def delete_topic(
 
     db.delete(topic)
     db.commit()
+    _invalidate_topics_cache()
 
     return {"success": True}
 
@@ -206,6 +244,7 @@ def add_tags_to_topic(
             existing_tags.add(tag)
 
     db.commit()
+    _invalidate_topics_cache()
 
     return {"success": True, "added": added}
 
@@ -227,6 +266,7 @@ def remove_tag_from_topic(
     if row:
         db.delete(row)
         db.commit()
+        _invalidate_topics_cache()
 
     return {"success": True}
 
