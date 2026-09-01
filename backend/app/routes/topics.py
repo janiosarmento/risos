@@ -338,6 +338,11 @@ async def suggest_topics(
     # Exclude tags already assigned to any topic
     assigned_tags = {row.tag for row in db.query(TopicTag.tag).all()}
 
+    # Existing topic names — the model must not re-propose these, and any it
+    # proposes anyway are dropped before returning (they'd only 409 on save).
+    existing_names = [row.name for row in db.query(Topic.name).all()]
+    existing_names_lower = {name.strip().lower() for name in existing_names}
+
     # Get top 150 unassigned tags with counts
     query = (
         db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
@@ -354,6 +359,14 @@ async def suggest_topics(
 
     tags_with_counts = "\n".join(f"- {row.tag} ({row.count} posts)" for row in rows)
 
+    existing_block = ""
+    if existing_names:
+        existing_list = "\n".join(f"- {name}" for name in existing_names)
+        existing_block = (
+            f"\nThe user already has these topics. Do NOT propose any of them "
+            f"again, and do not propose a near-duplicate name:\n{existing_list}\n"
+        )
+
     system_prompt = (
         "You organize article tags into topic groups for a personal RSS reader. "
         "Create coherent, useful groupings that help the user navigate their reading."
@@ -362,9 +375,10 @@ async def suggest_topics(
     user_prompt = f"""Here are the most frequent tags in this RSS reader, with post counts:
 
 {tags_with_counts}
-
+{existing_block}
 Group these tags into 5-12 coherent topics. Rules:
 - Each topic gets a short, clear name (2-4 words)
+- Only propose NEW topics — never one that already exists (see the list above)
 - Tags should genuinely belong together
 - A tag can appear in multiple topics if it fits
 - Include ALL tags in at least one topic if possible
@@ -387,13 +401,17 @@ Respond ONLY in JSON:
 
     suggestions = []
     for item in result.get("topics", []):
-        if isinstance(item, dict) and "name" in item and "tags" in item:
-            suggestions.append(
-                {
-                    "name": item["name"],
-                    "tags": [t for t in item["tags"] if isinstance(t, str)],
-                }
-            )
+        if not (isinstance(item, dict) and "name" in item and "tags" in item):
+            continue
+        name = str(item["name"]).strip()
+        if name.lower() in existing_names_lower:
+            continue  # already a topic — suggesting it again only 409s on save
+        suggestions.append(
+            {
+                "name": name,
+                "tags": [t for t in item["tags"] if isinstance(t, str)],
+            }
+        )
 
     return {
         "suggestions": suggestions,
