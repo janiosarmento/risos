@@ -342,21 +342,25 @@ function app() {
             }, delay);
         },
 
-        // Select a topic to filter posts
-        selectTopic(topicId) {
-            if (this.selectedTopicId === topicId) {
-                this.selectedTopicId = null;
-            } else {
-                this.selectedTopicId = topicId;
-                this.tagFilter = null; // Mutually exclusive with tag filter
-                // A topic is a standalone scope: drop any feed/category scope so
-                // the list matches the sidebar badge (which counts the topic
-                // across all feeds), not the intersection of the two.
-                this.filter = 'unread';
-                this.filterId = null;
-            }
+        // Select a topic to filter posts. Re-clicking the active topic re-reads
+        // the list and jumps to the top rather than clearing it (use the ×
+        // button, clearTopicFilter, to leave the topic).
+        async selectTopic(topicId) {
+            this.selectedTopicId = topicId;
+            this.tagFilter = null; // Mutually exclusive with tag filter
+            // A topic is a standalone scope: drop any feed/category scope so
+            // the list matches the sidebar badge (which counts the topic
+            // across all feeds), not the intersection of the two.
+            this.filter = 'unread';
+            this.filterId = null;
+            this.lastNavMode = 'posts';
             this.clearCuration();
-            this.loadPosts(true);
+            await this.loadPosts(true);
+            // Land the cursor on the first article, ready to read.
+            if (this.posts.length) {
+                this.selectedIndex = 0;
+                this.scrollToSelected(true);
+            }
         },
 
         // Clear topic filter

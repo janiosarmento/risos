@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260901d';</script>
+    <script>var APP_VERSION = '20260901e';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -348,12 +348,12 @@
                         <button
                             @click="postFilter = 'unread'; setFilter('unread')"
                             class="w-full text-left px-3 py-2 rounded text-sm"
-                            :class="filter === 'unread' && postFilter === 'unread' ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                            :class="filter === 'unread' && postFilter === 'unread' && !selectedTopicId ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
                         >
                             <span x-text="t('sidebar.unread')"></span>
                             <span
                                 class="float-right"
-                                :class="filter === 'unread' && postFilter === 'unread' ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
+                                :class="filter === 'unread' && postFilter === 'unread' && !selectedTopicId ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
                                 x-text="totalUnread"
                             ></span>
                         </button>
