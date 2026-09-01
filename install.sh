@@ -285,6 +285,9 @@ User=$RUN_USER
 Group=$RUN_GROUP
 WorkingDirectory=$BACKEND_DIR
 Environment="PATH=$BACKEND_DIR/venv/bin"
+# Unbuffered stdio so tracebacks and error logs reach the journal/log file
+# immediately instead of sitting in a block buffer until the next restart.
+Environment="PYTHONUNBUFFERED=1"
 ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 2 --timeout 120 --max-requests 1000 --max-requests-jitter 50
 Restart=always
 RestartSec=5
