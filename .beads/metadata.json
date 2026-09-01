@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "embedded",
-  "dolt_database": "risos",
-  "project_id": "1c78ed38-5e90-426e-aca7-7332ad2e8c99"
-}

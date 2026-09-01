@@ -63,7 +63,8 @@ Thumbs.db
 *.temp
 *.bak
 
-# Beads / Dolt files (added by bd init)
+# Beads / Dolt files (removed; ignore any local leftovers)
 .dolt/
+.beads/
 .beads-credential-key
 graphify-out/
