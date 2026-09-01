@@ -20,6 +20,10 @@ set -euo pipefail
 
 SERVICE="${RISOS_SERVICE:-risos}"
 BRANCH="${RISOS_BRANCH:-main}"
+# URL polled until the app actually answers HTTP after the restart.
+# Set RISOS_HEALTH_URL= (empty) to skip the HTTP check.
+HEALTH_URL="${RISOS_HEALTH_URL-http://127.0.0.1:8100/api/admin/status}"
+HEALTH_TIMEOUT="${RISOS_HEALTH_TIMEOUT:-60}"
 
 # --- move into the repo (this script's own directory), resolving symlinks ---
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]:-$0}")"
@@ -77,6 +81,37 @@ if ! systemctl is-active --quiet "$SERVICE"; then
     echo "deploy: $SERVICE did not return to active — check the logs below" >&2
     sudo systemctl --no-pager --lines=25 status "$SERVICE" || true
     exit 1
+fi
+
+# --- wait until the app actually answers HTTP (the unit reports active as
+#     soon as the process starts, well before migrations / integrity check
+#     finish) ---
+if [ -n "$HEALTH_URL" ]; then
+    echo -n "deploy: waiting for $HEALTH_URL "
+    healthy=""
+    for _ in $(seq 1 "$HEALTH_TIMEOUT"); do
+        code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH_URL" || true)"
+        # 000 = no connection yet; 5xx = up but not ready. Any other code
+        # (200/401/404/...) means the app is serving.
+        case "$code" in
+            000|""|502|503|504)
+                echo -n "."
+                sleep 1
+                ;;
+            *)
+                healthy="$code"
+                break
+                ;;
+        esac
+    done
+
+    if [ -z "$healthy" ]; then
+        echo
+        echo "deploy: app did not answer HTTP within ${HEALTH_TIMEOUT}s (last code: ${code:-none})" >&2
+        sudo systemctl --no-pager --lines=25 status "$SERVICE" || true
+        exit 1
+    fi
+    echo "— HTTP $healthy"
 fi
 
 sudo systemctl --no-pager --lines=3 status "$SERVICE" | sed 's/^/  /'
