@@ -1,6 +1,6 @@
 /**
  * Settings mixin — settings panel, category/feed CRUD, OPML, AI settings,
- * tag merge/purge, topic management, preference setters, sync, resize
+ * tag merge/purge, topic management, preference setters, sync
  *
  * Spread into app() via ...settingsMixin so `this` is the Alpine component.
  * Dependencies from app: feeds, categories, topics, filter, filterId, token,
@@ -12,7 +12,6 @@
  */
 const settingsMixin = {
     // --- State ---
-    resizing: false, // true while dragging the split-view resize handle
     showSettings: false,
     relatedPostsLimit: 30,
     settingsTab: 'categories',
@@ -1061,57 +1060,12 @@ const settingsMixin = {
         }
     },
 
-    setReadingMode(mode) {
-        this.readingMode = mode;
-        if (this.currentPost) {
-            this.currentPost = null;
-        }
-        if (this.authenticated) this.savePreferencesToServer();
-    },
-
     setFeedReverseOrder(value) {
         this.feedReverseOrder = !!value;
         if (this.authenticated) {
             this.savePreferencesToServer();
             this.loadPosts(true);
         }
-    },
-
-    // --- Split view resize ---
-    startResize(e) {
-        e.preventDefault();
-        this.resizing = true;
-        this._doResize = this.doResize.bind(this);
-        this._stopResize = this.stopResize.bind(this);
-        document.addEventListener('mousemove', this._doResize);
-        document.addEventListener('mouseup', this._stopResize);
-        document.addEventListener('touchmove', this._doResize, { passive: false });
-        document.addEventListener('touchend', this._stopResize);
-        document.addEventListener('touchcancel', this._stopResize);
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'row-resize';
-    },
-
-    doResize(e) {
-        e.preventDefault();
-        const container = document.getElementById('split-container');
-        if (!container) return;
-        const rect = container.getBoundingClientRect();
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        let ratio = ((clientY - rect.top) / rect.height) * 100;
-        this.splitRatio = Math.min(80, Math.max(20, Math.round(ratio)));
-    },
-
-    stopResize() {
-        this.resizing = false;
-        document.removeEventListener('mousemove', this._doResize);
-        document.removeEventListener('mouseup', this._stopResize);
-        document.removeEventListener('touchmove', this._doResize);
-        document.removeEventListener('touchend', this._stopResize);
-        document.removeEventListener('touchcancel', this._stopResize);
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
-        if (this.authenticated) this.savePreferencesToServer();
     },
 
     // --- Preferences sync ---
@@ -1129,8 +1083,6 @@ const settingsMixin = {
                     max_unread_days: this.maxUnreadDays,
                     toast_timeout_seconds: this.toastTimeoutSeconds,
                     idle_refresh_seconds: this.idleRefreshSeconds,
-                    reading_mode: this.readingMode,
-                    split_ratio: this.splitRatio,
                     feed_reverse_order: this.feedReverseOrder,
                     suggestion_min_tags: this.suggestionMinTags,
                     profile_min_tag_freq: this.profileMinTagFreq,
@@ -1208,10 +1160,6 @@ const settingsMixin = {
             }
             if (serverPrefs.tags_per_post !== null && serverPrefs.tags_per_post !== undefined) {
                 this.tagsPerPost = serverPrefs.tags_per_post;
-            }
-            if (serverPrefs.reading_mode) this.readingMode = serverPrefs.reading_mode;
-            if (serverPrefs.split_ratio !== null && serverPrefs.split_ratio !== undefined) {
-                this.splitRatio = serverPrefs.split_ratio;
             }
             if (serverPrefs.feed_reverse_order !== null && serverPrefs.feed_reverse_order !== undefined) {
                 this.feedReverseOrder = serverPrefs.feed_reverse_order;

@@ -54,8 +54,6 @@
   "modal": {
     "close": "Close",
     "closeEsc": "Close (ESC)",
-    "prevPost": "Previous post (K)",
-    "nextPost": "Next post (J)",
     "starPost": "Star (S)",
     "unstarPost": "Unstar (S)",
     "likePost": "Like (L)",
@@ -164,11 +162,6 @@
     "seconds": "seconds",
     "idleRefresh": "Auto-refresh Interval",
     "idleRefreshDesc": "Refresh feeds after this idle time (0 to disable)",
-    "readingMode": "Reading Mode",
-    "readingModeDesc": "Choose how posts are displayed when opened",
-    "readingModeFullscreen": "Fullscreen",
-    "readingModeSplit": "Split View",
-    "readingModeSplitNote": "Split view only available on screens 1024px or wider",
     "feedReverseOrder": "Reverse feed order",
     "feedReverseOrderDesc": "Show oldest items first, instead of the default newest-first order",
     "suggestionMinTags": "Suggestion Sensitivity",
@@ -295,10 +288,6 @@
       "schedulerActive": "Active and healthy",
       "schedulerInactive": "Inactive / Awaiting leadership"
     }
-  },
-  "splitView": {
-    "selectPost": "Select a post to read",
-    "hint": "Press J/K to navigate, Enter to open"
   },
   "tags": {
     "ignoredTooltip": "Ignored — click to restore",

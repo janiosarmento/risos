@@ -44,7 +44,7 @@ set token(v) { Alpine.store('auth').token = v; },
 
 Computed values that derive from state are also expressed as getters, keeping template bindings clean:
 ```js
-get splitPaneStyle() { return this.isSplitMode ? `height: ${this.splitRatio}%` : ''; },
+get totalUnread() { return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0); },
 ```
 
 ### Script Loading Order

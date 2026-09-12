@@ -36,8 +36,6 @@ document.addEventListener('alpine:init', () => {
         // Interface Settings
         toastTimeoutSeconds: 2,
         idleRefreshSeconds: 180,
-        readingMode: 'fullscreen',
-        splitRatio: 40,
         feedReverseOrder: false,
         suggestionMinTags: 3,
         profileMinTagFreq: 2,

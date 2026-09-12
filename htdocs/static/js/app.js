@@ -60,7 +60,7 @@ function app() {
         searchQuery: '',
         _searchTimeout: null,
         _pendingReload: false,  // Reagendar loadPosts quando chamado durante outro load
-        _pendingOpenPost: null, // Post para abrir no split view após navegação por feed
+        _pendingOpenPost: null, // Post para reabrir inline após navegação por feed
         // Health
         healthWarning: null,
 
@@ -81,14 +81,8 @@ function app() {
         get blockedTerms() { return Alpine.store('prefs').blockedTerms; },
         set blockedTerms(v) { Alpine.store('prefs').blockedTerms = v; },
 
-        // Reading mode
-        get readingMode() { return Alpine.store('prefs').readingMode; },
-        set readingMode(v) { Alpine.store('prefs').readingMode = v; },
-        get splitRatio() { return Alpine.store('prefs').splitRatio; },
-        set splitRatio(v) { Alpine.store('prefs').splitRatio = v; },
         get feedReverseOrder() { return Alpine.store('prefs').feedReverseOrder; },
         set feedReverseOrder(v) { Alpine.store('prefs').feedReverseOrder = v; },
-        get splitPaneStyle() { return this.isSplitMode ? `height: ${this.splitRatio}%` : ''; },
 
         // UI state (delegates to Alpine.store('ui'))
         get toast() { return Alpine.store('ui').toast; },
@@ -158,11 +152,6 @@ function app() {
         // Computed
         get totalUnread() {
             return this.feeds.reduce((sum, f) => sum + (f.unread_count || 0), 0);
-        },
-
-        get isSplitMode() {
-            // Split mode when sidebar is visible (md: >=768px)
-            return this.readingMode === 'split' && window.innerWidth >= 768;
         },
 
         starredCount: 0,
@@ -616,10 +605,7 @@ function app() {
 
         setupBackButtonHandler() {
             window.addEventListener('popstate', (event) => {
-                // Back button pressed - close any open modal
-                if (this.currentPost) {
-                    this.currentPost = null;
-                }
+                // Back button pressed - close settings if open
                 if (this.showSettings) {
                     this._closeSettingsInternal();
                 }
@@ -665,15 +651,10 @@ function app() {
                     return;
                 }
 
-                // If post is open (modal or split pane)
+                // If a post is expanded inline
                 if (this.currentPost) {
                     if (e.key === 'Escape') {
-                        if (this.isSplitMode) {
-                            // In split mode, just clear the reading pane
-                            this.currentPost = null;
-                        } else {
-                            this.closePost();
-                        }
+                        this.closePost();
                         return;
                     } else if (this.isKey(e, 'm')) {
                         this.toggleRead(this.currentPost);
@@ -700,16 +681,8 @@ function app() {
                         this.openAssistant();
                         return;
                     }
-                    // In fullscreen mode, J/K navigate posts within modal
-                    if (!this.isSplitMode) {
-                        if (this.isKey(e, 'j')) {
-                            this.nextPost();
-                        } else if (this.isKey(e, 'k')) {
-                            this.prevPost();
-                        }
-                        return;
-                    }
-                    // In split mode, J/K fall through to selectNext/selectPrev below
+                    // J/K fall through to selectNext/selectPrev below (only moves
+                    // the highlight — it never auto-expands another post)
                 }
 
                 // Main view shortcuts
@@ -1489,10 +1462,6 @@ function app() {
             if (this.selectedIndex < this.posts.length - 1) {
                 this.selectedIndex++;
                 this.scrollToSelected();
-                // Auto-open in split mode
-                if (this.isSplitMode && this.posts[this.selectedIndex]) {
-                    this.openPost(this.posts[this.selectedIndex]);
-                }
             }
         },
 
@@ -1500,10 +1469,6 @@ function app() {
             if (this.selectedIndex > 0) {
                 this.selectedIndex--;
                 this.scrollToSelected();
-                // Auto-open in split mode
-                if (this.isSplitMode && this.posts[this.selectedIndex]) {
-                    this.openPost(this.posts[this.selectedIndex]);
-                }
             }
         },
 

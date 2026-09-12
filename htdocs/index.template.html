@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260901e';</script>
+    <script>var APP_VERSION = '20260912a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -804,14 +804,12 @@
                         </div>
                     </div>
 
-                    <!-- Split container (posts list + reading pane) -->
+                    <!-- Post list container (fills all remaining height) -->
                     <div id="split-container" class="flex-1 flex flex-col overflow-hidden min-h-0">
                         <!-- Post List -->
                         <div
                             id="post-list"
-                            class="overflow-y-auto scrollbar-thin"
-                            :class="isSplitMode ? 'flex-shrink-0 border-b border-gray-300 dark:border-gray-600' : 'flex-1'"
-                            :style="splitPaneStyle"
+                            class="overflow-y-auto scrollbar-thin flex-1"
                             @scroll="handleScroll($event)"
                         >
                         <template x-if="loading && posts.length === 0">
@@ -823,9 +821,10 @@
                         </template>
 
                         <template x-for="(post, index) in posts" :key="post.id">
+                            <div>
                             <article
-                                @click="selectMode ? togglePostSelection(post.id) : openPost(post)"
-                                @keydown.enter="selectMode ? togglePostSelection(post.id) : openPost(post)"
+                                @click="selectMode ? togglePostSelection(post.id) : togglePostInline(post)"
+                                @keydown.enter="selectMode ? togglePostSelection(post.id) : togglePostInline(post)"
                                 tabindex="0"
                                 class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition"
                                 :class="{
@@ -944,6 +943,10 @@
                                     </div>
                                 </div>
                             </article>
+                            <template x-if="currentPost && currentPost.id === post.id">
+                            <!-- INCLUDE static/templates/post-reader-inline.html -->
+                            </template>
+                            </div>
                         </template>
 
                         <template x-if="loading && posts.length > 0">
@@ -964,36 +967,6 @@
                             <div class="p-4 text-center text-gray-600 text-sm" x-text="t('app.endOfList')"></div>
                         </template>
                         </div>
-
-                        <!-- Resize Handle (only in split mode) -->
-                        <div
-                            x-show="isSplitMode"
-                            @mousedown="startResize($event)"
-                            @touchstart.prevent="startResize($event)"
-                            class="resize-handle h-2 bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 cursor-row-resize flex-shrink-0 transition-colors"
-                            :class="resizing ? 'bg-blue-500 dark:bg-blue-400' : ''"
-                        ></div>
-
-                        <!-- Split View Reading Pane (only on desktop in split mode) -->
-                        <template x-if="isSplitMode">
-                        <div class="flex-1 flex flex-col overflow-hidden min-h-0 bg-white dark:bg-gray-900">
-                            <!-- Empty state when no post selected -->
-                            <template x-if="!currentPost">
-                                <div class="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                                    <div class="text-center p-8">
-                                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50"><use href="#icon-document"/></svg>
-                                        <p class="text-lg" x-text="t('splitView.selectPost')"></p>
-                                        <p class="text-sm mt-2 opacity-75" x-text="t('splitView.hint')"></p>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <!-- Post content when selected -->
-                            <template x-if="currentPost">
-                            <!-- INCLUDE static/templates/post-reader-split.html -->
-                            </template>
-                        </div>
-                        </template>
                     </div>
 
                     <!-- Keyboard hints footer (desktop only) -->
@@ -1006,11 +979,6 @@
                     </div>
                 </main>
             </div>
-        </template>
-
-        <!-- Post Modal - Fullscreen Two Columns (only when not in split mode) -->
-        <template x-if="currentPost && !isSplitMode">
-            <!-- INCLUDE static/templates/post-reader-fullscreen.html -->
         </template>
 
         <!-- IA Sparkle Assistant Modal -->
@@ -2095,26 +2063,6 @@
                                                 <option :value="loc.code" :selected="locale === loc.code" x-text="loc.name"></option>
                                             </template>
                                         </select>
-                                    </div>
-                                    <!-- Reading Mode -->
-                                    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                        <label class="block text-sm font-medium mb-1" x-text="t('settings.readingMode')"></label>
-                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.readingModeDesc')"></p>
-                                        <div class="flex flex-wrap gap-2">
-                                            <button
-                                                @click="setReadingMode('fullscreen')"
-                                                class="px-4 py-2 rounded font-medium transition-colors"
-                                                :class="readingMode === 'fullscreen' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
-                                                x-text="t('settings.readingModeFullscreen')"
-                                            ></button>
-                                            <button
-                                                @click="setReadingMode('split')"
-                                                class="px-4 py-2 rounded font-medium transition-colors"
-                                                :class="readingMode === 'split' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
-                                                x-text="t('settings.readingModeSplit')"
-                                            ></button>
-                                        </div>
-                                        <p class="text-gray-400 dark:text-gray-500 text-xs mt-2" x-text="t('settings.readingModeSplitNote')"></p>
                                     </div>
                                     <!-- Feed Reverse Order -->
                                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
