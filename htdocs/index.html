@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912c">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912c">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912c">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912d">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912d">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912d">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912c">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912d">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912c">
+    <link rel="manifest" href="/manifest.json?v=20260912d">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -46,23 +46,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912c"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912c"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912c"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912c"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912c in all ?v= below -->
-    <script>var APP_VERSION = '20260912c';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912c">
+    <script src="/static/vendor/marked.min.js?v=20260912d"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912d"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912d"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912d"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912d in all ?v= below -->
+    <script>var APP_VERSION = '20260912d';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912d">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912c"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912c"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912c"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912c"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912c"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912c"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912c"></script>
-    <script defer src="/static/js/app.js?v=20260912c"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912d"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912d"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912d"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912d"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912d"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912d"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912d"></script>
+    <script defer src="/static/js/app.js?v=20260912d"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -830,10 +830,11 @@
                                 :class="{
                                     'bg-blue-100 dark:bg-gray-800': selectedIndex === index,
                                     'hover:bg-gray-100 dark:hover:bg-gray-800': selectedIndex !== index,
-                                    'opacity-60': post.is_read,
+                                    'opacity-60': post.is_read && !(currentPost && currentPost.id === post.id),
                                     'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id),
                                     'mt-4 border-t-4 border-t-gray-300 dark:border-t-gray-600': shouldShowDateSeparator(index) && index > 0,
-                                    'border-l-[3px] border-l-red-400 dark:border-l-red-600': post.is_blocked
+                                    'border-l-[3px] border-l-red-400 dark:border-l-red-600': post.is_blocked,
+                                    'sticky top-0 z-10 shadow-md': currentPost && currentPost.id === post.id
                                 }"
                                 :data-index="index"
                             >
