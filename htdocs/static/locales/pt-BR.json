@@ -317,8 +317,8 @@
     "tooManyStarred": "Este feed ({feed}) já tem {count} posts favoritos. Tem certeza que deseja favoritar mais um?"
   },
   "keepUnread": {
-    "lock": "Manter não lido",
-    "unlock": "Remover proteção",
+    "lock": "Manter não lido (C)",
+    "unlock": "Remover proteção (C)",
     "protected": "Este post está protegido. Remova a proteção primeiro."
   },
   "categories": {
@@ -415,7 +415,7 @@
   },
   "shortcuts": {
     "navigate": "navegar",
-    "feeds": "feeds",
+    "feeds": "feeds/tópicos",
     "open": "abrir",
     "toggle": "marcar"
   },

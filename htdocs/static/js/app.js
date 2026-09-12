@@ -344,6 +344,14 @@ function app() {
             this.filterId = null;
             this.lastNavMode = 'posts';
             this.clearCuration();
+
+            // Update lastFeedNavIndex for [/] navigation (mirrors setFilter())
+            const items = this.getNavigableItems();
+            const idx = this.getCurrentItemIndex(items);
+            if (idx !== -1) {
+                this.lastFeedNavIndex = idx;
+            }
+
             await this.loadPosts(true);
             // Land the cursor on the first article, ready to read.
             if (this.posts.length) {
@@ -755,6 +763,14 @@ function app() {
                 items.push({ type: 'suggested' });
             }
 
+            // Topics (only while the Topics folder is expanded — same rule
+            // used below for feeds inside a collapsed category)
+            if (this.topicsExpanded) {
+                for (const topic of this.topics) {
+                    items.push({ type: 'topic', id: topic.id });
+                }
+            }
+
             // Categories and their feeds
             for (const category of this.categories) {
                 const categoryUnread = this.getCategoryUnread(category.id);
@@ -786,8 +802,9 @@ function app() {
 
         getCurrentItemIndex(items) {
             return items.findIndex(item => {
-                if (item.type === 'unread' && this.filter === 'unread') return true;
+                if (item.type === 'unread' && this.filter === 'unread' && !this.selectedTopicId) return true;
                 if (item.type === 'suggested' && this.filter === 'suggested') return true;
+                if (item.type === 'topic' && this.selectedTopicId === item.id) return true;
                 if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
                 if (item.type === 'feed' && this.filter === 'feed' && this.filterId === item.id) return true;
                 return false;
@@ -799,6 +816,8 @@ function app() {
                 this.setFilter('unread');
             } else if (item.type === 'suggested') {
                 this.setFilter('suggested');
+            } else if (item.type === 'topic') {
+                this.selectTopic(item.id);
             } else if (item.type === 'category') {
                 this.setFilter('category', item.id);
             } else if (item.type === 'feed') {

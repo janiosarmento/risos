@@ -317,8 +317,8 @@
     "tooManyStarred": "This feed ({feed}) already has {count} starred posts. Are you sure you want to star another one?"
   },
   "keepUnread": {
-    "lock": "Keep unread",
-    "unlock": "Remove keep unread",
+    "lock": "Keep unread (C)",
+    "unlock": "Remove keep unread (C)",
     "protected": "This post is protected. Remove keep-unread first."
   },
   "categories": {
@@ -415,7 +415,7 @@
   },
   "shortcuts": {
     "navigate": "navigate",
-    "feeds": "feeds",
+    "feeds": "feeds/topics",
     "open": "open",
     "toggle": "toggle"
   },
