@@ -53,6 +53,10 @@ const postDetailMixin = {
             this.selectedIndex = index;
         }
 
+        // Scroll the post's row to the top so the row + the inline reader
+        // that's about to expand below it are both visible.
+        this.scrollToSelected(true);
+
         // Mark as read (skip if protected)
         if (!post.is_read && !post.keep_unread) {
             await this.markPostRead(post, true);

@@ -699,7 +699,7 @@ function app() {
                     if (this.lastNavMode === 'sidebar' && this.filter === 'category' && this.filterId) {
                         this.toggleCategoryCollapse(this.filterId);
                     } else if (this.selectedIndex >= 0 && this.posts[this.selectedIndex]) {
-                        this.openPost(this.posts[this.selectedIndex]);
+                        this.togglePostInline(this.posts[this.selectedIndex]);
                     }
                 } else if (this.isKey(e, 'm')) {
                     if (this.selectMode && this.selectedPosts.size > 0) {
