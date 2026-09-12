@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912r';</script>
+    <script>var APP_VERSION = '20260912s';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -870,7 +870,7 @@
                                                 <svg class="w-3.5 h-3.5 flex-shrink-0 text-red-400 mt-0.5"><use href="#icon-prohibition"/></svg>
                                             </template>
                                             <h3
-                                                class="flex-1"
+                                                class="flex-1 font-reading"
                                                 :class="post.translated_title
                                                     ? 'text-xs line-clamp-1 ' + (post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400')
                                                     : 'line-clamp-2 ' + (post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white')"
@@ -878,7 +878,7 @@
                                             ></h3>
                                         </div>
                                         <template x-if="post.translated_title">
-                                            <p class="font-semibold italic line-clamp-2 mb-1" :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'" x-text="post.translated_title"></p>
+                                            <p class="font-reading font-semibold italic line-clamp-2 mb-1" :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'" x-text="post.translated_title"></p>
                                         </template>
                                         <div class="text-sm text-gray-500 flex items-center gap-2" :class="{'mt-1': !post.translated_title}">
                                             <!-- Star icon -->
