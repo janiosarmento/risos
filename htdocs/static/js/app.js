@@ -1484,17 +1484,45 @@ function app() {
         },
 
         scrollToSelected(toTop = false) {
-            // Use setTimeout to ensure DOM is fully updated (more reliable on mobile)
-            setTimeout(() => {
-                const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
-                if (!el) return;
+            // Wait for Alpine to finish patching the DOM (row swap, sticky
+            // class toggle, x-if content) before measuring — a fixed
+            // setTimeout isn't reliable enough on slower devices/browsers.
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
+                    if (!el) return;
 
-                try {
-                    el.scrollIntoView({ block: toTop ? 'start' : 'nearest', behavior: 'smooth' });
-                } catch (e) {
-                    el.scrollIntoView(false);
-                }
-            }, 50);
+                    if (!toTop) {
+                        try {
+                            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        } catch (e) {
+                            el.scrollIntoView(false);
+                        }
+                        return;
+                    }
+
+                    // Align the row flush with the top of the list. Deliberately
+                    // not scrollIntoView here: the row can be `position: sticky`
+                    // (it's the expanded post), and scrollIntoView's rect-based
+                    // check can see it as "already visible" — since sticky's
+                    // stuck position looks aligned even when the underlying
+                    // scroll offset is nowhere near the row's real position —
+                    // and skip scrolling. offsetTop reflects the row's true
+                    // static layout position regardless of sticky, so walking
+                    // the offsetParent chain gives a reliable target.
+                    const container = document.getElementById('post-list');
+                    if (!container) return;
+                    const docTop = (node) => {
+                        let top = 0;
+                        while (node) {
+                            top += node.offsetTop || 0;
+                            node = node.offsetParent;
+                        }
+                        return top;
+                    };
+                    container.scrollTo({ top: docTop(el) - docTop(container), behavior: 'smooth' });
+                });
+            });
         },
 
         // Infinite scroll
