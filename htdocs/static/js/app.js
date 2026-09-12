@@ -1501,26 +1501,27 @@ function app() {
                         return;
                     }
 
-                    // Align the row flush with the top of the list. Deliberately
-                    // not scrollIntoView here: the row can be `position: sticky`
-                    // (it's the expanded post), and scrollIntoView's rect-based
-                    // check can see it as "already visible" — since sticky's
-                    // stuck position looks aligned even when the underlying
-                    // scroll offset is nowhere near the row's real position —
-                    // and skip scrolling. offsetTop reflects the row's true
-                    // static layout position regardless of sticky, so walking
-                    // the offsetParent chain gives a reliable target.
+                    // Align the row flush with the top of the list. Measure
+                    // el.parentElement (the plain, non-sticky wrapper the
+                    // x-for loop puts around each row), not the row itself:
+                    // the row is `position: sticky` when expanded, and once
+                    // you've scrolled past its natural position at all, it
+                    // renders pinned at the container's top regardless of
+                    // how far past — so its own rect (and even its offsetTop,
+                    // measured against an offsetParent outside the scrolling
+                    // container) always reports "already aligned", no matter
+                    // how far off the actual scroll position is. The plain
+                    // wrapper isn't sticky, so its rect always reflects the
+                    // row's true, scroll-independent position.
                     const container = document.getElementById('post-list');
                     if (!container) return;
-                    const docTop = (node) => {
-                        let top = 0;
-                        while (node) {
-                            top += node.offsetTop || 0;
-                            node = node.offsetParent;
-                        }
-                        return top;
-                    };
-                    container.scrollTo({ top: docTop(el) - docTop(container), behavior: 'smooth' });
+                    const wrapper = el.parentElement || el;
+                    const rowRect = wrapper.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    container.scrollTo({
+                        top: container.scrollTop + (rowRect.top - containerRect.top),
+                        behavior: 'smooth',
+                    });
                 });
             });
         },
