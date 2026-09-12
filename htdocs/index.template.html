@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912k';</script>
+    <script>var APP_VERSION = '20260912l';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -450,6 +450,7 @@
                                 <template x-for="topic in topics" :key="topic.id">
                                     <button
                                         @click="selectTopic(topic.id)"
+                                        :data-nav-id="'topic-' + topic.id"
                                         class="w-full text-left px-2 py-1 rounded text-sm flex items-center gap-2 transition-colors"
                                         :class="selectedTopicId === topic.id
                                             ? 'bg-purple-600 text-white'
@@ -477,6 +478,7 @@
                             <div class="mb-1">
                                 <!-- Category header -->
                                 <div
+                                    :data-nav-id="'category-' + category.id"
                                     class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-colors duration-150"
                                     :class="{
                                         'bg-blue-600 text-white': filter === 'category' && filterId === category.id,
@@ -526,6 +528,7 @@
                                     <template x-for="feed in feeds.filter(f => f.category_id === category.id)" :key="feed.id">
                                         <button
                                             @click="setFilter('feed', feed.id)"
+                                            :data-nav-id="'feed-' + feed.id"
                                             class="w-full text-left px-2 py-1 rounded text-sm truncate text-gray-700 dark:text-gray-300 flex items-center gap-2"
                                             :class="filter === 'feed' && filterId === feed.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
                                             :draggable="window.innerWidth >= 1024 ? 'true' : 'false'"

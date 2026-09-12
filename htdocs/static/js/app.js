@@ -819,12 +819,38 @@ function app() {
             } else if (item.type === 'suggested') {
                 this.setFilter('suggested');
             } else if (item.type === 'topic') {
+                // The Topics folder can be collapsed while one of its topics
+                // is still the active filter (see getNavigableItems()) — if
+                // so, expand it so the row we're about to scroll to is
+                // actually visible instead of hidden behind x-show.
+                if (!this.topicsExpanded) {
+                    this.topicsExpanded = true;
+                    localStorage.setItem('rss_topics_expanded', '1');
+                }
                 this.selectTopic(item.id);
             } else if (item.type === 'category') {
                 this.setFilter('category', item.id);
             } else if (item.type === 'feed') {
                 this.setFilter('feed', item.id);
             }
+            this.scrollNavItemIntoView(item);
+        },
+
+        // Keep the sidebar scrolled so a [/]-reached item is never hidden
+        // above or below the tree's visible area. No-op for 'unread' and
+        // 'suggested' — those live above #sidebar-nav's scroll area, always
+        // visible, and have no data-nav-id.
+        scrollNavItemIntoView(item) {
+            if (!item || (item.type !== 'topic' && item.type !== 'category' && item.type !== 'feed')) return;
+            this.$nextTick(() => {
+                const el = document.querySelector(`[data-nav-id="${item.type}-${item.id}"]`);
+                if (!el) return;
+                try {
+                    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                } catch (e) {
+                    el.scrollIntoView(false);
+                }
+            });
         },
 
         prevFeed() {
