@@ -763,12 +763,14 @@ function app() {
                 items.push({ type: 'suggested' });
             }
 
-            // Topics (only while the Topics folder is expanded — same rule
-            // used below for feeds inside a collapsed category)
-            if (this.topicsExpanded) {
-                for (const topic of this.topics) {
-                    items.push({ type: 'topic', id: topic.id });
-                }
+            // Topics — always navigable, regardless of whether the Topics
+            // folder is currently expanded in the sidebar: unlike a feed
+            // inside a collapsed category, a topic stays the active filter
+            // even after its folder is collapsed, so gating it the same way
+            // made [/] drop out of the topic list entirely mid-browsing and
+            // land on an unrelated item, which looked like random jumping.
+            for (const topic of this.topics) {
+                items.push({ type: 'topic', id: topic.id });
             }
 
             // Categories and their feeds

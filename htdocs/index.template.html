@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912j';</script>
+    <script>var APP_VERSION = '20260912k';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -421,7 +421,7 @@
                     </div>
 
                     <!-- Categories & Feeds Tree (the Topics folder shares this scroll area) -->
-                    <nav class="flex-1 overflow-y-auto scrollbar-thin p-2">
+                    <nav id="sidebar-nav" class="flex-1 overflow-y-auto scrollbar-thin p-2">
                         <!-- Topics: a pseudo-category holding the topic list, desktop only -->
                         <div class="hidden md:block mb-1">
                             <div class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150">

@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912j">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912j">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912j">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912k">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912k">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912k">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912j">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912k">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912j">
+    <link rel="manifest" href="/manifest.json?v=20260912k">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -46,23 +46,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912j"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912j"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912j"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912j"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912j in all ?v= below -->
-    <script>var APP_VERSION = '20260912j';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912j">
+    <script src="/static/vendor/marked.min.js?v=20260912k"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912k"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912k"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912k"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912k in all ?v= below -->
+    <script>var APP_VERSION = '20260912k';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912k">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912j"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912j"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912j"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912j"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912j"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912j"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912j"></script>
-    <script defer src="/static/js/app.js?v=20260912j"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912k"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912k"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912k"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912k"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912k"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912k"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912k"></script>
+    <script defer src="/static/js/app.js?v=20260912k"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -421,7 +421,7 @@
                     </div>
 
                     <!-- Categories & Feeds Tree (the Topics folder shares this scroll area) -->
-                    <nav class="flex-1 overflow-y-auto scrollbar-thin p-2">
+                    <nav id="sidebar-nav" class="flex-1 overflow-y-auto scrollbar-thin p-2">
                         <!-- Topics: a pseudo-category holding the topic list, desktop only -->
                         <div class="hidden md:block mb-1">
                             <div class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150">

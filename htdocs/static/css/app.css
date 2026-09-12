@@ -16,12 +16,16 @@
     min-width: 0;
 }
 
-/* Disable the browser's automatic scroll-anchoring in the post list. We
-   manage scroll position ourselves when switching the expanded post (see
-   scrollToSelected() in app.js); without this, the browser's own heuristic
-   compensation for content added/removed above the viewport (collapsing
-   the previous post, images loading into the new one) fights our explicit
-   scrollTo and can leave the row displaced from where we put it. */
+/* Disable the browser's automatic scroll-anchoring in the post list and
+   the sidebar tree. We manage scroll position ourselves when switching
+   the expanded post (see scrollToSelected() in app.js); without this, the
+   browser's own heuristic compensation for content added/removed above
+   the viewport (collapsing the previous post, images loading into the new
+   one, a category/badge appearing or disappearing as [/] changes the
+   active filter) fights our explicit scrollTo — or, in the sidebar's
+   case, just fires on its own — and can leave things displaced from
+   where they should be, seen as a random-looking scroll jump. */
+#sidebar-nav,
 #post-list {
     overflow-anchor: none;
 }
