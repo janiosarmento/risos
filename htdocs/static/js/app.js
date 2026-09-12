@@ -1465,7 +1465,7 @@ function app() {
                 // A post is already expanded — keep the accordion moving with
                 // the highlight instead of requiring a separate Enter press.
                 if (this.currentPost) {
-                    this.openPost(this.posts[this.selectedIndex]);
+                    this.togglePostInline(this.posts[this.selectedIndex]);
                 } else {
                     this.scrollToSelected();
                 }
@@ -1476,7 +1476,7 @@ function app() {
             if (this.selectedIndex > 0) {
                 this.selectedIndex--;
                 if (this.currentPost) {
-                    this.openPost(this.posts[this.selectedIndex]);
+                    this.togglePostInline(this.posts[this.selectedIndex]);
                     return;
                 }
                 this.scrollToSelected();

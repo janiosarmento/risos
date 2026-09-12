@@ -94,6 +94,16 @@ const postDetailMixin = {
     togglePostInline(post) {
         if (this.currentPost?.id === post.id) {
             this.closePost();
+        } else if (this.currentPost) {
+            // Switching directly from one expanded post to another: close
+            // the old one first and wait a tick so its (possibly long)
+            // content actually leaves the DOM before opening the new one.
+            // Otherwise the new post's "scroll its row to the top" target
+            // gets computed against the old content's still-present layout
+            // — harmless when the old post was short/near the top, but a
+            // visible misalignment after scrolling deep into a long post.
+            this.closePost();
+            this.$nextTick(() => this.openPost(post));
         } else {
             this.openPost(post);
         }
