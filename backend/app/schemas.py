@@ -187,3 +187,25 @@ class MarkReadRequest(BaseModel):
     category_id: Optional[int] = None
     post_ids: Optional[List[int]] = None
     all: Optional[bool] = False
+
+
+class SummaryStatusRequest(BaseModel):
+    """Request para consultar o status de resumo de um lote de posts"""
+
+    post_ids: List[int]
+
+
+class SummaryStatusItem(BaseModel):
+    """Status de resumo atual de um post — usado para o refresh leve da lista"""
+
+    id: int
+    summary_status: str
+    one_line_summary: Optional[str] = None
+    translated_title: Optional[str] = None
+    tags: List[str] = []
+
+
+class SummaryStatusResponse(BaseModel):
+    """Response em lote para SummaryStatusRequest"""
+
+    posts: List[SummaryStatusItem]

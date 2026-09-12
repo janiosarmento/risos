@@ -1386,12 +1386,52 @@ function app() {
             this._periodicRefreshInterval = setInterval(() => {
                 this.loadFeeds().catch(() => {});
                 this.scheduleTopicsRefresh();
+                this.refreshVisibleSummaries().catch(() => {});
             }, 60000);
         },
         _stopPeriodicRefresh() {
             if (this._periodicRefreshInterval) {
                 clearInterval(this._periodicRefreshInterval);
                 this._periodicRefreshInterval = null;
+            }
+        },
+
+        // Light refresh for the currently loaded list: the background
+        // summary queue keeps generating summaries after the list was
+        // fetched, so a post can sit showing "no summary" even though one
+        // is already ready — this patches just the preview fields for rows
+        // still missing one, without reloading (and losing scroll/selection
+        // state on) the whole list.
+        async refreshVisibleSummaries() {
+            const pendingIds = this.posts
+                .filter(p => p.summary_status !== 'ready')
+                .map(p => p.id);
+            if (!pendingIds.length) return;
+
+            try {
+                const data = await this.fetchApi('/posts/summary-status', {
+                    method: 'POST',
+                    body: JSON.stringify({ post_ids: pendingIds.slice(0, 100) }),
+                });
+                for (const item of data.posts || []) {
+                    if (item.summary_status !== 'ready') continue;
+                    const index = this.getPostIndex(item.id);
+                    if (index < 0) continue;
+                    // Patch the list row only — not currentPost. This
+                    // endpoint doesn't return the full summary_pt paragraphs
+                    // the open reader needs, so flipping summary_status to
+                    // 'ready' there would show the "couldn't generate"
+                    // fallback instead of the actual summary.
+                    this.posts[index] = {
+                        ...this.posts[index],
+                        summary_status: 'ready',
+                        one_line_summary: item.one_line_summary,
+                        translated_title: item.translated_title,
+                        tags: item.tags,
+                    };
+                }
+            } catch (e) {
+                console.debug('Failed to refresh visible summaries:', e);
             }
         },
 

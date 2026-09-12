@@ -36,6 +36,9 @@ from app.schemas import (
     PostDetail,
     PostListResponse,
     PostResponse,
+    SummaryStatusItem,
+    SummaryStatusRequest,
+    SummaryStatusResponse,
 )
 from app.services.ai import (
     CerebrasError,
@@ -361,6 +364,53 @@ def list_posts(
         starred_count=starred_count,
         suggested_count=suggested_count,
     )
+
+
+@router.post("/summary-status", response_model=SummaryStatusResponse)
+def get_summary_status_batch(
+    payload: SummaryStatusRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Current summary_status/one_line_summary/tags for a batch of post ids.
+
+    Used for the frontend's light periodic refresh of already-loaded list
+    rows — the background summary queue generates summaries after the list
+    was fetched, so this lets the UI patch just those fields in place
+    instead of reloading (and re-scrolling/re-selecting) the whole list.
+    """
+    post_ids = payload.post_ids[:100]
+    if not post_ids:
+        return SummaryStatusResponse(posts=[])
+
+    posts = (
+        db.query(Post)
+        .options(subqueryload(Post.tags))
+        .filter(Post.id.in_(post_ids))
+        .all()
+    )
+
+    content_hashes = [p.content_hash for p in posts if p.content_hash]
+    summaries_map = {}
+    if content_hashes:
+        summaries = (
+            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
+        )
+        summaries_map = {s.content_hash: s for s in summaries}
+
+    result = []
+    for post in posts:
+        summary = summaries_map.get(post.content_hash) if post.content_hash else None
+        result.append(
+            SummaryStatusItem(
+                id=post.id,
+                summary_status=("ready" if summary else get_summary_status(db, post)),
+                one_line_summary=summary.one_line_summary if summary else None,
+                translated_title=summary.translated_title if summary else None,
+                tags=[pt.tag for pt in post.tags],
+            )
+        )
+    return SummaryStatusResponse(posts=result)
 
 
 def _slugify(text: str) -> str:
