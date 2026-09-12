@@ -97,8 +97,10 @@ const postDetailMixin = {
         // else keeps the scroll position sane afterward: it'd jump to
         // whatever the same raw scrollTop happens to land on in the now-
         // shorter list. Re-align to the row's (now unpinned) position so it
-        // really does "stay where it was".
-        this.scrollToSelected(true);
+        // really does "stay where it was" — instantly (smooth=false): this
+        // is a correction back to where the row already visually was, not
+        // a navigation, so animating it would just be a distracting jump.
+        this.scrollToSelected(true, false);
     },
 
     // Toggle inline expansion: clicking the open post's row closes it,

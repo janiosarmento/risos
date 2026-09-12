@@ -1581,7 +1581,7 @@ function app() {
             }
         },
 
-        scrollToSelected(toTop = false) {
+        scrollToSelected(toTop = false, smooth = true) {
             // Wait for Alpine to finish patching the DOM (row swap, sticky
             // class toggle, x-if content) before measuring — a fixed
             // setTimeout isn't reliable enough on slower devices/browsers.
@@ -1601,7 +1601,7 @@ function app() {
 
                     if (!toTop) {
                         try {
-                            el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            el.scrollIntoView({ block: 'nearest', behavior: smooth ? 'smooth' : 'auto' });
                         } catch (e) {
                             el.scrollIntoView(false);
                         }
@@ -1627,7 +1627,7 @@ function app() {
                     const containerRect = container.getBoundingClientRect();
                     container.scrollTo({
                         top: container.scrollTop + (rowRect.top - containerRect.top),
-                        behavior: 'smooth',
+                        behavior: smooth ? 'smooth' : 'auto',
                     });
                 });
             });
