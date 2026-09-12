@@ -20,7 +20,7 @@
                         :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                         :aria-label="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                     >
-                        <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-pink-500' : 'text-gray-400 hover:text-pink-400'" :fill="currentPost.is_liked ? 'currentColor' : 'none'" :stroke="currentPost.is_liked ? 'none' : 'currentColor'" :stroke-width="currentPost.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
+                        <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-teal-500' : 'text-gray-400 hover:text-teal-400'" :fill="currentPost.is_liked ? 'currentColor' : 'none'" :stroke="currentPost.is_liked ? 'none' : 'currentColor'" :stroke-width="currentPost.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
                     </button>
                     <!-- Keep unread button -->
                     <button
