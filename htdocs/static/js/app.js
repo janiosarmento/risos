@@ -681,8 +681,9 @@ function app() {
                         this.openAssistant();
                         return;
                     }
-                    // J/K fall through to selectNext/selectPrev below (only moves
-                    // the highlight — it never auto-expands another post)
+                    // J/K fall through to selectNext/selectPrev below — while a
+                    // post is expanded they move the accordion to the next/prev
+                    // one; otherwise they just move the highlight.
                 }
 
                 // Main view shortcuts
@@ -1461,13 +1462,23 @@ function app() {
         selectNext() {
             if (this.selectedIndex < this.posts.length - 1) {
                 this.selectedIndex++;
-                this.scrollToSelected();
+                // A post is already expanded — keep the accordion moving with
+                // the highlight instead of requiring a separate Enter press.
+                if (this.currentPost) {
+                    this.openPost(this.posts[this.selectedIndex]);
+                } else {
+                    this.scrollToSelected();
+                }
             }
         },
 
         selectPrev() {
             if (this.selectedIndex > 0) {
                 this.selectedIndex--;
+                if (this.currentPost) {
+                    this.openPost(this.posts[this.selectedIndex]);
+                    return;
+                }
                 this.scrollToSelected();
             }
         },
