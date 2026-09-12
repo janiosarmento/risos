@@ -87,6 +87,18 @@ const postDetailMixin = {
 
     closePost() {
         this.currentPost = null;
+        // The row was pinned (position: sticky) at the top of the list the
+        // whole time it was expanded, however far you'd scrolled into its
+        // content — so visually, the row itself never moved. Collapsing
+        // that content removes a chunk of height above wherever the user
+        // was actually scrolled to, and with the list's scroll-anchoring
+        // disabled (see app.css — needed so our own scrollTo calls when
+        // switching posts don't fight the browser's heuristic), nothing
+        // else keeps the scroll position sane afterward: it'd jump to
+        // whatever the same raw scrollTop happens to land on in the now-
+        // shorter list. Re-align to the row's (now unpinned) position so it
+        // really does "stay where it was".
+        this.scrollToSelected(true);
     },
 
     // Toggle inline expansion: clicking the open post's row closes it,
