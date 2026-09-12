@@ -1003,6 +1003,17 @@ function app() {
                 this.offset = 0;
                 this.hasMore = true;
                 this.selectedIndex = -1;
+                // A reset means the scope changed (feed/category/topic/tag/
+                // search/filter) — the post that was expanded, if any, isn't
+                // even in the new list anymore. Without this, currentPost
+                // stays set to that now-gone post: nothing looks open (no
+                // row matches its id), but J/K's "a post is already open,
+                // move the accordion" branch still fires on the very next
+                // press, closing that invisible stale post and opening
+                // whatever's highlighted — looking like it opened on its
+                // own. goToRelatedPost()/navigateToFeed()'s pending-reopen
+                // below still runs after this and isn't affected.
+                this.currentPost = null;
             }
 
             this.loading = true;
