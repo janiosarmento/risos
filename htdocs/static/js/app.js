@@ -1492,6 +1492,15 @@ function app() {
                     const el = document.querySelector(`[data-index="${this.selectedIndex}"]`);
                     if (!el) return;
 
+                    // Keep DOM focus in sync with the highlight: J/K only ever
+                    // move selectedIndex, never call .focus(), so without this
+                    // the row's own @keydown.enter handler (kept for Tab-based
+                    // keyboard access) keeps firing on whatever row was last
+                    // actually focused — e.g. still the first post after
+                    // pressing J ten times — instead of the one J/K just moved
+                    // to. preventScroll since we handle scrolling ourselves.
+                    el.focus({ preventScroll: true });
+
                     if (!toTop) {
                         try {
                             el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

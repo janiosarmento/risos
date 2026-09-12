@@ -51,7 +51,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912h';</script>
+    <script>var APP_VERSION = '20260912i';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -824,7 +824,7 @@
                             <div>
                             <article
                                 @click="selectMode ? togglePostSelection(post.id) : togglePostInline(post)"
-                                @keydown.enter="selectMode ? togglePostSelection(post.id) : togglePostInline(post)"
+                                @keydown.enter.stop="selectMode ? togglePostSelection(post.id) : togglePostInline(post)"
                                 tabindex="0"
                                 class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition"
                                 :class="{
