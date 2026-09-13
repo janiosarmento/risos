@@ -11,7 +11,7 @@
                         :data-tip="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
                         :aria-label="currentPost.is_starred ? t('modal.unstarPost') : t('modal.starPost')"
                     >
-                        <svg class="w-4 h-4" :class="currentPost.is_starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'" :fill="currentPost.is_starred ? 'currentColor' : 'none'" :stroke="currentPost.is_starred ? 'none' : 'currentColor'" :stroke-width="currentPost.is_starred ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-star"/></svg>
+                        <span class="msym text-[16px]" :class="currentPost.is_starred ? 'msym-fill text-yellow-500' : 'text-gray-400 hover:text-yellow-400'">star</span>
                     </button>
                     <!-- Like button -->
                     <button
@@ -20,7 +20,7 @@
                         :data-tip="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                         :aria-label="currentPost.is_liked ? t('modal.unlikePost') : t('modal.likePost')"
                     >
-                        <svg class="w-4 h-4" :class="currentPost.is_liked ? 'text-teal-500' : 'text-gray-400 hover:text-teal-400'" :fill="currentPost.is_liked ? 'currentColor' : 'none'" :stroke="currentPost.is_liked ? 'none' : 'currentColor'" :stroke-width="currentPost.is_liked ? '0' : '1.5'" viewBox="0 0 20 20"><use href="#icon-heart"/></svg>
+                        <span class="msym text-[16px]" :class="currentPost.is_liked ? 'msym-fill text-teal-500' : 'text-gray-400 hover:text-teal-400'">favorite</span>
                     </button>
                     <!-- Keep unread button -->
                     <button
@@ -29,7 +29,7 @@
                         :data-tip="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')"
                         :aria-label="currentPost.keep_unread ? t('keepUnread.unlock') : t('keepUnread.lock')"
                     >
-                        <svg class="w-4 h-4" :class="currentPost.keep_unread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-blue-400'" :fill="currentPost.keep_unread ? 'currentColor' : 'none'" :stroke="currentPost.keep_unread ? 'none' : 'currentColor'" :stroke-width="currentPost.keep_unread ? '0' : '1.5'" viewBox="0 0 24 24"><use href="#icon-lock"/></svg>
+                        <span class="msym text-[16px]" :class="currentPost.keep_unread ? 'msym-fill text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-blue-400'">lock</span>
                     </button>
                     <!-- Sparkle Assistant Button -->
                     <button
@@ -38,7 +38,7 @@
                         :data-tip="t('modal.assistantTitle') + ' (I)'"
                         :aria-label="t('modal.assistantTitle')"
                     >
-                        <svg class="w-4 h-4"><use href="#icon-sparkles"/></svg>
+                        <span class="msym text-[16px]">auto_awesome</span>
                         <span class="hidden md:inline text-sm" x-text="t('modal.assistantTitle')"></span>
                     </button>
                     <!-- Read/Unread button - icon only on mobile -->
@@ -49,7 +49,7 @@
                         :data-tip="currentPost.is_read ? t('modal.unread') : t('modal.read')"
                         :aria-label="currentPost.is_read ? t('modal.unread') : t('modal.read')"
                     >
-                        <svg class="w-4 h-4 md:hidden"><use href="#icon-check"/></svg>
+                        <span class="msym text-[16px] md:hidden">check</span>
                         <span class="hidden md:inline text-sm" x-text="currentPost.is_read ? t('modal.unread') : t('modal.read')"></span>
                     </button>
                     <!-- Original link - icon only on mobile -->
@@ -60,7 +60,7 @@
                         :data-tip="t('modal.original')"
                         :aria-label="t('modal.original')"
                     >
-                        <svg class="w-4 h-4 md:hidden"><use href="#icon-external-link"/></svg>
+                        <span class="msym text-[16px] md:hidden">open_in_new</span>
                         <span class="hidden md:inline text-sm" x-text="t('modal.original')"></span>
                     </a>
                     <button
@@ -69,7 +69,7 @@
                         :data-tip="t('modal.exportMarkdown')"
                         :aria-label="t('modal.exportMarkdown')"
                     >
-                        <svg class="w-4 h-4"><use href="#icon-download"/></svg>
+                        <span class="msym text-[16px]">download</span>
                         <span class="text-sm" x-text="t('modal.exportMarkdown')"></span>
                     </button>
                     <button @click="closePost()" class="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl" :data-tip="t('modal.close')" :aria-label="t('modal.close')">&times;</button>
@@ -89,7 +89,7 @@
                                 :aria-label="t('modal.copySummary')"
                             >
                                 <span class="flex items-center gap-1">
-                                    <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+                                    <span class="msym text-[12px]">content_copy</span>
                                     <span class="hidden md:inline" x-text="t('modal.copySummary').split(' (')[0]"></span>
                                 </span>
                             </button>
@@ -100,7 +100,7 @@
                                 :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')"
                             >
                                 <span class="flex items-center gap-1">
-                                    <svg class="w-3 h-3"><use href="#icon-prohibition"/></svg>
+                                    <span class="msym text-[12px]">block</span>
                                     <span x-text="currentPost.skip_summary ? t('modal.skipSummaryActive') : t('modal.skipSummary')"></span>
                                 </span>
                             </button>
@@ -112,11 +112,11 @@
                                 :data-tip="t('modal.regenerate')"
                             >
                                 <span x-show="!regeneratingSummary" class="flex items-center gap-1">
-                                    <svg class="w-3 h-3"><use href="#icon-refresh"/></svg>
+                                    <span class="msym text-[12px]">refresh</span>
                                     <span x-text="t('modal.regenerate')"></span>
                                 </span>
                                 <span x-show="regeneratingSummary" class="flex items-center gap-1">
-                                    <svg class="animate-spin h-3 w-3"><use href="#icon-spinner"/></svg>
+                                    <span class="msym text-[12px] animate-spin">progress_activity</span>
                                     <span x-text="t('modal.generating')"></span>
                                 </span>
                             </button>

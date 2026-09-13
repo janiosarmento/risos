@@ -44,6 +44,48 @@
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Material Symbols Outlined, subsetted to just the glyphs this app uses
+   (step 2 of the redesign plan — replaces the hand-drawn SVG sprite for
+   every generic icon; icon-github stays an SVG since brand logos aren't
+   in the Material Symbols set). Self-hosted like the other fonts above,
+   subsetted via Google's icon_names API (see git history for the exact
+   request) rather than pulling the full multi-thousand-glyph icon font. */
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('/static/fonts/material-symbols-subset.woff2') format('woff2');
+}
+
+/* .msym renders its text content (an icon name, e.g. "auto_awesome") as
+   the matching glyph via the font's 'liga' ligature feature — exactly
+   like Google's own .material-symbols-outlined helper class. Variable on
+   the FILL axis (0 = outline, 1 = filled): add .msym-fill, or toggle it
+   via :class, for a post's starred/liked/kept-unread active state instead
+   of keeping two separate icons. */
+.msym {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    vertical-align: middle;
+}
+
+.msym-fill {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
 /* -------------------------------------------
    0b. Material 3 design tokens (Material3RedesignPlan step 1)
    ------------------------------------------- */
