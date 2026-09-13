@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912z';</script>
+    <script>var APP_VERSION = '20260912aa';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -641,7 +641,7 @@
                                     x-show="starredCount > 0 && postFilter === 'starred'"
                                     @click="curatePosts()"
                                     :disabled="curatingPosts"
-                                    class="px-1.5 py-0.5 text-xs text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 hidden md:flex items-center gap-1"
+                                    class="px-2.5 py-1 text-xs rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] disabled:opacity-50 hidden md:flex items-center gap-1"
                                     :data-tip="t('curation.curate')"
                                 >
                                     <span x-show="curatingPosts" class="msym text-[12px] animate-spin">progress_activity</span>
@@ -670,46 +670,51 @@
                                 :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
                             ><span x-text="t('posts.markAsRead')"></span><span class="hidden lg:inline opacity-60"> (M)</span></button>
                         </div>
-                        <!-- Curation results panel -->
-                        <div x-show="curationResults" class="mt-2 space-y-2">
+                        <!-- Curation results panel (M3 redesign step 4, docs/specs/
+                             MATERIAL3_REDESIGN_PLAN.md — mockup 2e). Badge colors follow
+                             the app's own color discipline (see risos-visual-cohesion-pass
+                             memory): essential = solid primary (like the suggestion-score
+                             badge), redundant = error container (red means "skip this"
+                             here, same as elsewhere), situational = secondary container. -->
+                        <div x-show="curationResults" class="mt-2 space-y-2 rounded-2xl p-3 bg-[var(--md-surface-container-low)]">
                             <!-- Disclaimer -->
-                            <p class="text-[11px] text-gray-400 dark:text-gray-500 italic" x-text="t('curation.disclaimer')"></p>
+                            <p class="text-[11px] text-[var(--md-on-surface-variant)] italic" x-text="t('curation.disclaimer')"></p>
                             <!-- Stats + actions -->
                             <div class="flex flex-wrap items-center gap-2 text-xs">
-                                <span class="text-gray-500 dark:text-gray-400" x-text="curationStats.total + ' posts →'"></span>
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
-                                    <span>★</span> <span x-text="curationStats.essential"></span>
+                                <span class="text-[var(--md-on-surface-variant)]" x-text="t('curation.postsAnalyzed').replace('{count}', curationStats.total)"></span>
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--md-primary)] text-[var(--md-on-primary)]" :data-tip="t('curation.essential')">
+                                    <span class="msym msym-fill text-[13px]">star</span><span x-text="curationStats.essential"></span>
                                 </span>
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded">
-                                    <span>?</span> <span x-text="curationStats.situational"></span>
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]" :data-tip="t('curation.situational')">
+                                    <span class="msym text-[13px]">info</span><span x-text="curationStats.situational"></span>
                                 </span>
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
-                                    <span>✗</span> <span x-text="curationStats.redundant"></span>
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--md-error-container)] text-[var(--md-on-error-container)]" :data-tip="t('curation.redundant')">
+                                    <span class="msym text-[13px]">block</span><span x-text="curationStats.redundant"></span>
                                 </span>
-                                <span x-show="curationStats.unclassified > 0" class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700/30 text-gray-600 dark:text-gray-400 rounded" :data-tip="t('curation.unclassifiedReason')">
+                                <span x-show="curationStats.unclassified > 0" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]" :data-tip="t('curation.unclassifiedReason')">
                                     <span>—</span> <span x-text="curationStats.unclassified"></span>
                                 </span>
                                 <button
                                     @click="selectRedundantPosts()"
                                     x-show="curationStats.redundant > 0 && !selectMode"
-                                    class="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-700 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50"
+                                    class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)]"
                                     x-text="t('curation.selectRedundant')"
                                 ></button>
                                 <button
                                     @click="exportSelection()"
                                     x-show="selectedPosts.size > 0"
-                                    class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                                    class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)]"
                                     x-text="t('curation.downloadSelected')"
                                 ></button>
                                 <button
                                     @click="batchUnstar()"
                                     x-show="selectedPosts.size > 0"
-                                    class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                                    class="px-3 py-1 rounded-full text-xs font-medium bg-[var(--md-error)] text-white hover:opacity-90"
                                     x-text="t('curation.archiveSelected')"
                                 ></button>
                                 <button
                                     @click="clearCuration()"
-                                    class="ml-auto px-2 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    class="ml-auto px-2 py-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     x-text="t('curation.clear')"
                                 ></button>
                             </div>
@@ -870,15 +875,21 @@
                                             <!-- Curation badge with custom tooltip -->
                                             <span
                                                 x-show="getCurationBadge(post.id)"
-                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium cursor-help"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] font-medium cursor-help"
                                                 :class="{
-                                                    'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': getCurationBadge(post.id)?.classification === 'essential',
-                                                    'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': getCurationBadge(post.id)?.classification === 'redundant',
-                                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': getCurationBadge(post.id)?.classification === 'keep_if_interested'
+                                                    'bg-[var(--md-primary)] text-[var(--md-on-primary)]': getCurationBadge(post.id)?.classification === 'essential',
+                                                    'bg-[var(--md-error-container)] text-[var(--md-on-error-container)]': getCurationBadge(post.id)?.classification === 'redundant',
+                                                    'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]': getCurationBadge(post.id)?.classification === 'keep_if_interested'
                                                 }"
                                                 :data-tip="getCurationBadge(post.id)?.reason"
-                                                x-text="getCurationBadge(post.id)?.classification === 'essential' ? '★ essential' : getCurationBadge(post.id)?.classification === 'redundant' ? '✗ redundant' : '? situational'"
-                                            ></span>
+                                            >
+                                                <span
+                                                    class="msym text-[11px]"
+                                                    :class="{ 'msym-fill': getCurationBadge(post.id)?.classification === 'essential' }"
+                                                    x-text="getCurationBadge(post.id)?.classification === 'essential' ? 'star' : getCurationBadge(post.id)?.classification === 'redundant' ? 'block' : 'info'"
+                                                ></span>
+                                                <span x-text="getCurationBadge(post.id)?.classification === 'essential' ? t('curation.essential') : getCurationBadge(post.id)?.classification === 'redundant' ? t('curation.redundant') : t('curation.situational')"></span>
+                                            </span>
                                             <span x-text="getFeedTitle(post.feed_id)" @click.stop="navigateToFeed(post.feed_id, post.id)" class="cursor-pointer hover:underline"></span>
                                             <span>-</span>
                                             <span x-text="formatDate(post.published_at || post.fetched_at)"></span>

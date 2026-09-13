@@ -308,6 +308,11 @@
   "curation": {
     "curate": "Curadoria",
     "results": "Curadoria IA:",
+    "essential": "Essencial",
+    "redundant": "Redundante",
+    "situational": "Situacional",
+    "unclassified": "Não classificado",
+    "postsAnalyzed": "{count} posts analisados",
     "selectRedundant": "Selecionar redundantes",
     "downloadSelected": "Baixar selecionados",
     "archiveSelected": "Arquivar selecionados",

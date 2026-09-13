@@ -308,6 +308,11 @@
   "curation": {
     "curate": "Curate",
     "results": "AI Curation:",
+    "essential": "Essential",
+    "redundant": "Redundant",
+    "situational": "Situational",
+    "unclassified": "Unclassified",
+    "postsAnalyzed": "{count} posts analyzed",
     "selectRedundant": "Select redundant",
     "downloadSelected": "Download selected",
     "archiveSelected": "Archive selected",

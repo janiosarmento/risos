@@ -117,16 +117,32 @@ things in one commit.
 ### Screens with a 1:1 mockup
 - [x] **3. Empty states** (2k, 3 of the 4) — post list now distinguishes
   no-feeds-at-all (with an "add feed" button into Settings' Feeds
-  accordion), active-search-with-no-matches, and the plain empty-filter
-  case, each with a `.msym` icon and `--md-*` token colors — first real
-  consumption of the step 1 tokens. New locale keys added to both
-  pt-BR.json and en-US.json (`posts.noSearchResults(Desc)`,
-  `feeds.noFeedsDesc`, `feeds.addFeed`).
+  accordion), active-search-with-no-matches, an actually-unread-only
+  "caught up" state, and a named-filter-is-empty state (says "Suggested",
+  "Starred", the feed/category/topic/tag name, etc. instead of wrongly
+  claiming "no unread posts"), each with a `.msym` icon and `--md-*` token
+  colors — first real consumption of the step 1 tokens. New locale keys in
+  both pt-BR.json and en-US.json (`posts.noSearchResults(Desc)`,
+  `posts.noPostsGeneric`, `posts.noPostsInContext`, `feeds.noFeedsDesc`,
+  `feeds.addFeed`). Commits `7f31916`, `dbe93a8`, `7ad0dde` (two follow-up
+  fixes: wrong context wording, and a font-cache-busting bug — see "Adding
+  a new icon" above — both caught by the user testing live).
   **Deliberately skipped**: the mockup's 4th state, "secret not found" —
   there's no found/not-found indicator in the real app yet to key it off
   of (that's built in step 12, the AI settings tab); adding one now would
   be inventing behavior ahead of its step. Revisit then.
-- [ ] **4. AI curation screen** (2e) — closed screen, few elements.
+- [x] **4. AI curation screen** (2e) — the real UI isn't a separate screen
+  like the mockup, it's a stats bar + per-post badges inline in the post
+  list (curation is run on the currently starred/filtered posts, not a
+  dedicated view) — restyled in place rather than forcing a new layout.
+  essential = solid primary (like the suggestion-score badge), redundant =
+  error container (red = "skip this" here, consistent with
+  risos-visual-cohesion-pass's color discipline), situational = secondary
+  container, each with a `.msym` icon instead of a ★/✗/? glyph. Also fixed
+  a pre-existing i18n bug found while touching this: the essential/
+  redundant/situational badge labels were hardcoded English literals even
+  under the pt-BR locale — added proper `curation.essential/redundant/
+  situational/unclassified/postsAnalyzed` keys to both locale files.
 - [ ] **5. Sidebar nav** (Unread/Starred/Suggested/All, Topics, Categories) —
   24px pill items, container-tone accents (2a/2b).
 - [ ] **6. Post list** (cards, tag chips, score badge, unread dot) (2a/2b).
