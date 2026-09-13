@@ -211,7 +211,18 @@ things in one commit.
   n + ')'` pattern found while checking, both inside the still-untouched
   Settings modal (Topics tab, tag-merge suggestions) — left for steps
   14/15, apply the same fix there.
-- [ ] **9. Mobile layout** (2g) — bottom nav + narrow list/detail.
+- [x] **9. Mobile layout** (2g) — **scope decided with the user**: the
+  mockup's fixed bottom tab bar doesn't exist in the real app (mobile nav
+  today is hamburger → the same sidebar as an overlay) and would be new
+  functionality, not a reskin — out of character for every step so far.
+  User chose to reskin what exists rather than build it. Turned out there
+  was nothing left to do: Risos is one responsive codebase, not separate
+  mobile/desktop templates, so the `md:hidden`/`hidden md:inline` mobile
+  variants of the sidebar, header toolbar, and post-list cards were
+  already converted along with their desktop counterparts in steps 5–8.
+  Checked for leftover old-style classes gated on a mobile breakpoint and
+  found none; the only `@media (max-width: 768px)` block in `app.css` is
+  purely behavioral (scroll/tap-highlight/safe-area), no color to convert.
 - [ ] **10. Suggested + tag profile** (2h/2i).
 
 ### Settings — no full mockup, extend the tokens per screen
