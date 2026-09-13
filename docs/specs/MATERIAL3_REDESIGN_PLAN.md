@@ -234,7 +234,25 @@ things in one commit.
   outside Settings, and is already done.
 
 ### Settings — no full mockup, extend the tokens per screen
-- [ ] **11. Settings shell** — left nav only (2f's aside).
+- [x] **11. Settings shell** — replaced the horizontal top-tab strip with a
+  left nav rail matching 2f's `aside` (folder/rss_feed/import_export/
+  auto_awesome/label/tune/monitor_heart icons, in the mockup's own order;
+  active state = secondary-container, same rule as a plain sidebar filter
+  in step 5 — this isn't a "destaque IA" item so no primary tint even for
+  the AI tab). No separate mobile markup: the same `<nav>` is a horizontal
+  scrollable pill row below `md` and a vertical rail at `md:` and up, same
+  "one responsive codebase" approach as step 9. Dialog itself now matches
+  the confirm modal's shape/fill (28px radius, `--md-surface-container-
+  high`, step 8) instead of the old `bg-white`/`rounded-lg`; widened
+  `max-w-2xl` → `max-w-4xl` so the rail has room without starving the
+  content pane. Close button switched from a literal `&times;` to a
+  `.msym close` icon. Footer's Close button restyled to the same outlined
+  pill as the confirm modal's Cancel. Re-subsetted the Material Symbols
+  font (v3 → v4) to add `import_export`, `monitor_heart`, `tune` for the
+  new rail icons — see "Adding a new icon" above.
+  **Deliberately untouched**: every tab's own content (categories/feeds
+  lists, AI form, topics, general toggles, OPML, status) — still on the
+  old gray-100/blue-600 palette, that's steps 12–17, one tab at a time.
 - [ ] **12. AI tab** — mockup's fields (Jano secret, model, circuit breaker,
   toggles) plus the gaps: background-job config, prompts, curation engine.
 - [ ] **13. Categories/Feeds tab** — incl. feed↔category drag-and-drop.
@@ -286,3 +304,8 @@ things in one commit.
   instances (Settings' Topics tab, tag-merge suggestions — steps 14/15),
   and the parked AI-curation bug (unrelated to the redesign, own memory
   entry `risos-curation-not-working`).
+- 2026-09-13 — Completed step 11 (Settings shell → left nav rail). No
+  sandbox browser available in this session to screenshot it live (no
+  project `/run` skill, no Playwright/chromium-cli installed) — this one
+  needs the user's own local check before step 12 starts, breaking the
+  "viewed running before moving on" habit from steps 1–10 just this once.

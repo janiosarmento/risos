@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912af';</script>
+    <script>var APP_VERSION = '20260913a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1166,66 +1166,89 @@
                 @click.self="closeSettings()"
                 @keydown.escape.window="closeSettings()"
             >
+                <!-- Settings shell (M3 redesign step 11, docs/specs/MATERIAL3_REDESIGN_PLAN.md —
+                     2f: a left nav rail replaces the old horizontal tab strip on desktop; the
+                     same nav collapses into a horizontal scrollable pill row on narrow
+                     viewports rather than a second, mobile-only markup block. 28px dialog
+                     radius and surface-container-high fill match the confirm modal (step 8). -->
                 <div
-                    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] md:max-h-[80vh] flex flex-col"
+                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl w-full max-w-4xl max-h-[90vh] md:max-h-[80vh] flex flex-col"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="settings-dialog-title"
                 >
                     <!-- Header -->
-                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                        <h2 id="settings-dialog-title" class="text-lg font-bold" x-text="t('settings.title')"></h2>
-                        <button @click="closeSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl">&times;</button>
+                    <div class="p-4 border-b border-[var(--md-outline-variant)] flex items-center justify-between flex-none">
+                        <h2 id="settings-dialog-title" class="text-lg font-bold text-[var(--md-on-surface)]" x-text="t('settings.title')"></h2>
+                        <button @click="closeSettings()" class="text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]" :aria-label="t('settings.close')">
+                            <span class="msym text-[24px]">close</span>
+                        </button>
                     </div>
 
-                    <!-- Tabs -->
-                    <div class="flex border-b border-gray-200 dark:border-gray-700">
-                        <button
-                            @click="settingsTab = 'categories'"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'categories' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.categories')"
-                        ></button>
-                        <button
-                            @click="settingsTab = 'feeds'"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'feeds' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.feeds')"
-                        ></button>
-                        <button
-                            @click="settingsTab = 'opml'"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'opml' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.opml')"
-                        ></button>
-                        <button
-                            @click="settingsTab = 'ai'"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'ai' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.ai')"
-                        ></button>
-                        <button
-                            @click="settingsTab = 'topics'; loadTopics()"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'topics' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.topics')"
-                        ></button>
-                        <button
-                            @click="settingsTab = 'general'"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'general' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.general')"
-                        ></button>
-                        <button
-                            @click="settingsTab = 'status'; loadSystemStatus()"
-                            class="px-4 py-2 text-sm font-medium"
-                            :class="settingsTab === 'status' ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-                            x-text="t('settings.tabs.status')"
-                        ></button>
-                    </div>
+                    <!-- Nav rail + content -->
+                    <div class="flex flex-col md:flex-row flex-1 min-h-0">
+                        <!-- Nav rail: horizontal pill row on mobile, vertical rail on md+ -->
+                        <nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible p-2 md:p-3 md:w-[200px] md:flex-none border-b md:border-b-0 md:border-r border-[var(--md-outline-variant)]">
+                            <button
+                                @click="settingsTab = 'categories'"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'categories' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">folder</span>
+                                <span x-text="t('settings.tabs.categories')"></span>
+                            </button>
+                            <button
+                                @click="settingsTab = 'feeds'"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'feeds' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">rss_feed</span>
+                                <span x-text="t('settings.tabs.feeds')"></span>
+                            </button>
+                            <button
+                                @click="settingsTab = 'opml'"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'opml' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">import_export</span>
+                                <span x-text="t('settings.tabs.opml')"></span>
+                            </button>
+                            <button
+                                @click="settingsTab = 'ai'"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'ai' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">auto_awesome</span>
+                                <span x-text="t('settings.tabs.ai')"></span>
+                            </button>
+                            <button
+                                @click="settingsTab = 'topics'; loadTopics()"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'topics' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">label</span>
+                                <span x-text="t('settings.tabs.topics')"></span>
+                            </button>
+                            <button
+                                @click="settingsTab = 'general'"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'general' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">tune</span>
+                                <span x-text="t('settings.tabs.general')"></span>
+                            </button>
+                            <button
+                                @click="settingsTab = 'status'; loadSystemStatus()"
+                                class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
+                                :class="settingsTab === 'status' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] font-medium' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
+                            >
+                                <span class="msym text-[18px]">monitor_heart</span>
+                                <span x-text="t('settings.tabs.status')"></span>
+                            </button>
+                        </nav>
 
                     <!-- Content -->
-                    <div id="settings-content" class="flex-1 overflow-y-auto p-4"
+                    <div id="settings-content" class="flex-1 min-w-0 overflow-y-auto p-4"
                         @dragover="if (dragTagName) {
                             const rect = $el.getBoundingClientRect();
                             const y = $event.clientY;
@@ -2603,12 +2626,13 @@
                             </template>
                         </div>
                     </div>
+                    </div>
 
                     <!-- Footer -->
-                    <div class="p-4 border-t border-gray-200 dark:border-gray-700 text-right">
+                    <div class="p-4 border-t border-[var(--md-outline-variant)] text-right flex-none">
                         <button
                             @click="closeSettings()"
-                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded"
+                            class="px-4 py-2 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] font-medium transition-colors"
                             x-text="t('settings.close')"
                         ></button>
                     </div>
