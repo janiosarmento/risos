@@ -370,7 +370,35 @@ things in one commit.
   between topic cards, `suggestTopics()`/`suggestTagsForTopic()`) —
   same kind of stale-note-vs-reality gap as steps 9/10/13; this step
   only reskinned it, no interaction changed.
-- [ ] **15. General tab** — the ~15 numeric/toggle preferences.
+- [x] **15. General tab** — all 4 accordions (Appearance, Data, Interface,
+  Tag Consolidation) and the version/cache footer moved to `--md-*`
+  tokens: accordion shells `rounded-2xl` + `surface-container` header
+  (was `rounded-lg`/`gray-50`), every number/text input and select
+  matching step 12's treatment, checkbox and merge-group checkboxes via
+  `accent-[var(--md-primary)]`. Theme picker (Light/Dark/System) is now
+  a filled-primary pill for the active choice, outlined for the rest —
+  same segmented-button shape as the curation-engine radios, just
+  buttons instead of native radios since that's what the existing markup
+  already used. Purge-rare-tags sample chips use `error-container` (
+  "this will be deleted", the established error-role convention);
+  its Purge button is the filled-error pill (step 8's precedent); the
+  merge Apply/Analyze buttons are filled-primary (no green "success"
+  color — same no-semantic-status-color-outside-the-5-roles rule as
+  every other step); selected merge-group card = `primary-container`,
+  matching the batch-select row convention from step 6. Select All/
+  None and the footer's Reset Circuit Breaker/Clear Cache became plain
+  `text-primary hover:underline` text buttons (they were never meant to
+  be prominent CTAs).
+  **Also fixed the two count-in-label loose ends flagged back in step
+  8** (`"tag (N)"` built as one glued string instead of a separate
+  trailing number): the purge-sample chips here, and — found still
+  unfixed while re-checking — the Topics tab's "AI Suggestions (N)"
+  header from step 14, missed there because that step's focus was the
+  visual pass, not this specific historical follow-up. Both now split
+  label and count into two elements, matching the Starred-button fix.
+  **Checked against the mobile flex-row gotcha**: the purge-threshold
+  and AI-merge-controls rows already had `flex-wrap`, so no input here
+  can reproduce the steps 11/13 squeeze.
 - [ ] **16. Import/Export tab** (2j) — OPML + Mímir, incl. "unstar all".
 - [ ] **17. Status tab.**
 
