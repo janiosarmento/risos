@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913a';</script>
+    <script>var APP_VERSION = '20260913b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1172,7 +1172,7 @@
                      viewports rather than a second, mobile-only markup block. 28px dialog
                      radius and surface-container-high fill match the confirm modal (step 8). -->
                 <div
-                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl w-full max-w-4xl max-h-[90vh] md:max-h-[80vh] flex flex-col"
+                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl w-full max-w-4xl min-w-0 h-[90vh] md:h-[80vh] flex flex-col"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="settings-dialog-title"
@@ -1186,9 +1186,13 @@
                     </div>
 
                     <!-- Nav rail + content -->
-                    <div class="flex flex-col md:flex-row flex-1 min-h-0">
-                        <!-- Nav rail: horizontal pill row on mobile, vertical rail on md+ -->
-                        <nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible p-2 md:p-3 md:w-[200px] md:flex-none border-b md:border-b-0 md:border-r border-[var(--md-outline-variant)]">
+                    <div class="flex flex-col md:flex-row flex-1 min-h-0 min-w-0">
+                        <!-- Nav rail: horizontal pill row on mobile, vertical rail on md+. min-w-0 keeps
+                             the row's own intrinsic (unwrapped) width from forcing the whole dialog
+                             wider than the screen — without it, a flex item's default min-width:auto
+                             defeats overflow-x-auto and the row just bleeds past the viewport instead
+                             of scrolling within itself. -->
+                        <nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible p-2 md:p-3 md:w-[200px] md:flex-none min-w-0 border-b md:border-b-0 md:border-r border-[var(--md-outline-variant)]">
                             <button
                                 @click="settingsTab = 'categories'"
                                 class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"

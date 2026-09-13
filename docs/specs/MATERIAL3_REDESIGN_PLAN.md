@@ -253,6 +253,19 @@ things in one commit.
   **Deliberately untouched**: every tab's own content (categories/feeds
   lists, AI form, topics, general toggles, OPML, status) — still on the
   old gray-100/blue-600 palette, that's steps 12–17, one tab at a time.
+  **Follow-up same day (mobile bugs, user-caught)**: two issues on the
+  phone-width nav rail —
+  1. The nav `<nav>` row is a flex item with no `min-w-0`, so its default
+     `min-width: auto` (its unwrapped, all-7-pills content width) beat
+     `overflow-x-auto`: instead of scrolling within itself, it forced the
+     whole dialog wider than the screen, pushing later pills off-screen.
+     Added `min-w-0` to the `<nav>` (and defensively to the dialog root).
+  2. The dialog used `max-h-*`, so it shrank to fit each tab's content —
+     switching from a short tab (Categories) to a tall one (AI, Feeds)
+     visibly resized/shifted the whole modal. Changed `max-h-[90vh] md:
+     max-h-[80vh]` to a fixed `h-[90vh] md:h-[80vh]` so the shell is
+     always full-size regardless of which tab is open; only the content
+     pane's own `overflow-y-auto` should ever scroll now, never the shell.
 - [ ] **12. AI tab** — mockup's fields (Jano secret, model, circuit breaker,
   toggles) plus the gaps: background-job config, prompts, curation engine.
 - [ ] **13. Categories/Feeds tab** — incl. feed↔category drag-and-drop.

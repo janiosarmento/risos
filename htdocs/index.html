@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913a">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913a">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913a">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913b">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913b">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913b">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913a">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913b">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913a">
+    <link rel="manifest" href="/manifest.json?v=20260913b">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913a"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913a"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913a"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913a"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913a in all ?v= below -->
-    <script>var APP_VERSION = '20260913a';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913a">
+    <script src="/static/vendor/marked.min.js?v=20260913b"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913b"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913b"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913b"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913b in all ?v= below -->
+    <script>var APP_VERSION = '20260913b';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913b">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913a"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913a"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913a"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913a"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913a"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913a"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913a"></script>
-    <script defer src="/static/js/app.js?v=20260913a"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913b"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913b"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913b"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913b"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913b"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913b"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913b"></script>
+    <script defer src="/static/js/app.js?v=20260913b"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1391,7 +1391,7 @@
                      viewports rather than a second, mobile-only markup block. 28px dialog
                      radius and surface-container-high fill match the confirm modal (step 8). -->
                 <div
-                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl w-full max-w-4xl max-h-[90vh] md:max-h-[80vh] flex flex-col"
+                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl w-full max-w-4xl min-w-0 h-[90vh] md:h-[80vh] flex flex-col"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="settings-dialog-title"
@@ -1405,9 +1405,13 @@
                     </div>
 
                     <!-- Nav rail + content -->
-                    <div class="flex flex-col md:flex-row flex-1 min-h-0">
-                        <!-- Nav rail: horizontal pill row on mobile, vertical rail on md+ -->
-                        <nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible p-2 md:p-3 md:w-[200px] md:flex-none border-b md:border-b-0 md:border-r border-[var(--md-outline-variant)]">
+                    <div class="flex flex-col md:flex-row flex-1 min-h-0 min-w-0">
+                        <!-- Nav rail: horizontal pill row on mobile, vertical rail on md+. min-w-0 keeps
+                             the row's own intrinsic (unwrapped) width from forcing the whole dialog
+                             wider than the screen — without it, a flex item's default min-width:auto
+                             defeats overflow-x-auto and the row just bleeds past the viewport instead
+                             of scrolling within itself. -->
+                        <nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible p-2 md:p-3 md:w-[200px] md:flex-none min-w-0 border-b md:border-b-0 md:border-r border-[var(--md-outline-variant)]">
                             <button
                                 @click="settingsTab = 'categories'"
                                 class="flex items-center gap-2 px-3 py-2 rounded-[24px] text-sm whitespace-nowrap"
