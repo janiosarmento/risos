@@ -500,9 +500,19 @@ things in one commit.
 ## Parked issues (found while redesigning, not part of the redesign itself)
 
 - **AI curation appears broken in prod** (found 2026-09-12, testing step 4).
-  Not investigated — user suspects free-tier OpenRouter model capacity, not
-  a code bug, and asked to park it. Step 4 only touched the curation UI's
-  CSS classes/icons, not `curatePosts()` or the `/posts/curate` endpoint.
+  **Investigated and fixed 2026-09-13** — see own memory entry
+  `risos-curation-not-working` for the full writeup. Short version: nginx
+  only ever logged 3 curate attempts, all inside a ~5-minute window that
+  overlapped two mid-session redeploys; root causes were (1) gunicorn's
+  `--timeout` (120s) shorter than the AI timeout's max (600s) and nginx's
+  `proxy_read_timeout`, so a slow-but-fine AI call got its worker killed
+  mid-request (502) — bumped both to 630s in `install.sh` and live, and
+  (2) an unrelated, much older bug where `alembic/env.py`'s `fileConfig()`
+  silently disabled the whole app's `.info()` logging after every startup
+  since the very first boot in April, which is why even the one
+  genuinely-successful curate request left no server-side trace to
+  diagnose from. Fixed in `backend/app/main.py` + `backend/alembic/
+  env.py`. Curation itself hasn't been re-tried live since the fix.
 
 ## Session log
 
