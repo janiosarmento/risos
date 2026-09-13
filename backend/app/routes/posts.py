@@ -5,6 +5,7 @@ Read, mark as read, content extraction and redirect.
 
 import hashlib
 import io
+import json
 import logging
 import re
 import unicodedata
@@ -24,6 +25,7 @@ from app.dependencies import get_current_user
 from app.models import (
     AISummary,
     Category,
+    CurationCache,
     Feed,
     Post,
     PostTag,
@@ -1047,21 +1049,31 @@ async def curate_starred(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    """Analyze starred posts with AI to identify essential vs redundant."""
-    import logging
-    from app.routes.preferences import get_effective_summary_language
-    from app.services.ai._api import call_llm_json
+    """Find which starred posts are made redundant by others.
 
-    logger = logging.getLogger(__name__)
+    Two passes: a local one that groups posts covering the same ground by
+    tag overlap (see services/curation.py), then an LLM pass that only has
+    to adjudicate those groups. Posts the local pass never grouped never
+    reach the model at all.
+    """
+    from app.routes.preferences import (
+        get_effective_curation_engine,
+        get_effective_summary_language,
+    )
+    from app.services.ai._api import call_llm_json
+    from app.services.curation import find_redundancy_clusters
+
     logger.info("=== CURATE START ===")
 
     language = get_effective_summary_language(db)
     logger.info(f"Language: {language}")
 
-    query = (
-        db.query(Post)
-        .filter(Post.is_starred.is_(True))
-        .options(subqueryload(Post.tags), joinedload(Post.feed))
+    # Only the three columns the analysis actually reads. This used to select
+    # whole Post entities with subqueryload(Post.tags) and joinedload(Post.feed)
+    # attached — neither relationship was ever touched, so both were pure cost
+    # (tags are now loaded once, in bulk, by the clustering pass below).
+    query = db.query(Post.id, Post.title, Post.content_hash).filter(
+        Post.is_starred.is_(True)
     )
 
     context_name = "All Starred"
@@ -1101,10 +1113,6 @@ async def curate_starred(
         if cat_feed_ids:
             query = query.filter(Post.feed_id.in_(cat_feed_ids))
 
-    CURATION_MAX_POSTS = (
-        100  # Hard limit — beyond this, prompt exceeds model context window
-    )
-
     posts = query.order_by(Post.starred_at.desc()).all()
 
     if not posts:
@@ -1119,102 +1127,231 @@ async def curate_starred(
             "summary": "No starred posts found.",
         }
 
-    if len(posts) > CURATION_MAX_POSTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Too many posts for curation ({len(posts)}). Maximum is {CURATION_MAX_POSTS}. Filter by feed or topic to narrow down.",
-        )
+    post_ids = [p.id for p in posts]
+    titles = {p.id: p.title for p in posts}
 
-    # Fetch summaries
+    # Results depend only on what was analyzed, so they memoize on exactly
+    # that. Starring or unstarring anything changes the key, which is why
+    # there is no invalidation call to forget anywhere else in the app.
+    scope_key = hashlib.sha256(
+        json.dumps(
+            {
+                "context": context_name,
+                "language": language,
+                "posts": sorted(post_ids),
+            },
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+
+    cached = (
+        db.query(CurationCache).filter(CurationCache.scope_key == scope_key).first()
+    )
+    if cached:
+        logger.info(
+            "Curation cache hit (%s, %d posts) — no LLM call",
+            context_name,
+            len(post_ids),
+        )
+        return json.loads(cached.result_json)
+
+    # --- Local pass: who could possibly be redundant with whom? -----------
+    # Tag overlap answers this without a model. Everything it does not put in
+    # a group shares no distinguishing subject matter with anything else in
+    # scope, so by definition nothing here covers it, and it needs no LLM
+    # judgement at all. On a 334-post library this leaves ~20 posts to reason
+    # about instead of 334 — and it is what lets this endpoint drop the old
+    # hard 100-post ceiling, since the model's workload now scales with the
+    # number of overlapping groups rather than with library size.
+    clusters, cluster_diag = find_redundancy_clusters(db, post_ids)
+
+    clustered_ids = [pid for c in clusters for pid in c["post_ids"]]
+    clustered_set = set(clustered_ids)
+
+    def _entry(pid: int, **extra) -> dict:
+        return {"post_id": pid, "title": titles.get(pid), **extra}
+
+    # Nothing overlaps: answer entirely from local analysis.
+    if not clusters:
+        logger.info(
+            "Curation: no overlapping groups among %d posts — answered locally, "
+            "no LLM call",
+            len(post_ids),
+        )
+        payload = {
+            "topic": context_name,
+            "total_posts": len(post_ids),
+            "analysis": {
+                "essential": [_entry(pid) for pid in post_ids],
+                "redundant": [],
+                "keep_if_interested": [],
+            },
+            "diagnostics": cluster_diag,
+        }
+        _store_curation_cache(db, scope_key, payload)
+        return payload
+
+    # --- LLM pass: adjudicate only the groups ------------------------------
     content_hashes = [p.content_hash for p in posts if p.content_hash]
     summaries_map = {}
     if content_hashes:
         summaries = (
-            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
+            db.query(AISummary.content_hash, AISummary.one_line_summary)
+            .filter(AISummary.content_hash.in_(content_hashes))
+            .all()
         )
-        summaries_map = {s.content_hash: s for s in summaries}
+        summaries_map = {ch: one_line for ch, one_line in summaries}
 
-    # Build post list for LLM
-    posts_text = []
-    for p in posts:
-        summary = summaries_map.get(p.content_hash) if p.content_hash else None
-        one_line = (
-            summary.one_line_summary
-            if summary
-            else (p.content[:80] if p.content else "")
-        )
-        posts_text.append(
-            f"{p.id}: {one_line}"
-        )
+    hash_by_id = {p.id: p.content_hash for p in posts}
 
-    posts_with_summaries = "\n".join(posts_text)
+    group_blocks = []
+    for idx, cluster in enumerate(clusters, start=1):
+        lines = [
+            f"Group {idx} (these share the tags: "
+            f"{', '.join(cluster['shared_tags'][:8])})"
+        ]
+        for pid in cluster["post_ids"]:
+            one_line = summaries_map.get(hash_by_id.get(pid) or "", "")
+            title = titles.get(pid) or ""
+            lines.append(f"  {pid} | {title}" + (f" — {one_line}" if one_line else ""))
+        group_blocks.append("\n".join(lines))
+
+    groups_text = "\n\n".join(group_blocks)
 
     system_prompt = (
-        "You are a knowledge management assistant helping curate a personal library of saved articles. "
-        "Your job is to identify which articles are essential references, which are redundant, "
-        "and which are situational. Be specific about WHY each article is essential or redundant. "
-        f"IMPORTANT: All 'reason' fields MUST be written in {language}."
+        "You are helping someone prune a personal library of saved articles. "
+        "You are given small groups of articles that were detected as covering "
+        "related subject matter. For each group, decide which articles are "
+        "worth keeping and which are made unnecessary by another article in "
+        "the same group. Being about the same topic is NOT enough to call an "
+        "article redundant — it is redundant only when another listed article "
+        "genuinely covers what it has to offer. "
+        f"IMPORTANT: every 'reason' MUST be written in {language}."
     )
 
-    user_prompt = f"""The user has {len(posts)} starred articles in the topic "{context_name}".
-They want to reduce their starred articles to only the most valuable ones.
+    user_prompt = f"""These groups of saved articles look related to each other:
 
-Here are the articles (with AI-generated summaries):
+{groups_text}
 
-{posts_with_summaries}
+For each article listed above, return one decision:
+- "essential": worth keeping — it covers ground the others in its group do not
+- "redundant": another article in its group covers this one. List which in "covered_by".
+- "situational": overlaps with its group but stays useful in specific cases
 
-Analyze these articles and classify each one:
-- "essential": Must-keep reference — unique information, comprehensive coverage, or foundational
-- "redundant": Information is mostly covered by other articles in this set. Specify which ones.
-- "keep_if_interested": Niche or situational — valuable only for specific use cases
+Only include a "reason" for articles you mark "redundant" or "situational" —
+that is where the user needs to understand your call. Keep each reason to one
+short sentence.
 
-For each article, explain your reasoning in one sentence.
-
-Respond in JSON:
+Respond in JSON, listing every article id shown above exactly once:
 {{
-  "essential": [
-    {{"post_id": 123, "reason": "..."}},
-    ...
-  ],
-  "redundant": [
-    {{"post_id": 456, "reason": "...", "covered_by": [123, 789]}},
-    ...
-  ],
-  "keep_if_interested": [
-    {{"post_id": 321, "reason": "..."}},
-    ...
-  ],
+  "decisions": [
+    {{"post_id": 123, "verdict": "essential"}},
+    {{"post_id": 456, "verdict": "redundant", "covered_by": [123], "reason": "..."}},
+    {{"post_id": 789, "verdict": "situational", "reason": "..."}}
+  ]
 }}"""
 
-    from app.routes.preferences import get_effective_curation_engine
-
     engine = get_effective_curation_engine(db)
-    logger.info(f"Calling curate LLM: engine={engine}, posts={len(posts)}, prompt_size_approx={len(posts_with_summaries)}")
+    logger.info(
+        "Calling curate LLM: engine=%s, %d groups covering %d of %d posts, "
+        "prompt_chars=%d",
+        engine,
+        len(clusters),
+        len(clustered_ids),
+        len(post_ids),
+        len(groups_text),
+    )
     try:
-        result = await call_llm_json(system_prompt, user_prompt, max_tokens=8192, engine=engine)
-        logger.info(f"LLM call succeeded")
+        result = await call_llm_json(
+            system_prompt, user_prompt, max_tokens=4096, engine=engine
+        )
+        logger.info("LLM call succeeded")
     except Exception as e:
         logger.error(f"LLM call failed: {type(e).__name__}: {str(e)}", exc_info=True)
         raise
 
-    # Enrich result with post titles
-    post_map = {p.id: p for p in posts}
-    for category in ["essential", "redundant", "keep_if_interested"]:
-        for item in result.get(category, []):
-            pid = item.get("post_id")
-            if pid and pid in post_map:
-                item["title"] = post_map[pid].title
+    # --- Merge the model's verdicts back with the local analysis ----------
+    essential, redundant, situational = [], [], []
+    decided: set[int] = set()
 
-    logger.info(f"Curation complete: {len(result.get('essential', []))} essential, {len(result.get('redundant', []))} redundant")
-    return {
+    for item in result.get("decisions", []):
+        pid = item.get("post_id")
+        if not isinstance(pid, int) or pid not in clustered_set or pid in decided:
+            continue  # hallucinated, out-of-scope, or duplicate id
+        decided.add(pid)
+        verdict = str(item.get("verdict", "")).lower()
+        reason = item.get("reason") or ""
+        if verdict == "redundant":
+            covered_by = [
+                c for c in (item.get("covered_by") or []) if c in clustered_set
+            ]
+            redundant.append(_entry(pid, reason=reason, covered_by=covered_by))
+        elif verdict in ("situational", "keep_if_interested"):
+            situational.append(_entry(pid, reason=reason))
+        else:
+            essential.append(_entry(pid))
+
+    # A clustered post the model skipped stays in the library: silence is not
+    # grounds for telling someone to drop something.
+    for pid in clustered_ids:
+        if pid not in decided:
+            essential.append(_entry(pid))
+
+    # Everything the local pass never grouped: nothing else in scope covers it.
+    for pid in post_ids:
+        if pid not in clustered_set:
+            essential.append(_entry(pid))
+
+    logger.info(
+        "Curation complete: %d essential, %d redundant, %d situational "
+        "(%d posts analyzed, %d sent to the model)",
+        len(essential),
+        len(redundant),
+        len(situational),
+        len(post_ids),
+        len(clustered_ids),
+    )
+    payload = {
         "topic": context_name,
-        "total_posts": len(posts),
+        "total_posts": len(post_ids),
         "analysis": {
-            "essential": result.get("essential", []),
-            "redundant": result.get("redundant", []),
-            "keep_if_interested": result.get("keep_if_interested", []),
+            "essential": essential,
+            "redundant": redundant,
+            "keep_if_interested": situational,
         },
+        "diagnostics": cluster_diag,
     }
+    _store_curation_cache(db, scope_key, payload)
+    return payload
+
+
+# Keep the memo table from growing without bound; curation runs are rare and
+# only the recent ones are ever read again.
+_CURATION_CACHE_KEEP = 50
+
+
+def _store_curation_cache(db: Session, scope_key: str, payload: dict) -> None:
+    """Persist a curation result, best-effort — a cache write must never be
+    the reason an otherwise successful analysis fails to reach the user."""
+    try:
+        db.add(
+            CurationCache(scope_key=scope_key, result_json=json.dumps(payload))
+        )
+        db.commit()
+        stale = (
+            db.query(CurationCache.id)
+            .order_by(CurationCache.created_at.desc())
+            .offset(_CURATION_CACHE_KEEP)
+            .all()
+        )
+        if stale:
+            db.query(CurationCache).filter(
+                CurationCache.id.in_([row.id for row in stale])
+            ).delete(synchronize_session=False)
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.warning("Could not cache curation result: %s", e)
 
 
 @router.post("/batch-unstar")

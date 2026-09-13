@@ -200,6 +200,23 @@ class AISummary(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class CurationCache(Base):
+    """Memoized curation results, keyed by exactly what was analyzed.
+
+    `scope_key` hashes the filter context, the summary language, and the
+    sorted set of post ids in scope, so starring or unstarring anything
+    produces a different key and the stale entry is simply never read again
+    — there is no invalidation to forget to call.
+    """
+
+    __tablename__ = "curation_cache"
+
+    id = Column(Integer, primary_key=True)
+    scope_key = Column(Text, unique=True, nullable=False)
+    result_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class SummaryQueue(Base):
     __tablename__ = "summary_queue"
 

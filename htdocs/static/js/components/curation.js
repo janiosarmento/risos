@@ -13,12 +13,10 @@ const curationMixin = {
     curatingPosts: false,
 
     // Run AI curation on starred posts
+    // No size warning: the backend groups posts locally and only sends small
+    // clusters of possible overlaps to the model, so the count no longer maps
+    // to context-window pressure.
     async curatePosts() {
-        // Warn if too many posts for AI context window
-        if (this.starredCount > CURATION_WARN_THRESHOLD) {
-            if (!await this.showConfirm(this.t('curation.tooManyPosts').replace('{count}', this.starredCount))) return;
-            this.confirmDone();
-        }
         this.curatingPosts = true;
         this.curationResults = null;
 

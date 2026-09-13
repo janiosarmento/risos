@@ -4,7 +4,7 @@
 
 // APP_VERSION is defined in index.html (single source of truth for cache busting)
 const API_BASE = '/api';
-const CURATION_WARN_THRESHOLD = 50; // Posts beyond this trigger a confirmation before AI curation
+const STARRED_FEED_WARN_THRESHOLD = 50; // Starred posts in one feed before nudging the user
 
 function app() {
     return {
@@ -1298,7 +1298,7 @@ function app() {
             // Warn if starring into a feed that already has many starred posts
             if (!post.is_starred) {
                 const feed = this.feeds.find(f => f.id === post.feed_id);
-                if (feed && (feed.starred_count || 0) >= CURATION_WARN_THRESHOLD) {
+                if (feed && (feed.starred_count || 0) >= STARRED_FEED_WARN_THRESHOLD) {
                     if (!await this.showConfirm(
                         this.t('starring.tooManyStarred')
                             .replace('{count}', feed.starred_count)
