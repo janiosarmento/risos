@@ -307,6 +307,15 @@ things in one commit.
   to not apply here** — that drag-and-drop (`onFeedDragStart`) lives in
   the main sidebar's feed tree, already restyled in step 5, not in this
   Settings tab; same kind of stale-note-vs-reality gap as steps 9/10.
+  **Follow-up same day (mobile bug, user-caught)**: the Add Feed row
+  (URL input + category select + Add button, all `flex gap-2` in one
+  line) had the same shape as the nav-rail bug from step 11 — the
+  select's intrinsic width and the button's `min-w-[120px]` don't
+  shrink, so the URL input (the only item with `min-w-0`) was squeezed
+  down to a couple of pixels on a phone. Changed the row to
+  `flex flex-col sm:flex-row` — each control is full-width, stacked, on
+  narrow screens, and the original single-row layout returns at `sm:`
+  and up.
 - [ ] **14. Topics tab** — incl. tag↔topic drag-and-drop, AI topic/tag
   suggestions.
 - [ ] **15. General tab** — the ~15 numeric/toggle preferences.

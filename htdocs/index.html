@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913d">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913d">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913d">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913e">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913e">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913e">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913d">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913e">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913d">
+    <link rel="manifest" href="/manifest.json?v=20260913e">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913d"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913d"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913d"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913d"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913d in all ?v= below -->
-    <script>var APP_VERSION = '20260913d';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913d">
+    <script src="/static/vendor/marked.min.js?v=20260913e"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913e"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913e"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913e"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913e in all ?v= below -->
+    <script>var APP_VERSION = '20260913e';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913e">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913d"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913d"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913d"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913d"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913d"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913d"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913d"></script>
-    <script defer src="/static/js/app.js?v=20260913d"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913e"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913e"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913e"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913e"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913e"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913e"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913e"></script>
+    <script defer src="/static/js/app.js?v=20260913e"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1563,16 +1563,20 @@
                         <div x-show="settingsTab === 'feeds'">
                             <!-- Add Feed -->
                             <form @submit.prevent="createFeed()" class="mb-4 space-y-2">
-                                <div class="flex gap-2">
+                                <!-- flex-col below sm: the select's intrinsic (content-based) width and
+                                     the button's min-w-[120px] don't shrink, so in one row on a narrow
+                                     phone the URL input — the only flexible item — got squeezed down to
+                                     almost nothing. Stacked, each control gets the full row width. -->
+                                <div class="flex flex-col sm:flex-row gap-2">
                                     <input
                                         type="url"
                                         x-model="newFeed.url"
                                         :placeholder="t('feeds.urlPlaceholder')"
-                                        class="flex-1 min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
+                                        class="w-full sm:flex-1 sm:min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                     >
                                     <select
                                         x-model="newFeed.category_id"
-                                        class="px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
+                                        class="w-full sm:w-auto px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                         required
                                     >
                                         <option value="" disabled selected x-text="t('feeds.selectCategory')"></option>
@@ -1582,7 +1586,7 @@
                                     </select>
                                     <button
                                         type="submit"
-                                        class="px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors whitespace-nowrap min-w-[120px]"
+                                        class="w-full sm:w-auto px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors whitespace-nowrap sm:min-w-[120px]"
                                         :disabled="savingFeed || !newFeed.url.trim() || !newFeed.category_id"
                                     >
                                         <span x-show="!savingFeed" x-text="t('feeds.add')"></span>

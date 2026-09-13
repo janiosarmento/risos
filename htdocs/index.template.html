@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913d';</script>
+    <script>var APP_VERSION = '20260913e';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1344,16 +1344,20 @@
                         <div x-show="settingsTab === 'feeds'">
                             <!-- Add Feed -->
                             <form @submit.prevent="createFeed()" class="mb-4 space-y-2">
-                                <div class="flex gap-2">
+                                <!-- flex-col below sm: the select's intrinsic (content-based) width and
+                                     the button's min-w-[120px] don't shrink, so in one row on a narrow
+                                     phone the URL input — the only flexible item — got squeezed down to
+                                     almost nothing. Stacked, each control gets the full row width. -->
+                                <div class="flex flex-col sm:flex-row gap-2">
                                     <input
                                         type="url"
                                         x-model="newFeed.url"
                                         :placeholder="t('feeds.urlPlaceholder')"
-                                        class="flex-1 min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
+                                        class="w-full sm:flex-1 sm:min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                     >
                                     <select
                                         x-model="newFeed.category_id"
-                                        class="px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
+                                        class="w-full sm:w-auto px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                         required
                                     >
                                         <option value="" disabled selected x-text="t('feeds.selectCategory')"></option>
@@ -1363,7 +1367,7 @@
                                     </select>
                                     <button
                                         type="submit"
-                                        class="px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors whitespace-nowrap min-w-[120px]"
+                                        class="w-full sm:w-auto px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors whitespace-nowrap sm:min-w-[120px]"
                                         :disabled="savingFeed || !newFeed.url.trim() || !newFeed.category_id"
                                     >
                                         <span x-show="!savingFeed" x-text="t('feeds.add')"></span>
