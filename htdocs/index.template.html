@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913n';</script>
+    <script>var APP_VERSION = '20260913o';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -854,7 +854,12 @@
                                         <template x-if="post.translated_title">
                                             <p class="font-semibold italic line-clamp-2 mb-1" :class="post.is_read ? 'text-[var(--md-on-surface-variant)]' : 'text-[var(--md-on-surface)]'" x-text="post.translated_title"></p>
                                         </template>
-                                        <div class="text-sm text-gray-500 flex items-center gap-2" :class="{'mt-1': !post.translated_title}">
+                                        <!-- flex-wrap + the basis-full group below: on a phone the
+                                             icons and badges leave the feed name a column a few
+                                             characters wide, and it wraps one word per line. Giving
+                                             it the whole row instead costs one line and saves
+                                             several. -->
+                                        <div class="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5" :class="{'mt-1': !post.translated_title}">
                                             <!-- Star icon -->
                                             <button
                                                 @click.stop="toggleStar(post)"
@@ -902,9 +907,11 @@
                                                 ></span>
                                                 <span x-text="getCurationBadge(post.id)?.classification === 'essential' ? t('curation.essential') : getCurationBadge(post.id)?.classification === 'redundant' ? t('curation.redundant') : t('curation.situational')"></span>
                                             </span>
-                                            <span x-text="getFeedTitle(post.feed_id)" @click.stop="navigateToFeed(post.feed_id, post.id)" class="cursor-pointer hover:underline"></span>
-                                            <span>-</span>
-                                            <span x-text="formatDate(post.published_at || post.fetched_at)"></span>
+                                            <span class="flex items-center gap-2 min-w-0 basis-full md:basis-auto">
+                                                <span x-text="getFeedTitle(post.feed_id)" @click.stop="navigateToFeed(post.feed_id, post.id)" class="cursor-pointer hover:underline truncate"></span>
+                                                <span class="flex-shrink-0">-</span>
+                                                <span class="flex-shrink-0" x-text="formatDate(post.published_at || post.fetched_at)"></span>
+                                            </span>
                                         </div>
                                         <p
                                             x-show="post.one_line_summary && !post.one_line_summary.toLowerCase().includes('sem artigo')"
