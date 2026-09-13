@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912x';</script>
+    <script>var APP_VERSION = '20260912y';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -752,10 +752,23 @@
                             </div>
                         </template>
 
-                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim()">
+                        <!-- "Caught up" (task_alt, primary) only when this view is actually
+                             unread-only — mirrors loadPosts()'s own unread_only logic (starred
+                             never filters by read state; suggested does only if postFilter is
+                             'unread' too). Everything else gets the neutral empty message —
+                             this text used to show unconditionally, wrongly claiming "no
+                             unread posts" for e.g. an empty Suggested or Starred view. -->
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && filter !== 'starred' && postFilter === 'unread'">
                             <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
                                 <span class="msym text-[40px] text-[var(--md-primary)]">task_alt</span>
                                 <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPosts')"></p>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && !(filter !== 'starred' && postFilter === 'unread')">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">inbox</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPostsGeneric')"></p>
                             </div>
                         </template>
 
