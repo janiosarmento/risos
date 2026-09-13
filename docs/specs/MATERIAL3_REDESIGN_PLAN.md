@@ -412,7 +412,30 @@ things in one commit.
   mobile flex-row gotcha; neither had a squeeze risk since no sibling
   carries a fixed min-width, but wrapping is free insurance for long
   translated button labels).
-- [ ] **17. Status tab.**
+- [x] **17. Status tab.** The LLM-queue headline card is now one
+  full-tonal `primary-container` block (dropped its decorative corner
+  gradient — no `--md-*` equivalent for it, and it wasn't in the
+  mockup, just leftover flourish). The 6-tile metrics grid lost its
+  per-tile rainbow badges (blue/purple/emerald/orange — no home in the
+  app's 5-role palette and never an established per-item color like
+  star's amber, which stayed): all now plain `surface-container-
+  highest` icon chips on `surface-container` tiles, **except Starred**,
+  kept amber — that one IS an established app-wide color (steps 6/8/14).
+  Circuit-breaker/scheduler status dots and their text are deliberately
+  left on plain green/red — a live on/off indicator, not a button or
+  badge, same "no M3 role for a transient status color" reasoning as
+  the toast and OPML-result colors (steps 8/16). The health-warning box
+  **did** move to `error-container`, unlike those — it's a persistent
+  banner, not a transient message, so the error role actually fits.
+  Reset/Delete-summaries/Refresh buttons are outlined pills (primary
+  for neutral actions, error for the destructive one), matching every
+  other settings tab. Translated several Portuguese-only code comments
+  found while rewriting this block (`Destaque Principal`, `Grid de
+  Métricas Gerais`, `Sistema e IA`, `Ação Manual de Atualização das
+  Métricas`, etc.) to English, per the standing "all code in English"
+  rule — pre-existing, unrelated to the redesign itself, but this step
+  touched every line they were on anyway.
+  **All of Settings (steps 11–17) is now done.**
 
 ### Cross-cutting, last
 - [ ] **18. Batch-select toolbar** + ZIP export.
