@@ -170,9 +170,25 @@ things in one commit.
   colors (yellow/teal/blue) deliberately left alone — established
   per-action color coding from risos-visual-cohesion-pass, not part of
   the M3 neutral+primary/secondary/tertiary/error palette.
-- [ ] **7. Post detail / reading pane** — AI summary as a full
-  primary-container panel + original content side (2c/2d). Chrome only
-  (buttons, panel), not the Assistant modal's behavior.
+- [x] **7. Post detail / reading pane** (2c/2d) — kept the real app's
+  vertical stack (summary above, original below), not the mockup's
+  side-by-side grid: this is an inline accordion row in the post list, not
+  a dedicated full-screen view, and a layout restructure is out of scope
+  for a skin pass. AI summary panel is now a single flat
+  `--md-primary-container` fill (header+body, no internal divider) per the
+  handoff's "one full-tonal-fill block" rule; its small buttons use a
+  black/white state-layer overlay (`bg-black/5 dark:bg-white/10`, etc.)
+  since the `--md-*` tokens are plain hex and don't support Tailwind's
+  `/opacity` modifier. Assistant button is now the one filled-primary CTA
+  in the action row (was a soft purple chip); original-link/export are
+  outlined pills. Skip-summary's active state keeps error-container even
+  inside the primary-container panel, for contrast.
+  **Also finished the Roboto-everywhere decision from step 1**: dropped
+  Literata from `.post-content`/`.summary-content` (the article and AI
+  summary body text) — the option the user picked back then ("Roboto para
+  tudo") covered body text too, not just titles. Removed `.font-reading`,
+  both Literata `@font-face` rules, and the two vendored woff2 files —
+  nothing in the app references Literata anymore.
 - [ ] **8. Buttons/controls sweep** — catch anything left in the old style
   outside the screens already redone (filled/outlined/FAB/switch/chip).
 - [ ] **9. Mobile layout** (2g) — bottom nav + narrow list/detail.

@@ -21,34 +21,17 @@
    literal text because a re-subsetted font silently didn't reach the
    browser. */
 
-/* Literata (SIL Open Font License), latin subset only — covers pt-BR and
-   en-US, which is all this app's content needs. Variable font: one file
-   per style covers the whole weight range used by .font-reading. */
-@font-face {
-    font-family: 'Literata';
-    font-style: normal;
-    font-weight: 200 900;
-    font-display: swap;
-    src: url('/static/fonts/literata-latin-normal.woff2?v=1') format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-@font-face {
-    font-family: 'Literata';
-    font-style: italic;
-    font-weight: 200 900;
-    font-display: swap;
-    src: url('/static/fonts/literata-latin-italic.woff2?v=1') format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* Roboto (Apache License 2.0), latin subset only, same self-hosting
-   rationale as Literata above. Material 3 redesign (docs/specs/
-   MATERIAL3_REDESIGN_PLAN.md) step 1: base typeface for both headings and
-   body — Google Sans, used in the design handoff, is proprietary to Google
-   and not available to self-host, so this app's M3 baseline uses Roboto
-   throughout instead (the standard substitution for non-Google M3 UIs).
-   One variable file covers the whole weight range, like Literata's. */
+/* Roboto (Apache License 2.0), latin subset only — self-hosted, no
+   external font CDN request on every page load. Material 3 redesign
+   (docs/specs/MATERIAL3_REDESIGN_PLAN.md) step 1: base typeface for both
+   headings and body — Google Sans, used in the design handoff, is
+   proprietary to Google and not available to self-host, so this app's M3
+   baseline uses Roboto throughout instead (the standard substitution for
+   non-Google M3 UIs). Step 7 finished the job by dropping the serif
+   (Literata) that used to render post titles/summary/article body —
+   that font, and its .font-reading class, are gone from this app as of
+   step 7; if you're looking for them, check git history before this point.
+   One variable file covers the whole weight range. */
 @font-face {
     font-family: 'Roboto';
     font-style: normal;
@@ -218,18 +201,8 @@
     text-decoration: underline;
 }
 
-/* Reading typography: post titles + summary/original content render in a
-   webfont serif (see the <link> in index.template.html's <head>), to
-   visually separate "text to read" from the app's own sans-serif chrome.
-   Georgia is just a safety-net fallback for the rare case the webfont
-   fails to load — deliberately no 'Times New Roman' in the chain. */
-.font-reading {
-    font-family: 'Literata', Georgia, serif;
-}
-
 /* Post content - original article */
 .post-content {
-    font-family: 'Literata', Georgia, serif;
     line-height: 1.7;
     overflow-x: auto;
     overflow-wrap: break-word;
@@ -271,7 +244,6 @@
 
 /* Summary content - AI-generated markdown */
 .summary-content {
-    font-family: 'Literata', Georgia, serif;
     overflow-wrap: break-word;
     word-break: break-word;
     max-width: 100%;
