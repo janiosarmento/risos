@@ -91,6 +91,24 @@ shows a found/not-found indicator, never a masked value.
    shipped — caught by the user, fixed same session.
 4. Bump `APP_VERSION` as usual, assemble, commit, deploy.
 
+## Mobile flex-row gotcha (watch for this in every remaining step)
+
+Found twice already (step 11's nav rail, step 13's Add Feed row): a
+`flex` row with one flexible item (`flex-1 min-w-0` — an input, usually)
+next to one or more items that don't shrink (a `<select>` sized to its
+longest option, a button with `min-w-[Npx]`/`whitespace-nowrap`). On a
+phone the non-shrinking siblings claim their full width first and the
+lone flexible item gets squeezed to a sliver — technically not
+overflowing anything, so it's easy to miss without testing at phone
+width. Checked every other `<input>`/`<select>`/button row in the
+current template (2026-09-13) and found no other live instance, but
+steps 14+ still touch several forms with the same shape (topic rename,
+tag-merge canonical rename, tag-suggestion search) — when restyling
+each one, either give the row `flex flex-col sm:flex-row` (stack on
+mobile, row from `sm:` up — the step 13 fix) or drop the fixed
+min-width/no-shrink constraint so the flexible item can actually win
+space back.
+
 ## How to work through this list
 
 One step at a time. Each step is small enough to view running (`/run`) and
