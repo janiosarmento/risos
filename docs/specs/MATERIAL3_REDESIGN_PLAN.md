@@ -438,7 +438,23 @@ things in one commit.
   **All of Settings (steps 11–17) is now done.**
 
 ### Cross-cutting, last
-- [ ] **18. Batch-select toolbar** + ZIP export.
+- [x] **18. Batch-select toolbar** + ZIP export. The ZIP-export button
+  (`exportSelection()`, "Download selected") and the rest of the
+  curation-results action row were already done — that whole panel was
+  step 4's scope, not noticed as covering this until now. What was
+  still on the old palette was specifically the **selection toolbar**
+  itself (Select All / Clear / "N selected" / Mark as Read, shown while
+  `selectMode` is on): Select All and Clear are now plain text buttons
+  (`text-primary hover:underline` / `on-surface-variant`), the count
+  text is `on-surface-variant`, and Mark as Read — previously
+  `bg-green-600`, this app's one remaining green button — is now the
+  filled-primary pill, same no-green-outside-the-5-roles rule as every
+  other step. The per-card selection checkbox (step 6) and the whole
+  curation panel (step 4) were already correct, confirmed by reading
+  rather than assumed. Also translated two Portuguese-only comments
+  found in the same post-card block while touching it (`Checkbox para
+  seleção`, `Indicador de não lido`) — pre-existing, unrelated to this
+  step, fixed in passing since already looking at those lines.
 - [ ] **19. Assistant modal** (related posts).
 - [ ] **20. Keyboard-shortcut affordances**, if any visual indicator turns
   out to be needed (probably not).

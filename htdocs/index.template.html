@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913i';</script>
+    <script>var APP_VERSION = '20260913j';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -656,22 +656,22 @@
                                 </button>
                             </div>
                         </div>
-                        <!-- Selection toolbar -->
+                        <!-- Selection toolbar (M3 redesign step 18) -->
                         <div x-show="selectMode" class="mt-3 flex items-center gap-3 text-sm">
                             <button
                                 @click="selectAllVisible()"
-                                class="text-blue-500 hover:text-blue-400"
+                                class="text-[var(--md-primary)] hover:underline"
                                 x-text="t('posts.selectAll')"
                             ></button>
                             <button
                                 @click="deselectAll()"
-                                class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                class="text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                 x-text="t('posts.clear')"
                             ></button>
-                            <span class="text-gray-500" x-text="selectedPosts.size + ' ' + t('posts.selected')"></span>
+                            <span class="text-[var(--md-on-surface-variant)]" x-text="selectedPosts.size + ' ' + t('posts.selected')"></span>
                             <button
                                 @click="markSelectedAsRead()"
-                                class="ml-auto px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white"
+                                class="ml-auto px-3 py-1 rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 transition-colors"
                                 :disabled="selectedPosts.size === 0"
                                 :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
                             ><span x-text="t('posts.markAsRead')"></span><span class="hidden lg:inline opacity-60"> (M)</span></button>
@@ -813,7 +813,7 @@
                                 :data-index="index"
                             >
                                 <div class="flex items-start gap-3">
-                                    <!-- Checkbox para selecao -->
+                                    <!-- Selection checkbox -->
                                     <div
                                         x-show="selectMode"
                                         class="flex-shrink-0 mt-1"
@@ -826,7 +826,7 @@
                                             <span x-show="isPostSelected(post.id)" class="msym text-[12px] text-[var(--md-on-primary)]">check</span>
                                         </div>
                                     </div>
-                                    <!-- Indicador de nao lido -->
+                                    <!-- Unread indicator -->
                                     <div
                                         x-show="!selectMode"
                                         class="w-2 h-2 rounded-full mt-2 flex-shrink-0"
