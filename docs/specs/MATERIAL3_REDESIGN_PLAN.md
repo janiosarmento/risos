@@ -334,8 +334,42 @@ things in one commit.
   `flex flex-col sm:flex-row` — each control is full-width, stacked, on
   narrow screens, and the original single-row layout returns at `sm:`
   and up.
-- [ ] **14. Topics tab** — incl. tag↔topic drag-and-drop, AI topic/tag
-  suggestions.
+- [x] **14. Topics tab** — every element (AI-suggest header button,
+  new-topic form, topic-card list, tag chips, inline tag-search
+  autocomplete) moved to `--md-*` tokens. AI suggestion review panel
+  is now one full-tonal `primary-container` fill, same "one block, no
+  internal divider" rule as the post-detail summary panel (step 7);
+  Accept is a filled-primary pill, Accept All an inverted
+  on-primary-container pill, Dismiss a translucent black/white overlay
+  (no plain "on-primary-container-container" token exists, so it uses
+  the same `bg-black/10 dark:bg-white/10` state-layer trick as step 7's
+  panel buttons). Individual suggestion cards inside it are a plain
+  `--md-surface` card so they read as a level above the tinted panel.
+  Topic-card drag-over state recolored move = primary (blue, was blue),
+  copy = **secondary**, not tertiary — the handoff only ever pairs
+  `--md-tertiary-container` with an FAB background, never defines an
+  `on-tertiary(-container)` text token, so tertiary had no safe text
+  pairing to use here; secondary already had both container + on-color.
+  Rename/delete on a topic card moved from a plain `edit`/`&times;`
+  text glyph to icon buttons (`.msym edit`/`delete`), matching steps
+  6/8/13's row-action convention — same click handlers. Tag-chip and
+  suggestion-chip removal glyphs (small inline `&times;` inside a chip)
+  were deliberately left as literal glyphs, just recolored
+  (`hover:text-[var(--md-error)]`) — matching the established
+  convention for inline chip-remove buttons elsewhere in the app (the
+  active-filter chips from step 8), which the code already keeps as
+  plain glyphs rather than icon spans.
+  **Checked against the mobile flex-row gotcha** (noted after step 13):
+  every input in a `flex` row here (new-topic name, inline topic
+  rename, tag-search box) got `min-w-0`, and none of their sibling
+  buttons carry a fixed min-width or `whitespace-nowrap`, so none of
+  them can reproduce the step 11/13 squeeze — confirmed by inspection,
+  not just applying the fix by rote.
+  **The plan's own "incl. tag↔topic drag-and-drop, AI topic/tag
+  suggestions" note was already fully implemented** (drag-and-drop
+  between topic cards, `suggestTopics()`/`suggestTagsForTopic()`) —
+  same kind of stale-note-vs-reality gap as steps 9/10/13; this step
+  only reskinned it, no interaction changed.
 - [ ] **15. General tab** — the ~15 numeric/toggle preferences.
 - [ ] **16. Import/Export tab** (2j) — OPML + Mímir, incl. "unstar all".
 - [ ] **17. Status tab.**

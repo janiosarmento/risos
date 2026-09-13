@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913e';</script>
+    <script>var APP_VERSION = '20260913f';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1866,12 +1866,12 @@
                         <!-- Topics Tab -->
                         <div x-show="settingsTab === 'topics'" class="space-y-4">
                             <!-- AI Suggestion -->
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-medium" x-text="t('settings.topics.title')"></h3>
+                            <div class="flex items-center justify-between gap-2">
+                                <h3 class="text-sm font-medium text-[var(--md-on-surface)]" x-text="t('settings.topics.title')"></h3>
                                 <button
                                     @click="suggestTopics()"
                                     :disabled="suggestingTopics"
-                                    class="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
+                                    class="px-3 py-1.5 text-xs rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 disabled:opacity-50 flex items-center gap-1 transition-colors flex-shrink-0"
                                 >
                                     <span x-show="suggestingTopics" class="msym text-[12px] animate-spin">progress_activity</span>
                                     <span x-show="!suggestingTopics" class="msym text-[12px]">auto_awesome</span>
@@ -1879,50 +1879,51 @@
                                 </button>
                             </div>
 
-                            <!-- AI Suggestion Review -->
+                            <!-- AI Suggestion Review: one full-tonal-fill primary-container block,
+                                 same rule as the post-detail AI summary panel (step 7). -->
                             <template x-if="topicSuggestions">
-                                <div class="space-y-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium text-purple-700 dark:text-purple-300" x-text="t('settings.topics.aiSuggestions') + ' (' + (topicSuggestions.suggestions?.length || 0) + ')'"></span>
-                                        <div class="flex gap-2">
+                                <div class="space-y-3 p-3 bg-[var(--md-primary-container)] rounded-2xl">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-medium text-[var(--md-on-primary-container)]" x-text="t('settings.topics.aiSuggestions') + ' (' + (topicSuggestions.suggestions?.length || 0) + ')'"></span>
+                                        <div class="flex gap-2 flex-shrink-0">
                                             <button
                                                 @click="acceptAllTopicSuggestions()"
-                                                class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                class="px-2 py-1 text-xs rounded-full bg-[var(--md-on-primary-container)] text-[var(--md-primary-container)] hover:opacity-90"
                                                 x-text="t('settings.topics.acceptAll')"
                                             ></button>
                                             <button
                                                 @click="topicSuggestions = null"
-                                                class="px-2 py-1 text-xs bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500"
+                                                class="px-2 py-1 text-xs rounded-full bg-black/10 dark:bg-white/10 text-[var(--md-on-primary-container)] hover:bg-black/15 dark:hover:bg-white/15"
                                                 x-text="t('settings.topics.dismiss')"
                                             ></button>
                                         </div>
                                     </div>
                                     <template x-for="(suggestion, idx) in topicSuggestions.suggestions" :key="idx">
-                                        <div class="bg-white dark:bg-gray-800 rounded p-3 border border-purple-200 dark:border-purple-600">
-                                            <div class="flex items-center justify-between mb-2">
+                                        <div class="bg-[var(--md-surface)] rounded-lg p-3">
+                                            <div class="flex items-center justify-between mb-2 gap-2">
                                                 <input
                                                     type="text"
                                                     x-model="suggestion.name"
-                                                    class="text-sm font-medium bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-purple-500 outline-none px-1 py-0.5"
+                                                    class="flex-1 min-w-0 text-sm font-medium bg-transparent border-b border-[var(--md-outline)] focus:border-[var(--md-primary)] outline-none px-1 py-0.5 text-[var(--md-on-surface)]"
                                                 />
                                                 <button
                                                     @click="acceptTopicSuggestion(suggestion)"
-                                                    class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                    class="px-2 py-1 text-xs rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 flex-shrink-0"
                                                     x-text="t('settings.topics.accept')"
                                                 ></button>
                                             </div>
                                             <div class="flex flex-wrap gap-1">
                                                 <template x-for="(tag, tidx) in suggestion.tags" :key="tidx">
-                                                    <span class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                                                    <span class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-lg bg-[var(--md-primary-container)] text-[var(--md-on-primary-container)]">
                                                         <span x-text="tag"></span>
-                                                        <button @click="suggestion.tags.splice(tidx, 1)" class="hover:text-red-500">&times;</button>
+                                                        <button @click="suggestion.tags.splice(tidx, 1)" class="hover:text-[var(--md-error)]">&times;</button>
                                                     </span>
                                                 </template>
                                             </div>
                                         </div>
                                     </template>
                                     <template x-if="topicSuggestions.orphan_tags?.length > 0">
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div class="text-xs text-[var(--md-on-primary-container)] opacity-80">
                                             <span x-text="t('settings.topics.orphanTags') + ': '"></span>
                                             <span x-text="topicSuggestions.orphan_tags.join(', ')"></span>
                                         </div>
@@ -1937,11 +1938,11 @@
                                     x-model="newTopicName"
                                     @keydown.enter="if (newTopicName.trim()) { createTopic(newTopicName.trim()); newTopicName = ''; }"
                                     :placeholder="t('settings.topics.newTopicPlaceholder')"
-                                    class="flex-1 text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    class="flex-1 min-w-0 text-sm px-3 py-1.5 border border-[var(--md-outline)] rounded-lg bg-[var(--md-surface)] text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                 />
                                 <button
                                     @click="if (newTopicName.trim()) { createTopic(newTopicName.trim()); newTopicName = ''; }"
-                                    class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    class="px-3 py-1.5 text-xs rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 flex-shrink-0"
                                     x-text="t('settings.topics.create')"
                                 ></button>
                             </div>
@@ -1950,17 +1951,17 @@
                             <div class="space-y-2">
                                 <template x-for="topic in topics" :key="topic.id">
                                     <div
-                                        class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border-2 transition-colors"
+                                        class="bg-[var(--md-surface-container)] rounded-2xl p-3 border-2 transition-colors"
                                         :class="dragOverTopicId === topic.id
                                             ? (dragTagCopy
-                                                ? 'border-green-400 bg-green-50 dark:bg-green-900/20'
-                                                : 'border-blue-400 bg-blue-50 dark:bg-blue-900/20')
-                                            : 'border-gray-200 dark:border-gray-600'"
+                                                ? 'border-[var(--md-secondary)] bg-[var(--md-secondary-container)]'
+                                                : 'border-[var(--md-primary)] bg-[var(--md-primary-container)]')
+                                            : 'border-transparent'"
                                         @dragover="onTopicDragOver($event, topic.id)"
                                         @dragleave="onTopicDragLeave($event, topic.id)"
                                         @drop="onTopicDrop($event, topic.id)"
                                     >
-                                        <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center justify-between mb-2 gap-2">
                                             <template x-if="editingTopic === topic.id">
                                                 <input
                                                     type="text"
@@ -1969,27 +1970,27 @@
                                                     @keydown.escape="editingTopic = null"
                                                     @blur="renameTopic(topic.id)"
                                                     x-init="$nextTick(() => $el.focus())"
-                                                    class="text-sm font-medium bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded px-2 py-0.5"
+                                                    class="flex-1 min-w-0 text-sm font-medium bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg px-2 py-0.5 text-[var(--md-on-surface)]"
                                                 />
                                             </template>
                                             <template x-if="editingTopic !== topic.id">
-                                                <span class="text-sm font-medium flex items-center gap-1.5">
-                                                    <span x-text="topic.name"></span>
+                                                <span class="text-sm font-medium flex items-center gap-1.5 text-[var(--md-on-surface)] min-w-0">
+                                                    <span x-text="topic.name" class="truncate"></span>
                                                     <span
                                                         x-show="dragOverTopicId === topic.id"
-                                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-normal"
+                                                        class="text-[10px] px-1.5 py-0.5 rounded-full font-normal flex-shrink-0"
                                                         :class="dragTagCopy
-                                                            ? 'bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300'
-                                                            : 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300'"
+                                                            ? 'bg-[var(--md-secondary)] text-[var(--md-on-secondary)]'
+                                                            : 'bg-[var(--md-primary)] text-[var(--md-on-primary)]'"
                                                         x-text="dragTagCopy ? t('settings.topics.copy') : t('settings.topics.move')"
                                                     ></span>
                                                 </span>
                                             </template>
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-xs text-gray-500 dark:text-gray-400" x-text="topic.post_count + ' posts'"></span>
+                                            <div class="flex items-center gap-1 flex-shrink-0">
+                                                <span class="text-xs text-[var(--md-on-surface-variant)]" x-text="topic.post_count + ' posts'"></span>
                                                 <button
                                                     @click="editingTopicName = topic.name; editingTopic = topic.id"
-                                                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                                    class="p-1 rounded-full hover:bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]"
                                                     :data-tip="t('settings.topics.rename')"
                                                     :aria-label="t('settings.topics.rename')"
                                                 >
@@ -1998,7 +1999,7 @@
                                                 <button
                                                     @click="suggestTagsForTopic(topic.id)"
                                                     :disabled="suggestingTagsForTopicId !== null"
-                                                    class="px-1.5 py-0.5 text-[10px] text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/30 disabled:opacity-50 flex items-center gap-0.5"
+                                                    class="px-1.5 py-0.5 text-[10px] rounded-full border border-[var(--md-primary)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] disabled:opacity-50 flex items-center gap-0.5"
                                                     :data-tip="t('settings.topics.suggestTags')"
                                                     :aria-label="t('settings.topics.suggestTags')"
                                                 >
@@ -2008,10 +2009,12 @@
                                                 </button>
                                                 <button
                                                     @click="deleteTopic(topic.id)"
-                                                    class="text-red-500 hover:text-red-700 text-sm"
+                                                    class="p-1 rounded-full hover:bg-[var(--md-error-container)] hover:text-[var(--md-on-error-container)] text-[var(--md-on-surface-variant)] transition-colors"
                                                     :data-tip="t('settings.topics.delete')"
                                                     :aria-label="t('settings.topics.delete')"
-                                                >&times;</button>
+                                                >
+                                                    <span class="msym text-[14px]">delete</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="flex flex-wrap gap-1 mb-2">
@@ -2020,10 +2023,10 @@
                                                     draggable="true"
                                                     @dragstart="onTagDragStart($event, tag, topic.id)"
                                                     @dragend="onTagDragEnd($event)"
-                                                    class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 cursor-grab active:cursor-grabbing"
+                                                    class="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-lg bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)] cursor-grab active:cursor-grabbing"
                                                 >
                                                     <span x-text="tag"></span>
-                                                    <button @click="removeTagFromTopic(topic.id, tag)" class="hover:text-red-500">&times;</button>
+                                                    <button @click="removeTagFromTopic(topic.id, tag)" class="hover:text-[var(--md-error)]">&times;</button>
                                                 </span>
                                             </template>
                                         </div>
@@ -2050,19 +2053,19 @@
                                                 @keydown.enter.prevent="if (selIdx >= 0 && suggestions[selIdx]) { pick(suggestions[selIdx].tag); selIdx = -1; } else if (val.trim() && suggestions.length) { pick(suggestions[0].tag); }"
                                                 @keydown.escape="suggestions = []; val = ''"
                                                 :placeholder="t('settings.topics.addTagPlaceholder')"
-                                                class="flex-1 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                class="flex-1 min-w-0 text-xs px-2 py-1 border border-[var(--md-outline)] rounded-lg bg-[var(--md-surface)] text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                                 autocomplete="off"
                                             />
                                             <!-- Autocomplete dropdown -->
-                                            <div x-show="suggestions.length > 0" class="absolute top-full left-0 right-8 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                            <div x-show="suggestions.length > 0" class="absolute top-full left-0 right-8 mt-1 bg-[var(--md-surface-container)] border border-[var(--md-outline-variant)] rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                                                 <template x-for="(s, idx) in suggestions" :key="s.tag">
                                                     <button
                                                         @click="pick(s.tag)"
-                                                        class="w-full text-left px-3 py-1.5 text-xs flex justify-between items-center"
-                                                        :class="idx === selIdx ? 'bg-blue-100 dark:bg-blue-900/40' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                                        class="w-full text-left px-3 py-1.5 text-xs flex justify-between items-center text-[var(--md-on-surface)]"
+                                                        :class="idx === selIdx ? 'bg-[var(--md-secondary-container)]' : 'hover:bg-[var(--md-surface-container-highest)]'"
                                                     >
                                                         <span x-text="s.tag"></span>
-                                                        <span class="text-gray-400 text-[10px]" x-text="s.count + ' posts'"></span>
+                                                        <span class="text-[var(--md-on-surface-variant)] text-[10px]" x-text="s.count + ' posts'"></span>
                                                     </button>
                                                 </template>
                                             </div>
@@ -2070,7 +2073,7 @@
                                     </div>
                                 </template>
                                 <template x-if="topics.length === 0">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4" x-text="t('settings.topics.empty')"></p>
+                                    <p class="text-sm text-[var(--md-on-surface-variant)] text-center py-4" x-text="t('settings.topics.empty')"></p>
                                 </template>
                             </div>
                         </div>
