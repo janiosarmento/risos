@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913p">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913p">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913p">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913q">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913q">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913q">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913p">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913q">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913p">
+    <link rel="manifest" href="/manifest.json?v=20260913q">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913p"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913p"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913p"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913p"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913p in all ?v= below -->
-    <script>var APP_VERSION = '20260913p';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913p">
+    <script src="/static/vendor/marked.min.js?v=20260913q"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913q"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913q"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913q"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913q in all ?v= below -->
+    <script>var APP_VERSION = '20260913q';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913q">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913p"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913p"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913p"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913p"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913p"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913p"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913p"></script>
-    <script defer src="/static/js/app.js?v=20260913p"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913q"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913q"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913q"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913q"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913q"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913q"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913q"></script>
+    <script defer src="/static/js/app.js?v=20260913q"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -485,12 +485,17 @@
                 <main class="flex-1 flex flex-col overflow-hidden">
                     <!-- Post List Header -->
                     <div class="p-4 border-b border-[var(--md-outline-variant)] bg-[var(--md-surface)]">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
+                        <!-- Two rows on a phone, one on desktop. Sharing a single row
+                             left the feed name a narrow column — it wrapped one word per
+                             line, five lines tall for one name — while the controls on
+                             the right still ran off the screen edge. Each half now gets
+                             the full width below md. -->
+                        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                            <div class="flex items-center gap-2 min-w-0">
                                 <!-- Hamburger menu button (mobile only) -->
                                 <button
                                     @click="sidebarOpen = true"
-                                    class="md:hidden p-1 -ml-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
+                                    class="md:hidden p-1 -ml-1 flex-shrink-0 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     :data-tip="t('sidebar.openMenu')"
                                     :aria-label="t('sidebar.openMenu')"
                                 >
@@ -499,13 +504,16 @@
                                 <!-- Sidebar toggle (desktop only) -->
                                 <button
                                     @click="toggleDesktopSidebar()"
-                                    class="hidden md:flex p-1 -ml-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
+                                    class="hidden md:flex p-1 -ml-1 flex-shrink-0 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     :data-tip="desktopSidebarOpen ? t('sidebar.collapseMenu') : t('sidebar.openMenu')"
                                     :aria-label="desktopSidebarOpen ? t('sidebar.collapseMenu') : t('sidebar.openMenu')"
                                 >
                                     <span class="msym text-[20px]" x-text="desktopSidebarOpen ? 'chevron_left' : 'chevron_right'"></span>
                                 </button>
-                                <h2 class="font-medium">
+                                <!-- truncate, not wrap: a long feed name gets an ellipsis
+                                     rather than growing the header. The full name is in
+                                     the title attribute and one tap away on the feed. -->
+                                <h2 class="font-medium min-w-0 truncate" :title="getFilterTitle()">
                                     <a
                                         x-show="filter === 'feed' && getFeedSiteUrl(filterId)"
                                         :href="getFeedSiteUrl(filterId)"
@@ -556,16 +564,16 @@
                                     x-show="filter === 'feed'"
                                     @click="refreshFeed(filterId)"
                                     :disabled="refreshingFeed"
-                                    class="p-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-primary)] disabled:opacity-50"
+                                    class="p-1 flex-shrink-0 text-[var(--md-on-surface-variant)] hover:text-[var(--md-primary)] disabled:opacity-50"
                                     :data-tip="t('feeds.refresh')"
                                     :aria-label="t('feeds.refresh')"
                                 >
                                     <span class="msym text-[16px]" :class="refreshingFeed && 'animate-spin'">refresh</span>
                                 </button>
                             </div>
-                            <div class="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+                            <div class="flex items-center flex-wrap gap-1 md:gap-2 text-xs md:text-sm min-w-0">
                                 <!-- Search -->
-                                <div class="relative flex items-center">
+                                <div class="relative flex items-center flex-1 md:flex-none min-w-0">
                                     <span class="msym text-[14px] absolute left-3 text-[var(--md-on-surface-variant)] pointer-events-none">search</span>
                                     <input
                                         id="search-input"
@@ -575,7 +583,7 @@
                                         @keydown.escape="$el.blur(); clearSearch()"
                                         :placeholder="t('search.placeholder')"
                                         data-tip="/ to focus"
-                                        class="w-24 md:w-40 pl-8 pr-6 py-1.5 text-xs rounded-full border border-[var(--md-outline)] bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--md-primary)] placeholder-[var(--md-on-surface-variant)]"
+                                        class="w-full md:w-40 pl-8 pr-6 py-1.5 text-xs rounded-full border border-[var(--md-outline)] bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--md-primary)] placeholder-[var(--md-on-surface-variant)]"
                                     />
                                     <button
                                         x-show="searchQuery"
