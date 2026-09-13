@@ -399,7 +399,19 @@ things in one commit.
   **Checked against the mobile flex-row gotcha**: the purge-threshold
   and AI-merge-controls rows already had `flex-wrap`, so no input here
   can reproduce the steps 11/13 squeeze.
-- [ ] **16. Import/Export tab** (2j) — OPML + Mímir, incl. "unstar all".
+- [x] **16. Import/Export tab** (2j) — headings/descriptions to
+  `--md-*`, section dividers to `outline-variant`. Choose File is the
+  filled-primary pill (the tab's one primary action); Download OPML and
+  Export Mímir are outlined pills (secondary actions, same as Preview/
+  Reset Defaults elsewhere); Unstar All is the filled-error pill (same
+  destructive-action convention as step 15's Purge button). The OPML
+  import result message (success/has-errors) is deliberately left on
+  its existing `yellow-400`/`green-400` — same "no M3 role fits a
+  transient status color" reasoning that left the toast colors alone
+  in step 8. Both button rows got `flex-wrap` (checked against the
+  mobile flex-row gotcha; neither had a squeeze risk since no sibling
+  carries a fixed min-width, but wrapping is free insurance for long
+  translated button labels).
 - [ ] **17. Status tab.**
 
 ### Cross-cutting, last

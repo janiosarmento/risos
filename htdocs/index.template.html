@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913g';</script>
+    <script>var APP_VERSION = '20260913h';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1483,9 +1483,9 @@
                         <div x-show="settingsTab === 'opml'" class="space-y-6">
                             <!-- Import -->
                             <div>
-                                <h3 class="text-lg font-medium mb-3" x-text="t('opml.importTitle')"></h3>
-                                <p class="text-gray-400 text-sm mb-3" x-text="t('opml.importDesc')"></p>
-                                <div class="flex items-center gap-3">
+                                <h3 class="text-lg font-medium mb-3 text-[var(--md-on-surface)]" x-text="t('opml.importTitle')"></h3>
+                                <p class="text-[var(--md-on-surface-variant)] text-sm mb-3" x-text="t('opml.importDesc')"></p>
+                                <div class="flex items-center gap-3 flex-wrap">
                                     <input
                                         type="file"
                                         id="opmlFile"
@@ -1495,40 +1495,43 @@
                                     >
                                     <button
                                         @click="document.getElementById('opmlFile').click()"
-                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
+                                        class="px-4 py-2 rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 font-medium transition-colors"
                                         :disabled="importingOpml"
                                     >
                                         <span x-show="!importingOpml" x-text="t('opml.chooseFile')"></span>
                                         <span x-show="importingOpml" x-text="t('opml.importing')"></span>
                                     </button>
+                                    <!-- Import result: a transient status message, same "no M3 role
+                                         fits a warning/success color" reasoning as the toast colors
+                                         left alone in step 8 — kept as-is, not converted to --md-*. -->
                                     <span x-show="opmlResult" class="text-sm" :class="opmlResult?.errors?.length ? 'text-yellow-400' : 'text-green-400'" x-text="opmlResultText()"></span>
                                 </div>
                             </div>
 
                             <!-- Export OPML -->
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 class="text-lg font-medium mb-3" x-text="t('opml.exportTitle')"></h3>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('opml.exportDesc')"></p>
+                            <div class="border-t border-[var(--md-outline-variant)] pt-6">
+                                <h3 class="text-lg font-medium mb-3 text-[var(--md-on-surface)]" x-text="t('opml.exportTitle')"></h3>
+                                <p class="text-[var(--md-on-surface-variant)] text-sm mb-3" x-text="t('opml.exportDesc')"></p>
                                 <button
                                     @click="exportOpml()"
-                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
+                                    class="px-4 py-2 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] font-medium transition-colors"
                                     x-text="t('opml.download')"
                                 ></button>
                             </div>
 
                             <!-- Export Mímir -->
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 class="text-lg font-medium mb-3" x-text="t('opml.mimirExport')"></h3>
-                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-3" x-text="t('opml.mimirExportDesc')"></p>
-                                <div class="flex items-center gap-3">
+                            <div class="border-t border-[var(--md-outline-variant)] pt-6">
+                                <h3 class="text-lg font-medium mb-3 text-[var(--md-on-surface)]" x-text="t('opml.mimirExport')"></h3>
+                                <p class="text-[var(--md-on-surface-variant)] text-sm mb-3" x-text="t('opml.mimirExportDesc')"></p>
+                                <div class="flex items-center gap-3 flex-wrap">
                                     <button
                                         @click="exportMimir()"
-                                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium"
+                                        class="px-4 py-2 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] font-medium transition-colors"
                                         x-text="t('opml.mimirExport')"
                                     ></button>
                                     <button
                                         @click="unstarAllMimir()"
-                                        class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium text-white"
+                                        class="px-4 py-2 rounded-full bg-[var(--md-error)] hover:opacity-90 font-medium text-white transition-colors"
                                         x-text="t('opml.unstarAll')"
                                     ></button>
                                 </div>
