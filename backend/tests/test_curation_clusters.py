@@ -86,37 +86,34 @@ def test_one_shared_tag_is_not_enough(db):
 def test_generic_tags_do_not_create_clusters(db):
     # Two posts sharing only near-universal tags are not related in any
     # useful sense — this is the case that made raw shared-tag counts useless
-    # on a real library.
+    # on a real library. Note both posts here have *identical* tag sets, so
+    # similarity alone would call them a perfect match; what saves it is that
+    # a tag on half the corpus never puts a pair up for scoring at all.
     _bulk_noise(db, 1000, 400, "2026")
     _bulk_noise(db, 2000, 400, "technology")
     _add_post(db, 1, ["2026", "technology"])
     _add_post(db, 2, ["2026", "technology"])
     db.commit()
 
-    clusters, diag = find_redundancy_clusters(db, [1, 2])
+    clusters, _ = find_redundancy_clusters(db, [1, 2])
 
     assert clusters == []
-    # Both tags sit above whatever cutoff applied, which is what excluded them.
-    assert diag["generic_tag_cutoff"] < 400
 
 
-def test_generic_cutoff_scales_with_corpus_size(db):
-    # On a small library the absolute floor protects against calling
-    # everything generic; on a large one the cutoff has to rise with the
-    # corpus, or tags that are merely popular start looking distinctive.
-    from app.models import PostTag as PT
+def test_a_specific_tag_outweighs_a_common_one(db):
+    # The failure this replaces: a fixed "too common" cutoff threw away tags
+    # like `malware` (0.8% of a real corpus) and scored an article saved
+    # twice at zero. Rarity has to be a gradient, not a cliff.
+    from app.services.curation import tag_idf
 
-    db.execute(
-        PT.__table__.insert(),
-        [{"post_id": 10_000 + i, "tag": "ai"} for i in range(6000)],
-    )
-    _add_post(db, 1, ["ai", "rust"])
-    _add_post(db, 2, ["ai", "rust"])
-    db.commit()
-
-    _, diag = find_redundancy_clusters(db, [1, 2])
-
-    assert diag["generic_tag_cutoff"] == pytest.approx(6002 * 0.005, abs=2)
+    assert tag_idf(500, 64_000) > 2.5 * tag_idf(12_000, 64_000)
+    # A tag on every single post says nothing at all.
+    assert tag_idf(64_000, 64_000) < 0.01
+    # On a two-post library everything is "on half the corpus"; the weights
+    # still have to be usable rather than collapsing to zero.
+    assert tag_idf(2, 2) > 0
+    # A frequency larger than the corpus (a stale count) must not go negative.
+    assert tag_idf(80_000, 64_000) >= 0.0
 
 
 def test_rare_tags_still_cluster_inside_a_large_corpus(db):
@@ -131,8 +128,9 @@ def test_rare_tags_still_cluster_inside_a_large_corpus(db):
 
     assert len(clusters) == 1
     assert clusters[0]["post_ids"] == [1, 2]
-    # Only the discriminative tags explain the grouping.
-    assert set(clusters[0]["shared_tags"]) == {"bufferbloat", "router"}
+    # The rare tags are what explain the grouping, so they are what the
+    # adjudication prompt gets shown first.
+    assert set(clusters[0]["shared_tags"][:2]) == {"bufferbloat", "router"}
 
 
 def test_clusters_are_transitive(db):

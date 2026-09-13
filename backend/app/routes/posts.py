@@ -1233,19 +1233,17 @@ async def curate_starred(
 
 {groups_text}
 
-For each article listed above, return one decision:
-- "essential": worth keeping — it covers ground the others in its group do not
+Report ONLY the articles that are not worth keeping on their own:
 - "redundant": another article in its group covers this one. List which in "covered_by".
 - "situational": overlaps with its group but stays useful in specific cases
 
-Only include a "reason" for articles you mark "redundant" or "situational" —
-that is where the user needs to understand your call. Keep each reason to one
-short sentence.
+Say nothing about the rest — anything you leave out is kept. Most groups will
+have nothing to report, and that is a correct answer. Give every article you do
+report a one-sentence "reason".
 
-Respond in JSON, listing every article id shown above exactly once:
+Respond in JSON:
 {{
   "decisions": [
-    {{"post_id": 123, "verdict": "essential"}},
     {{"post_id": 456, "verdict": "redundant", "covered_by": [123], "reason": "..."}},
     {{"post_id": 789, "verdict": "situational", "reason": "..."}}
   ]

@@ -15,16 +15,33 @@ here, in one pass over an indexed table, and the LLM only has to
 adjudicate the handful of groups that come out of it.
 
 The catch is that raw shared-tag counts do not discriminate: on a real
-library the most common tags are near-universal ("2026" was on 12.8k of
-64k tagged posts when this was written), so almost every pair of posts
-shares a few. Weighting by inverse frequency — the same
-`1 / log(freq + 1)` used by the related-posts search in
-`routes/posts.py::_tag_search_related` — and ignoring tags that are too
-common to mean anything is what turns this from noise into signal. On the
-library this was developed against, that took 331 starred posts from
-"299 of them look related to something" down to 20 posts in a handful of
-genuinely overlapping groups (three DMARC/SPF articles, seven
-WireGuard/Tailscale ones, and so on).
+library the most common tags are near-universal ("open-source" was on
+11.7k of 64k tagged posts when this was written), so almost every pair of
+posts shares a few. Two articles are similar when they share tags that
+are *rare*, in proportion to how specific each of them is overall — which
+is cosine similarity over IDF-weighted tag vectors, the standard answer:
+
+    sim(A, B) = Σ idf(t)² for t in A∩B  /  (‖A‖ · ‖B‖)
+
+Measured on a real library, this separates cleanly: an article saved
+twice from two feeds scores 0.95, three articles about self-hosted
+NotebookLM alternatives land around 0.6-0.7, and two articles that merely
+both mention macOS sit below 0.4.
+
+Two earlier attempts are worth not repeating:
+
+- **`1 / log(freq + 1)` weighting plus a hard "ignore tags above 0.5% of
+  the corpus" cutoff.** Both halves failed. The cutoff (320 posts here)
+  discarded `malware` (534) and `data-security` (484) — tags that are
+  plainly specific — so a duplicate article saved twice scored *zero*.
+  And the weight itself barely discriminates: across freq 10 → 12800 it
+  only moves from 0.42 to 0.11, while true IDF moves from 8.8 to 1.6.
+- **Transitive clustering at a single threshold.** Redundancy chains, so
+  connected components snowball: at 0.55 across 334 starred posts one
+  component swallowed 39 unrelated articles. Components are therefore
+  re-clustered at a higher threshold until they are small enough to
+  adjudicate (`_split_until_small`), which is a cheap stand-in for proper
+  hierarchical clustering and needs no extra passes over the data.
 """
 
 import logging
@@ -39,37 +56,39 @@ from app.models import PostTag
 
 logger = logging.getLogger(__name__)
 
-# A tag on more than this share of the tagged corpus is treated as a topic
-# label rather than a distinguishing feature, and is ignored when looking
-# for overlap. Expressed as a ratio so it holds on libraries of any size.
-GENERIC_TAG_RATIO = 0.005
+# Tags this common are not used to *find* candidate pairs — enumerating every
+# pair that shares "open-source" is all cost and no signal. They still count
+# in the similarity score itself, where IDF already makes them near-weightless.
+# This is a performance guard, not a judgement about the tag: set far above
+# the range where real subject tags live (`malware` is 0.8% of this corpus).
+PAIR_SEED_MAX_RATIO = 0.20
 
 # ...but on a small or brand-new library that ratio lands on a handful of
-# posts and would throw away everything, so never call a tag generic below
-# this absolute count.
-GENERIC_TAG_MIN_FREQ = 20
+# posts and would refuse to seed any pair at all, so never treat a tag as
+# too common below this absolute count.
+PAIR_SEED_MIN_FREQ = 50
 
-# A pair needs at least this many discriminative tags in common before it is
-# even considered. One shared specific tag is usually a coincidence.
+# A pair needs at least this many tags in common before it is considered at
+# all. One shared tag is usually a coincidence, however rare that tag is.
 MIN_SHARED_TAGS = 2
 
-# ...and the inverse-frequency weight of those shared tags has to clear this.
-# Deliberately tuned for recall, not precision. Ranking the real candidate
-# pairs on the library this was developed against showed the two axes do not
-# line up: a false positive ("Bash wrapper for LLM API" + "shell exclamation
-# mark", two tags in common, 0.56) outranks a true one (two articles about
-# the same Tailcat release, 0.50). Score can tell "these are about the same
-# subject" from "these are unrelated", but it cannot tell "same subject" from
-# "actually supersedes" — that judgement is the LLM's remaining job. So the
-# cut is set low enough to keep the real groups (the WireGuard/Tailscale
-# component bottoms out at 0.44), and a few extra candidates per run cost
-# almost nothing: they are a line each in a prompt the model was going to be
-# sent anyway.
-MIN_PAIR_SCORE = 0.40
+# Cosine similarity a pair must reach to be grouped. Tuned for recall against
+# a real 334-post library: 0.45 catches the article saved twice (0.95), the
+# three self-hosted NotebookLM write-ups (~0.6), and the "run an LLM on Apple
+# silicon" family (~0.45), while leaving out pairs that merely share a
+# platform. Precision is the LLM's job — an extra candidate costs one line in
+# a prompt it was being sent anyway, while a missed one is invisible.
+MIN_PAIR_SCORE = 0.45
 
-# Clusters bigger than this are split for prompting: past a dozen articles
-# the adjudication prompt stops being small, which is the whole point here.
+# Clusters bigger than this are re-clustered at a stricter threshold: past a
+# dozen articles the adjudication prompt stops being small, which is the whole
+# point here, and a group that large is usually a chain rather than a topic.
 MAX_CLUSTER_SIZE = 12
+
+# How much stricter each re-clustering round gets, and where to give up and
+# just chop the component into fixed-size pieces.
+SPLIT_STEP = 0.05
+SPLIT_MAX_SCORE = 0.90
 
 # Chunk size for `IN (...)` lookups, kept well under SQLite's variable limit.
 _ID_CHUNK = 400
@@ -80,9 +99,19 @@ def _chunks(items: list, size: int) -> Iterable[list]:
         yield items[i : i + size]
 
 
-def tag_weight(freq: int) -> float:
-    """Inverse-frequency weight for a tag, matching _tag_search_related."""
-    return 1.0 / math.log(freq + 1) if freq > 0 else 0.1
+def tag_idf(freq: int, total_tagged: int) -> float:
+    """How much a tag says about a post, by how rare it is.
+
+    A tag on every post says almost nothing (idf → 0); one on a handful
+    says a lot. Smoothed so that a brand-new library, where every tag is
+    on "all" two of its posts, still produces usable weights instead of
+    collapsing to zero everywhere. Clamped at zero so a frequency larger
+    than the corpus — possible only from a stale count — cannot flip the
+    sign of a similarity.
+    """
+    if freq <= 0 or total_tagged <= 0:
+        return 0.0
+    return max(0.0, math.log((total_tagged + 1) / (min(freq, total_tagged) + 0.5)))
 
 
 class _UnionFind:
@@ -90,7 +119,8 @@ class _UnionFind:
 
     Redundancy is transitive in practice: if A is covered by B and B by C,
     all three belong in one group for the LLM to sort out, even when A and
-    C share no tags directly.
+    C share no tags directly. Chains that run too far are broken up again
+    by `_split_until_small`.
     """
 
     def __init__(self) -> None:
@@ -171,86 +201,122 @@ def find_redundancy_clusters(
 
     freqs = _load_global_tag_frequencies(db, all_tags)
 
-    total_tagged = (
-        db.query(func.count(func.distinct(PostTag.post_id))).scalar() or 0
-    )
-    generic_cutoff = max(
-        GENERIC_TAG_MIN_FREQ, int(total_tagged * GENERIC_TAG_RATIO)
-    )
+    total_tagged = db.query(func.count(func.distinct(PostTag.post_id))).scalar() or 0
+    idf = {tag: tag_idf(freqs.get(tag, 1), total_tagged) for tag in all_tags}
 
-    # Inverted index over the posts in scope, generic tags dropped.
+    # Each post's tag vector length, for the cosine denominator. A post whose
+    # tags are all generic has a short vector, so sharing those tags with
+    # another such post still does not add up to similarity.
+    norms = {
+        post_id: math.sqrt(sum(idf.get(t, 0.0) ** 2 for t in tags)) or 0.0
+        for post_id, tags in tags_by_post.items()
+    }
+
+    # Inverted index used only to enumerate pairs worth scoring. Tags common
+    # enough to connect a large share of the corpus are skipped here: they
+    # would generate O(n²) pairs that the score then rejects anyway.
+    seed_cutoff = max(PAIR_SEED_MIN_FREQ, int(total_tagged * PAIR_SEED_MAX_RATIO))
     posts_by_tag: dict[str, list[int]] = defaultdict(list)
     for post_id, tags in tags_by_post.items():
         for tag in tags:
-            if freqs.get(tag, 0) <= generic_cutoff:
+            if freqs.get(tag, 0) <= seed_cutoff:
                 posts_by_tag[tag].append(post_id)
 
-    # Accumulate per-pair overlap. Only tags shared by 2+ in-scope posts can
-    # contribute, so this stays far smaller than all-pairs.
-    pair_score: dict[tuple[int, int], float] = defaultdict(float)
-    pair_shared: dict[tuple[int, int], int] = defaultdict(int)
-    pair_tags: dict[tuple[int, int], list[str]] = defaultdict(list)
-
-    for tag, members in posts_by_tag.items():
+    candidates: set[tuple[int, int]] = set()
+    for members in posts_by_tag.values():
         if len(members) < 2:
             continue
-        weight = tag_weight(freqs.get(tag, 1))
         members.sort()
         for i, a in enumerate(members):
             for b in members[i + 1 :]:
-                key = (a, b)
-                pair_score[key] += weight
-                pair_shared[key] += 1
-                pair_tags[key].append(tag)
+                candidates.add((a, b))
 
-    uf = _UnionFind()
-    kept_pairs: list[tuple[int, int]] = []
-    for key, shared in pair_shared.items():
-        if shared < MIN_SHARED_TAGS:
+    # Score each candidate pair properly: full cosine over both tag vectors,
+    # generic tags included (IDF makes them count for almost nothing).
+    scores: dict[tuple[int, int], float] = {}
+    shared_by_pair: dict[tuple[int, int], list[str]] = {}
+    for a, b in candidates:
+        shared = tags_by_post[a] & tags_by_post[b]
+        if len(shared) < MIN_SHARED_TAGS:
             continue
-        if pair_score[key] < MIN_PAIR_SCORE:
+        denom = norms.get(a, 0.0) * norms.get(b, 0.0)
+        if denom <= 0:
             continue
-        uf.union(*key)
-        kept_pairs.append(key)
+        score = sum(idf.get(t, 0.0) ** 2 for t in shared) / denom
+        if score < MIN_PAIR_SCORE:
+            continue
+        scores[(a, b)] = score
+        shared_by_pair[(a, b)] = sorted(shared, key=lambda t: -idf.get(t, 0.0))
 
-    clusters = [c for c in uf.groups() if len(c) >= 2]
-
-    # Split oversized clusters so no single adjudication prompt gets large.
-    sized_ids: list[list[int]] = []
-    for cluster in clusters:
-        if len(cluster) <= MAX_CLUSTER_SIZE:
-            sized_ids.append(cluster)
-        else:
-            for part in _chunks(cluster, MAX_CLUSTER_SIZE):
-                if len(part) >= 2:
-                    sized_ids.append(part)
+    clusters = _split_until_small(list(scores), scores, MIN_PAIR_SCORE)
 
     # The tags that caused each grouping are worth carrying through: they go
     # into the adjudication prompt so the model can see on what grounds these
-    # articles were put side by side.
+    # articles were put side by side. Rarest first — those are the ones that
+    # actually explain the grouping.
     sized: list[dict] = []
-    for members in sized_ids:
+    for members in clusters:
         member_set = set(members)
-        tags: set[str] = set()
-        for (a, b) in kept_pairs:
+        tags_ranked: list[str] = []
+        for (a, b), shared in shared_by_pair.items():
             if a in member_set and b in member_set:
-                tags.update(pair_tags[(a, b)])
-        sized.append({"post_ids": members, "shared_tags": sorted(tags)})
+                tags_ranked.extend(t for t in shared if t not in tags_ranked)
+        sized.append({"post_ids": members, "shared_tags": tags_ranked[:8]})
 
     diagnostics = {
         "posts_in_scope": len(post_ids),
-        "generic_tag_cutoff": generic_cutoff,
-        "candidate_pairs": len(kept_pairs),
+        "tagged_corpus": total_tagged,
+        "candidate_pairs": len(scores),
         "clusters": len(sized),
         "posts_clustered": sum(len(c["post_ids"]) for c in sized),
     }
     logger.info(
-        "Curation clustering: %d posts in scope, generic cutoff %d, "
-        "%d candidate pairs, %d clusters covering %d posts",
+        "Curation clustering: %d posts in scope, %d pairs above %.2f, "
+        "%d clusters covering %d posts",
         len(post_ids),
-        generic_cutoff,
-        len(kept_pairs),
+        len(scores),
+        MIN_PAIR_SCORE,
         len(sized),
         diagnostics["posts_clustered"],
     )
     return sized, diagnostics
+
+
+def _split_until_small(
+    pairs: list[tuple[int, int]],
+    scores: dict[tuple[int, int], float],
+    threshold: float,
+) -> list[list[int]]:
+    """Connected components, re-clustered until none is too large.
+
+    Grouping by "A is similar to B" chains: a component can grow through a
+    long series of weak links until it holds articles with nothing to do
+    with each other. Raising the bar inside an oversized component breaks
+    exactly those weak links while leaving tight groups intact.
+    """
+    uf = _UnionFind()
+    for pair in pairs:
+        uf.union(*pair)
+
+    out: list[list[int]] = []
+    for component in uf.groups():
+        if len(component) < 2:
+            continue
+        if len(component) <= MAX_CLUSTER_SIZE:
+            out.append(component)
+            continue
+        if threshold >= SPLIT_MAX_SCORE:
+            # Genuinely dense: nothing left to do but chop it up.
+            out.extend(
+                part for part in _chunks(component, MAX_CLUSTER_SIZE) if len(part) >= 2
+            )
+            continue
+        members = set(component)
+        stricter = threshold + SPLIT_STEP
+        inner = [
+            p
+            for p in pairs
+            if p[0] in members and p[1] in members and scores[p] >= stricter
+        ]
+        out.extend(_split_until_small(inner, scores, stricter))
+    return out
