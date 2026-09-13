@@ -91,9 +91,11 @@ things in one commit.
   properties (light on `:root`, dark on `.dark`) in `app.css` — not yet
   consumed anywhere, later steps apply them. Visible effect: app-wide
   typeface change; no color/layout change yet.
-- [ ] **2. Icons.** Swap the hand-drawn SVG sprite (`#icon-*` in
-  `index.template.html`) for Material Symbols, one icon at a time or in a
-  batch — purely visual, no markup structure change.
+- [x] **2. Icons.** Swapped the hand-drawn SVG sprite (`#icon-*` in
+  `index.template.html`, plus a few one-off inline SVGs found in Settings >
+  Status) for Material Symbols (`.msym` spans), self-hosted as a subset font
+  (`htdocs/static/fonts/material-symbols-subset.woff2`). `icon-github`
+  stayed an SVG (brand logos aren't in Material Symbols). Commit `198d9a1`.
 
 ### Screens with a 1:1 mockup
 - [ ] **3. Empty/error states** (2k) — 4 isolated blocks, no interaction.
@@ -133,4 +135,9 @@ things in one commit.
 - 2026-09-12 — Retrieved the handoff from the "Risos folder shared" Claude
   Design project (via a downloaded zip, since it's a different project type
   than the design-system projects DesignSync reads). Copied it into the repo.
-  Decided the Google Sans → Roboto substitution. Completed step 1.
+  Decided the Google Sans → Roboto substitution. Completed step 1, deployed.
+  Also found and fixed a pre-existing server-side permission issue blocking
+  deploys: `docs/specs/` and `docs/history/` on fuqu were owned by
+  `root:root` instead of `www-data:www-data` (the checkout owner) — fixed
+  with `chown -R`.
+- 2026-09-12 — Completed step 2 (icons → Material Symbols).
