@@ -429,6 +429,7 @@
     "navigate": "navigate",
     "feeds": "feeds/topics",
     "open": "open",
+    "close": "close",
     "toggle": "toggle"
   },
   "backendErrors": {

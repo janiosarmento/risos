@@ -74,10 +74,11 @@
                         <span class="msym text-[16px]">download</span>
                         <span class="text-sm" x-text="t('modal.exportMarkdown')"></span>
                     </button>
-                    <!-- Desktop only. On a phone the post's own row closes it (see
-                         togglePostInline) and is a far bigger target than this ×, which
-                         only competed for room in a row that had none to spare. -->
-                    <button @click="closePost()" class="hidden md:block p-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)] text-2xl" :data-tip="t('modal.close')" :aria-label="t('modal.close')">&times;</button>
+                    <!-- No close button by design: clicking the post's own row closes it
+                         (togglePostInline), and on desktop so does ESC, which the shortcut
+                         hints footer spells out while a post is open. A × here was a third
+                         way to do the same thing, in the row with the least room to
+                         spare. -->
                 </div>
 
                 <!-- AI Summary (first). Per the handoff's color rule: this is the ONE

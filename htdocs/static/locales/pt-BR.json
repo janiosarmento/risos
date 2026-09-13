@@ -429,6 +429,7 @@
     "navigate": "navegar",
     "feeds": "feeds/tópicos",
     "open": "abrir",
+    "close": "fechar",
     "toggle": "marcar"
   },
   "backendErrors": {
