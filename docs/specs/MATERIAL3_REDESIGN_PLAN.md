@@ -189,8 +189,21 @@ things in one commit.
   tudo") covered body text too, not just titles. Removed `.font-reading`,
   both Literata `@font-face` rules, and the two vendored woff2 files —
   nothing in the app references Literata anymore.
-- [ ] **8. Buttons/controls sweep** — catch anything left in the old style
-  outside the screens already redone (filled/outlined/FAB/switch/chip).
+- [x] **8. Buttons/controls sweep** — converted everything generic that
+  isn't part of a dedicated later step: sidebar toolbar (font-scale,
+  mark-as-read dropdown, refresh, Top Tags chip row), the main header
+  toolbar (search field now a pill, select-mode + Unread/All/Starred
+  toggle buttons, tag/topic filter indicator chips, the add-to-topic
+  dropdown), the confirm modal (28px radius per the handoff's shape scale
+  for dialogs) and the login screen. Body background/text also switched
+  to `--md-*`.
+  **Deliberately left alone**: the toast notification's success/error/info
+  colors (green/red/blue) — those are semantic status colors with no
+  equivalent role in M3's 5-token palette (primary/secondary/tertiary/
+  error/neutral), same reasoning as leaving star/like/keep-unread colors
+  alone in step 6. Settings modal (steps 11–17), Assistant modal (step 19),
+  and the batch-select toolbar (step 18) are untouched — they have their
+  own steps.
 - [ ] **9. Mobile layout** (2g) — bottom nav + narrow list/detail.
 - [ ] **10. Suggested + tag profile** (2h/2i).
 

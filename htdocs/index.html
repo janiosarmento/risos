@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912ad">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912ad">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912ad">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912ae">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912ae">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912ae">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912ad">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912ae">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912ad">
+    <link rel="manifest" href="/manifest.json?v=20260912ae">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912ad"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912ad"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912ad"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912ad"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912ad in all ?v= below -->
-    <script>var APP_VERSION = '20260912ad';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912ad">
+    <script src="/static/vendor/marked.min.js?v=20260912ae"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912ae"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912ae"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912ae"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912ae in all ?v= below -->
+    <script>var APP_VERSION = '20260912ae';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912ae">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912ad"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912ad"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912ad"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912ad"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912ad"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912ad"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912ad"></script>
-    <script defer src="/static/js/app.js?v=20260912ad"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912ae"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912ae"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912ae"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912ae"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912ae"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912ae"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912ae"></script>
+    <script defer src="/static/js/app.js?v=20260912ae"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -91,7 +91,7 @@
       })();
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+<body class="bg-[var(--md-surface)] text-[var(--md-on-surface)] transition-colors">
     <!-- SVG Sprite Sheet — Material 3 redesign step 2 (docs/specs/MATERIAL3_REDESIGN_PLAN.md)
          replaced every generic icon with Material Symbols (.msym spans, see app.css).
          Brand logos have no Material Symbol equivalent, so icon-github stays here. -->
@@ -119,7 +119,7 @@
         <!-- Login Screen -->
         <template x-if="!$store.auth.authenticated">
             <main class="flex-1 flex items-center justify-center">
-                <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
+                <div class="bg-[var(--md-surface-container-high)] p-8 rounded-[28px] shadow-xl w-full max-w-sm">
                     <h1 class="text-2xl font-bold mb-6 text-center" x-text="t('app.title')"></h1>
                     <form @submit.prevent="login()">
                         <div class="mb-4">
@@ -129,14 +129,14 @@
                                     id="auth-password"
                                     :type="showPw ? 'text' : 'password'"
                                     x-model="password"
-                                    class="w-full px-4 py-2 pr-10 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    class="w-full px-4 py-2 pr-10 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-[8px] focus:outline-none focus:ring-2 focus:ring-[var(--md-primary)]"
                                     :placeholder="t('auth.password')"
                                     autofocus
                                 >
                                 <button
                                     type="button"
                                     @click="showPw = !showPw"
-                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     tabindex="-1"
                                     :data-tip="showPw ? t('auth.hidePassword') : t('auth.showPassword')"
                                     :aria-label="showPw ? t('auth.hidePassword') : t('auth.showPassword')"
@@ -146,17 +146,17 @@
                                 </button>
                             </div>
                         </div>
-                        <div x-show="loginError" class="mb-4 text-red-400 text-sm" x-text="loginError"></div>
+                        <div x-show="loginError" class="mb-4 text-[var(--md-error)] text-sm" x-text="loginError"></div>
                         <button
                             type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-medium transition"
+                            class="w-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] py-2 rounded-full font-medium transition"
                             :disabled="logging"
                         >
                             <span x-show="!logging" x-text="t('auth.login')"></span>
                             <span x-show="logging" x-text="t('auth.loggingIn')"></span>
                         </button>
                     </form>
-                    <p class="mt-4 text-xs text-gray-400 text-center md:hidden" x-text="t('auth.mobileHint')"></p>
+                    <p class="mt-4 text-xs text-[var(--md-on-surface-variant)] text-center md:hidden" x-text="t('auth.mobileHint')"></p>
                 </div>
             </main>
         </template>
@@ -191,15 +191,15 @@
                         <h1 class="font-bold text-lg" x-text="t('app.title')"></h1>
                         <div class="flex items-center gap-2">
                             <div class="hidden md:flex items-center gap-1">
-                                <button @click="decreaseFontScale()" :disabled="fontScaleMin" class="text-xs font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed text-gray-500 dark:text-gray-400">A-</button>
-                                <button @click="increaseFontScale()" :disabled="fontScaleMax" class="text-sm font-bold w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed text-gray-500 dark:text-gray-400">A+</button>
+                                <button @click="decreaseFontScale()" :disabled="fontScaleMin" class="text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-[var(--md-surface-container-highest)] disabled:opacity-30 disabled:cursor-not-allowed text-[var(--md-on-surface-variant)]">A-</button>
+                                <button @click="increaseFontScale()" :disabled="fontScaleMax" class="text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full hover:bg-[var(--md-surface-container-highest)] disabled:opacity-30 disabled:cursor-not-allowed text-[var(--md-on-surface-variant)]">A+</button>
                             </div>
-                            <button @click="openSettings()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.settings')" :aria-label="t('sidebar.settings')">
+                            <button @click="openSettings()" class="text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]" :data-tip="t('sidebar.settings')" :aria-label="t('sidebar.settings')">
                                 <span class="msym text-[20px]">settings</span>
                             </button>
-                            <button @click="logout()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm hidden md:block" x-text="t('app.logout')"></button>
+                            <button @click="logout()" class="text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)] text-sm hidden md:block" x-text="t('app.logout')"></button>
                             <!-- Mobile close button -->
-                            <button @click="sidebarOpen = false" class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" :data-tip="t('sidebar.closeMenu')" :aria-label="t('sidebar.closeMenu')">
+                            <button @click="sidebarOpen = false" class="md:hidden text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]" :data-tip="t('sidebar.closeMenu')" :aria-label="t('sidebar.closeMenu')">
                                 <span class="msym text-[24px]">close</span>
                             </button>
                         </div>
@@ -210,7 +210,7 @@
                         <div class="flex-1 relative" x-data="{ markOpen: false }">
                             <button
                                 @click="markOpen = !markOpen"
-                                class="w-full text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded flex items-center justify-between"
+                                class="w-full text-xs border border-[var(--md-outline)] text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)] px-2 py-1 rounded-full flex items-center justify-between"
                             >
                                 <span x-text="t('posts.markAsRead')"></span>
                                 <span class="msym text-[12px] ml-1">expand_more</span>
@@ -219,30 +219,30 @@
                                 x-show="markOpen"
                                 @click.away="markOpen = false"
                                 x-transition
-                                class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-50"
+                                class="absolute left-0 right-0 top-full mt-1 bg-[var(--md-surface-container)] border border-[var(--md-outline-variant)] rounded-[16px] overflow-hidden shadow-lg z-50"
                             >
                                 <button
                                     @click="markAllRead(); markOpen = false"
-                                    class="w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t"
+                                    class="w-full text-left text-xs px-3 py-2 hover:bg-[var(--md-surface-container-highest)]"
                                 >
                                     <span x-text="t('posts.markAllRead')"></span>
                                     <span class="hidden lg:inline opacity-60"> (A)</span>
                                 </button>
                                 <button
                                     @click="markAllRead(true); markOpen = false"
-                                    class="w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b border-t border-gray-100 dark:border-gray-700"
+                                    class="w-full text-left text-xs px-3 py-2 hover:bg-[var(--md-surface-container-highest)] border-t border-[var(--md-outline-variant)]"
                                 >
                                     <span x-text="t('posts.markBlockedRead')"></span>
                                     <span class="hidden lg:inline opacity-60"> (N)</span>
                                     <template x-if="blockedUnreadCount > 0">
-                                        <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full" x-text="blockedUnreadCount"></span>
+                                        <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-[var(--md-error-container)] text-[var(--md-on-error-container)] rounded-full" x-text="blockedUnreadCount"></span>
                                     </template>
                                 </button>
                             </div>
                         </div>
                         <button
                             @click="refreshFeeds()"
-                            class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded"
+                            class="text-xs border border-[var(--md-outline)] text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)] px-2 py-1 rounded-full"
                             :disabled="refreshing"
                             :data-tip="t('sidebar.refresh') + ' (R)'"
                             :aria-label="t('sidebar.refresh')"
@@ -301,10 +301,10 @@
                     <div x-show="!searchQuery.trim()" class="hidden md:block p-2 border-b border-[var(--md-outline-variant)]">
                         <button
                             @click="toggleTopTags()"
-                            class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-700"
+                            class="w-full text-left px-2 py-1.5 rounded-[24px] text-sm font-medium flex items-center gap-1.5 hover:bg-[var(--md-surface-container-highest)]"
                         >
                             <span class="msym text-[12px] transition-transform duration-200" :class="topTagsExpanded ? 'rotate-90' : ''">chevron_right</span>
-                            <span class="msym text-[16px] text-gray-500 dark:text-gray-400">label</span>
+                            <span class="msym text-[16px] text-[var(--md-on-surface-variant)]">label</span>
                             <span x-text="t('sidebar.topTags')"></span>
                         </button>
                         <div
@@ -320,10 +320,10 @@
                             <template x-for="item in popularTags" :key="item.tag">
                                 <button
                                     @click="filterByTag(item.tag)"
-                                    class="text-xs px-1.5 py-0.5 rounded-full border transition-colors flex items-center gap-1"
+                                    class="text-xs px-2 py-0.5 rounded-full border transition-colors flex items-center gap-1"
                                     :class="tagFilter === item.tag
-                                        ? 'bg-blue-600 text-white border-blue-600'
-                                        : 'text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                        ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)] border-[var(--md-primary)]'
+                                        : 'text-[var(--md-on-surface-variant)] border-[var(--md-outline)] hover:bg-[var(--md-surface-container-highest)]'"
                                 >
                                     <span x-text="item.tag"></span>
                                     <span class="opacity-60" x-text="item.count"></span>
@@ -484,13 +484,13 @@
                 <!-- Main Content -->
                 <main class="flex-1 flex flex-col overflow-hidden">
                     <!-- Post List Header -->
-                    <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <div class="p-4 border-b border-[var(--md-outline-variant)] bg-[var(--md-surface)]">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <!-- Hamburger menu button (mobile only) -->
                                 <button
                                     @click="sidebarOpen = true"
-                                    class="md:hidden p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    class="md:hidden p-1 -ml-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     :data-tip="t('sidebar.openMenu')"
                                     :aria-label="t('sidebar.openMenu')"
                                 >
@@ -499,7 +499,7 @@
                                 <!-- Sidebar toggle (desktop only) -->
                                 <button
                                     @click="toggleDesktopSidebar()"
-                                    class="hidden md:flex p-1 -ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    class="hidden md:flex p-1 -ml-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     :data-tip="desktopSidebarOpen ? t('sidebar.collapseMenu') : t('sidebar.openMenu')"
                                     :aria-label="desktopSidebarOpen ? t('sidebar.collapseMenu') : t('sidebar.openMenu')"
                                 >
@@ -512,7 +512,7 @@
                                         x-text="getFilterTitle()"
                                         target="_blank"
                                         rel="noopener"
-                                        class="hover:text-blue-500 hover:underline"
+                                        class="hover:text-[var(--md-primary)] hover:underline"
                                     ></a>
                                     <span
                                         x-show="filter !== 'feed' || !getFeedSiteUrl(filterId)"
@@ -521,34 +521,34 @@
                                 </h2>
                                 <!-- Tag filter indicator -->
                                 <template x-if="tagFilter">
-                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]">
                                         <span class="msym text-[12px]">label</span>
                                         <span x-text="tagFilter"></span>
                                         <span class="opacity-60" x-text="'(' + tagFilterCount + ')'"></span>
                                         <!-- Add to topic dropdown -->
                                         <span x-show="topics.length > 0" class="relative" x-data="{ open: false }">
-                                            <button @click="open = !open" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :data-tip="t('topics.addToTopic')" :aria-label="t('topics.addToTopic')">
+                                            <button @click="open = !open" class="hover:opacity-70 ml-0.5" :data-tip="t('topics.addToTopic')" :aria-label="t('topics.addToTopic')">
                                                 <span class="msym text-[12px]">folder</span>
                                             </button>
-                                            <div x-show="open" @click.away="open = false" class="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg z-50 min-w-[160px]">
+                                            <div x-show="open" @click.away="open = false" class="absolute top-full left-0 mt-1 bg-[var(--md-surface-container)] border border-[var(--md-outline-variant)] rounded-[16px] overflow-hidden shadow-lg z-50 min-w-[160px]">
                                                 <template x-for="topic in topics" :key="topic.id">
                                                     <button
                                                         @click="addTagFilterToTopic(topic.id); open = false"
-                                                        class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+                                                        class="w-full text-left px-3 py-1.5 text-xs text-[var(--md-on-surface)] hover:bg-[var(--md-surface-container-highest)] truncate"
                                                         x-text="topic.name"
                                                     ></button>
                                                 </template>
                                             </div>
                                         </span>
-                                        <button @click="clearTagFilter()" class="hover:text-blue-900 dark:hover:text-white ml-0.5" :data-tip="t('tags.clearFilter')" :aria-label="t('tags.clearFilter')">&times;</button>
+                                        <button @click="clearTagFilter()" class="hover:opacity-70 ml-0.5" :data-tip="t('tags.clearFilter')" :aria-label="t('tags.clearFilter')">&times;</button>
                                     </span>
                                 </template>
                                 <!-- Topic filter indicator -->
                                 <template x-if="selectedTopicId">
-                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700">
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--md-primary-container)] text-[var(--md-on-primary-container)]">
                                         <span class="msym text-[12px]">folder</span>
                                         <span x-text="getSelectedTopicName()"></span>
-                                        <button @click="clearTopicFilter()" class="hover:text-purple-900 dark:hover:text-white ml-0.5" :data-tip="t('topics.clearFilter')" :aria-label="t('topics.clearFilter')">&times;</button>
+                                        <button @click="clearTopicFilter()" class="hover:opacity-70 ml-0.5" :data-tip="t('topics.clearFilter')" :aria-label="t('topics.clearFilter')">&times;</button>
                                     </span>
                                 </template>
                                 <!-- Refresh feed button -->
@@ -556,7 +556,7 @@
                                     x-show="filter === 'feed'"
                                     @click="refreshFeed(filterId)"
                                     :disabled="refreshingFeed"
-                                    class="p-1 text-gray-400 hover:text-blue-500 disabled:opacity-50"
+                                    class="p-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-primary)] disabled:opacity-50"
                                     :data-tip="t('feeds.refresh')"
                                     :aria-label="t('feeds.refresh')"
                                 >
@@ -566,7 +566,7 @@
                             <div class="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
                                 <!-- Search -->
                                 <div class="relative flex items-center">
-                                    <span class="msym text-[14px] absolute left-2 text-gray-400 pointer-events-none">search</span>
+                                    <span class="msym text-[14px] absolute left-3 text-[var(--md-on-surface-variant)] pointer-events-none">search</span>
                                     <input
                                         id="search-input"
                                         type="text"
@@ -575,26 +575,26 @@
                                         @keydown.escape="$el.blur(); clearSearch()"
                                         :placeholder="t('search.placeholder')"
                                         data-tip="/ to focus"
-                                        class="w-24 md:w-40 pl-7 pr-6 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-400"
+                                        class="w-24 md:w-40 pl-8 pr-6 py-1.5 text-xs rounded-full border border-[var(--md-outline)] bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--md-primary)] placeholder-[var(--md-on-surface-variant)]"
                                     />
                                     <button
                                         x-show="searchQuery"
                                         @click="clearSearch()"
-                                        class="absolute right-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                        class="absolute right-2 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     >&times;</button>
                                 </div>
-                                <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
+                                <span class="text-[var(--md-outline-variant)] hidden md:inline">|</span>
                                 <button
                                     @click="toggleSelectMode()"
-                                    class="px-1.5 md:px-2 py-1 rounded"
-                                    :class="selectMode ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    class="px-2 md:px-3 py-1 rounded-full"
+                                    :class="selectMode ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)]' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
                                 ><span x-text="t('posts.select')"></span><span class="hidden lg:inline opacity-60"> (X)</span></button>
-                                <span class="text-gray-400 dark:text-gray-600 hidden md:inline">|</span>
+                                <span class="text-[var(--md-outline-variant)] hidden md:inline">|</span>
                                 <!-- Post filter: Unread -->
                                 <button
                                     @click="clearCuration(); postFilter = 'unread'; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
-                                    :class="postFilter === 'unread' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    class="px-2 md:px-3 py-1 rounded-full flex items-center gap-1"
+                                    :class="postFilter === 'unread' ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)]' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
                                     :data-tip="t('sidebar.unread')"
                                     :aria-label="t('sidebar.unread')"
                                 >
@@ -605,8 +605,8 @@
                                 <!-- Post filter: All -->
                                 <button
                                     @click="clearCuration(); postFilter = 'all'; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
-                                    :class="postFilter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    class="px-2 md:px-3 py-1 rounded-full flex items-center gap-1"
+                                    :class="postFilter === 'all' ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)]' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
                                     :data-tip="t('sidebar.all')"
                                     :aria-label="t('sidebar.all')"
                                 >
@@ -617,8 +617,8 @@
                                 <!-- Post filter: Starred -->
                                 <button
                                     @click="postFilter = 'starred'; loadPosts(true)"
-                                    class="px-1.5 md:px-2 py-1 rounded flex items-center gap-1"
-                                    :class="postFilter === 'starred' ? 'bg-blue-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                                    class="px-2 md:px-3 py-1 rounded-full flex items-center gap-1"
+                                    :class="postFilter === 'starred' ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)]' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
                                     :data-tip="t('sidebar.starred')"
                                     :aria-label="t('sidebar.starred')"
                                 >
@@ -633,7 +633,7 @@
                                 <button
                                     x-show="starredCount > 0 && postFilter === 'starred'"
                                     @click="exportStarred()"
-                                    class="px-1 py-1 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                    class="px-1 py-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)]"
                                     :data-tip="t('posts.exportStarred')"
                                     :aria-label="t('posts.exportStarred')"
                                 >
@@ -2876,27 +2876,27 @@
             <!-- Backdrop with blur -->
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="!confirmModal.loading && confirmCancel()"></div>
 
-            <!-- Modal -->
-            <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <!-- Modal: 28px radius per the handoff's shape scale (windows/dialogs) -->
+            <div class="relative bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl max-w-md w-full p-6">
                 <!-- Loading state -->
                 <div x-show="confirmModal.loading" class="flex items-center gap-3">
-                    <span class="msym text-[20px] animate-spin text-blue-500">progress_activity</span>
-                    <span class="text-gray-900 dark:text-gray-100" x-text="confirmModal.message"></span>
+                    <span class="msym text-[20px] animate-spin text-[var(--md-primary)]">progress_activity</span>
+                    <span class="text-[var(--md-on-surface)]" x-text="confirmModal.message"></span>
                 </div>
                 <!-- Confirm state -->
                 <template x-if="!confirmModal.loading">
                     <div>
-                        <p class="text-gray-900 dark:text-gray-100 mb-6" x-text="confirmModal.message"></p>
+                        <p class="text-[var(--md-on-surface)] mb-6" x-text="confirmModal.message"></p>
                         <div class="flex justify-end gap-3">
                             <button
                                 @click="confirmCancel()"
-                                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium transition-colors"
+                                class="px-4 py-2 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] font-medium transition-colors"
                                 x-text="t('categories.cancel')"
                             ></button>
                             <button
                                 id="confirm-ok-btn"
                                 @click="confirmOk()"
-                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors"
+                                class="px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors"
                             >OK</button>
                         </div>
                     </div>
