@@ -159,6 +159,27 @@ async def test_second_run_is_served_from_cache(db, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_changing_the_algorithm_invalidates_the_cache(db, monkeypatch):
+    # Otherwise a scoring fix would keep serving the answers it was meant
+    # to correct, for exactly the libraries that had already been curated.
+    import app.routes.posts as posts_module
+
+    calls: list = []
+    _stub_llm(monkeypatch, {"decisions": []}, calls)
+    _add_post(db, 1, "SPF explained", ["spf", "dkim"])
+    _add_post(db, 2, "SPF syntax", ["spf", "dkim"])
+    db.commit()
+
+    await curate_starred(CurateRequest(), db=db, user={})
+    monkeypatch.setattr(
+        posts_module, "CURATION_ALGO_VERSION", posts_module.CURATION_ALGO_VERSION + 1
+    )
+    await curate_starred(CurateRequest(), db=db, user={})
+
+    assert len(calls) == 2
+
+
+@pytest.mark.asyncio
 async def test_starring_something_new_invalidates_the_cache(db, monkeypatch):
     calls: list = []
     _stub_llm(

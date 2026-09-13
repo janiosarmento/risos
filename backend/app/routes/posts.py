@@ -1132,10 +1132,13 @@ async def curate_starred(
 
     # Results depend only on what was analyzed, so they memoize on exactly
     # that. Starring or unstarring anything changes the key, which is why
-    # there is no invalidation call to forget anywhere else in the app.
+    # there is no invalidation call to forget anywhere else in the app —
+    # and the algorithm version is in the key for the same reason, so
+    # changing how curation decides retires every stale answer by itself.
     scope_key = hashlib.sha256(
         json.dumps(
             {
+                "algo": CURATION_ALGO_VERSION,
                 "context": context_name,
                 "language": language,
                 "posts": sorted(post_ids),
@@ -1326,6 +1329,11 @@ Respond in JSON:
 # Keep the memo table from growing without bound; curation runs are rare and
 # only the recent ones are ever read again.
 _CURATION_CACHE_KEEP = 50
+
+# Bump whenever the scoring, grouping, or prompt changes in a way that would
+# produce a different answer for the same posts. It is part of the cache key,
+# so bumping it is all the invalidation there is.
+CURATION_ALGO_VERSION = 2
 
 
 def _store_curation_cache(db: Session, scope_key: str, payload: dict) -> None:
