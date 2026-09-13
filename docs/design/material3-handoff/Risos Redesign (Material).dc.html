@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Google+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&display=block" id="msfix">
+<style>
+body{margin:0}
+.msym{font-family:'Material Symbols Outlined'; font-weight:normal; font-style:normal; font-size:20px; display:inline-block; line-height:1; vertical-align:middle; -webkit-font-smoothing:antialiased}
+.theme-light{
+  --md-primary:#0B57D0; --md-on-primary:#FFFFFF; --md-primary-container:#D3E3FD; --md-on-primary-container:#041E49;
+  --md-secondary:#565F71; --md-on-secondary:#FFFFFF; --md-secondary-container:#DAE2F9; --md-on-secondary-container:#131C2B;
+  --md-tertiary:#6B5778; --md-tertiary-container:#F2DAFF;
+  --md-surface:#F8F9FF; --md-surface-dim:#D9D9E0; --md-surface-container-lowest:#FFFFFF; --md-surface-container-low:#F2F3FA;
+  --md-surface-container:#ECEDF4; --md-surface-container-high:#E6E8EF; --md-surface-container-highest:#E1E2E9;
+  --md-on-surface:#1A1B20; --md-on-surface-variant:#44474E; --md-outline:#74777F; --md-outline-variant:#C4C6CF;
+  --md-error:#BA1A1A; --md-error-container:#FFDAD6; --md-on-error-container:#410002;
+  --md-shadow:0 1px 2px rgba(0,0,0,0.30),0 1px 3px 1px rgba(0,0,0,0.15);
+  --md-shadow-md:0 1px 2px rgba(0,0,0,0.30),0 2px 6px 2px rgba(0,0,0,0.15);
+}
+.theme-dark{
+  --md-primary:#A8C7FA; --md-on-primary:#062E6F; --md-primary-container:#284777; --md-on-primary-container:#D3E3FD;
+  --md-secondary:#BEC6DC; --md-on-secondary:#283141; --md-secondary-container:#3E4759; --md-on-secondary-container:#DAE2F9;
+  --md-tertiary:#D6BEE4; --md-tertiary-container:#523F5F;
+  --md-surface:#111318; --md-surface-dim:#111318; --md-surface-container-lowest:#0C0E13; --md-surface-container-low:#1A1C22;
+  --md-surface-container:#1E2026; --md-surface-container-high:#282A30; --md-surface-container-highest:#33353B;
+  --md-on-surface:#E2E2E9; --md-on-surface-variant:#C4C6CF; --md-outline:#8E9099; --md-outline-variant:#44474E;
+  --md-error:#FFB4AB; --md-error-container:#93000A; --md-on-error-container:#FFDAD6;
+  --md-shadow:0 1px 3px rgba(0,0,0,0.5),0 1px 2px rgba(0,0,0,0.4);
+  --md-shadow-md:0 2px 6px rgba(0,0,0,0.55),0 1px 2px rgba(0,0,0,0.4);
+}
+</style>
+</helmet>
+
+<div style="display:flex; flex-direction:column; gap:56px; padding:48px; font-family:'Roboto', sans-serif; background:#0f1019">
+
+<div style="display:flex; flex-direction:column; gap:8px; max-width:760px">
+  <div style="font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:#aebbe0; font-family:'Google Sans', sans-serif">Risos — Material 3</div>
+  <h2 style="margin:0; color:#fff; font-family:'Google Sans', sans-serif; font-weight:500">Mesma reorganização, agora em Material 3</h2>
+  <p style="margin:0; font-size:14px; color:#9aa2b8">Azul padrão do Google (baseline M3), Roboto, cantos 12–28px, elevação por camadas de sombra. Claro e escuro lado a lado — mesmas 6 telas do turno anterior.</p>
+</div>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2a" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2a</span>
+    <span style="font-size:13px; color:#9aa2b8">Lista de posts — claro</span>
+  </div>
+
+  <div class="theme-light" style="width:1440px; height:900px; display:flex; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+
+    <aside style="width:280px; flex:none; display:flex; flex-direction:column; background:var(--md-surface-container-low); border-right:1px solid var(--md-outline-variant)">
+      <div style="display:flex; align-items:center; gap:12px; padding:20px 20px 16px">
+        <span class="msym" style="color:var(--md-primary); font-size:26px">rss_feed</span>
+        <div style="font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px">Risos</div>
+        <span class="msym" style="margin-left:auto; color:var(--md-on-surface-variant)">settings</span>
+      </div>
+
+      <div style="padding:0 16px 14px">
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:28px; background:var(--md-surface-container-highest)">
+          <span class="msym" style="color:var(--md-on-surface-variant)">search</span>
+          <span style="font-size:14px; color:var(--md-on-surface-variant)">Buscar posts</span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:2px; padding:0 12px">
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px; background:var(--md-secondary-container); color:var(--md-on-secondary-container)">
+          <span class="msym" style="font-size:20px">circle</span>
+          <span style="font-size:14px; font-weight:500; flex:1">Não lidos</span>
+          <span style="font-size:12px">197</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px">
+          <span class="msym" style="color:var(--md-on-surface-variant)">star</span>
+          <span style="font-size:14px; flex:1">Favoritos</span>
+          <span style="font-size:12px; color:var(--md-on-surface-variant)">19</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px; background:var(--md-primary-container); color:var(--md-on-primary-container)">
+          <span class="msym" style="font-size:20px">auto_awesome</span>
+          <span style="font-size:14px; font-weight:500; flex:1">Sugeridos</span>
+          <span style="font-size:12px">24</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px">
+          <span class="msym" style="color:var(--md-on-surface-variant)">inbox</span>
+          <span style="font-size:14px; flex:1">Todos</span>
+        </div>
+      </div>
+
+      <div style="height:1px; margin:16px 20px; background:var(--md-outline-variant)"></div>
+
+      <div style="display:flex; flex-direction:column; gap:2px; padding:0 12px">
+        <div style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-surface-variant); padding:0 16px 6px">Tópicos</div>
+        <div style="display:flex; align-items:center; gap:14px; padding:8px 16px; border-radius:24px">
+          <span class="msym" style="font-size:18px; color:var(--md-primary)">label</span>
+          <span style="font-size:14px; flex:1">Self-Hosting</span>
+          <span style="font-size:12px; color:var(--md-primary)">9</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:8px 16px; border-radius:24px">
+          <span class="msym" style="font-size:18px; color:var(--md-primary)">label</span>
+          <span style="font-size:14px; flex:1">Machine Learning</span>
+          <span style="font-size:12px; color:var(--md-primary)">17</span>
+        </div>
+      </div>
+
+      <div style="height:1px; margin:16px 20px; background:var(--md-outline-variant)"></div>
+
+      <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; gap:2px; padding:0 12px">
+        <div style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-surface-variant); padding:0 16px 6px">Categorias</div>
+        <div style="display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:24px">
+          <span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">chevron_right</span>
+          <span style="font-size:14px; flex:1">Apple</span><span style="font-size:12px; color:var(--md-on-surface-variant)">6</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:24px">
+          <span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">expand_more</span>
+          <span style="font-size:14px; flex:1; font-weight:500">Tech</span><span style="font-size:12px; color:var(--md-primary)">197</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:1px; padding-left:24px">
+          <div style="display:flex; align-items:center; gap:10px; padding:7px 16px; border-radius:24px; background:var(--md-surface-container-highest)">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--md-primary)"></span>
+            <span style="font-size:13px; flex:1">Hackaday</span><span style="font-size:11px; color:var(--md-on-surface-variant)">14</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:7px 16px; border-radius:24px">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--md-outline)"></span>
+            <span style="font-size:13px; flex:1; color:var(--md-on-surface-variant)">Hacker News</span><span style="font-size:11px; color:var(--md-on-surface-variant)">31</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:7px 16px; border-radius:24px">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--md-outline)"></span>
+            <span style="font-size:13px; flex:1; color:var(--md-on-surface-variant)">Gizmodo</span><span style="font-size:11px; color:var(--md-on-surface-variant)">12</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:14px 20px; font-size:11px; color:var(--md-on-surface-variant); border-top:1px solid var(--md-outline-variant)">37 feeds · 197 posts</div>
+    </aside>
+
+    <main style="flex:1; display:flex; flex-direction:column; min-width:0">
+      <header style="display:flex; align-items:center; gap:16px; padding:20px 28px 14px">
+        <div style="display:flex; flex-direction:column; gap:2px">
+          <h4 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500">Não lidos</h4>
+          <div style="font-size:12px; color:var(--md-on-surface-variant)">197 posts · 24 sugeridos para você</div>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px">
+          <button style="display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">done_all</span>Marcar lidos</button>
+          <button style="display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500; box-shadow:var(--md-shadow)"><span class="msym" style="font-size:18px">refresh</span>Atualizar</button>
+        </div>
+      </header>
+
+      <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; padding:4px 16px 16px">
+
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px; background:var(--md-primary-container)">
+          <span class="msym" style="color:var(--md-primary); font-size:20px; margin-top:2px">circle</span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <div style="display:flex; align-items:baseline; gap:10px">
+              <h5 style="margin:0; font-size:17px; color:var(--md-on-primary-container)">People Love This Porsche Christmas Ad Because It Doesn't Look Like AI Was Involved</h5>
+              <span style="margin-left:auto; flex:none; font-size:11px; font-weight:500; color:var(--md-on-primary); background:var(--md-primary); border-radius:999px; padding:3px 10px">86% match</span>
+            </div>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Gizmodo</span>·<span>agora</span>·<span>Mike Pearl</span></div>
+            <p style="margin:0; font-size:14px; line-height:1.5; color:var(--md-on-surface-variant)">McDonald's suspende campanha de Natal com IA após reações negativas; a peça da Porsche é celebrada por não usar IA.</p>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:2px">
+              <span style="font-size:11px; background:var(--md-secondary-container); color:var(--md-on-secondary-container); border-radius:8px; padding:4px 10px">ia</span>
+              <span style="font-size:11px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:8px; padding:4px 10px">publicidade</span>
+              <span style="margin-left:auto; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span class="msym">star_border</span><span class="msym">favorite_border</span></span>
+            </div>
+          </div>
+        </article>
+
+        <div style="height:1px; margin:2px 16px; background:var(--md-outline-variant)"></div>
+
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px">
+          <span class="msym" style="color:var(--md-primary); font-size:20px; margin-top:2px">circle</span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <h5 style="margin:0; font-size:17px">Nixie Tube Dashboard is Period-Appropriate Hack to Vintage Volvo</h5>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Hackaday</span>·<span>agora</span></div>
+            <p style="margin:0; font-size:14px; line-height:1.5; color:var(--md-on-surface-variant)">Griffin Riley criou um dashboard híbrido usando tecnologia dos anos 1950.</p>
+            <div style="display:flex; gap:6px"><span style="font-size:11px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:8px; padding:4px 10px">retrocomputing</span><span style="font-size:11px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:8px; padding:4px 10px">hardware</span></div>
+          </div>
+        </article>
+
+        <div style="height:1px; margin:2px 16px; background:var(--md-outline-variant)"></div>
+
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px">
+          <span class="msym" style="color:var(--md-error); font-size:20px; margin-top:2px">warning</span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <h5 style="margin:0; font-size:17px">CEO killed at industrial site by worker operating forklift</h5>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Hacker News</span>·<span>1h</span>·<span style="color:var(--md-error)">termo bloqueado</span></div>
+          </div>
+        </article>
+
+        <div style="height:1px; margin:2px 16px; background:var(--md-outline-variant)"></div>
+
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px; opacity:0.5">
+          <span style="width:20px"></span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <h5 style="margin:0; font-size:17px; font-weight:400">Custom Cross Compiler with Nix</h5>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Hacker News</span>·<span>2h</span>·<span>lido</span></div>
+          </div>
+        </article>
+      </div>
+
+      <div style="position:relative">
+        <button style="position:absolute; right:28px; bottom:20px; width:56px; height:56px; border-radius:16px; border:none; background:var(--md-tertiary-container); box-shadow:var(--md-shadow-md); display:flex; align-items:center; justify-content:center"><span class="msym" style="font-size:24px">refresh</span></button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2b" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2b</span>
+    <span style="font-size:13px; color:#9aa2b8">Lista de posts — escuro</span>
+  </div>
+
+  <div class="theme-dark" style="width:1440px; height:900px; display:flex; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+
+    <aside style="width:280px; flex:none; display:flex; flex-direction:column; background:var(--md-surface-container-low); border-right:1px solid var(--md-outline-variant)">
+      <div style="display:flex; align-items:center; gap:12px; padding:20px 20px 16px">
+        <span class="msym" style="color:var(--md-primary); font-size:26px">rss_feed</span>
+        <div style="font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px">Risos</div>
+        <span class="msym" style="margin-left:auto; color:var(--md-on-surface-variant)">settings</span>
+      </div>
+      <div style="padding:0 16px 14px">
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:28px; background:var(--md-surface-container-highest)">
+          <span class="msym" style="color:var(--md-on-surface-variant)">search</span>
+          <span style="font-size:14px; color:var(--md-on-surface-variant)">Buscar posts</span>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:2px; padding:0 12px">
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px; background:var(--md-secondary-container); color:var(--md-on-secondary-container)">
+          <span class="msym" style="font-size:20px">circle</span><span style="font-size:14px; font-weight:500; flex:1">Não lidos</span><span style="font-size:12px">197</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px">
+          <span class="msym" style="color:var(--md-on-surface-variant)">star</span><span style="font-size:14px; flex:1">Favoritos</span><span style="font-size:12px; color:var(--md-on-surface-variant)">19</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px; background:var(--md-primary-container); color:var(--md-on-primary-container)">
+          <span class="msym" style="font-size:20px">auto_awesome</span><span style="font-size:14px; font-weight:500; flex:1">Sugeridos</span><span style="font-size:12px">24</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:10px 16px; border-radius:24px">
+          <span class="msym" style="color:var(--md-on-surface-variant)">inbox</span><span style="font-size:14px; flex:1">Todos</span>
+        </div>
+      </div>
+      <div style="height:1px; margin:16px 20px; background:var(--md-outline-variant)"></div>
+      <div style="display:flex; flex-direction:column; gap:2px; padding:0 12px">
+        <div style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-surface-variant); padding:0 16px 6px">Tópicos</div>
+        <div style="display:flex; align-items:center; gap:14px; padding:8px 16px; border-radius:24px">
+          <span class="msym" style="font-size:18px; color:var(--md-primary)">label</span><span style="font-size:14px; flex:1">Self-Hosting</span><span style="font-size:12px; color:var(--md-primary)">9</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:8px 16px; border-radius:24px">
+          <span class="msym" style="font-size:18px; color:var(--md-primary)">label</span><span style="font-size:14px; flex:1">Machine Learning</span><span style="font-size:12px; color:var(--md-primary)">17</span>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <div style="padding:14px 20px; font-size:11px; color:var(--md-on-surface-variant); border-top:1px solid var(--md-outline-variant)">37 feeds · 197 posts</div>
+    </aside>
+
+    <main style="flex:1; display:flex; flex-direction:column; min-width:0">
+      <header style="display:flex; align-items:center; gap:16px; padding:20px 28px 14px">
+        <div style="display:flex; flex-direction:column; gap:2px">
+          <h4 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500">Não lidos</h4>
+          <div style="font-size:12px; color:var(--md-on-surface-variant)">197 posts · 24 sugeridos</div>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px">
+          <button style="display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">done_all</span>Marcar lidos</button>
+          <button style="display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">refresh</span>Atualizar</button>
+        </div>
+      </header>
+
+      <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; padding:4px 16px 16px">
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px; background:var(--md-primary-container)">
+          <span class="msym" style="color:var(--md-primary); font-size:20px; margin-top:2px">circle</span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <div style="display:flex; align-items:baseline; gap:10px">
+              <h5 style="margin:0; font-size:17px; color:var(--md-on-primary-container)">People Love This Porsche Christmas Ad Because It Doesn't Look Like AI Was Involved</h5>
+              <span style="margin-left:auto; flex:none; font-size:11px; font-weight:500; color:var(--md-on-primary); background:var(--md-primary); border-radius:999px; padding:3px 10px">86% match</span>
+            </div>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Gizmodo</span>·<span>agora</span>·<span>Mike Pearl</span></div>
+            <p style="margin:0; font-size:14px; line-height:1.5; color:var(--md-on-surface-variant)">McDonald's suspende campanha de Natal com IA após reações negativas.</p>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:2px">
+              <span style="font-size:11px; background:var(--md-secondary-container); color:var(--md-on-secondary-container); border-radius:8px; padding:4px 10px">ia</span>
+              <span style="font-size:11px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:8px; padding:4px 10px">publicidade</span>
+            </div>
+          </div>
+        </article>
+        <div style="height:1px; margin:2px 16px; background:var(--md-outline-variant)"></div>
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px">
+          <span class="msym" style="color:var(--md-primary); font-size:20px; margin-top:2px">circle</span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <h5 style="margin:0; font-size:17px">Nixie Tube Dashboard is Period-Appropriate Hack to Vintage Volvo</h5>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Hackaday</span>·<span>agora</span></div>
+            <p style="margin:0; font-size:14px; line-height:1.5; color:var(--md-on-surface-variant)">Griffin Riley criou um dashboard híbrido usando tecnologia dos anos 1950.</p>
+          </div>
+        </article>
+        <div style="height:1px; margin:2px 16px; background:var(--md-outline-variant)"></div>
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px; opacity:0.5">
+          <span style="width:20px"></span>
+          <div style="display:flex; flex-direction:column; gap:8px; min-width:0; flex:1">
+            <h5 style="margin:0; font-size:17px; font-weight:400">Custom Cross Compiler with Nix</h5>
+            <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Hacker News</span>·<span>2h</span>·<span>lido</span></div>
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2c" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2c</span>
+    <span style="font-size:13px; color:#9aa2b8">Post aberto — claro</span>
+  </div>
+
+  <div class="theme-light" style="width:1440px; height:900px; display:flex; flex-direction:column; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <header style="display:flex; align-items:flex-start; gap:16px; padding:20px 28px 16px">
+      <span class="msym" style="margin-top:6px; color:var(--md-on-surface-variant)">arrow_back</span>
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1">
+        <h4 style="margin:0; font-size:24px; font-family:'Google Sans', sans-serif; font-weight:500; max-width:70ch">People Love This Porsche Christmas Ad Because It Doesn't Look Like AI Was Involved</h4>
+        <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Gizmodo</span>·<span>Mike Pearl</span>·<span>agora</span>·<span style="color:var(--md-primary)">abrir original</span></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px">
+        <span class="msym" style="color:var(--md-on-surface-variant)">star_border</span>
+        <span class="msym" style="color:var(--md-on-surface-variant)">favorite_border</span>
+        <button style="display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">auto_awesome</span>Assistente</button>
+      </div>
+    </header>
+
+    <div style="flex:1; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); min-height:0; border-top:1px solid var(--md-outline-variant)">
+      <section style="display:flex; flex-direction:column; min-height:0; padding:24px 32px; overflow:hidden; background:var(--md-primary-container)">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
+          <span class="msym" style="color:var(--md-on-primary-container)">auto_awesome</span>
+          <span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-primary-container)">Resumo IA</span>
+          <span style="margin-left:auto; font-size:11px; color:var(--md-on-primary-container); opacity:0.7">gemini-flash · 1,8s</span>
+        </div>
+        <p style="font-size:17px; line-height:1.6; color:var(--md-on-primary-container); max-width:62ch">O anúncio de Natal 2025 da Porsche ganhou destaque justamente por, supostamente, não ter usado inteligência artificial — o oposto da campanha do McDonald's, retirada do ar após reações negativas.</p>
+        <p style="font-size:15px; line-height:1.65; color:var(--md-on-primary-container); opacity:0.85; max-width:62ch">A peça, criada pela Parallel Studio, combina desenhos manuais e CGI numa estética 2D clássica.</p>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:20px">
+          <span style="font-size:11px; background:var(--md-on-primary-container); color:var(--md-primary-container); border-radius:8px; padding:4px 10px">ia</span>
+          <span style="font-size:11px; background:rgba(255,255,255,0.5); color:var(--md-on-primary-container); border-radius:8px; padding:4px 10px">publicidade</span>
+          <span style="font-size:11px; background:rgba(255,255,255,0.5); color:var(--md-on-primary-container); border-radius:8px; padding:4px 10px">porsche</span>
+        </div>
+      </section>
+      <section style="display:flex; flex-direction:column; min-height:0; background:var(--md-surface); padding:24px 32px; overflow:hidden">
+        <div style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-surface-variant); margin-bottom:14px">Conteúdo original</div>
+        <div style="color:var(--md-on-surface-variant); font-size:14px; line-height:1.7">
+          <p>What if there were an ad on TV, and it wasn't made with AI?</p>
+          <p>For plenty of people on the internet, that's apparently an exciting and praiseworthy prospect. Here, for instance, is the 2025 Porsche Christmas ad.</p>
+          <p>I like this ad. It has a certain high-class elegance, but it's also as gentle and frictionless as an episode of <em>Cocomelon</em>.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2d" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2d</span>
+    <span style="font-size:13px; color:#9aa2b8">Post aberto — escuro</span>
+  </div>
+
+  <div class="theme-dark" style="width:1440px; height:900px; display:flex; flex-direction:column; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <header style="display:flex; align-items:flex-start; gap:16px; padding:20px 28px 16px">
+      <span class="msym" style="margin-top:6px; color:var(--md-on-surface-variant)">arrow_back</span>
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1">
+        <h4 style="margin:0; font-size:24px; font-family:'Google Sans', sans-serif; font-weight:500; max-width:70ch">People Love This Porsche Christmas Ad Because It Doesn't Look Like AI Was Involved</h4>
+        <div style="font-size:12px; display:flex; gap:8px; color:var(--md-on-surface-variant)"><span>Gizmodo</span>·<span>Mike Pearl</span>·<span>agora</span></div>
+      </div>
+      <button style="display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">auto_awesome</span>Assistente</button>
+    </header>
+    <div style="flex:1; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); min-height:0; border-top:1px solid var(--md-outline-variant)">
+      <section style="display:flex; flex-direction:column; min-height:0; padding:24px 32px; overflow:hidden; background:var(--md-primary-container)">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
+          <span class="msym" style="color:var(--md-on-primary-container)">auto_awesome</span>
+          <span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-primary-container)">Resumo IA</span>
+        </div>
+        <p style="font-size:17px; line-height:1.6; color:var(--md-on-primary-container); max-width:62ch">O anúncio de Natal 2025 da Porsche ganhou destaque por, supostamente, não ter usado IA — o oposto da campanha do McDonald's, retirada do ar.</p>
+        <div style="display:flex; gap:6px; margin-top:20px">
+          <span style="font-size:11px; background:var(--md-on-primary-container); color:var(--md-primary-container); border-radius:8px; padding:4px 10px">ia</span>
+          <span style="font-size:11px; background:rgba(0,0,0,0.2); color:var(--md-on-primary-container); border-radius:8px; padding:4px 10px">publicidade</span>
+        </div>
+      </section>
+      <section style="display:flex; flex-direction:column; min-height:0; background:var(--md-surface); padding:24px 32px; overflow:hidden">
+        <div style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-surface-variant); margin-bottom:14px">Conteúdo original</div>
+        <div style="color:var(--md-on-surface-variant); font-size:14px; line-height:1.7">
+          <p>What if there were an ad on TV, and it wasn't made with AI?</p>
+          <p>For plenty of people on the internet, that's apparently an exciting and praiseworthy prospect.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2e" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2e</span>
+    <span style="font-size:13px; color:#9aa2b8">Curadoria IA — claro</span>
+  </div>
+
+  <div class="theme-light" style="width:1440px; height:820px; display:flex; flex-direction:column; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <header style="display:flex; align-items:center; gap:24px; padding:24px 32px 16px">
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-primary)">Curadoria IA</span>
+        <h4 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500">19 favoritos analisados</h4>
+      </div>
+      <div style="display:flex; gap:28px; margin-left:20px">
+        <div style="display:flex; flex-direction:column"><span style="font-family:'Google Sans', sans-serif; font-size:26px; color:var(--md-primary)">7</span><span style="font-size:11px; color:var(--md-on-surface-variant)">essenciais</span></div>
+        <div style="display:flex; flex-direction:column"><span style="font-family:'Google Sans', sans-serif; font-size:26px">8</span><span style="font-size:11px; color:var(--md-on-surface-variant)">redundantes</span></div>
+        <div style="display:flex; flex-direction:column"><span style="font-family:'Google Sans', sans-serif; font-size:26px; color:var(--md-on-surface-variant)">4</span><span style="font-size:11px; color:var(--md-on-surface-variant)">não classif.</span></div>
+      </div>
+      <button style="margin-left:auto; display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">archive</span>Arquivar 12 selecionados</button>
+    </header>
+    <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; gap:10px; padding:8px 32px 24px">
+      <article style="display:flex; gap:14px; padding:16px; border-radius:16px; background:var(--md-primary-container)">
+        <span class="msym" style="color:var(--md-on-primary-container)">check_box_outline_blank</span>
+        <div style="display:flex; flex-direction:column; gap:5px; flex:1">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-size:11px; background:var(--md-on-primary-container); color:var(--md-primary-container); border-radius:8px; padding:3px 9px">essencial</span>
+            <h5 style="margin:0; font-size:16px; color:var(--md-on-primary-container)">Designing Data-Intensive Applications, 10 anos depois</h5>
+          </div>
+          <div style="font-size:12px; color:var(--md-on-primary-container); opacity:0.75">Hacker News · 12 dez · 4 tags em comum</div>
+        </div>
+      </article>
+      <article style="display:flex; gap:14px; padding:16px; border-radius:16px; background:var(--md-surface-container)">
+        <span class="msym" style="color:var(--md-on-surface-variant)">check_box</span>
+        <div style="display:flex; flex-direction:column; gap:5px; flex:1">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-size:11px; background:var(--md-secondary-container); color:var(--md-on-secondary-container); border-radius:8px; padding:3px 9px">redundante</span>
+            <h5 style="margin:0; font-size:16px; color:var(--md-on-surface-variant)">Guia rápido: rodar LLMs locais com Ollama</h5>
+          </div>
+          <div style="font-size:12px; color:var(--md-on-surface-variant)">OMG! Ubuntu! · 3 dez</div>
+        </div>
+      </article>
+      <article style="display:flex; gap:14px; padding:16px; border-radius:16px; background:var(--md-surface-container-low)">
+        <span class="msym" style="color:var(--md-on-surface-variant)">check_box</span>
+        <div style="display:flex; flex-direction:column; gap:5px; flex:1">
+          <div style="display:flex; align-items:center; gap:10px">
+            <span style="font-size:11px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:8px; padding:3px 9px">não classificado</span>
+            <h5 style="margin:0; font-size:16px; color:var(--md-on-surface-variant)">Novidades do Python 3.11</h5>
+          </div>
+          <div style="font-size:12px; color:var(--md-on-surface-variant)">The Register · mar 2023</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2f" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2f</span>
+    <span style="font-size:13px; color:#9aa2b8">Configurações — IA — escuro</span>
+  </div>
+
+  <div class="theme-dark" style="width:1440px; height:900px; display:flex; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <aside style="width:220px; flex:none; display:flex; flex-direction:column; gap:2px; padding:24px 12px; border-right:1px solid var(--md-outline-variant)">
+      <div style="display:flex; align-items:center; gap:10px; padding:0 12px 20px"><span class="msym" style="color:var(--md-on-surface-variant)">arrow_back</span><span style="font-family:'Google Sans', sans-serif; font-size:17px">Configurações</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px"><span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">folder</span><span style="font-size:14px">Categorias</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px"><span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">rss_feed</span><span style="font-size:14px">Feeds</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px"><span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">import_export</span><span style="font-size:14px">Importar/Exportar</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px; background:var(--md-secondary-container); color:var(--md-on-secondary-container)"><span class="msym" style="font-size:18px">auto_awesome</span><span style="font-size:14px; font-weight:500">IA</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px"><span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">label</span><span style="font-size:14px">Tópicos</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px"><span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">tune</span><span style="font-size:14px">Geral</span></div>
+      <div style="display:flex; align-items:center; gap:10px; padding:10px 16px; border-radius:24px"><span class="msym" style="font-size:18px; color:var(--md-on-surface-variant)">monitor_heart</span><span style="font-size:14px">Status</span></div>
+    </aside>
+    <main style="flex:1; overflow:hidden; padding:32px 48px; display:flex; flex-direction:column; gap:22px; max-width:960px">
+      <h4 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500">Inteligência artificial</h4>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 24px">
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <span style="font-size:12px; color:var(--md-on-surface-variant)">Base URL</span>
+          <div style="height:48px; border-radius:8px; border:1px solid var(--md-outline); display:flex; align-items:center; padding:0 14px; font-size:14px">https://api.cerebras.ai/v1</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <span style="font-size:12px; color:var(--md-on-surface-variant)">Nome do segredo no Jano</span>
+          <div style="height:48px; border-radius:8px; border:1px solid var(--md-outline); display:flex; align-items:center; justify-content:space-between; padding:0 14px; font-size:14px">
+            <span>risos-ai-keys</span>
+            <span class="msym" style="color:var(--md-primary); font-size:18px">check_circle</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <span style="font-size:12px; color:var(--md-on-surface-variant)">Modelo preferido</span>
+          <div style="height:48px; border-radius:8px; border:1px solid var(--md-outline); display:flex; align-items:center; padding:0 14px; font-size:14px">llama-3.3-70b</div>
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--md-on-surface-variant); margin-top:-8px">Nome do segredo que resolve as chaves de IA em tempo real — a chave nunca é salva no app.</div>
+      <div style="display:flex; align-items:center; gap:14px; padding:16px 18px; border-radius:16px; background:var(--md-surface-container)">
+        <span class="msym" style="color:var(--md-primary)">verified</span>
+        <div style="display:flex; flex-direction:column; gap:2px"><span style="font-size:14px">Circuit breaker — fechado</span><span style="font-size:12px; color:var(--md-on-surface-variant)">0 falhas na última hora · fila com 3 itens</span></div>
+        <button style="margin-left:auto; height:36px; padding:0 16px; border-radius:18px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-size:13px; font-family:'Google Sans', sans-serif">Resetar</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px">
+        <div style="display:flex; align-items:center; gap:24px">
+          <div style="width:260px; font-size:14px">Extrair artigo completo</div>
+          <div style="width:52px; height:32px; border-radius:16px; background:var(--md-primary); position:relative"><span style="position:absolute; right:2px; top:2px; width:28px; height:28px; border-radius:50%; background:var(--md-on-primary)"></span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:24px">
+          <div style="width:260px; font-size:14px">Traduzir títulos estrangeiros</div>
+          <div style="width:52px; height:32px; border-radius:16px; background:var(--md-surface-container-highest); border:2px solid var(--md-outline); position:relative"><span style="position:absolute; left:4px; top:4px; width:20px; height:20px; border-radius:50%; background:var(--md-outline)"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2g" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2g</span>
+    <span style="font-size:13px; color:#9aa2b8">Mobile — claro / escuro</span>
+  </div>
+
+  <div style="display:flex; gap:40px">
+    <div class="theme-light" style="width:390px; height:844px; display:flex; flex-direction:column; border-radius:36px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+      <header style="display:flex; align-items:center; gap:10px; padding:18px 20px 14px">
+        <span class="msym">menu</span>
+        <div style="display:flex; flex-direction:column"><span style="font-family:'Google Sans', sans-serif; font-size:17px">Não lidos</span><span style="font-size:11px; color:var(--md-on-surface-variant)">197 posts</span></div>
+        <span class="msym" style="margin-left:auto; color:var(--md-on-surface-variant)">search</span>
+      </header>
+      <div style="display:flex; gap:8px; padding:0 20px 14px">
+        <span style="font-size:13px; background:var(--md-secondary-container); color:var(--md-on-secondary-container); border-radius:999px; padding:6px 14px">Não lidos</span>
+        <span style="font-size:13px; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); border-radius:999px; padding:6px 14px">Favoritos</span>
+        <span style="font-size:13px; border:1px solid var(--md-outline); color:var(--md-on-surface-variant); border-radius:999px; padding:6px 14px">Sugeridos</span>
+      </div>
+      <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; padding:0 20px; gap:2px">
+        <article style="display:flex; flex-direction:column; gap:6px; padding:14px 0">
+          <div style="font-size:11px; color:var(--md-on-surface-variant); display:flex; gap:6px"><span>Gizmodo</span>·<span>agora</span><span style="margin-left:auto; color:var(--md-primary)">86%</span></div>
+          <h5 style="margin:0; font-size:16px">People Love This Porsche Christmas Ad</h5>
+          <p style="margin:0; font-size:13.5px; color:var(--md-on-surface-variant)">McDonald's suspende campanha de Natal com IA.</p>
+        </article>
+        <div style="height:1px; background:var(--md-outline-variant)"></div>
+        <article style="display:flex; flex-direction:column; gap:6px; padding:14px 0">
+          <div style="font-size:11px; color:var(--md-on-surface-variant)">Hackaday · agora</div>
+          <h5 style="margin:0; font-size:16px">Nixie Tube Dashboard</h5>
+        </article>
+      </div>
+      <nav style="display:flex; justify-content:space-around; padding:10px 18px 26px; border-top:1px solid var(--md-outline-variant)">
+        <span style="display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--md-primary)"><span class="msym">inbox</span><span style="font-size:10px">Posts</span></span>
+        <span style="display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--md-on-surface-variant)"><span class="msym">auto_awesome</span><span style="font-size:10px">Sugeridos</span></span>
+        <span style="display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--md-on-surface-variant)"><span class="msym">star</span><span style="font-size:10px">Favoritos</span></span>
+        <span style="display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--md-on-surface-variant)"><span class="msym">settings</span><span style="font-size:10px">Ajustes</span></span>
+      </nav>
+    </div>
+
+    <div class="theme-dark" style="width:390px; height:844px; display:flex; flex-direction:column; border-radius:36px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+      <header style="display:flex; align-items:center; gap:12px; padding:18px 20px 14px">
+        <span class="msym">arrow_back</span>
+        <span style="font-size:12px; color:var(--md-on-surface-variant)">Gizmodo · agora</span>
+        <span style="margin-left:auto; display:flex; gap:14px"><span class="msym">star_border</span><span class="msym">favorite_border</span></span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:4px 20px; display:flex; flex-direction:column; gap:14px">
+        <h4 style="margin:0; font-size:20px; font-family:'Google Sans', sans-serif; font-weight:500">People Love This Porsche Christmas Ad</h4>
+        <div style="border-radius:16px; background:var(--md-primary-container); padding:16px; display:flex; flex-direction:column; gap:8px">
+          <div style="display:flex; align-items:center; gap:8px"><span class="msym" style="color:var(--md-on-primary-container); font-size:18px">auto_awesome</span><span style="font-size:11px; font-weight:500; color:var(--md-on-primary-container); letter-spacing:0.06em; text-transform:uppercase">Resumo IA</span></div>
+          <p style="margin:0; font-size:14px; line-height:1.6; color:var(--md-on-primary-container)">O anúncio de Natal 2025 da Porsche ganhou destaque por, supostamente, não usar IA.</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; padding:14px 20px 26px; border-top:1px solid var(--md-outline-variant)">
+        <button style="flex:1; height:44px; border-radius:22px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px">Original</button>
+        <button style="flex:1; height:44px; border-radius:22px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px">Assistente</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2h" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2h</span>
+    <span style="font-size:13px; color:#9aa2b8">Sugeridos + perfil de tags — claro</span>
+  </div>
+
+  <div class="theme-light" style="width:1440px; height:900px; display:flex; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <aside style="width:320px; flex:none; display:flex; flex-direction:column; gap:20px; padding:28px 24px; background:var(--md-surface-container-low); border-right:1px solid var(--md-outline-variant)">
+      <div>
+        <span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-primary)">Seu perfil</span>
+        <h4 style="margin:6px 0 0; font-family:'Google Sans', sans-serif; font-weight:500">14 tags aprendidas</h4>
+        <div style="font-size:12px; color:var(--md-on-surface-variant); margin-top:4px">de 32 posts curtidos</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px">
+        <span style="font-size:12px; background:var(--md-primary); color:var(--md-on-primary); border-radius:999px; padding:5px 12px">ia</span>
+        <span style="font-size:12px; background:var(--md-primary); color:var(--md-on-primary); border-radius:999px; padding:5px 12px">self-hosting</span>
+        <span style="font-size:12px; background:var(--md-primary); color:var(--md-on-primary); border-radius:999px; padding:5px 12px">linux</span>
+        <span style="font-size:12px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:999px; padding:5px 12px">privacidade</span>
+        <span style="font-size:12px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:999px; padding:5px 12px">hardware</span>
+        <span style="font-size:12px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); text-decoration:line-through; opacity:0.6; border-radius:999px; padding:5px 12px">crypto</span>
+      </div>
+      <div style="font-size:12px; color:var(--md-on-surface-variant)">Clique numa tag para ignorá-la — tags roxas estão no seu perfil, riscadas foram ignoradas.</div>
+      <div style="height:1px; background:var(--md-outline-variant)"></div>
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <div style="display:flex; justify-content:space-between; font-size:13px"><span>Sensibilidade das sugestões</span><span style="color:var(--md-primary); font-weight:500">3</span></div>
+          <div style="height:4px; border-radius:2px; background:var(--md-surface-container-highest); position:relative"><span style="position:absolute; inset:0 55% 0 0; background:var(--md-primary); border-radius:2px"></span></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <div style="display:flex; justify-content:space-between; font-size:13px"><span>Peso mínimo das tags</span><span style="color:var(--md-primary); font-weight:500">2</span></div>
+          <div style="height:4px; border-radius:2px; background:var(--md-surface-container-highest); position:relative"><span style="position:absolute; inset:0 72% 0 0; background:var(--md-primary); border-radius:2px"></span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main style="flex:1; display:flex; flex-direction:column; min-width:0">
+      <header style="display:flex; align-items:center; gap:16px; padding:20px 28px 14px">
+        <div><h4 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500">Sugeridos</h4><div style="font-size:12px; color:var(--md-on-surface-variant)">24 sugestões encontradas (baseado em 14 tags)</div></div>
+        <button style="margin-left:auto; display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">refresh</span>Regenerar</button>
+      </header>
+      <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; padding:4px 16px 16px">
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px">
+          <div style="display:flex; flex-direction:column; gap:8px; flex:1">
+            <div style="display:flex; align-items:baseline; gap:10px">
+              <h5 style="margin:0; font-size:17px">Self-hosting de modelos: o guia completo</h5>
+              <span style="margin-left:auto; font-size:11px; font-weight:500; color:var(--md-on-primary); background:var(--md-primary); border-radius:999px; padding:3px 10px">91% match</span>
+            </div>
+            <div style="font-size:12px; color:var(--md-on-surface-variant)">OSnews · 3h</div>
+            <div style="display:flex; gap:6px"><span style="font-size:11px; background:var(--md-secondary-container); color:var(--md-on-secondary-container); border-radius:8px; padding:4px 10px">self-hosting</span><span style="font-size:11px; background:var(--md-secondary-container); color:var(--md-on-secondary-container); border-radius:8px; padding:4px 10px">ia</span></div>
+          </div>
+        </article>
+        <div style="height:1px; margin:2px 16px; background:var(--md-outline-variant)"></div>
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px">
+          <div style="display:flex; flex-direction:column; gap:8px; flex:1">
+            <div style="display:flex; align-items:baseline; gap:10px">
+              <h5 style="margin:0; font-size:17px">Como configurar um homelab do zero em 2026</h5>
+              <span style="margin-left:auto; font-size:11px; font-weight:500; color:var(--md-on-primary); background:var(--md-primary); border-radius:999px; padding:3px 10px">78% match</span>
+            </div>
+            <div style="font-size:12px; color:var(--md-on-surface-variant)">Linuxiac · 5h</div>
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2i" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2i</span>
+    <span style="font-size:13px; color:#9aa2b8">Sugeridos + perfil de tags — escuro</span>
+  </div>
+
+  <div class="theme-dark" style="width:1440px; height:900px; display:flex; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <aside style="width:320px; flex:none; display:flex; flex-direction:column; gap:20px; padding:28px 24px; background:var(--md-surface-container-low); border-right:1px solid var(--md-outline-variant)">
+      <div>
+        <span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-primary)">Seu perfil</span>
+        <h4 style="margin:6px 0 0; font-family:'Google Sans', sans-serif; font-weight:500">14 tags aprendidas</h4>
+        <div style="font-size:12px; color:var(--md-on-surface-variant); margin-top:4px">de 32 posts curtidos</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px">
+        <span style="font-size:12px; background:var(--md-primary); color:var(--md-on-primary); border-radius:999px; padding:5px 12px">ia</span>
+        <span style="font-size:12px; background:var(--md-primary); color:var(--md-on-primary); border-radius:999px; padding:5px 12px">self-hosting</span>
+        <span style="font-size:12px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); border-radius:999px; padding:5px 12px">privacidade</span>
+        <span style="font-size:12px; background:var(--md-surface-container-highest); color:var(--md-on-surface-variant); text-decoration:line-through; opacity:0.6; border-radius:999px; padding:5px 12px">crypto</span>
+      </div>
+      <div style="height:1px; background:var(--md-outline-variant)"></div>
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <div style="display:flex; justify-content:space-between; font-size:13px"><span>Sensibilidade</span><span style="color:var(--md-primary); font-weight:500">3</span></div>
+        <div style="height:4px; border-radius:2px; background:var(--md-surface-container-highest); position:relative"><span style="position:absolute; inset:0 55% 0 0; background:var(--md-primary); border-radius:2px"></span></div>
+      </div>
+    </aside>
+    <main style="flex:1; display:flex; flex-direction:column; min-width:0">
+      <header style="display:flex; align-items:center; gap:16px; padding:20px 28px 14px">
+        <div><h4 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500">Sugeridos</h4><div style="font-size:12px; color:var(--md-on-surface-variant)">24 sugestões (baseado em 14 tags)</div></div>
+        <button style="margin-left:auto; display:flex; align-items:center; gap:6px; height:40px; padding:0 20px; border-radius:20px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym" style="font-size:18px">refresh</span>Regenerar</button>
+      </header>
+      <div style="flex:1; overflow:hidden; display:flex; flex-direction:column; padding:4px 16px 16px">
+        <article style="display:flex; gap:14px; padding:16px; border-radius:16px">
+          <div style="display:flex; flex-direction:column; gap:8px; flex:1">
+            <div style="display:flex; align-items:baseline; gap:10px">
+              <h5 style="margin:0; font-size:17px">Self-hosting de modelos: o guia completo</h5>
+              <span style="margin-left:auto; font-size:11px; font-weight:500; color:var(--md-on-primary); background:var(--md-primary); border-radius:999px; padding:3px 10px">91% match</span>
+            </div>
+            <div style="font-size:12px; color:var(--md-on-surface-variant)">OSnews · 3h</div>
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2j" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2j</span>
+    <span style="font-size:13px; color:#9aa2b8">OPML — importar / exportar — claro</span>
+  </div>
+
+  <div class="theme-light" style="width:1440px; height:640px; display:flex; border-radius:28px; overflow:hidden; background:var(--md-surface); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <div style="flex:1; display:flex; flex-direction:column; gap:20px; padding:36px; border-right:1px solid var(--md-outline-variant)">
+      <div><span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-primary)">Importar OPML</span><p style="margin:6px 0 0; font-size:13px; color:var(--md-on-surface-variant)">Importe feeds de outros leitores como Feedly, Inoreader, etc.</p></div>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; border:2px dashed var(--md-outline-variant); border-radius:20px; background:var(--md-surface-container-low)">
+        <span class="msym" style="font-size:36px; color:var(--md-on-surface-variant)">upload_file</span>
+        <span style="font-size:14px; color:var(--md-on-surface-variant)">Arraste um arquivo .opml ou</span>
+        <button style="height:40px; padding:0 20px; border-radius:20px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500">Escolher arquivo...</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; background:var(--md-primary-container)">
+        <span class="msym" style="color:var(--md-on-primary-container)">task_alt</span>
+        <div style="font-size:13px; color:var(--md-on-primary-container)"><strong>32</strong> importados · <strong>4</strong> duplicados · <strong>0</strong> erros</div>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:20px; padding:36px">
+      <div><span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-primary)">Exportar OPML</span><p style="margin:6px 0 0; font-size:13px; color:var(--md-on-surface-variant)">Exporte seus feeds para usar em outro leitor.</p></div>
+      <button style="align-self:flex-start; display:flex; align-items:center; gap:8px; height:44px; padding:0 22px; border-radius:22px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500"><span class="msym">download</span>Baixar OPML</button>
+      <div style="height:1px; background:var(--md-outline-variant)"></div>
+      <div><span style="font-size:12px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--md-on-surface-variant)">Exportar favoritos para Mímir</span><p style="margin:6px 0 0; font-size:13px; color:var(--md-on-surface-variant)">Baixa um TXT com URLs dos posts favoritados, uma por linha.</p></div>
+      <button style="align-self:flex-start; height:40px; padding:0 20px; border-radius:20px; border:1px solid var(--md-outline); background:transparent; color:var(--md-primary); font-family:'Google Sans', sans-serif; font-size:14px; font-weight:500">Exportar</button>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex; flex-direction:column; gap:14px">
+  <div style="display:flex; align-items:center; gap:10px">
+    <span id="2k" style="font-family:'Google Sans', sans-serif; font-size:12px; color:#aebbe0; border:1px solid #3a3f55; border-radius:999px; padding:3px 12px">2k</span>
+    <span style="font-size:13px; color:#9aa2b8">Estados vazios e de erro — escuro</span>
+  </div>
+
+  <div class="theme-dark" style="width:1440px; display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; border-radius:28px; overflow:hidden; background:var(--md-outline-variant); box-shadow:var(--md-shadow-md); font-family:'Roboto', sans-serif; color:var(--md-on-surface)">
+    <div style="background:var(--md-surface); padding:48px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; height:280px; justify-content:center">
+      <span class="msym" style="font-size:40px; color:var(--md-primary)">task_alt</span>
+      <div style="font-family:'Google Sans', sans-serif; font-size:17px; font-weight:500">Tudo lido por aqui</div>
+      <div style="font-size:13px; color:var(--md-on-surface-variant); max-width:32ch">Você zerou os não lidos. Volte mais tarde ou explore os Sugeridos.</div>
+    </div>
+    <div style="background:var(--md-surface); padding:48px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; height:280px; justify-content:center">
+      <span class="msym" style="font-size:40px; color:var(--md-on-surface-variant)">rss_feed</span>
+      <div style="font-family:'Google Sans', sans-serif; font-size:17px; font-weight:500">Nenhum feed adicionado</div>
+      <div style="font-size:13px; color:var(--md-on-surface-variant); max-width:32ch">Adicione uma URL de feed ou de um site para descoberta automática.</div>
+      <button style="margin-top:6px; height:36px; padding:0 18px; border-radius:18px; border:none; background:var(--md-primary); color:var(--md-on-primary); font-family:'Google Sans', sans-serif; font-size:13px">Adicionar feed</button>
+    </div>
+    <div style="background:var(--md-surface); padding:48px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; height:280px; justify-content:center">
+      <span class="msym" style="font-size:40px; color:var(--md-error)">error</span>
+      <div style="font-family:'Google Sans', sans-serif; font-size:17px; font-weight:500; color:var(--md-error)">Segredo não encontrado</div>
+      <div style="font-size:13px; color:var(--md-on-surface-variant); max-width:32ch">Confira o nome do segredo no Jano e tente novamente.</div>
+    </div>
+    <div style="background:var(--md-surface); padding:48px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; height:280px; justify-content:center">
+      <span class="msym" style="font-size:40px; color:var(--md-on-surface-variant)">search_off</span>
+      <div style="font-family:'Google Sans', sans-serif; font-size:17px; font-weight:500">Nenhum resultado</div>
+      <div style="font-size:13px; color:var(--md-on-surface-variant); max-width:32ch">Nada encontrado para essa busca — tente outros termos ou limpe os filtros.</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+</x-dc>
+</body>
+</html>

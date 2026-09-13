@@ -28,6 +28,92 @@
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Roboto (Apache License 2.0), latin subset only, same self-hosting
+   rationale as Literata above. Material 3 redesign (docs/specs/
+   MATERIAL3_REDESIGN_PLAN.md) step 1: base typeface for both headings and
+   body — Google Sans, used in the design handoff, is proprietary to Google
+   and not available to self-host, so this app's M3 baseline uses Roboto
+   throughout instead (the standard substitution for non-Google M3 UIs).
+   One variable file covers the whole weight range, like Literata's. */
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/static/fonts/roboto-latin-variable.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* -------------------------------------------
+   0b. Material 3 design tokens (Material3RedesignPlan step 1)
+   ------------------------------------------- */
+
+/* Baseline Google blue M3 palette, taken verbatim from the design handoff
+   (docs/design/material3-handoff/Risos Design Handoff.dc.html). Not yet
+   consumed anywhere — later steps in docs/specs/MATERIAL3_REDESIGN_PLAN.md
+   apply these var(--md-*) tokens screen by screen, replacing the ad-hoc
+   Tailwind gray/blue/purple utility classes as they go. */
+:root {
+    --md-primary: #0B57D0;
+    --md-on-primary: #FFFFFF;
+    --md-primary-container: #D3E3FD;
+    --md-on-primary-container: #041E49;
+    --md-secondary: #565F71;
+    --md-on-secondary: #FFFFFF;
+    --md-secondary-container: #DAE2F9;
+    --md-on-secondary-container: #131C2B;
+    --md-tertiary: #6B5778;
+    --md-tertiary-container: #F2DAFF;
+    --md-surface: #F8F9FF;
+    --md-surface-dim: #D9D9E0;
+    --md-surface-container-lowest: #FFFFFF;
+    --md-surface-container-low: #F2F3FA;
+    --md-surface-container: #ECEDF4;
+    --md-surface-container-high: #E6E8EF;
+    --md-surface-container-highest: #E1E2E9;
+    --md-on-surface: #1A1B20;
+    --md-on-surface-variant: #44474E;
+    --md-outline: #74777F;
+    --md-outline-variant: #C4C6CF;
+    --md-error: #BA1A1A;
+    --md-error-container: #FFDAD6;
+    --md-on-error-container: #410002;
+    --md-shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --md-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.30), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Same variable names, dark values — matches this app's existing dark-mode
+   convention (a `.dark` class on <html>, toggled by settings.js/app.js),
+   not prefers-color-scheme directly. */
+.dark {
+    --md-primary: #A8C7FA;
+    --md-on-primary: #062E6F;
+    --md-primary-container: #284777;
+    --md-on-primary-container: #D3E3FD;
+    --md-secondary: #BEC6DC;
+    --md-on-secondary: #283141;
+    --md-secondary-container: #3E4759;
+    --md-on-secondary-container: #DAE2F9;
+    --md-tertiary: #D6BEE4;
+    --md-tertiary-container: #523F5F;
+    --md-surface: #111318;
+    --md-surface-dim: #111318;
+    --md-surface-container-lowest: #0C0E13;
+    --md-surface-container-low: #1A1C22;
+    --md-surface-container: #1E2026;
+    --md-surface-container-high: #282A30;
+    --md-surface-container-highest: #33353B;
+    --md-on-surface: #E2E2E9;
+    --md-on-surface-variant: #C4C6CF;
+    --md-outline: #8E9099;
+    --md-outline-variant: #44474E;
+    --md-error: #FFB4AB;
+    --md-error-container: #93000A;
+    --md-on-error-container: #FFDAD6;
+    --md-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --md-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
 /* -------------------------------------------
    1. Base / Reset
    ------------------------------------------- */

@@ -43,6 +43,16 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    // Material 3 redesign step 1 (docs/specs/MATERIAL3_REDESIGN_PLAN.md):
+                    // Roboto everywhere per the M3 baseline — Google Sans from the
+                    // design handoff is proprietary and not self-hostable.
+                    fontFamily: {
+                        sans: ['Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
@@ -51,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912u';</script>
+    <script>var APP_VERSION = '20260912v';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->

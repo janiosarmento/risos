@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Google+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
+<style>
+body{margin:0; background:#111318}
+.msym{font-family:'Material Symbols Outlined'; font-size:22px; vertical-align:middle}
+a{color:#A8C7FA}
+a:hover{color:#D3E3FD}
+</style>
+</helmet>
+
+<div style="font-family:'Roboto', sans-serif; color:#E2E2E9; max-width:960px; margin:0 auto; padding:56px 32px 96px; display:flex; flex-direction:column; gap:40px">
+
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <span style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:#A8C7FA; font-family:'Google Sans', sans-serif">Handoff para desenvolvimento</span>
+    <h1 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500; font-size:32px">Risos — Material 3</h1>
+    <p style="margin:0; color:#C4C6CF; max-width:70ch">Specs dos tokens e componentes usados no redesenho. Sem design system anexado — tokens definidos direto no baseline azul do Material 3 do Google (não Material You dinâmico). Claro e escuro compartilham os mesmos nomes de variável.</p>
+  </div>
+
+  <section style="display:flex; flex-direction:column; gap:16px">
+    <h2 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px; border-bottom:1px solid #44474E; padding-bottom:10px">Cor</h2>
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px">
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#0B57D0"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-primary<br><span style="color:#8E9099">#0B57D0 / #A8C7FA (dark)</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#D3E3FD"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-primary-container<br><span style="color:#8E9099">#D3E3FD / #284777</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#DAE2F9"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-secondary-container<br><span style="color:#8E9099">#DAE2F9 / #3E4759</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#F8F9FF; border:1px solid #C4C6CF"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-surface<br><span style="color:#8E9099">#F8F9FF / #111318</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#ECEDF4; border:1px solid #C4C6CF"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-surface-container<br><span style="color:#8E9099">#ECEDF4 / #1E2026</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#1A1B20"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-on-surface<br><span style="color:#8E9099">#1A1B20 / #E2E2E9</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#44474E"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-on-surface-variant<br><span style="color:#8E9099">#44474E / #C4C6CF</span></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <div style="height:64px; border-radius:12px; background:#BA1A1A"></div>
+        <div style="font-size:12px; font-family:ui-monospace, monospace">--md-error<br><span style="color:#8E9099">#BA1A1A / #FFB4AB</span></div>
+      </div>
+    </div>
+    <p style="margin:0; font-size:13px; color:#C4C6CF">Regra de uso: <strong>container</strong> tons (ex: primary-container) para preenchimentos de destaque de área — nunca a cor base sólida em blocos grandes. A cor base (--md-primary) é reservada a botões preenchidos, indicadores e ícones ativos.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:16px">
+    <h2 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px; border-bottom:1px solid #44474E; padding-bottom:10px">Tipografia</h2>
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <div style="display:flex; align-items:baseline; gap:16px"><span style="font-family:'Google Sans', sans-serif; font-weight:500; font-size:32px">Headline</span><span style="font-size:12px; color:#8E9099; font-family:ui-monospace, monospace">Google Sans 500 · 22–32px · títulos de tela</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px"><span style="font-family:'Google Sans', sans-serif; font-weight:500; font-size:17px">Title</span><span style="font-size:12px; color:#8E9099; font-family:ui-monospace, monospace">Google Sans 500 · 16–17px · título de card/post</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px"><span style="font-family:'Roboto', sans-serif; font-size:14px">Body</span><span style="font-size:12px; color:#8E9099; font-family:ui-monospace, monospace">Roboto 400 · 13–15px · corpo de texto</span></div>
+      <div style="display:flex; align-items:baseline; gap:16px"><span style="font-family:'Roboto', sans-serif; font-size:11px; letter-spacing:0.06em; text-transform:uppercase">Label</span><span style="font-size:12px; color:#8E9099; font-family:ui-monospace, monospace">Roboto 500 · 11–12px · tags, kickers, meta</span></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:16px">
+    <h2 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px; border-bottom:1px solid #44474E; padding-bottom:10px">Forma &amp; elevação</h2>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px">
+      <div style="display:flex; flex-direction:column; gap:8px"><div style="height:56px; border-radius:8px; background:#1E2026"></div><span style="font-size:12px; font-family:ui-monospace, monospace">8px — inputs, chips pequenos</span></div>
+      <div style="display:flex; flex-direction:column; gap:8px"><div style="height:56px; border-radius:16px; background:#1E2026"></div><span style="font-size:12px; font-family:ui-monospace, monospace">16px — cards, artigos, seções tonais</span></div>
+      <div style="display:flex; flex-direction:column; gap:8px"><div style="height:56px; border-radius:28px; background:#1E2026"></div><span style="font-size:12px; font-family:ui-monospace, monospace">28px — janelas/containers de tela, FAB grande</span></div>
+    </div>
+    <p style="margin:0; font-size:13px; color:#C4C6CF">Botões e chips usam raio total (pill, <code>border-radius:999px</code> ou altura/2). Elevação em duas camadas de sombra (<code>--md-shadow</code> / <code>--md-shadow-md</code>) — nunca mais que isso.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:16px">
+    <h2 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px; border-bottom:1px solid #44474E; padding-bottom:10px">Componentes</h2>
+    <div style="display:flex; flex-direction:column; gap:10px">
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #292B31">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">Botão preenchido</div>
+        <div style="font-size:13px; color:#C4C6CF">Altura 40px, raio total, fundo <code>--md-primary</code>, texto <code>--md-on-primary</code>. Ação primária única por tela/seção. Ex: Atualizar, Assistente, Arquivar.</div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #292B31">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">Botão outlined</div>
+        <div style="font-size:13px; color:#C4C6CF">Mesma altura, borda 1px <code>--md-outline</code>, fundo transparente, texto <code>--md-primary</code>. Ações secundárias.</div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #292B31">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">FAB</div>
+        <div style="font-size:13px; color:#C4C6CF">56×56px, raio 16px, fundo <code>--md-tertiary-container</code>, sombra md. Uma única ação flutuante por tela (ex: atualizar feeds).</div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #292B31">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">Item de lista (nav)</div>
+        <div style="font-size:13px; color:#C4C6CF">Raio 24px, padding 10×16px. Estado ativo = fundo <code>--md-secondary-container</code>; estado "destaque IA" (Sugeridos) = fundo <code>--md-primary-container</code>.</div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #292B31">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">Chip / tag</div>
+        <div style="font-size:13px; color:#C4C6CF">Raio 8px (tag de conteúdo) ou 999px (chip de filtro). Fundo <code>--md-secondary-container</code> para tags do perfil, <code>--md-surface-container-highest</code> para neutras.</div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #292B31">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">Switch</div>
+        <div style="font-size:13px; color:#C4C6CF">52×32px, trilho <code>--md-primary</code> quando ativo, <code>--md-surface-container-highest</code> + borda <code>--md-outline</code> quando inativo.</div>
+      </div>
+      <div style="display:flex; gap:16px; align-items:flex-start; padding:14px 0">
+        <div style="width:180px; font-family:'Google Sans', sans-serif; font-size:14px; flex:none">Painel de resumo IA</div>
+        <div style="font-size:13px; color:#C4C6CF">Sempre em <code>--md-primary-container</code> / <code>--md-on-primary-container</code> — é o único bloco de conteúdo com fundo tonal cheio, para separar claramente IA de conteúdo original.</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:16px">
+    <h2 style="margin:0; font-family:'Google Sans', sans-serif; font-weight:500; font-size:22px; border-bottom:1px solid #44474E; padding-bottom:10px">Regra de segurança — chaves de IA</h2>
+    <p style="margin:0; font-size:14px; color:#C4C6CF; max-width:70ch">O campo de configuração de IA nunca recebe ou exibe a chave de API. Ele guarda apenas o <strong>nome do segredo no Jano</strong> (<code>jano_secret_name</code>), validado contra um allowlist no backend; a chave real é resolvida em tempo de execução. A UI mostra um indicador de "segredo encontrado/não encontrado" — nunca um valor mascarado tipo <code>sk-••••</code>.</p>
+  </section>
+
+  <div style="font-size:12px; color:#8E9099; border-top:1px solid #292B31; padding-top:20px">Referência de telas: <a href="Risos Redesign (Material).dc.html">Risos Redesign (Material).dc.html</a> — 2a–2k.</div>
+
+</div>
+
+</x-dc>
+</body>
+</html>
