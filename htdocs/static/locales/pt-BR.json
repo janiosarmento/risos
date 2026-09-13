@@ -393,6 +393,8 @@
     "loginFailed": "Falha no login",
     "sessionExpired": "Sessão expirada",
     "requestFailed": "Falha na requisição",
+    "gatewayError": "O servidor não respondeu a tempo, ou estava reiniciando. Tente novamente.",
+    "serverUnreachable": "Não foi possível alcançar o servidor. Ele pode estar reiniciando — verifique sua conexão.",
     "copyFailed": "Falha ao copiar para a área de transferência",
     "loadRelatedPosts": "Erro ao carregar posts relacionados",
     "generateConsolidatedSummary": "Erro ao consolidar resumos no LLM"

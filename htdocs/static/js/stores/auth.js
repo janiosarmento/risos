@@ -7,6 +7,9 @@ document.addEventListener('alpine:init', () => {
         authenticated: false,  // Tracks login state (cookie-based, no token)
 
         async fetchApi(endpoint, options = {}) {
+            // The i18n store may not exist yet on the very first call.
+            const t = (key, fallback) =>
+                Alpine.store('i18n')?.t(key, fallback) ?? fallback ?? key;
             const headers = {
                 'Content-Type': 'application/json',
                 ...options.headers,
@@ -51,7 +54,22 @@ document.addEventListener('alpine:init', () => {
                             continue;
                         }
                         const data = await response.json().catch(() => ({}));
-                        throw new Error(data.detail || 'Request failed');
+                        // A bare "Request failed" is useless when something
+                        // goes wrong. The backend usually sends a `detail`,
+                        // but a gateway error (worker restarting, upstream
+                        // timeout) never does — nginx answers with HTML — so
+                        // fall back to naming the status itself.
+                        let detail = data.detail;
+                        if (Array.isArray(detail)) {
+                            // FastAPI validation errors arrive as a list.
+                            detail = detail.map(d => d?.msg).filter(Boolean).join('; ');
+                        }
+                        if (typeof detail !== 'string' || !detail) {
+                            detail = transient
+                                ? `${t('errors.gatewayError')} (${response.status})`
+                                : `${t('errors.requestFailed')} (${response.status}${response.statusText ? ' ' + response.statusText : ''})`;
+                        }
+                        throw new Error(detail);
                     }
 
                     if (response.status === 204) {
@@ -74,11 +92,18 @@ document.addEventListener('alpine:init', () => {
                         await sleep(RETRY_DELAY_MS);
                         continue;
                     }
+                    // "Failed to fetch" tells the user nothing and differs per
+                    // browser; say what it actually means.
+                    if (isNetworkError) {
+                        throw new Error(t('errors.serverUnreachable'));
+                    }
                     throw error;
                 }
             }
 
-            throw lastError || new Error('Request failed');
+            throw lastError instanceof TypeError
+                ? new Error(t('errors.serverUnreachable'))
+                : (lastError || new Error(t('errors.requestFailed')));
         }
     });
 });

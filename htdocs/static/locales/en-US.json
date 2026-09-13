@@ -393,6 +393,8 @@
     "loginFailed": "Login failed",
     "sessionExpired": "Session expired",
     "requestFailed": "Request failed",
+    "gatewayError": "The server did not answer in time, or was restarting. Try again.",
+    "serverUnreachable": "Could not reach the server. It may be restarting — check your connection.",
     "copyFailed": "Failed to copy to clipboard",
     "loadRelatedPosts": "Failed to load related posts",
     "generateConsolidatedSummary": "Failed to generate consolidated summary"
