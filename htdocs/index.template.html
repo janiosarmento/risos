@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913b';</script>
+    <script>var APP_VERSION = '20260913c';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1523,45 +1523,56 @@
                         <div x-show="settingsTab === 'ai'" class="space-y-4">
 
                             <!-- ===== On-demand AI (interactive) ===== -->
-                            <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-0" x-text="t('settings.ondemandAiTitle')"></h4>
+                            <h4 class="text-sm font-bold text-[var(--md-on-surface)] mb-0" x-text="t('settings.ondemandAiTitle')"></h4>
 
                             <!-- Jano Secret Name -->
                             <div>
-                                <label for="setting-jano-secret-name" class="block text-sm font-medium mb-1" x-text="t('settings.janoSecretName')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.janoSecretNameDesc')"></p>
-                                <input
-                                    id="setting-jano-secret-name"
-                                    type="text"
-                                    x-model="janoSecretName"
-                                    :placeholder="t('settings.janoSecretNamePlaceholder')"
-                                    @change="onJanoSecretNameChange()"
-                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
-                                />
+                                <label for="setting-jano-secret-name" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.janoSecretName')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.janoSecretNameDesc')"></p>
+                                <div class="flex items-center gap-2">
+                                    <input
+                                        id="setting-jano-secret-name"
+                                        type="text"
+                                        x-model="janoSecretName"
+                                        :placeholder="t('settings.janoSecretNamePlaceholder')"
+                                        @change="onJanoSecretNameChange()"
+                                        class="flex-1 min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
+                                    />
+                                    <!-- Found/not-found indicator (M3 redesign step 12) — never shows the
+                                         secret's value, only whether /admin/validate-secret resolved it. -->
+                                    <span
+                                        x-show="janoSecretValid !== null"
+                                        class="msym text-[20px] flex-shrink-0"
+                                        :class="janoSecretValid ? 'text-[var(--md-primary)]' : 'text-[var(--md-error)]'"
+                                        :data-tip="janoSecretValid ? t('settings.secretValid') : t('settings.secretNotFound')"
+                                        x-text="janoSecretValid ? 'check_circle' : 'error'"
+                                    ></span>
+                                </div>
                             </div>
 
                             <!-- API Base URL -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-api-base-url" class="block text-sm font-medium mb-1" x-text="t('settings.apiBaseUrl')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.apiBaseUrlDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-api-base-url" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.apiBaseUrl')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.apiBaseUrlDesc')"></p>
                                 <input
                                     id="setting-api-base-url"
                                     type="url"
                                     x-model="apiBaseUrl"
                                     :placeholder="t('settings.apiBaseUrlPlaceholder')"
                                     @change="onApiBaseUrlChange()"
-                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                    class="w-full px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
                                 />
                             </div>
 
                             <!-- AI Model -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-ai-model" class="block text-sm font-medium mb-1" x-text="t('settings.aiModel')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-ai-model" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.aiModel')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.aiModelDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <select
                                         id="setting-ai-model"
                                         @change="setAiModel($event.target.value)"
-                                        class="flex-1 max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        class="flex-1 min-w-0 max-w-xs px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                         :disabled="availableModels.length === 0"
                                     >
                                         <template x-if="availableModels.length === 0">
@@ -1574,7 +1585,7 @@
                                     </select>
                                     <button
                                         @click="clearModelsCache()"
-                                        class="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-sm transition-colors"
+                                        class="p-2 rounded-full border border-[var(--md-outline)] text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)] transition-colors flex-shrink-0"
                                         :data-tip="t('settings.refreshModels')"
                                         :aria-label="t('settings.refreshModels')"
                                     >
@@ -1584,8 +1595,8 @@
                             </div>
 
                             <!-- AI Timeout -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-ai-timeout" class="block text-sm font-medium mb-1" x-text="t('settings.aiTimeout')"></label>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-ai-timeout" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.aiTimeout')"></label>
                                 <div class="flex items-center gap-2">
                                     <input
                                         id="setting-ai-timeout"
@@ -1593,15 +1604,15 @@
                                         min="5" max="600"
                                         x-model.number="aiTimeout"
                                         @change="saveAiSettings()"
-                                        class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                        class="w-24 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] text-sm"
                                     >
-                                    <span class="text-sm text-gray-500">s</span>
+                                    <span class="text-sm text-[var(--md-on-surface-variant)]">s</span>
                                 </div>
                             </div>
 
                             <!-- AI Max Tokens -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-ai-max-tokens" class="block text-sm font-medium mb-1" x-text="t('settings.aiMaxTokens')"></label>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-ai-max-tokens" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.aiMaxTokens')"></label>
                                 <div class="flex items-center gap-2">
                                     <input
                                         id="setting-ai-max-tokens"
@@ -1609,16 +1620,16 @@
                                         min="256" max="32768" step="256"
                                         x-model.number="aiMaxTokens"
                                         @change="saveAiSettings()"
-                                        class="w-32 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                        class="w-32 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] text-sm"
                                     >
-                                    <span class="text-sm text-gray-500">tokens</span>
+                                    <span class="text-sm text-[var(--md-on-surface-variant)]">tokens</span>
                                 </div>
                             </div>
 
                             <!-- Summary Temperature -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-summary-temperature" class="block text-sm font-medium mb-1" x-text="t('settings.summaryTemperature')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryTemperatureDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-summary-temperature" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.summaryTemperature')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.summaryTemperatureDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <input
                                         id="setting-summary-temperature"
@@ -1626,15 +1637,15 @@
                                         min="0" max="2" step="0.1"
                                         x-model.number="summaryTemperature"
                                         @change="saveAiSettings()"
-                                        class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                        class="w-24 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] text-sm"
                                     >
                                 </div>
                             </div>
 
                             <!-- Summary Presence Penalty -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-summary-presence-penalty" class="block text-sm font-medium mb-1" x-text="t('settings.summaryPresencePenalty')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryPresencePenaltyDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-summary-presence-penalty" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.summaryPresencePenalty')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.summaryPresencePenaltyDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <input
                                         id="setting-summary-presence-penalty"
@@ -1642,19 +1653,19 @@
                                         min="-2" max="2" step="0.1"
                                         x-model.number="summaryPresencePenalty"
                                         @change="saveAiSettings()"
-                                        class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                        class="w-24 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] text-sm"
                                     >
                                 </div>
                             </div>
 
                             <!-- Summary Language -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-summary-language" class="block text-sm font-medium mb-1" x-text="t('settings.summaryLanguage')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-summary-language" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.summaryLanguage')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.summaryLanguageDesc')"></p>
                                 <select
                                     id="setting-summary-language"
                                     @change="setSummaryLanguage($event.target.value)"
-                                    class="w-full max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    class="w-full max-w-xs px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                 >
                                     <template x-for="lang in availableSummaryLanguages" :key="lang.code">
                                         <option :value="lang.code" :selected="summaryLanguage === lang.code" x-text="lang.name"></option>
@@ -1663,9 +1674,9 @@
                             </div>
 
                             <!-- Curation Engine -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label class="block text-sm font-medium mb-2" x-text="t('settings.curationEngine')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-3" x-text="t('settings.curationEngineDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label class="block text-sm font-medium mb-2 text-[var(--md-on-surface)]" x-text="t('settings.curationEngine')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-3" x-text="t('settings.curationEngineDesc')"></p>
                                 <div class="flex gap-4">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input
@@ -1674,9 +1685,9 @@
                                             value="ondemand"
                                             :checked="curationEngine === 'ondemand'"
                                             @change="setCurationEngine('ondemand')"
-                                            class="w-4 h-4"
+                                            class="w-4 h-4 accent-[var(--md-primary)]"
                                         >
-                                        <span class="text-sm" x-text="t('settings.curationEngineOndemand')"></span>
+                                        <span class="text-sm text-[var(--md-on-surface)]" x-text="t('settings.curationEngineOndemand')"></span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input
@@ -1685,17 +1696,17 @@
                                             value="background"
                                             :checked="curationEngine === 'background'"
                                             @change="setCurationEngine('background')"
-                                            class="w-4 h-4"
+                                            class="w-4 h-4 accent-[var(--md-primary)]"
                                         >
-                                        <span class="text-sm" x-text="t('settings.curationEngineBackground')"></span>
+                                        <span class="text-sm text-[var(--md-on-surface)]" x-text="t('settings.curationEngineBackground')"></span>
                                     </label>
                                 </div>
                             </div>
 
                             <!-- Tags per Post -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-tags-per-post" class="block text-sm font-medium mb-1" x-text="t('settings.tagsPerPost')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.tagsPerPostDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-tags-per-post" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.tagsPerPost')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.tagsPerPostDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <input
                                         id="setting-tags-per-post"
@@ -1703,17 +1714,17 @@
                                         min="3" max="15" step="1"
                                         :value="tagsPerPost"
                                         @input="setTagsPerPost($event.target.value)"
-                                        class="flex-1"
+                                        class="flex-1 accent-[var(--md-primary)]"
                                     >
-                                    <span class="text-sm font-mono w-8 text-center" x-text="tagsPerPost"></span>
-                                    <span class="text-sm text-gray-500" x-text="t('settings.tags')"></span>
+                                    <span class="text-sm font-mono w-8 text-center text-[var(--md-on-surface)]" x-text="tagsPerPost"></span>
+                                    <span class="text-sm text-[var(--md-on-surface-variant)]" x-text="t('settings.tags')"></span>
                                 </div>
                             </div>
 
                             <!-- Related Posts Limit for Assistant -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-related-posts-limit" class="block text-sm font-medium mb-1" x-text="t('settings.relatedPostsLimit')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.relatedPostsLimitDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-related-posts-limit" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.relatedPostsLimit')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.relatedPostsLimitDesc')"></p>
                                 <div class="flex items-center gap-2">
                                     <input
                                         id="setting-related-posts-limit"
@@ -1721,55 +1732,64 @@
                                         min="5" max="100" step="5"
                                         :value="relatedPostsLimit"
                                         @input="setRelatedPostsLimit($event.target.value)"
-                                        class="flex-1"
+                                        class="flex-1 accent-[var(--md-primary)]"
                                     >
-                                    <span class="text-sm font-mono w-8 text-center" x-text="relatedPostsLimit"></span>
-                                    <span class="text-sm text-gray-500" x-text="t('settings.posts')"></span>
+                                    <span class="text-sm font-mono w-8 text-center text-[var(--md-on-surface)]" x-text="relatedPostsLimit"></span>
+                                    <span class="text-sm text-[var(--md-on-surface-variant)]" x-text="t('settings.posts')"></span>
                                 </div>
                             </div>
 
 
                             <!-- ===== Background AI (batch processing) ===== -->
-                            <div class="pt-3 border-t-2 border-gray-300 dark:border-gray-500">
-                                <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4" x-text="t('settings.backgroundAiTitle')"></h4>
+                            <div class="pt-3 border-t-2 border-[var(--md-outline)]">
+                                <h4 class="text-sm font-bold text-[var(--md-on-surface)] mb-4" x-text="t('settings.backgroundAiTitle')"></h4>
 
                                 <!-- Background Jano Secret Name -->
                                 <div>
-                                    <label for="setting-background-jano-secret-name" class="block text-sm font-medium mb-1" x-text="t('settings.backgroundJanoSecretName')"></label>
-                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.backgroundJanoSecretNameDesc')"></p>
-                                    <input
-                                        id="setting-background-jano-secret-name"
-                                        type="text"
-                                        x-model="backgroundJanoSecretName"
-                                        :placeholder="t('settings.backgroundJanoSecretNamePlaceholder')"
-                                        @change="onBackgroundJanoSecretNameChange()"
-                                        class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
-                                    />
+                                    <label for="setting-background-jano-secret-name" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.backgroundJanoSecretName')"></label>
+                                    <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.backgroundJanoSecretNameDesc')"></p>
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            id="setting-background-jano-secret-name"
+                                            type="text"
+                                            x-model="backgroundJanoSecretName"
+                                            :placeholder="t('settings.backgroundJanoSecretNamePlaceholder')"
+                                            @change="onBackgroundJanoSecretNameChange()"
+                                            class="flex-1 min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
+                                        />
+                                        <span
+                                            x-show="backgroundJanoSecretValid !== null"
+                                            class="msym text-[20px] flex-shrink-0"
+                                            :class="backgroundJanoSecretValid ? 'text-[var(--md-primary)]' : 'text-[var(--md-error)]'"
+                                            :data-tip="backgroundJanoSecretValid ? t('settings.secretValid') : t('settings.secretNotFound')"
+                                            x-text="backgroundJanoSecretValid ? 'check_circle' : 'error'"
+                                        ></span>
+                                    </div>
                                 </div>
 
                                 <!-- Background API Base URL -->
-                                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                    <label for="setting-background-api-base-url" class="block text-sm font-medium mb-1" x-text="t('settings.backgroundApiBaseUrl')"></label>
-                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.backgroundApiBaseUrlDesc')"></p>
+                                <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                    <label for="setting-background-api-base-url" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.backgroundApiBaseUrl')"></label>
+                                    <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.backgroundApiBaseUrlDesc')"></p>
                                     <input
                                         id="setting-background-api-base-url"
                                         type="url"
                                         x-model="backgroundApiBaseUrl"
                                         :placeholder="t('settings.apiBaseUrlPlaceholder')"
                                         @change="onBackgroundApiBaseUrlChange()"
-                                        class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                        class="w-full px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
                                     />
                                 </div>
 
                                 <!-- Background AI Model -->
-                                <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                    <label for="setting-background-ai-model" class="block text-sm font-medium mb-1" x-text="t('settings.backgroundAiModel')"></label>
-                                    <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.backgroundAiModelDesc')"></p>
+                                <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                    <label for="setting-background-ai-model" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.backgroundAiModel')"></label>
+                                    <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.backgroundAiModelDesc')"></p>
                                     <div class="flex items-center gap-2">
                                         <select
                                             id="setting-background-ai-model"
                                             @change="setBackgroundAiModel($event.target.value)"
-                                            class="flex-1 max-w-xs px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                            class="flex-1 min-w-0 max-w-xs px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                             :disabled="backgroundAvailableModels.length === 0"
                                         >
                                             <template x-if="backgroundAvailableModels.length === 0">
@@ -1782,7 +1802,7 @@
                                         </select>
                                         <button
                                             @click="loadBackgroundAvailableModels()"
-                                            class="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-sm transition-colors"
+                                            class="p-2 rounded-full border border-[var(--md-outline)] text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)] transition-colors flex-shrink-0"
                                             :data-tip="t('settings.refreshModels')"
                                             :aria-label="t('settings.refreshModels')"
                                         >
@@ -1794,34 +1814,34 @@
 
 
                             <!-- System Prompt -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-system-prompt" class="block text-sm font-medium mb-1" x-text="t('settings.systemPrompt')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.systemPromptDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-system-prompt" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.systemPrompt')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.systemPromptDesc')"></p>
                                 <textarea
                                     id="setting-system-prompt"
                                     x-model="systemPrompt"
                                     rows="10"
-                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                    class="w-full px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
                                 ></textarea>
                             </div>
 
                             <!-- User Prompt -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <label for="setting-user-prompt" class="block text-sm font-medium mb-1" x-text="t('settings.userPrompt')"></label>
-                                <p class="text-gray-500 dark:text-gray-400 text-xs mb-2" x-text="t('settings.userPromptDesc')"></p>
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)]">
+                                <label for="setting-user-prompt" class="block text-sm font-medium mb-1 text-[var(--md-on-surface)]" x-text="t('settings.userPrompt')"></label>
+                                <p class="text-[var(--md-on-surface-variant)] text-xs mb-2" x-text="t('settings.userPromptDesc')"></p>
                                 <textarea
                                     id="setting-user-prompt"
                                     x-model="userPrompt"
                                     rows="8"
-                                    class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                    class="w-full px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
                                 ></textarea>
                             </div>
 
                             <!-- Action buttons -->
-                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                            <div class="pt-3 border-t border-[var(--md-outline-variant)] flex items-center gap-3">
                                 <button
                                     @click="resetPromptsToDefaults()"
-                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded font-medium transition-colors"
+                                    class="px-4 py-2 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] font-medium transition-colors"
                                     x-text="t('settings.resetDefaults')"
                                 ></button>
                             </div>

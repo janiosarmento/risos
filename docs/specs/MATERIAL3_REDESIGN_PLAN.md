@@ -266,8 +266,32 @@ things in one commit.
      max-h-[80vh]` to a fixed `h-[90vh] md:h-[80vh]` so the shell is
      always full-size regardless of which tab is open; only the content
      pane's own `overflow-y-auto` should ever scroll now, never the shell.
-- [ ] **12. AI tab** — mockup's fields (Jano secret, model, circuit breaker,
-  toggles) plus the gaps: background-job config, prompts, curation engine.
+- [x] **12. AI tab** — every field (on-demand: Jano secret, base URL, model,
+  timeout, max tokens, temperature, presence penalty, summary language,
+  curation engine, tags-per-post, related-posts limit; background:
+  secret, base URL, model; prompts: system/user + reset-to-defaults)
+  moved from `gray-100`/`blue-600` to `--md-*` tokens — inputs/selects/
+  textareas as `bg-surface` + `border-outline` + `rounded-lg`, dividers
+  to `outline-variant`, refresh icon buttons to the circular outlined
+  style from step 6/8, Reset Defaults to the confirm-modal's outlined
+  pill, native radios/ranges recolored via Tailwind's `accent-*` instead
+  of custom-drawn controls (no interaction reimplemented, per the
+  handoff's own instruction). Circuit breaker isn't here — it lives in
+  the Status tab (step 17), the mockup's 2f screen bundles it with AI
+  but the real app doesn't.
+  **Closed a real gap, not just a reskin**: step 3 deliberately skipped
+  the mockup's "secret not found" empty state because nothing in the
+  app surfaced found/not-found at the time; that plumbing exists now.
+  Added a `check_circle`/`error` indicator next to both Jano secret
+  fields — `janoSecretValid`/`backgroundJanoSecretValid` in the prefs
+  store, populated for free by the *existing* `/admin/validate-secret`
+  endpoint (already called on every secret-name change to refresh the
+  model list; only added a `refreshSecretStatus()` call at app init so
+  the icon is already right before Settings is even opened). No backend
+  change — the endpoint already returns only `{valid, masked_key}`,
+  never the key, so the non-negotiable "no plaintext key field" rule
+  from the handoff wasn't at stake. Re-subsetted the Material Symbols
+  font (v4 → v5) to add `check_circle`, `error`.
 - [ ] **13. Categories/Feeds tab** — incl. feed↔category drag-and-drop.
 - [ ] **14. Topics tab** — incl. tag↔topic drag-and-drop, AI topic/tag
   suggestions.

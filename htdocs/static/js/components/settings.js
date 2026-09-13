@@ -887,6 +887,7 @@ const settingsMixin = {
     async _validateAndReloadModels(engine) {
         const label = engine === 'background' ? 'Background' : 'On-demand';
         const result = await this._validateSecret(engine);
+        this._setSecretValid(engine, result.reason === 'empty' ? null : !!result.valid);
         if (result.reason === 'empty') {
             if (engine === 'background') {
                 this.backgroundAvailableModels = [];
@@ -906,6 +907,22 @@ const settingsMixin = {
         if (result.valid) {
             this.showToast(`${label}: ${this.t('settings.secretValid') || 'Secret found'} (${result.masked_key})`);
         }
+    },
+
+    _setSecretValid(engine, valid) {
+        if (engine === 'background') {
+            this.backgroundJanoSecretValid = valid;
+        } else {
+            this.janoSecretValid = valid;
+        }
+    },
+
+    // Populates the found/not-found indicator next to a Jano secret field without
+    // reloading the models list — used once at app init so the icon is already
+    // right by the time Settings > AI is opened, before the user touches anything.
+    async refreshSecretStatus(engine) {
+        const result = await this._validateSecret(engine);
+        this._setSecretValid(engine, result.reason === 'empty' ? null : !!result.valid);
     },
 
     _resetModelForEngine(engine) {
@@ -1177,6 +1194,12 @@ const settingsMixin = {
             this.backgroundJanoSecretName = serverPrefs.background_jano_secret_name || '';
             if (serverPrefs.background_api_base_url) this.backgroundApiBaseUrl = serverPrefs.background_api_base_url;
             if (serverPrefs.background_ai_model) this.backgroundAiModel = serverPrefs.background_ai_model;
+
+            // Found/not-found indicator for both Jano secret fields — fire-and-forget
+            // so app init isn't held up by two extra round-trips; the icon just pops
+            // in once each answers.
+            this.refreshSecretStatus('ondemand');
+            this.refreshSecretStatus('background');
         } catch (e) {
             console.warn('Failed to sync preferences:', e);
         }

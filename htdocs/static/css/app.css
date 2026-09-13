@@ -47,18 +47,18 @@
    in the Material Symbols set). Self-hosted like the other fonts above,
    subsetted via Google's icon_names API (see git history for the exact
    request) rather than pulling the full multi-thousand-glyph icon font.
-   v4 = auto_awesome, block, check, chevron_left, chevron_right, circle,
-   close, content_copy, database, delete, download, edit, expand_more,
-   favorite, folder, import_export, inbox, info, label, lock, menu,
-   monitor_heart, open_in_new, progress_activity, refresh, rss_feed,
-   schedule, search, search_off, sell, settings, star, task_alt, tune,
-   visibility, visibility_off. */
+   v5 = auto_awesome, block, check, check_circle, chevron_left,
+   chevron_right, circle, close, content_copy, database, delete,
+   download, edit, error, expand_more, favorite, folder, import_export,
+   inbox, info, label, lock, menu, monitor_heart, open_in_new,
+   progress_activity, refresh, rss_feed, schedule, search, search_off,
+   sell, settings, star, task_alt, tune, visibility, visibility_off. */
 @font-face {
     font-family: 'Material Symbols Outlined';
     font-style: normal;
     font-weight: 400;
     font-display: block;
-    src: url('/static/fonts/material-symbols-subset.woff2?v=4') format('woff2');
+    src: url('/static/fonts/material-symbols-subset.woff2?v=5') format('woff2');
 }
 
 /* .msym renders its text content (an icon name, e.g. "auto_awesome") as
