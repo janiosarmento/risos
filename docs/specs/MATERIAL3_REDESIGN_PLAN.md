@@ -156,9 +156,20 @@ things in one commit.
   not nav list items. The header's separate postFilter row
   (Unread/All/Starred buttons above the post list) is also untouched —
   that's part of the main content header, not the sidebar.
-- [ ] **6. Post list** (cards, tag chips, score badge, unread dot) (2a/2b).
-  This is also where `.font-reading` (Literata) on post titles gets
-  reconsidered against the Roboto-everywhere decision above.
+- [x] **6. Post list** (2a/2b) — card radius 16px, keyboard-focus row =
+  secondary-container, batch-checkbox-selected row = primary-container,
+  unread dot / checkbox / suggestion-score badge (now a solid primary pill,
+  was a light purple tag) all on `--md-*` tokens. Tag chips: 8px radius
+  (not a pill — that's the handoff's own component rule, pills are for
+  filter chips/badges only), filled instead of outlined (active =
+  primary, topic tag = secondary-container, plain = surface-container-
+  highest). **Title dropped `.font-reading` (Literata) for plain Roboto
+  at medium weight**, per the Roboto-everywhere decision from step 1 —
+  article/summary body text (`.post-content`/`.summary-content`) still
+  uses Literata, that's step 7's concern. Star/like/keep-unread icon
+  colors (yellow/teal/blue) deliberately left alone — established
+  per-action color coding from risos-visual-cohesion-pass, not part of
+  the M3 neutral+primary/secondary/tertiary/error palette.
 - [ ] **7. Post detail / reading pane** — AI summary as a full
   primary-container panel + original content side (2c/2d). Chrome only
   (buttons, panel), not the Assistant modal's behavior.

@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912ab">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912ab">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912ab">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912ac">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912ac">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912ac">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912ab">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912ac">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912ab">
+    <link rel="manifest" href="/manifest.json?v=20260912ac">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912ab"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912ab"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912ab"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912ab"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912ab in all ?v= below -->
-    <script>var APP_VERSION = '20260912ab';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912ab">
+    <script src="/static/vendor/marked.min.js?v=20260912ac"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912ac"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912ac"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912ac"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912ac in all ?v= below -->
+    <script>var APP_VERSION = '20260912ac';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912ac">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912ab"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912ab"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912ab"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912ab"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912ab"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912ab"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912ab"></script>
-    <script defer src="/static/js/app.js?v=20260912ab"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912ac"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912ac"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912ac"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912ac"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912ac"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912ac"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912ac"></script>
+    <script defer src="/static/js/app.js?v=20260912ac"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -733,7 +733,7 @@
                             @scroll="handleScroll($event)"
                         >
                         <template x-if="loading && posts.length === 0">
-                            <div class="p-8 text-center text-gray-500" x-text="t('app.loading')"></div>
+                            <div class="p-8 text-center text-[var(--md-on-surface-variant)]" x-text="t('app.loading')"></div>
                         </template>
 
                         <!-- Empty states (M3 redesign step 3, docs/specs/MATERIAL3_REDESIGN_PLAN.md):
@@ -796,16 +796,16 @@
                                 tabindex="0"
                                 class="p-4 mx-2 cursor-pointer transition"
                                 :class="{
-                                    'bg-blue-100 dark:bg-gray-800': selectedIndex === index,
-                                    'hover:bg-gray-100 dark:hover:bg-gray-800': selectedIndex !== index,
+                                    'bg-[var(--md-secondary-container)]': selectedIndex === index && !isPostSelected(post.id),
+                                    'hover:bg-[var(--md-surface-container-highest)]': selectedIndex !== index && !isPostSelected(post.id),
                                     'opacity-60': post.is_read && !(currentPost && currentPost.id === post.id),
-                                    'bg-blue-100 dark:bg-blue-900/30': isPostSelected(post.id),
-                                    'mt-6 border-t border-gray-200 dark:border-gray-700': shouldShowDateSeparator(index) && index > 0 && !(currentPost && currentPost.id === post.id),
-                                    'border-l-[3px] border-l-red-400 dark:border-l-red-600': post.is_blocked,
+                                    'bg-[var(--md-primary-container)]': isPostSelected(post.id),
+                                    'mt-6 border-t border-[var(--md-outline-variant)]': shouldShowDateSeparator(index) && index > 0 && !(currentPost && currentPost.id === post.id),
+                                    'border-l-[3px] border-l-[var(--md-error)]': post.is_blocked,
                                     // Open post: rounded only on top and flush against the
                                     // reader panel right below it, so the two read as one card.
-                                    'rounded-t-lg sticky top-0 z-10 shadow-md': currentPost && currentPost.id === post.id,
-                                    'rounded-lg mb-2': !(currentPost && currentPost.id === post.id)
+                                    'rounded-t-[16px] sticky top-0 z-10 shadow-md': currentPost && currentPost.id === post.id,
+                                    'rounded-[16px] mb-2': !(currentPost && currentPost.id === post.id)
                                 }"
                                 :data-index="index"
                             >
@@ -818,32 +818,38 @@
                                     >
                                         <div
                                             class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
-                                            :class="isPostSelected(post.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-500 hover:border-blue-400'"
+                                            :class="isPostSelected(post.id) ? 'bg-[var(--md-primary)] border-[var(--md-primary)]' : 'border-[var(--md-outline)] hover:border-[var(--md-primary)]'"
                                         >
-                                            <span x-show="isPostSelected(post.id)" class="msym text-[12px] text-white">check</span>
+                                            <span x-show="isPostSelected(post.id)" class="msym text-[12px] text-[var(--md-on-primary)]">check</span>
                                         </div>
                                     </div>
                                     <!-- Indicador de nao lido -->
                                     <div
                                         x-show="!selectMode"
                                         class="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                                        :class="post.is_read ? 'bg-gray-400 dark:bg-gray-600' : 'bg-blue-500'"
+                                        :class="post.is_read ? 'bg-[var(--md-outline)]' : 'bg-[var(--md-primary)]'"
                                     ></div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-start gap-2">
                                             <template x-if="post.skip_summary">
-                                                <span class="msym text-[14px] flex-shrink-0 text-red-400 mt-0.5">block</span>
+                                                <span class="msym text-[14px] flex-shrink-0 text-[var(--md-error)] mt-0.5">block</span>
                                             </template>
+                                            <!-- M3 redesign step 6 (docs/specs/MATERIAL3_REDESIGN_PLAN.md): title
+                                                 drops .font-reading (Literata) for plain Roboto at medium weight —
+                                                 the user chose "Roboto everywhere" over keeping the serif on titles
+                                                 when picking the Google Sans substitute back in step 1. Article/
+                                                 summary body text (post-content/summary-content, still Literata)
+                                                 is step 7's concern, not this one. -->
                                             <h3
-                                                class="flex-1 font-reading"
+                                                class="flex-1 font-medium"
                                                 :class="post.translated_title
-                                                    ? 'text-xs line-clamp-1 ' + (post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400')
-                                                    : 'line-clamp-2 ' + (post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white')"
+                                                    ? 'text-xs line-clamp-1 text-[var(--md-on-surface-variant)]'
+                                                    : 'line-clamp-2 ' + (post.is_read ? 'text-[var(--md-on-surface-variant)]' : 'text-[var(--md-on-surface)]')"
                                                 x-html="highlightBlockedTitle(post.title)"
                                             ></h3>
                                         </div>
                                         <template x-if="post.translated_title">
-                                            <p class="font-reading font-semibold italic line-clamp-2 mb-1" :class="post.is_read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'" x-text="post.translated_title"></p>
+                                            <p class="font-semibold italic line-clamp-2 mb-1" :class="post.is_read ? 'text-[var(--md-on-surface-variant)]' : 'text-[var(--md-on-surface)]'" x-text="post.translated_title"></p>
                                         </template>
                                         <div class="text-sm text-gray-500 flex items-center gap-2" :class="{'mt-1': !post.translated_title}">
                                             <!-- Star icon -->
@@ -872,7 +878,7 @@
                                             </button>
                                             <span
                                                 x-show="post.is_suggested && post.suggestion_score != null"
-                                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--md-primary)] text-[var(--md-on-primary)]"
                                                 x-text="Math.round(post.suggestion_score) + '%'"
                                             ></span>
                                             <!-- Curation badge with custom tooltip -->
@@ -899,19 +905,21 @@
                                         </div>
                                         <p
                                             x-show="post.one_line_summary && !post.one_line_summary.toLowerCase().includes('sem artigo')"
-                                            class="mt-1 text-sm text-gray-500 dark:text-gray-400 italic"
+                                            class="mt-1 text-sm text-[var(--md-on-surface-variant)] italic"
                                             x-text="post.one_line_summary"
                                         ></p>
+                                        <!-- Tag chips: radius 8px per the handoff's component spec (content
+                                             tags aren't pills — only filter chips and badges are). -->
                                         <template x-if="post.tags && post.tags.length > 0">
                                             <div class="mt-1 flex-wrap gap-1 hidden md:flex">
                                                 <template x-for="tag in post.tags" :key="tag">
                                                     <span
-                                                        class="text-[10px] px-1 py-0 rounded border cursor-pointer transition-colors"
+                                                        class="text-[10px] px-1.5 py-0.5 rounded-[8px] cursor-pointer transition-colors"
                                                         :class="tagFilter === tag
-                                                            ? 'bg-blue-600 text-white border-blue-600'
+                                                            ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)]'
                                                             : isTopicTag(tag)
-                                                                ? 'text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40'
-                                                                : 'text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                                                ? 'text-[var(--md-on-secondary-container)] bg-[var(--md-secondary-container)] hover:opacity-80'
+                                                                : 'text-[var(--md-on-surface-variant)] bg-[var(--md-surface-container-highest)] hover:opacity-80'"
                                                         @click.stop="filterByTag(tag)"
                                                         x-text="tag"
                                                     ></span>
@@ -1139,14 +1147,14 @@
                         </template>
 
                         <template x-if="loading && posts.length > 0">
-                            <div class="p-4 text-center text-gray-500" x-text="t('app.loadingMore')"></div>
+                            <div class="p-4 text-center text-[var(--md-on-surface-variant)]" x-text="t('app.loadingMore')"></div>
                         </template>
 
                         <template x-if="hasMore && !loading && posts.length > 0">
                             <div class="p-4 text-center">
                                 <button
                                     @click="loadPosts()"
-                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-sm"
+                                    class="px-4 py-2 rounded-full text-sm border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)]"
                                     x-text="t('app.loadMore')"
                                 ></button>
                             </div>
