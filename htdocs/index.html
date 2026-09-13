@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913j">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913j">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913j">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913k">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913k">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913k">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913j">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913k">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913j">
+    <link rel="manifest" href="/manifest.json?v=20260913k">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913j"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913j"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913j"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913j"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913j in all ?v= below -->
-    <script>var APP_VERSION = '20260913j';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913j">
+    <script src="/static/vendor/marked.min.js?v=20260913k"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913k"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913k"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913k"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913k in all ?v= below -->
+    <script>var APP_VERSION = '20260913k';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913k">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913j"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913j"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913j"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913j"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913j"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913j"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913j"></script>
-    <script defer src="/static/js/app.js?v=20260913j"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913k"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913k"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913k"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913k"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913k"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913k"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913k"></script>
+    <script defer src="/static/js/app.js?v=20260913k"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1177,13 +1177,32 @@
                         </div>
                     </div>
 
-                    <!-- Keyboard hints footer (desktop only) -->
-                    <div class="hidden md:flex p-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-500 justify-center gap-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-                        <span x-show="!selectMode">J/K <span x-text="t('shortcuts.navigate')"></span></span>
-                        <span x-show="!selectMode">[/] <span x-text="t('shortcuts.feeds')"></span></span>
-                        <span x-show="!selectMode">Enter <span x-text="t('shortcuts.open')"></span></span>
-                        <span x-show="selectMode">Space <span x-text="t('shortcuts.toggle')"></span></span>
-                        <span x-show="selectMode">J/K <span x-text="t('shortcuts.navigate')"></span></span>
+                    <!-- Keyboard hints footer (desktop only, M3 redesign step 20). Each
+                         key is a small kbd chip (surface-container-highest, matching the
+                         neutral "tinted chip" treatment used for plain tag/topic chips
+                         elsewhere) instead of bare text — a clearer affordance for "this
+                         is a key you press", not just a recolor. -->
+                    <div class="hidden md:flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
+                        <span x-show="!selectMode" class="flex items-center gap-1.5">
+                            <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">J/K</kbd>
+                            <span x-text="t('shortcuts.navigate')"></span>
+                        </span>
+                        <span x-show="!selectMode" class="flex items-center gap-1.5">
+                            <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">[/]</kbd>
+                            <span x-text="t('shortcuts.feeds')"></span>
+                        </span>
+                        <span x-show="!selectMode" class="flex items-center gap-1.5">
+                            <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">Enter</kbd>
+                            <span x-text="t('shortcuts.open')"></span>
+                        </span>
+                        <span x-show="selectMode" class="flex items-center gap-1.5">
+                            <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">Space</kbd>
+                            <span x-text="t('shortcuts.toggle')"></span>
+                        </span>
+                        <span x-show="selectMode" class="flex items-center gap-1.5">
+                            <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">J/K</kbd>
+                            <span x-text="t('shortcuts.navigate')"></span>
+                        </span>
                     </div>
                 </main>
             </div>

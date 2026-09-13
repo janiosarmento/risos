@@ -456,8 +456,24 @@ things in one commit.
   seleção`, `Indicador de não lido`) — pre-existing, unrelated to this
   step, fixed in passing since already looking at those lines.
 - [ ] **19. Assistant modal** (related posts).
-- [ ] **20. Keyboard-shortcut affordances**, if any visual indicator turns
-  out to be needed (probably not).
+- [x] **20. Keyboard-shortcut affordances** — turned out there WAS one
+  left: the post list's desktop-only keyboard hints footer (J/K
+  navigate, [/] feeds, Enter open, Space toggle in select mode) was
+  still `bg-gray-50`/`border-gray-200`/`text-gray-400`. Recolored to
+  `--md-*`, and went a step further than a plain recolor — each key is
+  now a small `<kbd>` chip (`surface-container-highest`, the same
+  neutral tinted-chip treatment used for plain tag/topic chips) instead
+  of bare text, a clearer "this is a key you press" affordance, which
+  is what this step was actually asking for. The inline single-letter
+  hints baked into buttons elsewhere (`(A)`/`(N)`/`(X)`/`(M)` — add
+  feed, mark-read dropdown, select mode, mark-selected-as-read) needed
+  no change: they already inherit `--md-*` color from their
+  already-restyled parent buttons via `opacity-60`. No dedicated
+  shortcuts-help modal exists in the app — `shortcuts.*` in the locale
+  files has exactly these 4 keys, all covered by the footer above.
+  **19 of the 20 redesign steps are now done** — only step 19 (Assistant
+  modal) remains, skipped for now by request: the user asked for step
+  20 before step 19.
 
 ## Parked issues (found while redesigning, not part of the redesign itself)
 
