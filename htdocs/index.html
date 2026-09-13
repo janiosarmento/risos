@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913q">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913q">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913q">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913r">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913r">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913r">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913q">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913r">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913q">
+    <link rel="manifest" href="/manifest.json?v=20260913r">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913q"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913q"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913q"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913q"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913q in all ?v= below -->
-    <script>var APP_VERSION = '20260913q';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913q">
+    <script src="/static/vendor/marked.min.js?v=20260913r"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913r"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913r"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913r"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913r in all ?v= below -->
+    <script>var APP_VERSION = '20260913r';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913r">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913q"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913q"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913q"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913q"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913q"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913q"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913q"></script>
-    <script defer src="/static/js/app.js?v=20260913q"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913r"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913r"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913r"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913r"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913r"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913r"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913r"></script>
+    <script defer src="/static/js/app.js?v=20260913r"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1024,7 +1024,10 @@
                         <span class="msym text-[16px]">download</span>
                         <span class="text-sm" x-text="t('modal.exportMarkdown')"></span>
                     </button>
-                    <button @click="closePost()" class="p-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)] text-2xl" :data-tip="t('modal.close')" :aria-label="t('modal.close')">&times;</button>
+                    <!-- Desktop only. On a phone the post's own row closes it (see
+                         togglePostInline) and is a far bigger target than this ×, which
+                         only competed for room in a row that had none to spare. -->
+                    <button @click="closePost()" class="hidden md:block p-1 text-[var(--md-on-surface-variant)] hover:text-[var(--md-on-surface)] text-2xl" :data-tip="t('modal.close')" :aria-label="t('modal.close')">&times;</button>
                 </div>
 
                 <!-- AI Summary (first). Per the handoff's color rule: this is the ONE
