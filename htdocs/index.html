@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913c">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913c">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913c">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913d">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913d">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913d">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913c">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913d">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913c">
+    <link rel="manifest" href="/manifest.json?v=20260913d">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913c"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913c"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913c"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913c"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913c in all ?v= below -->
-    <script>var APP_VERSION = '20260913c';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913c">
+    <script src="/static/vendor/marked.min.js?v=20260913d"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913d"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913d"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913d"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913d in all ?v= below -->
+    <script>var APP_VERSION = '20260913d';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913d">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913c"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913c"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913c"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913c"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913c"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913c"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913c"></script>
-    <script defer src="/static/js/app.js?v=20260913c"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913d"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913d"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913d"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913d"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913d"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913d"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913d"></script>
+    <script defer src="/static/js/app.js?v=20260913d"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1488,11 +1488,11 @@
                                     type="text"
                                     x-model="newCategoryName"
                                     :placeholder="t('categories.newPlaceholder')"
-                                    class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                    class="flex-1 min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                 >
                                 <button
                                     type="submit"
-                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
+                                    class="px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors"
                                     :disabled="savingCategory || !newCategoryName.trim()"
                                 >
                                     <span x-show="!savingCategory" x-text="t('categories.create')"></span>
@@ -1503,25 +1503,31 @@
                             <!-- Categories List -->
                             <div class="space-y-2">
                                 <template x-for="category in categories" :key="category.id">
-                                    <div class="bg-gray-100 dark:bg-gray-700 rounded p-3">
+                                    <div class="bg-[var(--md-surface-container)] rounded-2xl p-3">
                                         <!-- View Mode -->
                                         <div x-show="!editingCategory || editingCategory.id !== category.id" class="flex items-center justify-between">
-                                            <div class="flex items-center gap-2">
-                                                <span class="msym text-[16px] text-gray-500 dark:text-gray-400">folder</span>
-                                                <span x-text="category.name" class="font-medium"></span>
-                                                <span class="text-gray-500 text-sm" x-text="'(' + feeds.filter(f => f.category_id === category.id).length + ' feeds)'"></span>
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <span class="msym text-[16px] text-[var(--md-on-surface-variant)] flex-shrink-0">folder</span>
+                                                <span x-text="category.name" class="font-medium text-[var(--md-on-surface)] truncate"></span>
+                                                <span class="text-[var(--md-on-surface-variant)] text-sm flex-shrink-0" x-text="'(' + feeds.filter(f => f.category_id === category.id).length + ' feeds)'"></span>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-1 flex-shrink-0">
                                                 <button
                                                     @click="startEditCategory(category)"
-                                                    class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 text-sm"
-                                                    x-text="t('categories.edit')"
-                                                ></button>
+                                                    class="p-1.5 rounded-full hover:bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]"
+                                                    :data-tip="t('categories.edit')"
+                                                    :aria-label="t('categories.edit')"
+                                                >
+                                                    <span class="msym text-[18px]">edit</span>
+                                                </button>
                                                 <button
                                                     @click="deleteCategory(category)"
-                                                    class="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm"
-                                                    x-text="t('categories.delete')"
-                                                ></button>
+                                                    class="p-1.5 rounded-full hover:bg-[var(--md-error-container)] hover:text-[var(--md-on-error-container)] text-[var(--md-on-surface-variant)] transition-colors"
+                                                    :data-tip="t('categories.delete')"
+                                                    :aria-label="t('categories.delete')"
+                                                >
+                                                    <span class="msym text-[18px]">delete</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <!-- Edit Mode -->
@@ -1530,17 +1536,17 @@
                                                 <input
                                                     type="text"
                                                     x-model="editingCategory.name"
-                                                    class="flex-1 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                                    class="flex-1 min-w-0 px-3 py-1 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                                 >
                                                 <button
                                                     @click="saveCategory()"
-                                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+                                                    class="px-3 py-1 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] text-sm font-medium transition-colors"
                                                     :disabled="savingCategory"
                                                     x-text="t('categories.save')"
                                                 ></button>
                                                 <button
                                                     @click="cancelEditCategory()"
-                                                    class="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded text-sm"
+                                                    class="px-3 py-1 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] text-sm font-medium transition-colors"
                                                     x-text="t('categories.cancel')"
                                                 ></button>
                                             </div>
@@ -1548,7 +1554,7 @@
                                     </div>
                                 </template>
                                 <template x-if="categories.length === 0">
-                                    <div class="text-gray-500 text-center py-4" x-text="t('categories.noCategories')"></div>
+                                    <div class="text-[var(--md-on-surface-variant)] text-center py-4" x-text="t('categories.noCategories')"></div>
                                 </template>
                             </div>
                         </div>
@@ -1562,11 +1568,11 @@
                                         type="url"
                                         x-model="newFeed.url"
                                         :placeholder="t('feeds.urlPlaceholder')"
-                                        class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        class="flex-1 min-w-0 px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                     >
                                     <select
                                         x-model="newFeed.category_id"
-                                        class="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                                        class="px-3 py-2 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                         required
                                     >
                                         <option value="" disabled selected x-text="t('feeds.selectCategory')"></option>
@@ -1576,7 +1582,7 @@
                                     </select>
                                     <button
                                         type="submit"
-                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium whitespace-nowrap min-w-[120px]"
+                                        class="px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] font-medium transition-colors whitespace-nowrap min-w-[120px]"
                                         :disabled="savingFeed || !newFeed.url.trim() || !newFeed.category_id"
                                     >
                                         <span x-show="!savingFeed" x-text="t('feeds.add')"></span>
@@ -1588,35 +1594,41 @@
                             <!-- Feeds List -->
                             <div class="space-y-2">
                                 <template x-for="feed in feeds" :key="feed.id">
-                                    <div class="bg-gray-100 dark:bg-gray-700 rounded p-3">
+                                    <div class="bg-[var(--md-surface-container)] rounded-2xl p-3">
                                         <!-- View Mode -->
                                         <div x-show="!editingFeed || editingFeed.id !== feed.id">
                                             <div class="flex items-start justify-between">
                                                 <div class="flex-1 min-w-0">
                                                     <div class="flex items-center gap-2">
-                                                        <span class="msym text-[12px] text-gray-500 flex-shrink-0">rss_feed</span>
-                                                        <span x-text="feed.title" class="font-medium truncate"></span>
-                                                        <span x-show="feed.error_count > 0" class="text-red-400 text-xs" :data-tip="feed.last_error || t('sidebar.feedError')">!</span>
+                                                        <span class="msym text-[12px] text-[var(--md-on-surface-variant)] flex-shrink-0">rss_feed</span>
+                                                        <span x-text="feed.title" class="font-medium text-[var(--md-on-surface)] truncate"></span>
+                                                        <span x-show="feed.error_count > 0" class="text-[var(--md-error)] text-xs flex-shrink-0" :data-tip="feed.last_error || t('sidebar.feedError')">!</span>
                                                     </div>
-                                                    <div class="text-sm text-gray-500 truncate mt-1" x-text="feed.url"></div>
-                                                    <div class="text-xs text-gray-500 mt-1">
+                                                    <div class="text-sm text-[var(--md-on-surface-variant)] truncate mt-1" x-text="feed.url"></div>
+                                                    <div class="text-xs text-[var(--md-on-surface-variant)] mt-1">
                                                         <span x-text="categories.find(c => c.id === feed.category_id)?.name || t('sidebar.noCategory')"></span>
                                                         <span> | </span>
                                                         <span x-text="feed.unread_count + ' ' + t('feeds.unreadCount')"></span>
                                                     </div>
                                                 </div>
-                                                <div class="flex items-center gap-2 ml-2 flex-shrink-0">
+                                                <div class="flex items-center gap-1 ml-2 flex-shrink-0">
                                                     <button
                                                         @click="startEditFeed(feed)"
-                                                        class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 text-sm"
-                                                        x-text="t('feeds.edit')"
-                                                    ></button>
+                                                        class="p-1.5 rounded-full hover:bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]"
+                                                        :data-tip="t('feeds.edit')"
+                                                        :aria-label="t('feeds.edit')"
+                                                    >
+                                                        <span class="msym text-[18px]">edit</span>
+                                                    </button>
                                                     <button
                                                         x-show="!feed.starred_count"
                                                         @click="deleteFeed(feed)"
-                                                        class="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm"
-                                                        x-text="t('feeds.delete')"
-                                                    ></button>
+                                                        class="p-1.5 rounded-full hover:bg-[var(--md-error-container)] hover:text-[var(--md-on-error-container)] text-[var(--md-on-surface-variant)] transition-colors"
+                                                        :data-tip="t('feeds.delete')"
+                                                        :aria-label="t('feeds.delete')"
+                                                    >
+                                                        <span class="msym text-[18px]">delete</span>
+                                                    </button>
                                                     <span
                                                         x-show="feed.starred_count > 0"
                                                         class="text-amber-500 dark:text-amber-400"
@@ -1632,18 +1644,18 @@
                                                     type="url"
                                                     x-model="editingFeed.url"
                                                     :placeholder="t('feeds.urlPlaceholder')"
-                                                    class="w-full px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+                                                    class="w-full px-3 py-1 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] font-mono text-sm"
                                                 >
                                                 <input
                                                     type="text"
                                                     x-model="editingFeed.title"
                                                     :placeholder="t('feeds.titlePlaceholder')"
-                                                    class="w-full px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                                    class="w-full px-3 py-1 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                                 >
-                                                <div class="flex gap-2">
+                                                <div class="flex flex-wrap items-center gap-2">
                                                     <select
                                                         x-model="editingFeed.category_id"
-                                                        class="flex-1 px-3 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500"
+                                                        class="flex-1 min-w-0 px-3 py-1 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)]"
                                                     >
                                                         <option :value="null" x-text="t('sidebar.noCategory')"></option>
                                                         <template x-for="cat in categories" :key="cat.id">
@@ -1651,24 +1663,24 @@
                                                         </template>
                                                     </select>
                                                     <div class="flex items-center gap-1 shrink-0">
-                                                        <label class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap" x-text="t('feeds.feedWeight')"></label>
+                                                        <label class="text-xs text-[var(--md-on-surface-variant)] whitespace-nowrap" x-text="t('feeds.feedWeight')"></label>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             step="1"
                                                             x-model.number="editingFeed.weight"
-                                                            class="w-16 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-blue-500 text-sm"
+                                                            class="w-16 px-2 py-1 bg-[var(--md-surface)] border border-[var(--md-outline)] rounded-lg text-[var(--md-on-surface)] focus:outline-none focus:border-[var(--md-primary)] text-sm"
                                                         >
                                                     </div>
                                                     <button
                                                         @click="saveFeed()"
-                                                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm text-white"
+                                                        class="px-3 py-1 rounded-full bg-[var(--md-primary)] hover:opacity-90 text-[var(--md-on-primary)] text-sm font-medium transition-colors"
                                                         :disabled="savingFeed"
                                                         x-text="t('feeds.save')"
                                                     ></button>
                                                     <button
                                                         @click="cancelEditFeed()"
-                                                        class="px-3 py-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded text-sm"
+                                                        class="px-3 py-1 rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] text-sm font-medium transition-colors"
                                                         x-text="t('feeds.cancel')"
                                                     ></button>
                                                 </div>
@@ -1677,7 +1689,7 @@
                                     </div>
                                 </template>
                                 <template x-if="feeds.length === 0">
-                                    <div class="text-gray-500 text-center py-4" x-text="t('feeds.noFeeds')"></div>
+                                    <div class="text-[var(--md-on-surface-variant)] text-center py-4" x-text="t('feeds.noFeeds')"></div>
                                 </template>
                             </div>
                         </div>

@@ -292,7 +292,21 @@ things in one commit.
   never the key, so the non-negotiable "no plaintext key field" rule
   from the handoff wasn't at stake. Re-subsetted the Material Symbols
   font (v4 → v5) to add `check_circle`, `error`.
-- [ ] **13. Categories/Feeds tab** — incl. feed↔category drag-and-drop.
+- [x] **13. Categories/Feeds tab** — add-form input/select/button, list-row
+  card (`bg-surface-container rounded-2xl`, was `bg-gray-100 rounded`),
+  and edit-mode fields all moved to `--md-*` tokens, matching step 12's
+  input treatment. Edit/Delete moved from plain text links to icon-only
+  buttons (`.msym edit`/`delete`, both already in the font subset) with
+  a `data-tip`/`aria-label`, the circular-icon-button style from steps
+  6/8 — same click handlers, only the visual representation changed.
+  Save uses the filled-primary pill, Cancel the outlined pill (confirm
+  modal's own pair). Feed error `!` recolored to `--md-error`; the
+  starred-feed ★ and its amber color are untouched, same "established
+  per-action color, not part of the M3 palette" rule as steps 6/8.
+  **The plan's own "incl. feed↔category drag-and-drop" note turned out
+  to not apply here** — that drag-and-drop (`onFeedDragStart`) lives in
+  the main sidebar's feed tree, already restyled in step 5, not in this
+  Settings tab; same kind of stale-note-vs-reality gap as steps 9/10.
 - [ ] **14. Topics tab** — incl. tag↔topic drag-and-drop, AI topic/tag
   suggestions.
 - [ ] **15. General tab** — the ~15 numeric/toggle preferences.
