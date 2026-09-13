@@ -89,6 +89,12 @@ def run_migrations():
 
             logger.info("Running database migrations...")
             command.upgrade(alembic_cfg, "head")
+            # Restore before this next log call, not just in `finally` below —
+            # alembic's fileConfig already clobbered the root logger by the
+            # time command.upgrade() returns, so this line would otherwise be
+            # the one log call still lost to it.
+            root_logger.setLevel(saved_level)
+            root_logger.handlers = saved_handlers
             logger.info("Migrations completed successfully")
 
         except Exception as e:
