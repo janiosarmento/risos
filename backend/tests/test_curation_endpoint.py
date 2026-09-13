@@ -192,6 +192,31 @@ async def test_an_article_nothing_covers_can_still_be_dropped(db, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_a_value_pass_that_condemns_everything_is_discarded(db, monkeypatch):
+    # Seen live: a chunk of six came back with all six marked disposable.
+    # A model that rejects the whole list is not answering the question, and
+    # acting on it would tell the user to throw away their library.
+    calls: list = []
+    ids = [1, 2, 3, 4]
+    _stub_llm(
+        monkeypatch,
+        {"decisions": []},
+        calls,
+        ephemeral={
+            "ephemeral": [{"post_id": i, "reason": "meh"} for i in ids]
+        },
+    )
+    for i in ids:
+        _add_post(db, i, f"Article {i}", [f"topic{i}", f"other{i}"])
+    db.commit()
+
+    result = await curate_starred(CurateRequest(), db=db, user={})
+
+    assert result["analysis"]["keep_if_interested"] == []
+    assert sorted(e["post_id"] for e in result["analysis"]["essential"]) == ids
+
+
+@pytest.mark.asyncio
 async def test_being_superseded_beats_being_ephemeral(db, monkeypatch):
     # Both passes can condemn the same article. "Another article covers
     # this" is the more actionable answer, so it is the one shown.

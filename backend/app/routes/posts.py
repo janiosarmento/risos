@@ -1197,12 +1197,13 @@ async def curate_starred(
     engine = get_effective_curation_engine(db)
 
     # --- LLM passes -------------------------------------------------------
-    # Two independent questions, so they go out together rather than in
-    # sequence: "which of these overlapping articles supersede each other?"
-    # over the groups only, and "which of these were only ever worth reading
-    # once?" over everything in scope. The second is what catches an article
-    # that nothing else covers but that nobody will return to — a verdict the
-    # redundancy pass structurally cannot reach.
+    # Two independent questions: "which of these overlapping articles
+    # supersede each other?" over the groups only, and "which of these were
+    # only ever worth reading once?" over everything in scope. The second is
+    # what catches an article that nothing else covers but that nobody will
+    # return to — a verdict the redundancy pass structurally cannot reach.
+    # Gathered rather than awaited in turn, though the AI layer's per-engine
+    # lock serializes them anyway; this just keeps the two independent.
     tasks = [
         _adjudicate_groups(clusters, _describe, language, engine),
         _find_ephemeral(post_ids, _describe, language, engine),
@@ -1277,11 +1278,24 @@ _CURATION_CACHE_KEEP = 50
 # Bump whenever the scoring, grouping, or prompt changes in a way that would
 # produce a different answer for the same posts. It is part of the cache key,
 # so bumping it is all the invalidation there is.
-CURATION_ALGO_VERSION = 3
+CURATION_ALGO_VERSION = 4
 
 # The "was this only worth reading once?" pass sees every post in scope, so
-# it is chunked to keep any one prompt reasonable on a small model.
-_EPHEMERAL_CHUNK = 120
+# it is chunked. Kept modest on purpose: with 25 posts and a 2048-token
+# budget the answer came back truncated mid-JSON and the whole pass was lost.
+# Going much smaller is not free either — the calls are serialized by the AI
+# layer's lock, so a large library would spend minutes here.
+_EPHEMERAL_CHUNK = 40
+
+# Output budget for both passes. Generous because the configured model may be
+# a reasoning one that spends most of its output allowance thinking before it
+# writes any JSON — truncation there costs the entire pass.
+_CURATION_MAX_TOKENS = 8192
+
+# A pass that condemns almost everything it was shown is not answering the
+# question, it is rubber-stamping. Observed live: one chunk of 6 came back
+# with all 6 marked disposable. Discard a verdict set that flags this much.
+_EPHEMERAL_MAX_SHARE = 0.6
 
 
 async def _adjudicate_groups(
@@ -1317,7 +1331,10 @@ async def _adjudicate_groups(
         "worth keeping and which are made unnecessary by another article in "
         "the same group. Being about the same topic is NOT enough to call an "
         "article redundant — it is redundant only when another listed article "
-        "genuinely covers what it has to offer. "
+        "genuinely covers what it has to offer. The clearest case, and one you "
+        "must never miss, is two entries with the same or nearly the same "
+        "title: that is the same article saved twice, and one of them is "
+        "redundant. "
         f"IMPORTANT: every 'reason' MUST be written in {language}."
     )
 
@@ -1348,7 +1365,7 @@ Respond in JSON:
         len(groups_text),
     )
     result = await call_llm_json(
-        system_prompt, user_prompt, max_tokens=4096, engine=engine
+        system_prompt, user_prompt, max_tokens=_CURATION_MAX_TOKENS, engine=engine
     )
     decisions = result.get("decisions")
     return decisions if isinstance(decisions, list) else []
@@ -1377,7 +1394,9 @@ async def _find_ephemeral(
         "explanations, anything worth coming back to — from articles that were "
         "only worth reading once: news of the day, announcements, opinion and "
         "personal-preference pieces, and hot takes. Judge the article itself, "
-        "not whether the subject is interesting. When in doubt, keep it. "
+        "not whether the subject is interesting. Someone chose to save every "
+        "one of these, so most of them are keepers — flagging a large share of "
+        "a list is always the wrong answer. When in doubt, keep it. "
         f"IMPORTANT: every 'reason' MUST be written in {language}."
     )
 
@@ -1406,7 +1425,10 @@ Respond in JSON:
         )
         try:
             result = await call_llm_json(
-                system_prompt, user_prompt, max_tokens=2048, engine=engine
+                system_prompt,
+                user_prompt,
+                max_tokens=_CURATION_MAX_TOKENS,
+                engine=engine,
             )
         except Exception as e:
             logger.warning(
@@ -1416,10 +1438,25 @@ Respond in JSON:
                 e,
             )
             continue
+
+        in_chunk = set(chunk)
+        flagged: dict[int, str] = {}
         for item in result.get("ephemeral") or []:
             pid = item.get("post_id") if isinstance(item, dict) else None
-            if isinstance(pid, int):
-                found[pid] = item.get("reason") or ""
+            # Ids it was not shown say nothing about how liberally it judged
+            # the ones it was, so they are dropped before the share check.
+            if isinstance(pid, int) and pid in in_chunk:
+                flagged[pid] = item.get("reason") or ""
+
+        if len(flagged) > len(chunk) * _EPHEMERAL_MAX_SHARE:
+            logger.warning(
+                "Curation value pass flagged %d of %d as disposable — "
+                "discarding, that is a rubber stamp rather than a judgement",
+                len(flagged),
+                len(chunk),
+            )
+            continue
+        found.update(flagged)
     return found
 
 
