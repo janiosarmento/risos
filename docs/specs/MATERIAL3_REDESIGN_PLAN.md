@@ -223,7 +223,15 @@ things in one commit.
   Checked for leftover old-style classes gated on a mobile breakpoint and
   found none; the only `@media (max-width: 768px)` block in `app.css` is
   purely behavioral (scroll/tap-highlight/safe-area), no color to convert.
-- [ ] **10. Suggested + tag profile** (2h/2i).
+- [x] **10. Suggested + tag profile** (2h/2i) — same conclusion as step 9:
+  nothing left. The mockup's "Seu perfil" panel (clickable learned tags,
+  sensitivity/min-tag-weight sliders, ignored-tags list) has no standalone
+  equivalent in the real app — that content lives inside the Settings
+  modal (General/Data tab), deferred to steps 12/15. The Suggested list
+  itself is just the post list under `filter === 'suggested'`, already
+  covered by steps 5 (sidebar button) and 6 (cards). The Top Tags chip row
+  (step 8) is the closest real equivalent to a clickable tag-profile list
+  outside Settings, and is already done.
 
 ### Settings — no full mockup, extend the tokens per screen
 - [ ] **11. Settings shell** — left nav only (2f's aside).
