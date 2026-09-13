@@ -173,6 +173,13 @@ things in one commit.
 - [ ] **20. Keyboard-shortcut affordances**, if any visual indicator turns
   out to be needed (probably not).
 
+## Parked issues (found while redesigning, not part of the redesign itself)
+
+- **AI curation appears broken in prod** (found 2026-09-12, testing step 4).
+  Not investigated — user suspects free-tier OpenRouter model capacity, not
+  a code bug, and asked to park it. Step 4 only touched the curation UI's
+  CSS classes/icons, not `curatePosts()` or the `/posts/curate` endpoint.
+
 ## Session log
 
 - 2026-09-12 — Retrieved the handoff from the "Risos folder shared" Claude
