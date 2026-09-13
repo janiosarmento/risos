@@ -1,6 +1,6 @@
 """
 Alembic environment configuration.
-Importa modelos da aplicação para autogenerate de migrations.
+Imports the application's models so autogenerate can see them.
 """
 from logging.config import fileConfig
 
@@ -8,22 +8,34 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Importar Base e modelos da aplicação
+# Import Base and the application's models
 from app.database import Base
 from app.config import settings
-import app.models  # noqa: F401 - Necessário para registrar modelos no metadata
+import app.models  # noqa: F401 - needed to register models on the metadata
 
 # Alembic Config object
 config = context.config
 
-# Configurar URL do banco a partir do config da aplicação
+# Set the DB URL from the application's own config
 config.set_main_option("sqlalchemy.url", f"sqlite:///{settings.database_path}")
 
-# Setup logging
+# Setup logging. disable_existing_loggers=False is required here: the
+# default (True) silently disables every logger already created by the
+# time this runs — including app.main's, since run_migrations() calls
+# this from inside the FastAPI lifespan, after main.py's own
+# logging.basicConfig() already created it. Left at the default, every
+# logger.info() call anywhere in the app goes silent for the rest of
+# that worker process's life the moment migrations finish — confirmed
+# in prod: "Running database migrations..." appears hundreds of times
+# in the log, "Migrations completed successfully" (the very next log
+# call in run_migrations()) never once. Found 2026-09-13 while
+# investigating a separate "AI curation looks broken" report — this
+# bug didn't cause that one, but its info-log silencing is exactly why
+# that investigation had no diagnostic breadcrumbs to go on.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# Metadata dos modelos para autogenerate
+# Model metadata for autogenerate
 target_metadata = Base.metadata
 
 

@@ -57,6 +57,26 @@ def run_migrations():
     data_dir.mkdir(parents=True, exist_ok=True)
     lock_path = data_dir / ".migrate.lock"
 
+    # alembic/env.py calls logging.config.fileConfig() on import, which
+    # reconfigures the ROOT logger's level and handlers per alembic.ini's own
+    # [logger_root] section (level=WARNING, a bare console handler) — fine for
+    # the standalone `alembic upgrade` CLI this .ini is meant for, but here
+    # command.upgrade() runs it inside our already-running app, and it
+    # clobbers logging.basicConfig()'s setup from module import time. Left
+    # unguarded, every logger.info() call anywhere in the app — not just this
+    # function — goes silent for the rest of that worker process's life the
+    # moment migrations finish: confirmed in prod, "Running database
+    # migrations..." appears hundreds of times in the log, "Migrations
+    # completed successfully" (the very next line below) never once. Save
+    # and restore the root logger's own config around the upgrade call so our
+    # own logging survives; found 2026-09-13 investigating an unrelated "AI
+    # curation looks broken" report — didn't cause that one, but its
+    # info-log silencing is exactly why that investigation had no
+    # diagnostic breadcrumbs to go on.
+    root_logger = logging.getLogger()
+    saved_level = root_logger.level
+    saved_handlers = list(root_logger.handlers)
+
     with open(lock_path, "w") as lock_file:
         fcntl.flock(lock_file, fcntl.LOCK_EX)
         try:
@@ -75,6 +95,8 @@ def run_migrations():
             logger.critical(f"Failed to run migrations: {e}")
             sys.exit(1)
         finally:
+            root_logger.setLevel(saved_level)
+            root_logger.handlers = saved_handlers
             fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 

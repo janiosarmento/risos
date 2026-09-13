@@ -288,7 +288,7 @@ Environment="PATH=$BACKEND_DIR/venv/bin"
 # Unbuffered stdio so tracebacks and error logs reach the journal/log file
 # immediately instead of sitting in a block buffer until the next restart.
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 2 --timeout 120 --max-requests 1000 --max-requests-jitter 50
+ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 2 --timeout 630 --max-requests 1000 --max-requests-jitter 50
 Restart=always
 RestartSec=5
 
@@ -405,7 +405,17 @@ location /api/ {
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto \$scheme;
     proxy_connect_timeout 30s;
-    proxy_read_timeout 120s;
+    # Must exceed gunicorn's own --timeout above, which must itself exceed
+    # the AI request timeout's max configurable value (Settings > AI, 600s)
+    # — otherwise a legitimately slow-but-not-hung AI call (a big curation
+    # batch, a slow free-tier model) gets its whole gunicorn worker killed
+    # mid-request well before the app's own timeout would give up, and the
+    # client sees a bare 502 with no indication why. Found 2026-09-13
+    # investigating an "AI curation looks broken" report — prod's gunicorn
+    # --timeout was still the default 120s while this nginx value had
+    # already been manually bumped to 300s at some point without the
+    # matching gunicorn/install.sh fix, so the mismatch was still live.
+    proxy_read_timeout 630s;
 }
 NGINXEOF
 
