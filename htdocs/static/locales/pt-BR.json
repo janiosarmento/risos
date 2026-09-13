@@ -43,6 +43,7 @@
   "posts": {
     "noPosts": "Nenhum post não lido",
     "noPostsGeneric": "Nenhum post encontrado",
+    "noPostsInContext": "Nenhum post em {context}",
     "noSearchResults": "Nenhum resultado",
     "noSearchResultsDesc": "Nada encontrado para essa busca — tente outros termos ou limpe os filtros.",
     "markAllRead": "Todos",

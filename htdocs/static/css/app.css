@@ -7,6 +7,20 @@
       no external font CDN request on every page load)
    ------------------------------------------- */
 
+/* Every font URL below carries a manual ?v=N — nginx serves /static/fonts/
+   with `expires 7d`, and the filenames never change, so without a cache
+   buster a browser (or the Cloudflare tunnel edge in front of prod) can go
+   on serving old font bytes for up to a week after a redeploy, even though
+   index.html/app.css themselves refetch correctly via APP_VERSION. Bump
+   the ?v= by hand whenever a font FILE's content changes (the icon subset
+   below will need this repeatedly as later redesign steps use more
+   glyphs) — html_assembler's {{APP_VERSION}} substitution only covers
+   index.template.html, not this file, so it can't do it automatically.
+   First hit of this exact bug: 2026-09-12, docs/specs/
+   MATERIAL3_REDESIGN_PLAN.md step 3 — task_alt/search_off rendered as
+   literal text because a re-subsetted font silently didn't reach the
+   browser. */
+
 /* Literata (SIL Open Font License), latin subset only — covers pt-BR and
    en-US, which is all this app's content needs. Variable font: one file
    per style covers the whole weight range used by .font-reading. */
@@ -15,7 +29,7 @@
     font-style: normal;
     font-weight: 200 900;
     font-display: swap;
-    src: url('/static/fonts/literata-latin-normal.woff2') format('woff2');
+    src: url('/static/fonts/literata-latin-normal.woff2?v=1') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -24,7 +38,7 @@
     font-style: italic;
     font-weight: 200 900;
     font-display: swap;
-    src: url('/static/fonts/literata-latin-italic.woff2') format('woff2');
+    src: url('/static/fonts/literata-latin-italic.woff2?v=1') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -40,7 +54,7 @@
     font-style: normal;
     font-weight: 100 900;
     font-display: swap;
-    src: url('/static/fonts/roboto-latin-variable.woff2') format('woff2');
+    src: url('/static/fonts/roboto-latin-variable.woff2?v=1') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -49,13 +63,18 @@
    every generic icon; icon-github stays an SVG since brand logos aren't
    in the Material Symbols set). Self-hosted like the other fonts above,
    subsetted via Google's icon_names API (see git history for the exact
-   request) rather than pulling the full multi-thousand-glyph icon font. */
+   request) rather than pulling the full multi-thousand-glyph icon font.
+   v3 = auto_awesome, block, check, chevron_left, chevron_right, circle,
+   close, content_copy, database, delete, download, edit, expand_more,
+   favorite, folder, inbox, info, label, lock, menu, open_in_new,
+   progress_activity, refresh, rss_feed, schedule, search, search_off,
+   sell, settings, star, task_alt, visibility, visibility_off. */
 @font-face {
     font-family: 'Material Symbols Outlined';
     font-style: normal;
     font-weight: 400;
     font-display: block;
-    src: url('/static/fonts/material-symbols-subset.woff2') format('woff2');
+    src: url('/static/fonts/material-symbols-subset.woff2?v=3') format('woff2');
 }
 
 /* .msym renders its text content (an icon name, e.g. "auto_awesome") as

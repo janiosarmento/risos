@@ -43,6 +43,7 @@
   "posts": {
     "noPosts": "No unread posts",
     "noPostsGeneric": "No posts found",
+    "noPostsInContext": "No posts in {context}",
     "noSearchResults": "No results",
     "noSearchResultsDesc": "Nothing found for that search — try other terms or clear the filters.",
     "markAllRead": "All",

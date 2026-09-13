@@ -74,6 +74,23 @@ validated server-side against an allowlist
 (`backend/app/routes/preferences.py::_validate_jano_secret`); the UI only
 shows a found/not-found indicator, never a masked value.
 
+## Adding a new icon (steps 4+ will need this repeatedly)
+
+1. Re-fetch the subset, listing **every** glyph the app now uses (not just
+   the new one) — see the `curl` invocation in git history (search commits
+   for "icon_names") for the exact URL shape.
+2. Overwrite `htdocs/static/fonts/material-symbols-subset.woff2`.
+3. **Bump the `?v=N` on that font's `url()` in `app.css`** (and update the
+   glyph list in the comment above it) — nginx serves `/static/fonts/` with
+   `expires 7d`, the filename never changes, and `html_assembler`'s
+   `{{APP_VERSION}}` substitution doesn't reach into `app.css`, so without
+   this a browser (or the Cloudflare edge in front of prod) can silently
+   go on serving the old font for up to a week after deploying, even
+   though the page itself updated. Missing this step is exactly what made
+   `task_alt`/`search_off` render as literal text after step 3 first
+   shipped — caught by the user, fixed same session.
+4. Bump `APP_VERSION` as usual, assemble, commit, deploy.
+
 ## How to work through this list
 
 One step at a time. Each step is small enough to view running (`/run`) and

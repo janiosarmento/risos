@@ -1237,6 +1237,29 @@ function app() {
             return feed ? feed.title : this.t('time.unknown');
         },
 
+        // Human-readable name of the current filter, for the post-list empty
+        // state (see index.template.html) — null for the plain unread/all
+        // view, where "no posts" needs no extra qualifier. Mirrors the same
+        // filter → label mapping as the confirm-dialog contextName above,
+        // minus the search/tag/topic-appending it doesn't need here.
+        getPostsEmptyContext() {
+            if (this.filter === 'feed') {
+                return this.getFeedTitle(this.filterId);
+            }
+            if (this.filter === 'category') {
+                const category = this.categories.find(c => c.id === this.filterId);
+                return category?.name || null;
+            }
+            if (this.filter === 'suggested') return this.t('sidebar.suggested');
+            if (this.filter === 'starred') return this.t('sidebar.starred');
+            if (this.selectedTopicId) {
+                const topic = this.topics.find(t => t.id === this.selectedTopicId);
+                return topic?.name || null;
+            }
+            if (this.tagFilter) return `#${this.tagFilter}`;
+            return null;
+        },
+
         getFeedSiteUrl(feedId) {
             const feed = this.feeds.find(f => f.id === feedId);
             return feed ? feed.site_url : null;

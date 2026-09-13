@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912y">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912y">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912y">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912z">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912z">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912z">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912y">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912z">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912y">
+    <link rel="manifest" href="/manifest.json?v=20260912z">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912y"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912y"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912y"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912y"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912y in all ?v= below -->
-    <script>var APP_VERSION = '20260912y';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912y">
+    <script src="/static/vendor/marked.min.js?v=20260912z"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912z"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912z"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912z"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912z in all ?v= below -->
+    <script>var APP_VERSION = '20260912z';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912z">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912y"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912y"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912y"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912y"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912y"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912y"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912y"></script>
-    <script defer src="/static/js/app.js?v=20260912y"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912z"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912z"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912z"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912z"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912z"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912z"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912z"></script>
+    <script defer src="/static/js/app.js?v=20260912z"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -752,20 +752,28 @@
                             </div>
                         </template>
 
-                        <!-- "Caught up" (task_alt, primary) only when this view is actually
-                             unread-only — mirrors loadPosts()'s own unread_only logic (starred
-                             never filters by read state; suggested does only if postFilter is
-                             'unread' too). Everything else gets the neutral empty message —
-                             this text used to show unconditionally, wrongly claiming "no
-                             unread posts" for e.g. an empty Suggested or Starred view. -->
-                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && filter !== 'starred' && postFilter === 'unread'">
+                        <!-- Three more empty variants, in priority order:
+                             1. A named filter is active (feed/category/topic/tag/Suggested/
+                                Starred) — say so by name, this used to just say "no unread
+                                posts" no matter which of these was empty.
+                             2. No named filter, and this genuinely is the unread-only view
+                                (mirrors loadPosts()'s own unread_only logic) — "caught up".
+                             3. No named filter, viewing 'all' — neutral message. -->
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && getPostsEmptyContext()">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">inbox</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPostsInContext').replace('{context}', getPostsEmptyContext())"></p>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && !getPostsEmptyContext() && postFilter === 'unread'">
                             <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
                                 <span class="msym text-[40px] text-[var(--md-primary)]">task_alt</span>
                                 <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPosts')"></p>
                             </div>
                         </template>
 
-                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && !(filter !== 'starred' && postFilter === 'unread')">
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim() && !getPostsEmptyContext() && postFilter !== 'unread'">
                             <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
                                 <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">inbox</span>
                                 <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPostsGeneric')"></p>
