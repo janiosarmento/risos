@@ -42,6 +42,8 @@
   },
   "posts": {
     "noPosts": "Nenhum post não lido",
+    "noSearchResults": "Nenhum resultado",
+    "noSearchResultsDesc": "Nada encontrado para essa busca — tente outros termos ou limpe os filtros.",
     "markAllRead": "Todos",
     "markBlockedRead": "Bloqueados",
     "markAsRead": "Marcar como lidos",
@@ -341,6 +343,8 @@
     "save": "Salvar",
     "cancel": "Cancelar",
     "noFeeds": "Nenhum feed adicionado",
+    "noFeedsDesc": "Adicione uma URL de feed ou de um site para descoberta automática.",
+    "addFeed": "Adicionar feed",
     "feedWeight": "Peso de prioridade",
     "unreadCount": "não lidos",
     "refresh": "Atualizar feed agora",

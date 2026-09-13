@@ -42,6 +42,8 @@
   },
   "posts": {
     "noPosts": "No unread posts",
+    "noSearchResults": "No results",
+    "noSearchResultsDesc": "Nothing found for that search — try other terms or clear the filters.",
     "markAllRead": "All",
     "markBlockedRead": "Blocked",
     "markAsRead": "Mark as read",
@@ -341,6 +343,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "noFeeds": "No feeds added",
+    "noFeedsDesc": "Add a feed URL or a site URL for automatic discovery.",
+    "addFeed": "Add feed",
     "feedWeight": "Priority weight",
     "unreadCount": "unread",
     "refresh": "Refresh feed now",

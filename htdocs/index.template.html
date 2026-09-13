@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912w';</script>
+    <script>var APP_VERSION = '20260912x';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -728,8 +728,35 @@
                             <div class="p-8 text-center text-gray-500" x-text="t('app.loading')"></div>
                         </template>
 
-                        <template x-if="!loading && posts.length === 0">
-                            <div class="p-8 text-center text-gray-500" x-text="t('posts.noPosts')"></div>
+                        <!-- Empty states (M3 redesign step 3, docs/specs/MATERIAL3_REDESIGN_PLAN.md):
+                             mutually exclusive by root cause — no feeds at all, an active
+                             search with nothing matching, or just nothing left in this filter. -->
+                        <template x-if="!loading && posts.length === 0 && feeds.length === 0">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">rss_feed</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('feeds.noFeeds')"></p>
+                                <p class="text-sm text-[var(--md-on-surface-variant)] max-w-xs" x-text="t('feeds.noFeedsDesc')"></p>
+                                <button
+                                    @click="openSettings(); toggleAccordion('data')"
+                                    class="mt-2 h-9 px-4 rounded-full text-sm font-medium bg-[var(--md-primary)] text-[var(--md-on-primary)]"
+                                    x-text="t('feeds.addFeed')"
+                                ></button>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && searchQuery.trim()">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">search_off</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noSearchResults')"></p>
+                                <p class="text-sm text-[var(--md-on-surface-variant)] max-w-xs" x-text="t('posts.noSearchResultsDesc')"></p>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim()">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-primary)]">task_alt</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPosts')"></p>
+                            </div>
                         </template>
 
                         <template x-for="(post, index) in posts" :key="post.id">

@@ -98,7 +98,17 @@ things in one commit.
   stayed an SVG (brand logos aren't in Material Symbols). Commit `198d9a1`.
 
 ### Screens with a 1:1 mockup
-- [ ] **3. Empty/error states** (2k) — 4 isolated blocks, no interaction.
+- [x] **3. Empty states** (2k, 3 of the 4) — post list now distinguishes
+  no-feeds-at-all (with an "add feed" button into Settings' Feeds
+  accordion), active-search-with-no-matches, and the plain empty-filter
+  case, each with a `.msym` icon and `--md-*` token colors — first real
+  consumption of the step 1 tokens. New locale keys added to both
+  pt-BR.json and en-US.json (`posts.noSearchResults(Desc)`,
+  `feeds.noFeedsDesc`, `feeds.addFeed`).
+  **Deliberately skipped**: the mockup's 4th state, "secret not found" —
+  there's no found/not-found indicator in the real app yet to key it off
+  of (that's built in step 12, the AI settings tab); adding one now would
+  be inventing behavior ahead of its step. Revisit then.
 - [ ] **4. AI curation screen** (2e) — closed screen, few elements.
 - [ ] **5. Sidebar nav** (Unread/Starred/Suggested/All, Topics, Categories) —
   24px pill items, container-tone accents (2a/2b).

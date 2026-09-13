@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912w">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912w">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912w">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912x">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912x">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912x">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912w">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912x">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912w">
+    <link rel="manifest" href="/manifest.json?v=20260912x">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912w"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912w"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912w"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912w"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912w in all ?v= below -->
-    <script>var APP_VERSION = '20260912w';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912w">
+    <script src="/static/vendor/marked.min.js?v=20260912x"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912x"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912x"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912x"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912x in all ?v= below -->
+    <script>var APP_VERSION = '20260912x';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912x">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912w"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912w"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912w"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912w"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912w"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912w"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912w"></script>
-    <script defer src="/static/js/app.js?v=20260912w"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912x"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912x"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912x"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912x"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912x"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912x"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912x"></script>
+    <script defer src="/static/js/app.js?v=20260912x"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -728,8 +728,35 @@
                             <div class="p-8 text-center text-gray-500" x-text="t('app.loading')"></div>
                         </template>
 
-                        <template x-if="!loading && posts.length === 0">
-                            <div class="p-8 text-center text-gray-500" x-text="t('posts.noPosts')"></div>
+                        <!-- Empty states (M3 redesign step 3, docs/specs/MATERIAL3_REDESIGN_PLAN.md):
+                             mutually exclusive by root cause — no feeds at all, an active
+                             search with nothing matching, or just nothing left in this filter. -->
+                        <template x-if="!loading && posts.length === 0 && feeds.length === 0">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">rss_feed</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('feeds.noFeeds')"></p>
+                                <p class="text-sm text-[var(--md-on-surface-variant)] max-w-xs" x-text="t('feeds.noFeedsDesc')"></p>
+                                <button
+                                    @click="openSettings(); toggleAccordion('data')"
+                                    class="mt-2 h-9 px-4 rounded-full text-sm font-medium bg-[var(--md-primary)] text-[var(--md-on-primary)]"
+                                    x-text="t('feeds.addFeed')"
+                                ></button>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && searchQuery.trim()">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-on-surface-variant)]">search_off</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noSearchResults')"></p>
+                                <p class="text-sm text-[var(--md-on-surface-variant)] max-w-xs" x-text="t('posts.noSearchResultsDesc')"></p>
+                            </div>
+                        </template>
+
+                        <template x-if="!loading && posts.length === 0 && feeds.length > 0 && !searchQuery.trim()">
+                            <div class="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                                <span class="msym text-[40px] text-[var(--md-primary)]">task_alt</span>
+                                <p class="font-medium text-[var(--md-on-surface)]" x-text="t('posts.noPosts')"></p>
+                            </div>
                         </template>
 
                         <template x-for="(post, index) in posts" :key="post.id">
