@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912ae">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912ae">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912ae">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260912af">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260912af">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260912af">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912ae">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260912af">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260912ae">
+    <link rel="manifest" href="/manifest.json?v=20260912af">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260912ae"></script>
-    <script src="/static/vendor/popper.min.js?v=20260912ae"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912ae"></script>
-    <script src="/static/vendor/purify.min.js?v=20260912ae"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260912ae in all ?v= below -->
-    <script>var APP_VERSION = '20260912ae';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260912ae">
+    <script src="/static/vendor/marked.min.js?v=20260912af"></script>
+    <script src="/static/vendor/popper.min.js?v=20260912af"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260912af"></script>
+    <script src="/static/vendor/purify.min.js?v=20260912af"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260912af in all ?v= below -->
+    <script>var APP_VERSION = '20260912af';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260912af">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260912ae"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260912ae"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260912ae"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260912ae"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260912ae"></script>
-    <script defer src="/static/js/components/settings.js?v=20260912ae"></script>
-    <script defer src="/static/js/components/curation.js?v=20260912ae"></script>
-    <script defer src="/static/js/app.js?v=20260912ae"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260912af"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260912af"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260912af"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260912af"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260912af"></script>
+    <script defer src="/static/js/components/settings.js?v=20260912af"></script>
+    <script defer src="/static/js/components/curation.js?v=20260912af"></script>
+    <script defer src="/static/js/app.js?v=20260912af"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -626,8 +626,11 @@
                                     <span class="msym text-[16px] md:hidden">star</span>
                                     <!-- Mobile: show count after star icon -->
                                     <span class="md:hidden" x-show="starredCount > 0" x-text="starredCount"></span>
-                                    <!-- Desktop: show text + count -->
-                                    <span class="hidden md:inline" x-text="t('sidebar.starred') + (starredCount > 0 ? ' (' + starredCount + ')' : '')"></span>
+                                    <!-- Desktop: label + count as separate elements — a trailing
+                                         number, not "(N)" glued onto the label text, matching how
+                                         every other count in the app reads since step 5. -->
+                                    <span class="hidden md:inline" x-text="t('sidebar.starred')"></span>
+                                    <span class="hidden md:inline opacity-80" x-show="starredCount > 0" x-text="starredCount"></span>
                                 </button>
                                 <!-- Export starred -->
                                 <button

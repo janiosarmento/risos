@@ -204,6 +204,13 @@ things in one commit.
   alone in step 6. Settings modal (steps 11–17), Assistant modal (step 19),
   and the batch-select toolbar (step 18) are untouched — they have their
   own steps.
+  **Follow-up same session**: user caught the header's Starred button
+  still building its label as `"Favoritos (327)"` (count glued into the
+  text with parens) instead of a separate trailing number like every other
+  count since step 5 — fixed. Two more instances of that same `+ ' (' +
+  n + ')'` pattern found while checking, both inside the still-untouched
+  Settings modal (Topics tab, tag-merge suggestions) — left for steps
+  14/15, apply the same fix there.
 - [ ] **9. Mobile layout** (2g) — bottom nav + narrow list/detail.
 - [ ] **10. Suggested + tag profile** (2h/2i).
 
