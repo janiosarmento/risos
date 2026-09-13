@@ -32,12 +32,32 @@ def _add_post(db, post_id: int, title: str, tags: list[str]) -> None:
         db.add(PostTag(post_id=post_id, tag=tag))
 
 
-def _stub_llm(monkeypatch, response: dict, calls: list):
+def _stub_llm(monkeypatch, response: dict, calls: list, ephemeral: dict = None):
+    """Stub both LLM passes.
+
+    The endpoint asks two questions in parallel — "which of these groups
+    supersede each other" and "which of these were only worth reading once"
+    — so the stub answers each by the shape it expects and records every
+    call, letting a test assert which passes actually ran.
+    """
+
     async def fake_call(system_prompt, user_prompt, **kwargs):
-        calls.append({"system": system_prompt, "user": user_prompt, **kwargs})
-        return response
+        is_group_pass = "Group 1" in user_prompt
+        calls.append(
+            {
+                "pass": "groups" if is_group_pass else "value",
+                "system": system_prompt,
+                "user": user_prompt,
+                **kwargs,
+            }
+        )
+        return response if is_group_pass else (ephemeral or {"ephemeral": []})
 
     monkeypatch.setattr(ai_api, "call_llm_json", fake_call)
+
+
+def _of(calls: list, which: str) -> list:
+    return [c for c in calls if c["pass"] == which]
 
 
 @pytest.mark.asyncio
@@ -58,7 +78,10 @@ async def test_nothing_overlaps_means_no_llm_call(db, monkeypatch):
 
     result = await curate_starred(CurateRequest(), db=db, user={})
 
-    assert calls == []  # the whole point: no model round-trip
+    # No group means nothing can supersede anything, so that pass is skipped
+    # entirely; the value pass still runs, since an article nothing covers can
+    # still be one nobody will return to.
+    assert _of(calls, "groups") == []
     assert {e["post_id"] for e in result["analysis"]["essential"]} == {1, 2}
     assert result["analysis"]["redundant"] == []
 
@@ -79,8 +102,8 @@ async def test_only_clustered_posts_are_sent_to_the_model(db, monkeypatch):
 
     result = await curate_starred(CurateRequest(), db=db, user={})
 
-    assert len(calls) == 1
-    prompt = calls[0]["user"]
+    assert len(_of(calls, "groups")) == 1
+    prompt = _of(calls, "groups")[0]["user"]
     assert "1 |" in prompt and "2 |" in prompt
     assert "gardening" not in prompt.lower()  # never reached the model
 
@@ -133,9 +156,84 @@ async def test_post_the_model_ignored_is_kept(db, monkeypatch):
 
     result = await curate_starred(CurateRequest(), db=db, user={})
 
-    assert len(calls) == 1
+    assert len(_of(calls, "groups")) == 1
     assert sorted(e["post_id"] for e in result["analysis"]["essential"]) == [1, 2]
     assert result["analysis"]["redundant"] == []
+
+
+@pytest.mark.asyncio
+async def test_an_article_nothing_covers_can_still_be_dropped(db, monkeypatch):
+    # The judgement redundancy structurally cannot make: an opinion piece
+    # that overlaps with nothing, and that nobody will come back to.
+    calls: list = []
+    _stub_llm(
+        monkeypatch,
+        {"decisions": []},
+        calls,
+        ephemeral={
+            "ephemeral": [
+                {"post_id": 2, "reason": "one person's take, nothing to return to"},
+                {"post_id": 999, "reason": "never existed"},
+            ]
+        },
+    )
+    _add_post(db, 1, "How DNS resolution works", ["dns", "networking"])
+    _add_post(db, 2, "Why my favourite OS is the best", ["opinion", "desktop"])
+    db.commit()
+
+    result = await curate_starred(CurateRequest(), db=db, user={})
+
+    assert _of(calls, "groups") == []  # nothing overlapped
+    assert len(_of(calls, "value")) == 1
+    kept_if = result["analysis"]["keep_if_interested"]
+    assert [e["post_id"] for e in kept_if] == [2]  # invented id dropped
+    assert kept_if[0]["reason"]
+    assert [e["post_id"] for e in result["analysis"]["essential"]] == [1]
+
+
+@pytest.mark.asyncio
+async def test_being_superseded_beats_being_ephemeral(db, monkeypatch):
+    # Both passes can condemn the same article. "Another article covers
+    # this" is the more actionable answer, so it is the one shown.
+    calls: list = []
+    _stub_llm(
+        monkeypatch,
+        {"decisions": [{"post_id": 2, "verdict": "redundant", "covered_by": [1]}]},
+        calls,
+        ephemeral={"ephemeral": [{"post_id": 2, "reason": "news of the day"}]},
+    )
+    _add_post(db, 1, "SPF explained", ["spf", "dkim"])
+    _add_post(db, 2, "SPF syntax", ["spf", "dkim"])
+    db.commit()
+
+    result = await curate_starred(CurateRequest(), db=db, user={})
+
+    assert [e["post_id"] for e in result["analysis"]["redundant"]] == [2]
+    assert result["analysis"]["keep_if_interested"] == []
+
+
+@pytest.mark.asyncio
+async def test_value_pass_failure_does_not_fail_curation(db, monkeypatch):
+    # It is an enhancement on top of the redundancy answer, so losing it
+    # must downgrade the result rather than break the endpoint.
+    calls: list = []
+
+    async def half_broken(system_prompt, user_prompt, **kwargs):
+        if "Group 1" in user_prompt:
+            calls.append({"pass": "groups"})
+            return {"decisions": [{"post_id": 2, "verdict": "redundant",
+                                   "covered_by": [1]}]}
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(ai_api, "call_llm_json", half_broken)
+    _add_post(db, 1, "SPF explained", ["spf", "dkim"])
+    _add_post(db, 2, "SPF syntax", ["spf", "dkim"])
+    db.commit()
+
+    result = await curate_starred(CurateRequest(), db=db, user={})
+
+    assert [e["post_id"] for e in result["analysis"]["redundant"]] == [2]
+    assert result["analysis"]["keep_if_interested"] == []
 
 
 @pytest.mark.asyncio
@@ -153,7 +251,7 @@ async def test_second_run_is_served_from_cache(db, monkeypatch):
     first = await curate_starred(CurateRequest(), db=db, user={})
     second = await curate_starred(CurateRequest(), db=db, user={})
 
-    assert len(calls) == 1  # not called again
+    assert len(_of(calls, "groups")) == 1  # not called again
     assert first["analysis"] == second["analysis"]
     assert db.query(CurationCache).count() == 1
 
@@ -176,7 +274,7 @@ async def test_changing_the_algorithm_invalidates_the_cache(db, monkeypatch):
     )
     await curate_starred(CurateRequest(), db=db, user={})
 
-    assert len(calls) == 2
+    assert len(_of(calls, "groups")) == 2
 
 
 @pytest.mark.asyncio
@@ -197,5 +295,5 @@ async def test_starring_something_new_invalidates_the_cache(db, monkeypatch):
     db.commit()
     result = await curate_starred(CurateRequest(), db=db, user={})
 
-    assert len(calls) == 2
+    assert len(_of(calls, "groups")) == 2
     assert result["total_posts"] == 3

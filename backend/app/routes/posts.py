@@ -3,6 +3,7 @@ Post routes.
 Read, mark as read, content extraction and redirect.
 """
 
+import asyncio
 import hashlib
 import io
 import json
@@ -1049,18 +1050,18 @@ async def curate_starred(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
-    """Find which starred posts are made redundant by others.
+    """Work out which starred posts are not worth keeping, and why.
 
-    Two passes: a local one that groups posts covering the same ground by
-    tag overlap (see services/curation.py), then an LLM pass that only has
-    to adjudicate those groups. Posts the local pass never grouped never
-    reach the model at all.
+    A local pass groups posts covering the same ground by tag overlap (see
+    services/curation.py) so the model never has to compare the whole
+    library with itself. Two LLM passes then run in parallel over the
+    result: one adjudicates those groups, the other looks for articles
+    that nothing covers but that were only ever worth reading once.
     """
     from app.routes.preferences import (
         get_effective_curation_engine,
         get_effective_summary_language,
     )
-    from app.services.ai._api import call_llm_json
     from app.services.curation import find_redundancy_clusters
 
     logger.info("=== CURATE START ===")
@@ -1174,27 +1175,8 @@ async def curate_starred(
     def _entry(pid: int, **extra) -> dict:
         return {"post_id": pid, "title": titles.get(pid), **extra}
 
-    # Nothing overlaps: answer entirely from local analysis.
-    if not clusters:
-        logger.info(
-            "Curation: no overlapping groups among %d posts — answered locally, "
-            "no LLM call",
-            len(post_ids),
-        )
-        payload = {
-            "topic": context_name,
-            "total_posts": len(post_ids),
-            "analysis": {
-                "essential": [_entry(pid) for pid in post_ids],
-                "redundant": [],
-                "keep_if_interested": [],
-            },
-            "diagnostics": cluster_diag,
-        }
-        _store_curation_cache(db, scope_key, payload)
-        return payload
-
-    # --- LLM pass: adjudicate only the groups ------------------------------
+    # Both passes describe a post the same way: id, title, and the one-line
+    # summary the app already generated for it.
     content_hashes = [p.content_hash for p in posts if p.content_hash]
     summaries_map = {}
     if content_hashes:
@@ -1207,18 +1189,125 @@ async def curate_starred(
 
     hash_by_id = {p.id: p.content_hash for p in posts}
 
+    def _describe(pid: int) -> str:
+        one_line = summaries_map.get(hash_by_id.get(pid) or "", "")
+        title = titles.get(pid) or ""
+        return f"{pid} | {title}" + (f" — {one_line}" if one_line else "")
+
+    engine = get_effective_curation_engine(db)
+
+    # --- LLM passes -------------------------------------------------------
+    # Two independent questions, so they go out together rather than in
+    # sequence: "which of these overlapping articles supersede each other?"
+    # over the groups only, and "which of these were only ever worth reading
+    # once?" over everything in scope. The second is what catches an article
+    # that nothing else covers but that nobody will return to — a verdict the
+    # redundancy pass structurally cannot reach.
+    tasks = [
+        _adjudicate_groups(clusters, _describe, language, engine),
+        _find_ephemeral(post_ids, _describe, language, engine),
+    ]
+    group_decisions, ephemeral = await asyncio.gather(*tasks)
+
+    # --- Merge both passes back with the local analysis --------------------
+    essential, redundant, situational = [], [], []
+    decided: set[int] = set()
+
+    for item in group_decisions:
+        pid = item.get("post_id")
+        if not isinstance(pid, int) or pid not in clustered_set or pid in decided:
+            continue  # hallucinated, out-of-scope, or duplicate id
+        decided.add(pid)
+        verdict = str(item.get("verdict", "")).lower()
+        reason = item.get("reason") or ""
+        if verdict == "redundant":
+            covered_by = [
+                c for c in (item.get("covered_by") or []) if c in clustered_set
+            ]
+            redundant.append(_entry(pid, reason=reason, covered_by=covered_by))
+        elif verdict in ("situational", "keep_if_interested"):
+            situational.append(_entry(pid, reason=reason))
+        else:
+            essential.append(_entry(pid))
+
+    # Anything the group pass did not condemn is still up for the second
+    # question: nothing covers it, but was it only ever worth reading once?
+    # Being superseded is the stronger verdict, so it wins where both apply.
+    for pid, reason in ephemeral.items():
+        if pid in decided or pid not in set(post_ids):
+            continue
+        decided.add(pid)
+        situational.append(_entry(pid, reason=reason))
+
+    # Everything else stays: a clustered post the model skipped, and a post
+    # nothing overlapped. Silence is not grounds for telling someone to drop
+    # something.
+    for pid in post_ids:
+        if pid not in decided:
+            essential.append(_entry(pid))
+
+    cluster_diag["ephemeral"] = len(ephemeral)
+    logger.info(
+        "Curation complete: %d essential, %d redundant, %d situational "
+        "(%d posts analyzed, %d in groups)",
+        len(essential),
+        len(redundant),
+        len(situational),
+        len(post_ids),
+        len(clustered_ids),
+    )
+    payload = {
+        "topic": context_name,
+        "total_posts": len(post_ids),
+        "analysis": {
+            "essential": essential,
+            "redundant": redundant,
+            "keep_if_interested": situational,
+        },
+        "diagnostics": cluster_diag,
+    }
+    _store_curation_cache(db, scope_key, payload)
+    return payload
+
+
+# Keep the memo table from growing without bound; curation runs are rare and
+# only the recent ones are ever read again.
+_CURATION_CACHE_KEEP = 50
+
+# Bump whenever the scoring, grouping, or prompt changes in a way that would
+# produce a different answer for the same posts. It is part of the cache key,
+# so bumping it is all the invalidation there is.
+CURATION_ALGO_VERSION = 3
+
+# The "was this only worth reading once?" pass sees every post in scope, so
+# it is chunked to keep any one prompt reasonable on a small model.
+_EPHEMERAL_CHUNK = 120
+
+
+async def _adjudicate_groups(
+    clusters: list[dict],
+    describe,
+    language: str,
+    engine: str,
+) -> list[dict]:
+    """Ask the model which articles in each group supersede which.
+
+    Returns the raw decision dicts; validating the ids against what was
+    actually in scope is the caller's job.
+    """
+    if not clusters:
+        return []
+
+    from app.services.ai._api import call_llm_json
+
     group_blocks = []
     for idx, cluster in enumerate(clusters, start=1):
         lines = [
             f"Group {idx} (these share the tags: "
             f"{', '.join(cluster['shared_tags'][:8])})"
         ]
-        for pid in cluster["post_ids"]:
-            one_line = summaries_map.get(hash_by_id.get(pid) or "", "")
-            title = titles.get(pid) or ""
-            lines.append(f"  {pid} | {title}" + (f" — {one_line}" if one_line else ""))
+        lines.extend(f"  {describe(pid)}" for pid in cluster["post_ids"])
         group_blocks.append("\n".join(lines))
-
     groups_text = "\n\n".join(group_blocks)
 
     system_prompt = (
@@ -1252,88 +1341,91 @@ Respond in JSON:
   ]
 }}"""
 
-    engine = get_effective_curation_engine(db)
     logger.info(
-        "Calling curate LLM: engine=%s, %d groups covering %d of %d posts, "
-        "prompt_chars=%d",
+        "Curation group pass: engine=%s, %d groups, prompt_chars=%d",
         engine,
         len(clusters),
-        len(clustered_ids),
-        len(post_ids),
         len(groups_text),
     )
-    try:
-        result = await call_llm_json(
-            system_prompt, user_prompt, max_tokens=4096, engine=engine
-        )
-        logger.info("LLM call succeeded")
-    except Exception as e:
-        logger.error(f"LLM call failed: {type(e).__name__}: {str(e)}", exc_info=True)
-        raise
-
-    # --- Merge the model's verdicts back with the local analysis ----------
-    essential, redundant, situational = [], [], []
-    decided: set[int] = set()
-
-    for item in result.get("decisions", []):
-        pid = item.get("post_id")
-        if not isinstance(pid, int) or pid not in clustered_set or pid in decided:
-            continue  # hallucinated, out-of-scope, or duplicate id
-        decided.add(pid)
-        verdict = str(item.get("verdict", "")).lower()
-        reason = item.get("reason") or ""
-        if verdict == "redundant":
-            covered_by = [
-                c for c in (item.get("covered_by") or []) if c in clustered_set
-            ]
-            redundant.append(_entry(pid, reason=reason, covered_by=covered_by))
-        elif verdict in ("situational", "keep_if_interested"):
-            situational.append(_entry(pid, reason=reason))
-        else:
-            essential.append(_entry(pid))
-
-    # A clustered post the model skipped stays in the library: silence is not
-    # grounds for telling someone to drop something.
-    for pid in clustered_ids:
-        if pid not in decided:
-            essential.append(_entry(pid))
-
-    # Everything the local pass never grouped: nothing else in scope covers it.
-    for pid in post_ids:
-        if pid not in clustered_set:
-            essential.append(_entry(pid))
-
-    logger.info(
-        "Curation complete: %d essential, %d redundant, %d situational "
-        "(%d posts analyzed, %d sent to the model)",
-        len(essential),
-        len(redundant),
-        len(situational),
-        len(post_ids),
-        len(clustered_ids),
+    result = await call_llm_json(
+        system_prompt, user_prompt, max_tokens=4096, engine=engine
     )
-    payload = {
-        "topic": context_name,
-        "total_posts": len(post_ids),
-        "analysis": {
-            "essential": essential,
-            "redundant": redundant,
-            "keep_if_interested": situational,
-        },
-        "diagnostics": cluster_diag,
-    }
-    _store_curation_cache(db, scope_key, payload)
-    return payload
+    decisions = result.get("decisions")
+    return decisions if isinstance(decisions, list) else []
 
 
-# Keep the memo table from growing without bound; curation runs are rare and
-# only the recent ones are ever read again.
-_CURATION_CACHE_KEEP = 50
+async def _find_ephemeral(
+    post_ids: list[int],
+    describe,
+    language: str,
+    engine: str,
+) -> dict[int, str]:
+    """Ask which saved articles were only ever worth reading once.
 
-# Bump whenever the scoring, grouping, or prompt changes in a way that would
-# produce a different answer for the same posts. It is part of the cache key,
-# so bumping it is all the invalidation there is.
-CURATION_ALGO_VERSION = 2
+    This is the judgement redundancy cannot make: an opinion piece or a
+    news item that nothing else in the library covers, and that nobody
+    will return to either. Returns ``{post_id: reason}``.
+
+    Best-effort by design — this pass is an enhancement, so a failure here
+    downgrades the answer rather than failing the whole curation.
+    """
+    from app.services.ai._api import call_llm_json
+
+    system_prompt = (
+        "You are helping someone prune a personal library of saved articles. "
+        "Separate articles with lasting value — references, guides, tools, "
+        "explanations, anything worth coming back to — from articles that were "
+        "only worth reading once: news of the day, announcements, opinion and "
+        "personal-preference pieces, and hot takes. Judge the article itself, "
+        "not whether the subject is interesting. When in doubt, keep it. "
+        f"IMPORTANT: every 'reason' MUST be written in {language}."
+    )
+
+    found: dict[int, str] = {}
+    for chunk in _chunks(post_ids, _EPHEMERAL_CHUNK):
+        listing = "\n".join(describe(pid) for pid in chunk)
+        user_prompt = f"""Saved articles:
+
+{listing}
+
+List ONLY the ones that were worth reading once and are not worth keeping,
+with a one-sentence reason each. Leave out everything with lasting value —
+that will usually be most of the list.
+
+Respond in JSON:
+{{
+  "ephemeral": [
+    {{"post_id": 123, "reason": "..."}}
+  ]
+}}"""
+        logger.info(
+            "Curation value pass: engine=%s, %d posts, prompt_chars=%d",
+            engine,
+            len(chunk),
+            len(listing),
+        )
+        try:
+            result = await call_llm_json(
+                system_prompt, user_prompt, max_tokens=2048, engine=engine
+            )
+        except Exception as e:
+            logger.warning(
+                "Curation value pass failed (%s: %s) — continuing with "
+                "redundancy analysis only",
+                type(e).__name__,
+                e,
+            )
+            continue
+        for item in result.get("ephemeral") or []:
+            pid = item.get("post_id") if isinstance(item, dict) else None
+            if isinstance(pid, int):
+                found[pid] = item.get("reason") or ""
+    return found
+
+
+def _chunks(items: list, size: int):
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
 
 
 def _store_curation_cache(db: Session, scope_key: str, payload: dict) -> None:
