@@ -143,8 +143,19 @@ things in one commit.
   redundant/situational badge labels were hardcoded English literals even
   under the pt-BR locale — added proper `curation.essential/redundant/
   situational/unclassified/postsAnalyzed` keys to both locale files.
-- [ ] **5. Sidebar nav** (Unread/Starred/Suggested/All, Topics, Categories) —
-  24px pill items, container-tone accents (2a/2b).
+- [x] **5. Sidebar nav** (2a/2b) — Unread/Suggested filter buttons, the
+  Topics folder + topic items, and the Categories/Feeds tree all now use
+  24px-radius pills (`rounded-[24px]`) and `--md-*` tokens: plain active
+  state = secondary-container, Suggested's active state = primary-container
+  (the handoff's "destaque IA" component rule) with its icon/count always
+  tinted primary even when inactive. Sidebar background, all its internal
+  borders, and unread-count badges (now plain tinted text instead of solid
+  color chips, matching the mockup) also converted. Left untouched (out of
+  "nav" scope, for a later pass): the font-scale/mark-read/refresh toolbar
+  buttons and the Top Tags chip row — those are toolbar controls and chips,
+  not nav list items. The header's separate postFilter row
+  (Unread/All/Starred buttons above the post list) is also untouched —
+  that's part of the main content header, not the sidebar.
 - [ ] **6. Post list** (cards, tag chips, score badge, unread dot) (2a/2b).
   This is also where `.font-reading` (Literata) on post titles gets
   reconsidered against the Roboto-everywhere decision above.

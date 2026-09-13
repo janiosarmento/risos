@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260912aa';</script>
+    <script>var APP_VERSION = '20260912ab';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -180,14 +180,14 @@
 
                 <!-- Sidebar -->
                 <aside
-                    class="w-64 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-200 dark:border-gray-700 fixed md:relative inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out overflow-hidden"
+                    class="w-64 bg-[var(--md-surface-container-low)] flex flex-col border-r border-[var(--md-outline-variant)] fixed md:relative inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out overflow-hidden"
                     :class="[
                         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
                         desktopSidebarOpen ? 'md:w-64' : 'md:w-0 md:border-r-0'
                     ]"
                 >
                     <!-- Header -->
-                    <header class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <header class="p-4 border-b border-[var(--md-outline-variant)] flex items-center justify-between">
                         <h1 class="font-bold text-lg" x-text="t('app.title')"></h1>
                         <div class="flex items-center gap-2">
                             <div class="hidden md:flex items-center gap-1">
@@ -206,7 +206,7 @@
                     </header>
 
                     <!-- Actions -->
-                    <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex gap-2">
+                    <div class="p-2 border-b border-[var(--md-outline-variant)] flex gap-2">
                         <div class="flex-1 relative" x-data="{ markOpen: false }">
                             <button
                                 @click="markOpen = !markOpen"
@@ -252,17 +252,20 @@
                         </button>
                     </div>
 
-                    <!-- Filters -->
-                    <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                    <!-- Filters (M3 redesign step 5, docs/specs/MATERIAL3_REDESIGN_PLAN.md —
+                         2a/2b: nav items are 24px-radius pills; the active state is
+                         secondary-container for a plain filter, primary-container for
+                         Suggested — the handoff's own "destaque IA" component rule. -->
+                    <div class="p-2 border-b border-[var(--md-outline-variant)]">
                         <button
                             @click="postFilter = 'unread'; setFilter('unread')"
-                            class="w-full text-left px-3 py-2 rounded text-sm"
-                            :class="filter === 'unread' && postFilter === 'unread' && !selectedTopicId ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                            class="w-full text-left px-3 py-2 rounded-[24px] text-sm"
+                            :class="filter === 'unread' && postFilter === 'unread' && !selectedTopicId ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]' : 'hover:bg-[var(--md-surface-container-highest)]'"
                         >
                             <span x-text="t('sidebar.unread')"></span>
                             <span
                                 class="float-right"
-                                :class="filter === 'unread' && postFilter === 'unread' && !selectedTopicId ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'"
+                                :class="filter === 'unread' && postFilter === 'unread' && !selectedTopicId ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-on-surface-variant)]'"
                                 x-text="totalUnread"
                             ></span>
                         </button>
@@ -270,22 +273,22 @@
                         <div class="flex items-center gap-1">
                             <button
                                 @click="postFilter = 'unread'; setFilter('suggested')"
-                                class="flex-1 text-left px-3 py-2 rounded text-sm flex items-center gap-2"
-                                :class="filter === 'suggested' ? 'bg-purple-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                class="flex-1 text-left px-3 py-2 rounded-[24px] text-sm flex items-center gap-2"
+                                :class="filter === 'suggested' ? 'bg-[var(--md-primary-container)] text-[var(--md-on-primary-container)]' : 'hover:bg-[var(--md-surface-container-highest)]'"
                             >
-                                <span class="msym text-[16px]" :class="filter === 'suggested' ? 'text-white' : 'text-purple-500'">auto_awesome</span>
+                                <span class="msym text-[16px]" :class="filter === 'suggested' ? 'text-[var(--md-on-primary-container)]' : 'text-[var(--md-primary)]'">auto_awesome</span>
                                 <span x-text="t('sidebar.suggested')"></span>
                                 <span
                                     x-show="suggestedCount > 0"
                                     class="ml-auto"
-                                    :class="filter === 'suggested' ? 'text-white/80' : 'text-purple-600 dark:text-purple-400'"
+                                    :class="filter === 'suggested' ? 'text-[var(--md-on-primary-container)]' : 'text-[var(--md-primary)]'"
                                     x-text="suggestedCount"
                                 ></span>
                             </button>
                             <button
                                 @click.stop="regenerateSuggestions()"
                                 :disabled="regeneratingSuggestions"
-                                class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                class="p-1.5 rounded-full hover:bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]"
                                 :data-tip="regeneratingSuggestions ? t('sidebar.regenerating') : t('sidebar.regenerateSuggestions')"
                                 :aria-label="regeneratingSuggestions ? t('sidebar.regenerating') : t('sidebar.regenerateSuggestions')"
                             >
@@ -295,7 +298,7 @@
                     </div>
 
                     <!-- Top Tags (collapsible, desktop only, hidden during search) -->
-                    <div x-show="!searchQuery.trim()" class="hidden md:block p-2 border-b border-gray-200 dark:border-gray-700">
+                    <div x-show="!searchQuery.trim()" class="hidden md:block p-2 border-b border-[var(--md-outline-variant)]">
                         <button
                             @click="toggleTopTags()"
                             class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -333,16 +336,16 @@
                     <nav id="sidebar-nav" class="flex-1 overflow-y-auto scrollbar-thin p-2">
                         <!-- Topics: a pseudo-category holding the topic list, desktop only -->
                         <div class="hidden md:block mb-1">
-                            <div class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150">
+                            <div class="w-full text-left px-2 py-1.5 rounded-[24px] text-sm font-medium flex items-center gap-1 hover:bg-[var(--md-surface-container-highest)] transition-colors duration-150">
                                 <button
                                     @click.stop="toggleTopics()"
-                                    class="p-0.5 -ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-transform"
+                                    class="p-0.5 -ml-1 hover:bg-[var(--md-surface-container-high)] rounded-full transition-transform"
                                     :data-tip="t('sidebar.topics')"
                                     :aria-label="t('sidebar.topics')"
                                 >
                                     <span class="msym text-[12px] transition-transform duration-200" :class="topicsExpanded ? 'rotate-90' : ''">chevron_right</span>
                                 </button>
-                                <span class="msym text-[16px] text-purple-500 dark:text-purple-400 flex-shrink-0">folder</span>
+                                <span class="msym text-[16px] text-[var(--md-primary)] flex-shrink-0">folder</span>
                                 <button @click="toggleTopics()" class="flex-1 truncate text-left" x-text="t('sidebar.topics')"></button>
                             </div>
                             <!-- Topics inside the folder -->
@@ -354,30 +357,30 @@
                                 x-transition:leave="transition ease-in duration-150"
                                 x-transition:leave-start="opacity-100 translate-y-0"
                                 x-transition:leave-end="opacity-0 -translate-y-2"
-                                class="ml-4 border-l border-gray-300 dark:border-gray-700 pl-2"
+                                class="ml-4 border-l border-[var(--md-outline-variant)] pl-2"
                             >
                                 <template x-for="topic in topics" :key="topic.id">
                                     <button
                                         @click="selectTopic(topic.id)"
                                         :data-nav-id="'topic-' + topic.id"
-                                        class="w-full text-left px-2 py-1 rounded text-sm flex items-center gap-2 transition-colors"
+                                        class="w-full text-left px-2 py-1 rounded-[24px] text-sm flex items-center gap-2 transition-colors"
                                         :class="selectedTopicId === topic.id
-                                            ? 'bg-purple-600 text-white'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                            ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]'
+                                            : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
                                     >
-                                        <span class="msym text-[12px] flex-shrink-0" :class="selectedTopicId === topic.id ? 'text-white/70' : 'text-purple-400'">label</span>
+                                        <span class="msym text-[12px] flex-shrink-0" :class="selectedTopicId === topic.id ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'">label</span>
                                         <span class="flex-1 truncate" x-text="topic.name"></span>
                                         <span
                                             x-show="topic.unread_count > 0"
-                                            class="bg-purple-500 text-white text-xs px-1.5 rounded flex-shrink-0"
-                                            :class="selectedTopicId === topic.id ? 'bg-white/20' : ''"
+                                            class="text-xs flex-shrink-0"
+                                            :class="selectedTopicId === topic.id ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
                                             x-text="topic.unread_count"
                                         ></span>
                                     </button>
                                 </template>
                                 <div
                                     x-show="topicsLoaded && topics.length === 0"
-                                    class="px-2 py-1 text-xs text-gray-400 dark:text-gray-500"
+                                    class="px-2 py-1 text-xs text-[var(--md-on-surface-variant)]"
                                     x-text="t('topics.empty')"
                                 ></div>
                             </div>
@@ -388,11 +391,11 @@
                                 <!-- Category header -->
                                 <div
                                     :data-nav-id="'category-' + category.id"
-                                    class="w-full text-left px-2 py-1.5 rounded text-sm font-medium flex items-center gap-1 transition-colors duration-150"
+                                    class="w-full text-left px-2 py-1.5 rounded-[24px] text-sm font-medium flex items-center gap-1 transition-colors duration-150"
                                     :class="{
-                                        'bg-blue-600 text-white': filter === 'category' && filterId === category.id,
-                                        'hover:bg-gray-200 dark:hover:bg-gray-700': !(filter === 'category' && filterId === category.id),
-                                        'ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/30': dragOverCategoryId === category.id
+                                        'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]': filter === 'category' && filterId === category.id,
+                                        'hover:bg-[var(--md-surface-container-highest)]': !(filter === 'category' && filterId === category.id),
+                                        'ring-2 ring-[var(--md-primary)] bg-[var(--md-primary-container)]': dragOverCategoryId === category.id
                                     }"
                                     @dragover.prevent="onCategoryDragOver($event, category.id)"
                                     @dragleave="onCategoryDragLeave($event, category.id)"
@@ -401,15 +404,14 @@
                                     <!-- Chevron toggle -->
                                     <button
                                         @click.stop="toggleCategoryCollapse(category.id)"
-                                        class="p-0.5 -ml-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-transform"
-                                        :class="filter === 'category' && filterId === category.id ? 'hover:bg-blue-500' : ''"
+                                        class="p-0.5 -ml-1 hover:bg-[var(--md-surface-container-high)] rounded-full transition-transform"
                                         :data-tip="t('sidebar.toggleCategory')"
                                         :aria-label="t('sidebar.toggleCategory')"
                                     >
                                         <span class="msym text-[12px] transition-transform duration-200" :class="isCategoryCollapsed(category.id) ? '' : 'rotate-90'">chevron_right</span>
                                     </button>
                                     <!-- Folder icon -->
-                                    <span class="msym text-[16px] text-gray-500 dark:text-gray-400 flex-shrink-0" :class="filter === 'category' && filterId === category.id ? 'text-white/70' : ''">folder</span>
+                                    <span class="msym text-[16px] text-[var(--md-on-surface-variant)] flex-shrink-0" :class="filter === 'category' && filterId === category.id ? 'text-[var(--md-on-secondary-container)]' : ''">folder</span>
                                     <!-- Category name (clickable to filter) -->
                                     <button
                                         @click="setFilter('category', category.id)"
@@ -418,8 +420,8 @@
                                     ></button>
                                     <span
                                         x-show="getCategoryUnread(category.id) > 0"
-                                        class="bg-blue-500 text-white text-xs px-1.5 rounded"
-                                        :class="filter === 'category' && filterId === category.id ? 'bg-white/20' : ''"
+                                        class="text-xs"
+                                        :class="filter === 'category' && filterId === category.id ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
                                         x-text="getCategoryUnread(category.id)"
                                     ></span>
                                 </div>
@@ -432,28 +434,29 @@
                                     x-transition:leave="transition ease-in duration-150"
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 -translate-y-2"
-                                    class="ml-4 border-l border-gray-300 dark:border-gray-700 pl-2"
+                                    class="ml-4 border-l border-[var(--md-outline-variant)] pl-2"
                                 >
                                     <template x-for="feed in feeds.filter(f => f.category_id === category.id)" :key="feed.id">
                                         <button
                                             @click="setFilter('feed', feed.id)"
                                             :data-nav-id="'feed-' + feed.id"
-                                            class="w-full text-left px-2 py-1 rounded text-sm truncate text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                                            :class="filter === 'feed' && filterId === feed.id ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'"
+                                            class="w-full text-left px-2 py-1 rounded-[24px] text-sm truncate flex items-center gap-2"
+                                            :class="filter === 'feed' && filterId === feed.id ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
                                             :draggable="window.innerWidth >= 1024 ? 'true' : 'false'"
                                             @dragstart="window.innerWidth >= 1024 && onFeedDragStart($event, feed.id)"
                                             @dragend="onFeedDragEnd($event)"
                                         >
-                                            <span class="msym text-[12px] text-gray-500 flex-shrink-0">rss_feed</span>
+                                            <span class="msym text-[12px] text-[var(--md-on-surface-variant)] flex-shrink-0">rss_feed</span>
                                             <span class="flex-1 truncate" x-text="feed.title"></span>
                                             <span
                                                 x-show="feed.unread_count > 0"
-                                                class="bg-blue-500 text-white text-xs px-1.5 rounded flex-shrink-0"
+                                                class="text-xs flex-shrink-0"
+                                                :class="filter === 'feed' && filterId === feed.id ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
                                                 x-text="feed.unread_count"
                                             ></span>
                                             <span
                                                 x-show="feed.error_count > 0"
-                                                class="text-red-400 text-xs flex-shrink-0"
+                                                class="text-[var(--md-error)] text-xs flex-shrink-0"
                                                 :data-tip="feed.last_error || t('sidebar.feedError')"
                                             >!</span>
                                         </button>
@@ -464,7 +467,7 @@
                     </nav>
 
                     <!-- Sidebar Footer -->
-                    <div class="flex-shrink-0 p-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div class="flex-shrink-0 p-3 border-t border-[var(--md-outline-variant)] flex items-center justify-between">
                         <a
                             href="https://github.com/janiosarmento/risos"
                             target="_blank"
