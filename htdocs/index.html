@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913o">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913o">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913o">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260913p">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260913p">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260913p">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913o">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260913p">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260913o">
+    <link rel="manifest" href="/manifest.json?v=20260913p">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260913o"></script>
-    <script src="/static/vendor/popper.min.js?v=20260913o"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913o"></script>
-    <script src="/static/vendor/purify.min.js?v=20260913o"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260913o in all ?v= below -->
-    <script>var APP_VERSION = '20260913o';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260913o">
+    <script src="/static/vendor/marked.min.js?v=20260913p"></script>
+    <script src="/static/vendor/popper.min.js?v=20260913p"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260913p"></script>
+    <script src="/static/vendor/purify.min.js?v=20260913p"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260913p in all ?v= below -->
+    <script>var APP_VERSION = '20260913p';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260913p">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260913o"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260913o"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260913o"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260913o"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260913o"></script>
-    <script defer src="/static/js/components/settings.js?v=20260913o"></script>
-    <script defer src="/static/js/components/curation.js?v=20260913o"></script>
-    <script defer src="/static/js/app.js?v=20260913o"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260913p"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260913p"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260913p"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260913p"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260913p"></script>
+    <script defer src="/static/js/components/settings.js?v=20260913p"></script>
+    <script defer src="/static/js/components/curation.js?v=20260913p"></script>
+    <script defer src="/static/js/app.js?v=20260913p"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -1027,9 +1027,14 @@
                      a token color, since --md-* tokens are plain hex and don't support
                      Tailwind's /opacity modifier. -->
                 <div class="bg-[var(--md-primary-container)]">
-                    <div class="px-4 py-2 flex items-center justify-between min-h-[42px]">
-                        <h3 class="text-sm font-medium text-[var(--md-on-primary-container)]" x-text="t('modal.aiSummary')"></h3>
-                        <div class="flex items-center gap-1">
+                    <!-- On a phone this row has ~330px of content to fit in ~328px: the
+                         heading plus three labelled buttons, one of them "Regenerar
+                         (Shift+R)". The labels drop below md, the same way the action row
+                         above already does it — the shortcut hint is meaningless on a
+                         phone anyway, and every button keeps its aria-label. -->
+                    <div class="px-4 py-2 flex items-center justify-between gap-2 min-h-[42px]">
+                        <h3 class="text-sm font-medium text-[var(--md-on-primary-container)] truncate" x-text="t('modal.aiSummary')"></h3>
+                        <div class="flex items-center gap-1 flex-shrink-0">
                             <!-- Copy summary -->
                             <button
                                 @click="copySummaryToClipboard()"
@@ -1048,10 +1053,11 @@
                                 class="text-xs px-2 py-1 rounded-full transition-colors"
                                 :class="currentPost.skip_summary ? 'bg-[var(--md-error-container)] text-[var(--md-on-error-container)]' : 'bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)]'"
                                 :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')"
+                                :aria-label="currentPost.skip_summary ? t('modal.skipSummaryActive') : t('modal.skipSummary')"
                             >
                                 <span class="flex items-center gap-1">
                                     <span class="msym text-[12px]">block</span>
-                                    <span x-text="currentPost.skip_summary ? t('modal.skipSummaryActive') : t('modal.skipSummary')"></span>
+                                    <span class="hidden md:inline" x-text="currentPost.skip_summary ? t('modal.skipSummaryActive') : t('modal.skipSummary')"></span>
                                 </span>
                             </button>
                             <button
@@ -1060,14 +1066,15 @@
                                 :class="regeneratingSummary ? 'opacity-50 cursor-wait bg-black/5 dark:bg-white/10 text-[var(--md-on-primary-container)]' : 'bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)]'"
                                 :disabled="regeneratingSummary"
                                 :data-tip="t('modal.regenerate')"
+                                :aria-label="t('modal.regenerate')"
                             >
                                 <span x-show="!regeneratingSummary" class="flex items-center gap-1">
                                     <span class="msym text-[12px]">refresh</span>
-                                    <span x-text="t('modal.regenerate')"></span>
+                                    <span class="hidden md:inline" x-text="t('modal.regenerate')"></span>
                                 </span>
                                 <span x-show="regeneratingSummary" class="flex items-center gap-1">
                                     <span class="msym text-[12px] animate-spin">progress_activity</span>
-                                    <span x-text="t('modal.generating')"></span>
+                                    <span class="hidden md:inline" x-text="t('modal.generating')"></span>
                                 </span>
                             </button>
                         </div>
