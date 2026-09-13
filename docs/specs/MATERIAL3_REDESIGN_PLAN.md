@@ -268,3 +268,21 @@ things in one commit.
   `root:root` instead of `www-data:www-data` (the checkout owner) — fixed
   with `chown -R`.
 - 2026-09-12 — Completed step 2 (icons → Material Symbols).
+- 2026-09-12 — **Steps 1–10 all done and deployed this session**, one
+  commit + deploy per step, each checked live by the user before the next
+  started. Stopping here for the day (user is tired) — **steps 11–17
+  (Settings) are next**, deliberately not started: that's the big,
+  no-full-mockup part of this plan, better tackled fresh. Nothing is
+  half-done or uncommitted; working tree is clean, `main` is at `6dfae35`,
+  prod is running it. A session picking this up tomorrow needs nothing
+  from this conversation — everything decided is written down above
+  (Decisions made so far, Gaps found in the handoff, Parked issues,
+  the per-step notes) or in git history (commit messages explain the
+  *why* of every visual choice, not just the diff). Read this whole file
+  top to bottom before touching step 11; skim `git log` since `0c212ea`
+  (the first redesign commit) if something here is unclear.
+  Two loose ends to fold into their steps when reached, already noted
+  inline above: the two remaining `+ ' (' + n + ')'` count-in-label
+  instances (Settings' Topics tab, tag-merge suggestions — steps 14/15),
+  and the parked AI-curation bug (unrelated to the redesign, own memory
+  entry `risos-curation-not-working`).
