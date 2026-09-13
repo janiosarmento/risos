@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913k';</script>
+    <script>var APP_VERSION = '20260913l';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -996,71 +996,79 @@
                 @click.self="closeAssistant()"
                 @keydown.escape.window="closeAssistant()"
             >
+                <!-- Assistant modal (M3 redesign step 19). Shell matches the Settings
+                     dialog (step 11): surface-container-high, 28px radius. The
+                     purple-only identity this modal had before the redesign is
+                     dropped for the app's one consistent AI color — primary/
+                     primary-container — same mapping already applied to curation
+                     (step 4), the AI settings tab (step 12), topic suggestions
+                     (step 14) and the status tab's LLM queue card (step 17); a
+                     second, modal-only "AI color" would contradict all of those. -->
                 <div
-                    class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] md:max-h-[85vh] flex flex-col border border-purple-200 dark:border-purple-900/60 overflow-hidden"
+                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-2xl w-full max-w-2xl max-h-[90vh] md:max-h-[85vh] flex flex-col overflow-hidden"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="assistant-dialog-title"
                 >
-                    <!-- Header -->
-                    <div class="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-b border-purple-100 dark:border-purple-900/40 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="msym text-[20px] text-purple-600 dark:text-purple-400 animate-pulse">auto_awesome</span>
-                            <h2 id="assistant-dialog-title" class="text-base md:text-lg font-bold text-purple-800 dark:text-purple-300" x-text="t('modal.assistantTitle')"></h2>
+                    <!-- Header + description + analyzing-post title: one full-tonal
+                         primary-container block, no internal dividers — same rule as
+                         the post-detail AI summary panel (step 7). -->
+                    <div class="p-4 bg-[var(--md-primary-container)] space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="msym text-[20px] text-[var(--md-on-primary-container)]">auto_awesome</span>
+                                <h2 id="assistant-dialog-title" class="text-base md:text-lg font-bold text-[var(--md-on-primary-container)]" x-text="t('modal.assistantTitle')"></h2>
+                            </div>
+                            <button @click="closeAssistant()" class="text-[var(--md-on-primary-container)] opacity-70 hover:opacity-100" :aria-label="t('modal.close')">
+                                <span class="msym text-[22px]">close</span>
+                            </button>
                         </div>
-                        <button @click="closeAssistant()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-2xl leading-none">&times;</button>
-                    </div>
-
-                    <!-- Description -->
-                    <div class="px-4 py-2 bg-purple-50/50 dark:bg-purple-950/10 border-b border-purple-100/50 dark:border-purple-900/20">
-                        <p class="text-xs text-purple-600 dark:text-purple-400" x-text="t('modal.assistantDescription')"></p>
-                    </div>
-
-                    <!-- Analyzing Post Title -->
-                    <div class="px-4 py-2.5 bg-purple-50/30 dark:bg-purple-950/5 border-b border-purple-100/30 dark:border-purple-900/10 flex flex-col gap-0.5">
-                        <span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider" x-text="t('modal.analyzingPost')"></span>
-                        <span class="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-1" x-text="currentPost ? currentPost.title : ''"></span>
+                        <p class="text-xs text-[var(--md-on-primary-container)] opacity-80" x-text="t('modal.assistantDescription')"></p>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-[10px] font-bold text-[var(--md-on-primary-container)] opacity-80 uppercase tracking-wider" x-text="t('modal.analyzingPost')"></span>
+                            <span class="text-xs font-bold text-[var(--md-on-primary-container)] line-clamp-1" x-text="currentPost ? currentPost.title : ''"></span>
+                        </div>
                     </div>
 
                     <!-- Read Status Filters -->
-                    <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-700/20 border-b border-gray-100 dark:border-gray-800/40 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                        <span class="font-semibold text-gray-500" x-text="t('modal.assistantFilters')"></span>
+                    <div class="px-4 py-2 border-b border-[var(--md-outline-variant)] flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                        <span class="font-semibold text-[var(--md-on-surface-variant)]" x-text="t('modal.assistantFilters')"></span>
                         <label class="flex items-center gap-1.5 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 x-model="assistantIncludeRead"
-                                class="rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                class="rounded accent-[var(--md-primary)]"
                             >
-                            <span class="text-gray-700 dark:text-gray-300" x-text="t('modal.assistantIncludeRead')"></span>
+                            <span class="text-[var(--md-on-surface)]" x-text="t('modal.assistantIncludeRead')"></span>
                         </label>
                         <label class="flex items-center gap-1.5 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 x-model="assistantIncludeUnread"
-                                class="rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                class="rounded accent-[var(--md-primary)]"
                             >
-                            <span class="text-gray-700 dark:text-gray-300" x-text="t('modal.assistantIncludeUnread')"></span>
+                            <span class="text-[var(--md-on-surface)]" x-text="t('modal.assistantIncludeUnread')"></span>
                         </label>
                         <label class="flex items-center gap-1.5 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 x-model="assistantIncludeZeroCommonTags"
-                                class="rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                class="rounded accent-[var(--md-primary)]"
                             >
-                            <span class="text-gray-700 dark:text-gray-300" x-text="t('modal.assistantIncludeZeroCommonTags')"></span>
+                            <span class="text-[var(--md-on-surface)]" x-text="t('modal.assistantIncludeZeroCommonTags')"></span>
                         </label>
                         <label class="flex items-center gap-1.5 cursor-pointer select-none" :title="t('modal.assistantUseTagFallbackDesc')">
                             <input
                                 type="checkbox"
                                 x-model="assistantUseTagFallback"
-                                class="rounded text-amber-600 focus:ring-amber-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                class="rounded accent-[var(--md-primary)]"
                             >
-                            <span class="text-gray-700 dark:text-gray-300" x-text="t('modal.assistantUseTagFallback')"></span>
+                            <span class="text-[var(--md-on-surface)]" x-text="t('modal.assistantUseTagFallback')"></span>
                         </label>
                         <button
                             @click="loadRelatedPosts()"
                             :disabled="assistantLoading"
-                            class="ml-auto px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1 text-xs font-medium"
+                            class="ml-auto px-3 py-1.5 rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 disabled:opacity-50 flex items-center gap-1 text-xs font-medium transition-colors"
                         >
                             <span x-show="assistantLoading" class="msym text-[12px] animate-spin">progress_activity</span>
                             <span x-text="t('modal.assistantSearch')"></span>
@@ -1071,25 +1079,25 @@
                     <div class="flex-1 overflow-y-auto p-4 space-y-4">
                         <!-- Loading State -->
                         <div x-show="assistantLoading" class="flex flex-col items-center justify-center py-12 space-y-3">
-                            <span class="msym text-[32px] animate-spin text-purple-600 dark:text-purple-400">progress_activity</span>
-                            <span class="text-sm text-gray-500" x-text="t('app.loading')"></span>
+                            <span class="msym text-[32px] animate-spin text-[var(--md-primary)]">progress_activity</span>
+                            <span class="text-sm text-[var(--md-on-surface-variant)]" x-text="t('app.loading')"></span>
                         </div>
 
                         <!-- Main Content (when not loading) -->
                         <div x-show="!assistantLoading" class="space-y-4">
                             <!-- Empty State -->
-                            <div x-show="relatedPosts.length === 0" class="text-center py-8 text-gray-500 text-sm" x-text="t('modal.noRelatedPosts')"></div>
+                            <div x-show="relatedPosts.length === 0" class="text-center py-8 text-[var(--md-on-surface-variant)] text-sm" x-text="t('modal.noRelatedPosts')"></div>
 
                             <!-- List of posts (when available) -->
                             <div x-show="relatedPosts.length > 0" class="space-y-2">
                                 <!-- Selection actions -->
-                                <div class="flex items-center justify-between text-xs pb-2 border-b border-gray-100 dark:border-gray-700">
-                                    <button 
-                                        @click="toggleAllRelatedPosts()" 
-                                        class="text-purple-600 dark:text-purple-400 hover:underline font-medium"
+                                <div class="flex items-center justify-between text-xs pb-2 border-b border-[var(--md-outline-variant)]">
+                                    <button
+                                        @click="toggleAllRelatedPosts()"
+                                        class="text-[var(--md-primary)] hover:underline font-medium"
                                         x-text="selectedRelatedPosts.size === relatedPosts.length ? t('settings.tagMerge.selectNone') : t('settings.tagMerge.selectAll')"
                                     ></button>
-                                    <span class="text-gray-500">
+                                    <span class="text-[var(--md-on-surface-variant)]">
                                         <span x-text="selectedRelatedPosts.size"></span> / <span x-text="relatedPosts.length"></span> <span x-text="t('posts.selected')"></span>
                                     </span>
                                 </div>
@@ -1097,63 +1105,66 @@
                                 <!-- Posts Scrollable List -->
                                 <div class="max-h-[30vh] overflow-y-auto pr-1 space-y-1.5 scrollbar-thin">
                                     <template x-for="p in relatedPosts" :key="p.id">
-                                        <label class="flex items-start gap-2.5 p-2 bg-gray-50 dark:bg-gray-700/30 hover:bg-purple-50/40 dark:hover:bg-purple-950/10 rounded cursor-pointer transition-colors border border-transparent hover:border-purple-100 dark:hover:border-purple-900/30">
-                                            <input 
-                                                type="checkbox" 
+                                        <label class="flex items-start gap-2.5 p-2 bg-[var(--md-surface-container)] hover:bg-[var(--md-primary-container)] rounded-lg cursor-pointer transition-colors">
+                                            <input
+                                                type="checkbox"
                                                 :checked="selectedRelatedPosts.has(p.id)"
                                                 @change="toggleRelatedPostSelection(p.id)"
-                                                class="mt-1 rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                                class="mt-1 rounded accent-[var(--md-primary)]"
                                             >
-                                            <div class="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 leading-tight">
+                                            <div class="text-xs md:text-sm font-medium text-[var(--md-on-surface)] leading-tight">
                                                 <button
                                                     @click.stop="goToRelatedPost(p)"
-                                                    class="text-left hover:text-purple-700 dark:hover:text-purple-300 hover:underline transition-colors"
+                                                    class="text-left hover:text-[var(--md-primary)] hover:underline transition-colors"
                                                     :data-tip="t('modal.goToPost')"
                                                     x-text="p.title"
                                                 ></button>
-                                                <span class="text-xs text-purple-600 dark:text-purple-400 font-normal ml-1" x-text="'(' + p.feed_title + ' • ' + t('modal.commonTags').replace('{count}', p.common_tags_count) + ')'"></span>
+                                                <span class="text-xs text-[var(--md-on-surface-variant)] font-normal ml-1" x-text="'(' + p.feed_title + ' • ' + t('modal.commonTags').replace('{count}', p.common_tags_count) + ')'"></span>
                                             </div>
                                         </label>
                                     </template>
                                 </div>
 
                                 <!-- Action Buttons -->
-                                <div class="pt-2 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
+                                <div class="pt-2 border-t border-[var(--md-outline-variant)] flex flex-wrap items-center justify-between gap-2">
                                     <button
                                         @click="markProcessedAsRead()"
                                         :disabled="selectedRelatedPosts.size === 0 || assistantMarkingRead"
-                                        class="px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 rounded text-sm flex items-center gap-1.5 shadow-sm transition-all"
+                                        class="px-3 py-1.5 rounded-full border border-[var(--md-outline)] text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)] disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center gap-1.5 transition-colors"
                                     >
-                                        <span x-show="assistantMarkingRead" class="msym text-[16px] animate-spin text-gray-500">progress_activity</span>
+                                        <span x-show="assistantMarkingRead" class="msym text-[16px] animate-spin">progress_activity</span>
                                         <span x-show="!assistantMarkingRead" class="msym text-[16px]">check</span>
                                         <span x-text="t('modal.markAsRead')"></span>
                                     </button>
                                     <button
                                         @click="processRelatedPosts()"
                                         :disabled="selectedRelatedPosts.size === 0 || assistantGenerating"
-                                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded font-medium text-sm flex items-center gap-1.5 shadow-md shadow-purple-500/10 transition-all active:scale-[0.98]"
+                                        class="px-4 py-2 rounded-full bg-[var(--md-primary)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-[var(--md-on-primary)] font-medium text-sm flex items-center gap-1.5 transition-all active:scale-[0.98]"
                                     >
-                                        <span x-show="assistantGenerating" class="msym text-[16px] animate-spin text-white">progress_activity</span>
-                                        <span x-show="!assistantGenerating" class="msym text-[16px] text-white">auto_awesome</span>
+                                        <span x-show="assistantGenerating" class="msym text-[16px] animate-spin">progress_activity</span>
+                                        <span x-show="!assistantGenerating" class="msym text-[16px]">auto_awesome</span>
                                         <span x-text="assistantGenerating ? t('modal.processing') : t('modal.process')"></span>
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- LLM Response consolidated summary -->
-                            <div 
-                                x-show="assistantSummary || assistantGenerating" 
-                                class="mt-4 p-4 rounded-lg bg-purple-50/40 dark:bg-purple-950/10 border border-purple-100 dark:border-purple-900/30"
+                            <!-- LLM Response consolidated summary: same flat primary-container
+                                 block + black/white state-layer buttons as the post-detail AI
+                                 summary panel (step 7) — --md-* tokens don't support Tailwind's
+                                 /opacity modifier, hence the black/5-white/10 overlay trick. -->
+                            <div
+                                x-show="assistantSummary || assistantGenerating"
+                                class="mt-4 p-4 rounded-2xl bg-[var(--md-primary-container)]"
                             >
                                 <div class="flex items-center justify-between mb-2">
-                                    <h3 class="text-xs md:text-sm font-bold text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
+                                    <h3 class="text-xs md:text-sm font-bold text-[var(--md-on-primary-container)] flex items-center gap-1.5">
                                         <span class="msym text-[16px]">auto_awesome</span>
                                         <span x-text="t('modal.consolidatedSummary')"></span>
                                     </h3>
                                     <div class="flex items-center gap-2" x-show="assistantSummary">
                                         <button
                                             @click="copyAssistantSummary()"
-                                            class="text-xs px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-300 rounded shadow-sm transition-all"
+                                            class="text-xs px-2.5 py-1 rounded-full transition-colors bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)]"
                                             x-text="t('modal.copyConsolidated')"
                                         ></button>
                                     </div>
@@ -1161,14 +1172,14 @@
 
                                 <!-- Generating Spinner State -->
                                 <div x-show="assistantGenerating" class="flex flex-col items-center justify-center py-6 space-y-2">
-                                    <span class="msym text-[24px] animate-spin text-purple-600 dark:text-purple-400">progress_activity</span>
-                                    <span class="text-xs text-purple-600 dark:text-purple-400 font-medium" x-text="t('modal.generating')"></span>
+                                    <span class="msym text-[24px] animate-spin text-[var(--md-on-primary-container)]">progress_activity</span>
+                                    <span class="text-xs text-[var(--md-on-primary-container)] font-medium" x-text="t('modal.generating')"></span>
                                 </div>
 
                                 <!-- Rendered Markdown result -->
-                                <div 
+                                <div
                                     x-show="assistantSummary"
-                                    class="text-xs md:text-sm text-gray-800 dark:text-gray-200 leading-relaxed max-h-[30vh] overflow-y-auto pr-1 summary-content scrollbar-thin"
+                                    class="text-xs md:text-sm text-[var(--md-on-primary-container)] leading-relaxed max-h-[30vh] overflow-y-auto pr-1 summary-content scrollbar-thin"
                                     x-html="renderMarkdown(assistantSummary || '')"
                                 ></div>
                             </div>

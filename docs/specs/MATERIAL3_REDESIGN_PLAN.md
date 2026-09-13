@@ -455,7 +455,29 @@ things in one commit.
   found in the same post-card block while touching it (`Checkbox para
   seleção`, `Indicador de não lido`) — pre-existing, unrelated to this
   step, fixed in passing since already looking at those lines.
-- [ ] **19. Assistant modal** (related posts).
+- [x] **19. Assistant modal** (related posts) — the last untouched
+  screen, and it had its own pre-redesign purple identity (border,
+  gradient header, purple checkboxes/buttons throughout), never
+  converted to `--md-*`. Dropped that separate identity in favor of the
+  one consistent AI color already used everywhere else: `primary`/
+  `primary-container`, same mapping as curation (step 4), the AI
+  settings tab (step 12), topic suggestions (step 14), and the status
+  tab's LLM queue card (step 17) — a modal-only purple would have
+  contradicted all four. Dialog shell now matches the Settings/confirm
+  modal shape (28px radius, `surface-container-high`, steps 8/11).
+  Header + description + "analyzing post" title merged into one
+  full-tonal `primary-container` block with no internal dividers, same
+  rule as the post-detail summary panel (step 7) and this step's own
+  consolidated-summary panel below; close button is now a `.msym close`
+  icon instead of a literal `&times;`. Filter checkboxes lost their
+  per-checkbox purple/amber distinction (`accent-[var(--md-primary)]`
+  for all four — amber is reserved for star/favorite app-wide, not
+  available here). The consolidated-summary panel and its Copy button
+  reuse the post-detail summary panel's exact treatment verbatim
+  (`text-on-primary-container` body, `bg-black/5 dark:bg-white/10`
+  state-layer button — `--md-*` tokens don't support Tailwind's
+  `/opacity` modifier).
+  **All 20 steps of the Material 3 redesign are now done.**
 - [x] **20. Keyboard-shortcut affordances** — turned out there WAS one
   left: the post list's desktop-only keyboard hints footer (J/K
   navigate, [/] feeds, Enter open, Space toggle in select mode) was
@@ -516,3 +538,20 @@ things in one commit.
   project `/run` skill, no Playwright/chromium-cli installed) — this one
   needs the user's own local check before step 12 starts, breaking the
   "viewed running before moving on" habit from steps 1–10 just this once.
+- 2026-09-13 — **Steps 12–20 all done and deployed this session**, one
+  commit + deploy per step (deploy automated via `ssh fuqu` this
+  session, per the user's own request partway through — no longer a
+  manual step for the user). User caught and reported two live mobile
+  bugs on step 11 same-day (nav-rail overflow, dialog resizing on tab
+  switch — both fixed same session, see step 11's own notes) and one
+  more on step 13 (Add Feed row squeeze) — all three share one root
+  cause (a flex-1/min-w-0 item losing a width fight to non-shrinking
+  siblings) now written up as its own "Mobile flex-row gotcha" section
+  above so it's checked deliberately, not rediscovered, in any future
+  redesign work. Also closed two historical loose ends found along the
+  way: the count-in-label pattern from step 8 (fixed in steps 14/15)
+  and a handful of Portuguese-only code comments (steps 17/18, unrelated
+  to the redesign itself, fixed in passing while those lines were
+  already being touched). **The Material 3 redesign (all 20 steps) is
+  complete.** Nothing is half-done or uncommitted; working tree is
+  clean and prod is running the step-19 commit.
