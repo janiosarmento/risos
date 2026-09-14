@@ -127,6 +127,15 @@ pre-fix version and carried `max-h-[90vh] md:max-h-[85vh]`, no `min-w-0`,
 `bg-black/60` and `shadow-2xl`. Restyling a dialog means re-checking this
 list, not copying whatever the neighbouring dialog looked like at the time.
 
+Same pass also brought the Assistant's interior in line, at the user's
+request: `max-w-4xl` so both full dialogs share one footprint, `text-lg`
+title and 24px close icon like every other dialog header, list rows on
+the Settings row treatment (`bg-surface-container rounded-2xl p-3`,
+previously `rounded-lg p-2`), footer buttons on the standard `px-4 py-2`
+pill (the primary one lost a one-off `active:scale-[0.98]`), and the
+related-posts list no longer scrolls inside the body's scroll — one
+scroller, with the action bar `sticky bottom-0` so it stays reachable.
+
 ## How to work through this list
 
 One step at a time. Each step is small enough to view running (`/run`) and
