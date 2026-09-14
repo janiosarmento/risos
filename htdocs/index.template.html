@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260913s';</script>
+    <script>var APP_VERSION = '20260914a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1014,7 +1014,7 @@
         <!-- IA Sparkle Assistant Modal -->
         <template x-if="showAssistantModal">
             <div
-                class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 @click.self="closeAssistant()"
                 @keydown.escape.window="closeAssistant()"
             >
@@ -1026,8 +1026,15 @@
                      (step 4), the AI settings tab (step 12), topic suggestions
                      (step 14) and the status tab's LLM queue card (step 17); a
                      second, modal-only "AI color" would contradict all of those. -->
+                <!-- Shell matches the Settings dialog exactly, including the two fixes
+                     made to it on the same day (step 11's notes): a FIXED height, not
+                     max-h — with max-h the modal resized as you searched, got results
+                     and then a summary, so the whole dialog jumped under the pointer —
+                     and min-w-0, so no flex child's intrinsic width can push the dialog
+                     wider than a phone screen. Step 19 restyled this modal but was
+                     written against the pre-fix shell. -->
                 <div
-                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-2xl w-full max-w-2xl max-h-[90vh] md:max-h-[85vh] flex flex-col overflow-hidden"
+                    class="bg-[var(--md-surface-container-high)] rounded-[28px] shadow-xl w-full max-w-2xl min-w-0 h-[90vh] md:h-[80vh] flex flex-col overflow-hidden"
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="assistant-dialog-title"
@@ -1035,7 +1042,7 @@
                     <!-- Header + description + analyzing-post title: one full-tonal
                          primary-container block, no internal dividers — same rule as
                          the post-detail AI summary panel (step 7). -->
-                    <div class="p-4 bg-[var(--md-primary-container)] space-y-2">
+                    <div class="p-4 bg-[var(--md-primary-container)] space-y-2 flex-none">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="msym text-[20px] text-[var(--md-on-primary-container)]">auto_awesome</span>
@@ -1053,7 +1060,7 @@
                     </div>
 
                     <!-- Read Status Filters -->
-                    <div class="px-4 py-2 border-b border-[var(--md-outline-variant)] flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                    <div class="px-4 py-2 border-b border-[var(--md-outline-variant)] flex flex-wrap items-center gap-x-4 gap-y-2 text-xs flex-none">
                         <span class="font-semibold text-[var(--md-on-surface-variant)]" x-text="t('modal.assistantFilters')"></span>
                         <label class="flex items-center gap-1.5 cursor-pointer select-none">
                             <input
@@ -1098,7 +1105,7 @@
                     </div>
 
                     <!-- Body -->
-                    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
                         <!-- Loading State -->
                         <div x-show="assistantLoading" class="flex flex-col items-center justify-center py-12 space-y-3">
                             <span class="msym text-[32px] animate-spin text-[var(--md-primary)]">progress_activity</span>

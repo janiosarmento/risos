@@ -109,6 +109,24 @@ mobile, row from `sm:` up — the step 13 fix) or drop the fixed
 min-width/no-shrink constraint so the flexible item can actually win
 space back.
 
+## Dialog shell contract (Settings, Assistant, confirm)
+
+Every full dialog uses the same shell: `--md-surface-container-high` fill,
+28px radius, `shadow-xl`, a `bg-black/50 backdrop-blur-sm` scrim, and —
+the two parts that are easy to drop — **`min-w-0`** and a **fixed height
+(`h-[90vh] md:h-[80vh]`), never `max-h-*`**. Both come from live bugs the
+user reported on step 11: `max-h` makes the dialog resize as its content
+changes, so the whole thing jumps under the pointer; without `min-w-0` a
+child's intrinsic width can push the dialog wider than a phone screen.
+Inside the shell, header and any toolbar rows are `flex-none` and only the
+body gets `flex-1 min-h-0 overflow-y-auto`.
+
+Caught again on 2026-09-14: the Assistant modal (step 19) said its shell
+"matches the Settings dialog", but it had been written against the
+pre-fix version and carried `max-h-[90vh] md:max-h-[85vh]`, no `min-w-0`,
+`bg-black/60` and `shadow-2xl`. Restyling a dialog means re-checking this
+list, not copying whatever the neighbouring dialog looked like at the time.
+
 ## How to work through this list
 
 One step at a time. Each step is small enough to view running (`/run`) and
