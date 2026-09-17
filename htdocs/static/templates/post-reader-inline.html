@@ -81,26 +81,31 @@
                          spare. -->
                 </div>
 
-                <!-- AI Summary (first). Per the handoff's color rule: this is the ONE
-                     content block that gets a full tonal fill (--md-primary-container),
-                     header and body the same tone with no internal divider — that's what
-                     marks it as AI-generated vs. the plain-surface original below. Small
-                     controls inside it use a black/white "state layer" overlay instead of
-                     a token color, since --md-* tokens are plain hex and don't support
-                     Tailwind's /opacity modifier. -->
-                <div class="bg-[var(--md-primary-container)]">
+                <!-- AI Summary (first). Marked as AI-generated with a neutral surface
+                     fill plus a --md-primary accent (left border, icon, heading) instead
+                     of a full tonal fill — a full-bleed --md-primary-container behind a
+                     long reading block reads as an alert banner rather than content, and
+                     that effect gets worse in dark mode where the container tone has to
+                     contrast against a near-black surface. Small controls inside it use a
+                     black/white "state layer" overlay instead of a token color, since
+                     --md-* tokens are plain hex and don't support Tailwind's /opacity
+                     modifier. -->
+                <div class="bg-[var(--md-surface-container-low)] border-l-4 border-[var(--md-primary)]">
                     <!-- On a phone this row has ~330px of content to fit in ~328px: the
                          heading plus three labelled buttons, one of them "Regenerar
                          (Shift+R)". The labels drop below md, the same way the action row
                          above already does it — the shortcut hint is meaningless on a
                          phone anyway, and every button keeps its aria-label. -->
                     <div class="px-4 py-2 flex items-center justify-between gap-2 min-h-[42px]">
-                        <h3 class="text-sm font-medium text-[var(--md-on-primary-container)] truncate" x-text="t('modal.aiSummary')"></h3>
+                        <h3 class="text-sm font-medium text-[var(--md-primary)] truncate flex items-center gap-1.5">
+                            <span class="msym text-[16px]">auto_awesome</span>
+                            <span x-text="t('modal.aiSummary')"></span>
+                        </h3>
                         <div class="flex items-center gap-1 flex-shrink-0">
                             <!-- Copy summary -->
                             <button
                                 @click="copySummaryToClipboard()"
-                                class="text-xs px-2 py-1 rounded-full transition-colors bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)] disabled:opacity-40 disabled:cursor-not-allowed"
+                                class="text-xs px-2 py-1 rounded-full transition-colors bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-surface-variant)] disabled:opacity-40 disabled:cursor-not-allowed"
                                 :disabled="!currentPost || !currentPost.summary_pt"
                                 :data-tip="t('modal.copySummary')"
                                 :aria-label="t('modal.copySummary')"
@@ -113,7 +118,7 @@
                             <button
                                 @click="toggleSkipSummary()"
                                 class="text-xs px-2 py-1 rounded-full transition-colors"
-                                :class="currentPost.skip_summary ? 'bg-[var(--md-error-container)] text-[var(--md-on-error-container)]' : 'bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)]'"
+                                :class="currentPost.skip_summary ? 'bg-[var(--md-error-container)] text-[var(--md-on-error-container)]' : 'bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-surface-variant)]'"
                                 :data-tip="currentPost.skip_summary ? t('modal.skipSummaryActiveTooltip') : t('modal.skipSummaryTooltip')"
                                 :aria-label="currentPost.skip_summary ? t('modal.skipSummaryActive') : t('modal.skipSummary')"
                             >
@@ -125,7 +130,7 @@
                             <button
                                 @click="regenerateSummary()"
                                 class="text-xs px-2 py-1 rounded-full transition-colors"
-                                :class="regeneratingSummary ? 'opacity-50 cursor-wait bg-black/5 dark:bg-white/10 text-[var(--md-on-primary-container)]' : 'bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)]'"
+                                :class="regeneratingSummary ? 'opacity-50 cursor-wait bg-black/5 dark:bg-white/10 text-[var(--md-on-surface-variant)]' : 'bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-surface-variant)]'"
                                 :disabled="regeneratingSummary"
                                 :data-tip="t('modal.regenerate')"
                                 :aria-label="t('modal.regenerate')"
@@ -145,16 +150,16 @@
                         <!-- Resumo disponivel -->
                         <template x-if="currentPost.summary_status === 'ready' && currentPost.summary_pt">
                             <div>
-                                <div class="text-[var(--md-on-primary-container)] leading-relaxed summary-content" x-html="renderMarkdown(currentPost.summary_pt)"></div>
+                                <div class="text-[var(--md-on-surface)] leading-relaxed summary-content" x-html="renderMarkdown(currentPost.summary_pt)"></div>
                                 <template x-if="currentPost.tags && currentPost.tags.length > 0">
                                     <div class="mt-3 flex flex-wrap gap-1">
                                         <template x-for="tag in currentPost.tags" :key="tag">
                                             <span class="text-xs cursor-pointer px-1.5 py-0.5 rounded-full transition-colors"
                                                 :class="isTagIgnored(tag)
-                                                    ? 'line-through opacity-60 bg-black/10 dark:bg-white/10 text-[var(--md-on-primary-container)]'
+                                                    ? 'line-through opacity-60 bg-black/10 dark:bg-white/10 text-[var(--md-on-surface)]'
                                                     : isTagMatched(tag, currentPost.matched_tags)
-                                                        ? 'font-bold bg-[var(--md-on-primary-container)] text-[var(--md-primary-container)]'
-                                                        : 'bg-black/10 dark:bg-white/15 text-[var(--md-on-primary-container)] hover:bg-black/20 dark:hover:bg-white/25'"
+                                                        ? 'font-bold bg-[var(--md-primary)] text-[var(--md-on-primary)]'
+                                                        : 'bg-black/10 dark:bg-white/15 text-[var(--md-on-surface)] hover:bg-black/20 dark:hover:bg-white/25'"
                                                 :data-tip="isTagIgnored(tag) ? t('tags.ignoredTooltip') :
                                                     isTagMatched(tag, currentPost.matched_tags)
                                                         ? t('tags.profileTooltip') : t('tags.neutralTooltip')"
@@ -168,14 +173,14 @@
                         </template>
                         <!-- Gerando resumo -->
                         <template x-if="currentPost.summary_status === 'pending'">
-                            <div class="text-[var(--md-on-primary-container)]">
+                            <div class="text-[var(--md-on-surface)]">
                                 <p class="italic mb-4 opacity-80" x-text="t('modal.noSummary')"></p>
                                 <button @click="regenerateSummary()" class="mt-2 px-3 py-1 rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 text-sm" :disabled="regeneratingSummary" x-text="t('modal.tryGenerate')"></button>
                             </div>
                         </template>
                         <!-- Aguardando na fila -->
                         <template x-if="currentPost.summary_status === 'queued'">
-                            <div class="text-[var(--md-on-primary-container)]">
+                            <div class="text-[var(--md-on-surface)]">
                                 <p class="italic mb-4 opacity-80" x-text="t('modal.summaryQueued')"></p>
                                 <button
                                     @click="regenerateSummary()"
@@ -189,7 +194,7 @@
                         </template>
                         <!-- Sem resumo disponivel -->
                         <template x-if="!currentPost.summary_pt && currentPost.summary_status !== 'pending' && currentPost.summary_status !== 'queued'">
-                            <div class="text-[var(--md-on-primary-container)]">
+                            <div class="text-[var(--md-on-surface)]">
                                 <p class="italic mb-4 opacity-80" x-text="t('modal.generateFailed')"></p>
                                 <p class="text-sm opacity-80" x-text="t('modal.antiBotReasons')"></p>
                                 <ul class="text-sm mt-2 list-disc list-inside space-y-1 opacity-80">

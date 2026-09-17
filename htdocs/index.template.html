@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260917a';</script>
+    <script>var APP_VERSION = '20260917b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -1184,23 +1184,24 @@
                                 </div>
                             </div>
 
-                            <!-- LLM Response consolidated summary: same flat primary-container
-                                 block + black/white state-layer buttons as the post-detail AI
-                                 summary panel (step 7) — --md-* tokens don't support Tailwind's
-                                 /opacity modifier, hence the black/5-white/10 overlay trick. -->
+                            <!-- LLM Response consolidated summary: neutral surface fill with
+                                 a --md-primary accent (left border, icon, heading) rather than
+                                 a full tonal fill — see the post-detail AI summary panel for
+                                 why. --md-* tokens don't support Tailwind's /opacity modifier,
+                                 hence the black/5-white/10 overlay trick on the buttons. -->
                             <div
                                 x-show="assistantSummary || assistantGenerating"
-                                class="mt-4 p-4 rounded-2xl bg-[var(--md-primary-container)]"
+                                class="mt-4 p-4 rounded-2xl border-l-4 border-[var(--md-primary)] bg-[var(--md-surface-container-high)]"
                             >
                                 <div class="flex items-center justify-between mb-2">
-                                    <h3 class="text-xs md:text-sm font-bold text-[var(--md-on-primary-container)] flex items-center gap-1.5">
+                                    <h3 class="text-xs md:text-sm font-bold text-[var(--md-primary)] flex items-center gap-1.5">
                                         <span class="msym text-[16px]">auto_awesome</span>
                                         <span x-text="t('modal.consolidatedSummary')"></span>
                                     </h3>
                                     <div class="flex items-center gap-2" x-show="assistantSummary">
                                         <button
                                             @click="copyAssistantSummary()"
-                                            class="text-xs px-2.5 py-1 rounded-full transition-colors bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-primary-container)]"
+                                            class="text-xs px-2.5 py-1 rounded-full transition-colors bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[var(--md-on-surface-variant)]"
                                             x-text="t('modal.copyConsolidated')"
                                         ></button>
                                     </div>
@@ -1208,14 +1209,14 @@
 
                                 <!-- Generating Spinner State -->
                                 <div x-show="assistantGenerating" class="flex flex-col items-center justify-center py-6 space-y-2">
-                                    <span class="msym text-[24px] animate-spin text-[var(--md-on-primary-container)]">progress_activity</span>
-                                    <span class="text-xs text-[var(--md-on-primary-container)] font-medium" x-text="t('modal.generating')"></span>
+                                    <span class="msym text-[24px] animate-spin text-[var(--md-primary)]">progress_activity</span>
+                                    <span class="text-xs text-[var(--md-on-surface-variant)] font-medium" x-text="t('modal.generating')"></span>
                                 </div>
 
                                 <!-- Rendered Markdown result -->
                                 <div
                                     x-show="assistantSummary"
-                                    class="text-xs md:text-sm text-[var(--md-on-primary-container)] leading-relaxed max-h-[30vh] overflow-y-auto pr-1 summary-content scrollbar-thin"
+                                    class="text-xs md:text-sm text-[var(--md-on-surface)] leading-relaxed max-h-[30vh] overflow-y-auto pr-1 summary-content scrollbar-thin"
                                     x-html="renderMarkdown(assistantSummary || '')"
                                 ></div>
                             </div>
