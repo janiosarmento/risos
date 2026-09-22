@@ -8,7 +8,16 @@ AI-assisted /tags/suggest-merges flow.
 
 The plural rule requires the singular stem to be at least 4 characters. Below
 that, "add an s" can land on an unrelated word ("io" -> "ios" is I/O vs
-Apple's OS, not a plural), so short tags are left alone.
+Apple's OS, not a plural), so short tags are left alone. Even above that
+length, a plural-shaped pair can be two unrelated words rather than a true
+singular/plural ("canva" the design app vs "canvas") — hyphen-equivalence
+alone (same characters, just re-hyphenated) has no such failure mode, since
+it's the identical word either way. Callers that act automatically without a
+human in the loop (canonicalize_tag) only trust the plural rule when one of
+the two tags is a compound (hyphenated) one, where an unrelated-word
+collision essentially doesn't happen; the reviewed suggestion list
+(build_mechanical_groups) surfaces the plural rule for single-word tags too,
+since a human checks it before anything is applied.
 """
 
 import time
@@ -17,9 +26,14 @@ from typing import Dict, List, Optional, Tuple
 _MIN_SINGULAR_STEM_LEN = 4
 
 
+def _hyphen_key(tag: str) -> str:
+    """Same characters, hyphens aside — merging on this alone is always safe."""
+    return tag.strip().lower().replace("-", "")
+
+
 def mechanical_key(tag: str) -> str:
-    """Canonical key such that two tags sharing it are safe to auto-merge."""
-    hyphenless = tag.strip().lower().replace("-", "")
+    """Canonical key such that two tags sharing it are candidates to merge."""
+    hyphenless = _hyphen_key(tag)
     if hyphenless.endswith("es") and len(hyphenless) - 2 >= _MIN_SINGULAR_STEM_LEN:
         return hyphenless[:-2]
     if (
@@ -122,7 +136,21 @@ def _get_key_to_canonical(db) -> Dict[str, str]:
 
 def canonicalize_tag(db, tag: str) -> str:
     """Rewrite *tag* to its established spelling if a mechanical duplicate
-    already exists in the corpus; otherwise return it unchanged."""
+    already exists in the corpus; otherwise return it unchanged.
+
+    Applies automatically with no review, so it only acts on matches with no
+    plausible false positive: hyphen-equivalence always qualifies, and the
+    plural rule only when *tag* or the candidate canonical is a compound
+    (hyphenated) tag — see module docstring for why plain single-word
+    plurals ("canva" vs "canvas") are excluded here.
+    """
     key = mechanical_key(tag)
     canonical = _get_key_to_canonical(db).get(key)
-    return canonical if canonical else tag
+    if not canonical or canonical == tag:
+        return tag
+
+    if _hyphen_key(tag) == _hyphen_key(canonical):
+        return canonical  # pure hyphenation difference — always safe
+    if "-" in tag or "-" in canonical:
+        return canonical  # plural of a compound tag — safe in practice
+    return tag
