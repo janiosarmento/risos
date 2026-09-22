@@ -137,7 +137,8 @@
                             >
                                 <span x-show="!regeneratingSummary" class="flex items-center gap-1">
                                     <span class="msym text-[12px]">refresh</span>
-                                    <span class="hidden md:inline" x-text="t('modal.regenerate')"></span>
+                                    <span class="hidden md:inline" x-text="t('modal.regenerate').split(' (')[0]"></span>
+                                    <span class="hidden lg:inline opacity-60"> (Shift+R)</span>
                                 </span>
                                 <span x-show="regeneratingSummary" class="flex items-center gap-1">
                                     <span class="msym text-[12px] animate-spin">progress_activity</span>

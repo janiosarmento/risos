@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260917b';</script>
+    <script>var APP_VERSION = '20260922a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -633,12 +633,22 @@
                                     <!-- Star icon (starred) - mobile only -->
                                     <span class="msym text-[16px] md:hidden">star</span>
                                     <!-- Mobile: show count after star icon -->
-                                    <span class="md:hidden" x-show="starredCount > 0" x-text="starredCount"></span>
+                                    <span
+                                        class="md:hidden"
+                                        :class="postFilter === 'starred' ? '' : 'text-[var(--md-primary)]'"
+                                        x-show="starredCount > 0"
+                                        x-text="starredCount"
+                                    ></span>
                                     <!-- Desktop: label + count as separate elements — a trailing
                                          number, not "(N)" glued onto the label text, matching how
                                          every other count in the app reads since step 5. -->
                                     <span class="hidden md:inline" x-text="t('sidebar.starred')"></span>
-                                    <span class="hidden md:inline opacity-80" x-show="starredCount > 0" x-text="starredCount"></span>
+                                    <span
+                                        class="hidden md:inline"
+                                        :class="postFilter === 'starred' ? 'opacity-80' : 'text-[var(--md-primary)]'"
+                                        x-show="starredCount > 0"
+                                        x-text="starredCount"
+                                    ></span>
                                 </button>
                                 <!-- Export starred -->
                                 <button
@@ -977,8 +987,10 @@
                          key is a small kbd chip (surface-container-highest, matching the
                          neutral "tinted chip" treatment used for plain tag/topic chips
                          elsewhere) instead of bare text — a clearer affordance for "this
-                         is a key you press", not just a recolor. -->
-                    <div class="hidden md:flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
+                         is a key you press", not just a recolor. lg:, not md: — tablets
+                         are touch-only and don't need keyboard hints, same convention as
+                         the other shortcut labels in this file. -->
+                    <div class="hidden lg:flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
                         <span x-show="!selectMode" class="flex items-center gap-1.5">
                             <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">J/K</kbd>
                             <span x-text="t('shortcuts.navigate')"></span>

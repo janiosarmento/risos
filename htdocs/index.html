@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260917b">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260917b">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260917b">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260922a">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260922a">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260922a">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260917b">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260922a">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260917b">
+    <link rel="manifest" href="/manifest.json?v=20260922a">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260917b"></script>
-    <script src="/static/vendor/popper.min.js?v=20260917b"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260917b"></script>
-    <script src="/static/vendor/purify.min.js?v=20260917b"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260917b in all ?v= below -->
-    <script>var APP_VERSION = '20260917b';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260917b">
+    <script src="/static/vendor/marked.min.js?v=20260922a"></script>
+    <script src="/static/vendor/popper.min.js?v=20260922a"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260922a"></script>
+    <script src="/static/vendor/purify.min.js?v=20260922a"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260922a in all ?v= below -->
+    <script>var APP_VERSION = '20260922a';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260922a">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260917b"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260917b"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260917b"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260917b"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260917b"></script>
-    <script defer src="/static/js/components/settings.js?v=20260917b"></script>
-    <script defer src="/static/js/components/curation.js?v=20260917b"></script>
-    <script defer src="/static/js/app.js?v=20260917b"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260922a"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260922a"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260922a"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260922a"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260922a"></script>
+    <script defer src="/static/js/components/settings.js?v=20260922a"></script>
+    <script defer src="/static/js/components/curation.js?v=20260922a"></script>
+    <script defer src="/static/js/app.js?v=20260922a"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -633,12 +633,22 @@
                                     <!-- Star icon (starred) - mobile only -->
                                     <span class="msym text-[16px] md:hidden">star</span>
                                     <!-- Mobile: show count after star icon -->
-                                    <span class="md:hidden" x-show="starredCount > 0" x-text="starredCount"></span>
+                                    <span
+                                        class="md:hidden"
+                                        :class="postFilter === 'starred' ? '' : 'text-[var(--md-primary)]'"
+                                        x-show="starredCount > 0"
+                                        x-text="starredCount"
+                                    ></span>
                                     <!-- Desktop: label + count as separate elements — a trailing
                                          number, not "(N)" glued onto the label text, matching how
                                          every other count in the app reads since step 5. -->
                                     <span class="hidden md:inline" x-text="t('sidebar.starred')"></span>
-                                    <span class="hidden md:inline opacity-80" x-show="starredCount > 0" x-text="starredCount"></span>
+                                    <span
+                                        class="hidden md:inline"
+                                        :class="postFilter === 'starred' ? 'opacity-80' : 'text-[var(--md-primary)]'"
+                                        x-show="starredCount > 0"
+                                        x-text="starredCount"
+                                    ></span>
                                 </button>
                                 <!-- Export starred -->
                                 <button
@@ -1087,7 +1097,8 @@
                             >
                                 <span x-show="!regeneratingSummary" class="flex items-center gap-1">
                                     <span class="msym text-[12px]">refresh</span>
-                                    <span class="hidden md:inline" x-text="t('modal.regenerate')"></span>
+                                    <span class="hidden md:inline" x-text="t('modal.regenerate').split(' (')[0]"></span>
+                                    <span class="hidden lg:inline opacity-60"> (Shift+R)</span>
                                 </span>
                                 <span x-show="regeneratingSummary" class="flex items-center gap-1">
                                     <span class="msym text-[12px] animate-spin">progress_activity</span>
@@ -1212,8 +1223,10 @@
                          key is a small kbd chip (surface-container-highest, matching the
                          neutral "tinted chip" treatment used for plain tag/topic chips
                          elsewhere) instead of bare text — a clearer affordance for "this
-                         is a key you press", not just a recolor. -->
-                    <div class="hidden md:flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
+                         is a key you press", not just a recolor. lg:, not md: — tablets
+                         are touch-only and don't need keyboard hints, same convention as
+                         the other shortcut labels in this file. -->
+                    <div class="hidden lg:flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
                         <span x-show="!selectMode" class="flex items-center gap-1.5">
                             <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">J/K</kbd>
                             <span x-text="t('shortcuts.navigate')"></span>
