@@ -173,6 +173,30 @@
     min-width: 0;
 }
 
+/* Keyboard-shortcut hints ("(X)", "(Shift+R)", the bottom hint bar): shown
+   only for pointer-driven input (mouse/trackpad), never on touch. A width
+   breakpoint (e.g. lg:) isn't enough — an iPad in landscape is exactly
+   1024px wide, matching Tailwind's lg: and popping the hints back up on a
+   touch-only device. hover/pointer media features key off input capability
+   instead, so orientation and screen size don't matter. */
+.kbd-hint {
+    display: none;
+}
+
+.kbd-hint-flex {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .kbd-hint {
+        display: inline;
+    }
+
+    .kbd-hint-flex {
+        display: flex;
+    }
+}
+
 /* Disable the browser's automatic scroll-anchoring in the post list and
    the sidebar tree. We manage scroll position ourselves when switching
    the expanded post (see scrollToSelected() in app.js); without this, the

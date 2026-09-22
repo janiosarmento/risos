@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260922a';</script>
+    <script>var APP_VERSION = '20260922b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -226,14 +226,14 @@
                                     class="w-full text-left text-xs px-3 py-2 hover:bg-[var(--md-surface-container-highest)]"
                                 >
                                     <span x-text="t('posts.markAllRead')"></span>
-                                    <span class="hidden lg:inline opacity-60"> (A)</span>
+                                    <span class="kbd-hint opacity-60"> (A)</span>
                                 </button>
                                 <button
                                     @click="markAllRead(true); markOpen = false"
                                     class="w-full text-left text-xs px-3 py-2 hover:bg-[var(--md-surface-container-highest)] border-t border-[var(--md-outline-variant)]"
                                 >
                                     <span x-text="t('posts.markBlockedRead')"></span>
-                                    <span class="hidden lg:inline opacity-60"> (N)</span>
+                                    <span class="kbd-hint opacity-60"> (N)</span>
                                     <template x-if="blockedUnreadCount > 0">
                                         <span class="ml-1 px-1.5 py-0.5 text-[10px] bg-[var(--md-error-container)] text-[var(--md-on-error-container)] rounded-full" x-text="blockedUnreadCount"></span>
                                     </template>
@@ -596,7 +596,7 @@
                                     @click="toggleSelectMode()"
                                     class="px-2 md:px-3 py-1 rounded-full"
                                     :class="selectMode ? 'bg-[var(--md-primary)] text-[var(--md-on-primary)]' : 'text-[var(--md-on-surface-variant)] hover:bg-[var(--md-surface-container-highest)]'"
-                                ><span x-text="t('posts.select')"></span><span class="hidden lg:inline opacity-60"> (X)</span></button>
+                                ><span x-text="t('posts.select')"></span><span class="kbd-hint opacity-60"> (X)</span></button>
                                 <span class="text-[var(--md-outline-variant)] hidden md:inline">|</span>
                                 <!-- Post filter: Unread -->
                                 <button
@@ -692,7 +692,7 @@
                                 class="ml-auto px-3 py-1 rounded-full bg-[var(--md-primary)] text-[var(--md-on-primary)] hover:opacity-90 transition-colors"
                                 :disabled="selectedPosts.size === 0"
                                 :class="selectedPosts.size === 0 ? 'opacity-50 cursor-not-allowed' : ''"
-                            ><span x-text="t('posts.markAsRead')"></span><span class="hidden lg:inline opacity-60"> (M)</span></button>
+                            ><span x-text="t('posts.markAsRead')"></span><span class="kbd-hint opacity-60"> (M)</span></button>
                         </div>
                         <!-- Curation results panel (M3 redesign step 4, docs/specs/
                              MATERIAL3_REDESIGN_PLAN.md — mockup 2e). Badge colors follow
@@ -987,10 +987,11 @@
                          key is a small kbd chip (surface-container-highest, matching the
                          neutral "tinted chip" treatment used for plain tag/topic chips
                          elsewhere) instead of bare text — a clearer affordance for "this
-                         is a key you press", not just a recolor. lg:, not md: — tablets
-                         are touch-only and don't need keyboard hints, same convention as
-                         the other shortcut labels in this file. -->
-                    <div class="hidden lg:flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
+                         is a key you press", not just a recolor. .kbd-hint-flex, not a
+                         width breakpoint — a tablet in landscape can be as wide as a
+                         laptop, so hiding on touch needs to key off input capability
+                         (hover/pointer), not viewport size. See app.css. -->
+                    <div class="kbd-hint-flex p-2 border-t border-[var(--md-outline-variant)] text-xs text-[var(--md-on-surface-variant)] justify-center gap-4 bg-[var(--md-surface-container)] flex-shrink-0">
                         <span x-show="!selectMode" class="flex items-center gap-1.5">
                             <kbd class="px-1.5 py-0.5 rounded-md bg-[var(--md-surface-container-highest)] font-mono text-[10px]">J/K</kbd>
                             <span x-text="t('shortcuts.navigate')"></span>
