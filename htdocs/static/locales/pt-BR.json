@@ -261,7 +261,8 @@
       "suggestTags": "Sugerir tags",
       "move": "mover",
       "copy": "copiar",
-      "empty": "Nenhum tópico ainda. Crie um manualmente ou use sugestões da IA."
+      "empty": "Nenhum tópico ainda. Crie um manualmente ou use sugestões da IA.",
+      "loading": "Carregando tópicos..."
     },
     "status": {
       "title": "Status do Sistema",

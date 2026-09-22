@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260922b';</script>
+    <script>var APP_VERSION = '20260922c';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -2160,7 +2160,10 @@
                                         </div>
                                     </div>
                                 </template>
-                                <template x-if="topics.length === 0">
+                                <template x-if="!topicsLoaded">
+                                    <p class="text-sm text-[var(--md-on-surface-variant)] text-center py-4" x-text="t('settings.topics.loading')"></p>
+                                </template>
+                                <template x-if="topicsLoaded && topics.length === 0">
                                     <p class="text-sm text-[var(--md-on-surface-variant)] text-center py-4" x-text="t('settings.topics.empty')"></p>
                                 </template>
                             </div>
