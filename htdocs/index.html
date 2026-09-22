@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260922c">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260922c">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260922c">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260922d">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260922d">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260922d">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260922c">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260922d">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260922c">
+    <link rel="manifest" href="/manifest.json?v=20260922d">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260922c"></script>
-    <script src="/static/vendor/popper.min.js?v=20260922c"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260922c"></script>
-    <script src="/static/vendor/purify.min.js?v=20260922c"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260922c in all ?v= below -->
-    <script>var APP_VERSION = '20260922c';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260922c">
+    <script src="/static/vendor/marked.min.js?v=20260922d"></script>
+    <script src="/static/vendor/popper.min.js?v=20260922d"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260922d"></script>
+    <script src="/static/vendor/purify.min.js?v=20260922d"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260922d in all ?v= below -->
+    <script>var APP_VERSION = '20260922d';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260922d">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260922c"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260922c"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260922c"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260922c"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260922c"></script>
-    <script defer src="/static/js/components/settings.js?v=20260922c"></script>
-    <script defer src="/static/js/components/curation.js?v=20260922c"></script>
-    <script defer src="/static/js/app.js?v=20260922c"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260922d"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260922d"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260922d"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260922d"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260922d"></script>
+    <script defer src="/static/js/components/settings.js?v=20260922d"></script>
+    <script defer src="/static/js/components/curation.js?v=20260922d"></script>
+    <script defer src="/static/js/app.js?v=20260922d"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -2728,6 +2728,16 @@
                                             <span x-show="mergeSuggesting" class="msym text-[12px] animate-spin">progress_activity</span>
                                             <span x-show="!mergeSuggesting" class="msym text-[12px]">auto_awesome</span>
                                             <span x-text="t('settings.tagMerge.analyze')"></span>
+                                        </button>
+                                        <button
+                                            @click="suggestMechanicalMerges()"
+                                            :disabled="mergeSuggesting"
+                                            :data-tip="t('settings.tagMerge.mechanicalTooltip')"
+                                            class="px-3 py-1 text-sm rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
+                                        >
+                                            <span x-show="mergeSuggesting" class="msym text-[12px] animate-spin">progress_activity</span>
+                                            <span x-show="!mergeSuggesting" class="msym text-[12px]">rule</span>
+                                            <span x-text="t('settings.tagMerge.mechanical')"></span>
                                         </button>
                                     </div>
 

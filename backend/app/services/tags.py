@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models import PostTag
+from app.services.tag_matching import canonicalize_tag
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,11 @@ def save_post_tags(db: Session, post_id: int, tags: List[str]) -> int:
         while "--" in tag:
             tag = tag.replace("--", "-")
         tag = tag.strip("-")
+        if tag:
+            # Snap to an already-established spelling (hyphenation / plural
+            # variant) instead of letting the model mint a near-duplicate —
+            # e.g. "ai-agents" collapses to "ai-agent" if that already exists.
+            tag = canonicalize_tag(db, tag)
         if tag and tag not in seen and len(tag) <= 50:
             seen.add(tag)
             db.add(PostTag(post_id=post_id, tag=tag))

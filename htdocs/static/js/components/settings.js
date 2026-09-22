@@ -513,6 +513,30 @@ const settingsMixin = {
         }
     },
 
+    async suggestMechanicalMerges() {
+        this.mergeSuggesting = true;
+        try {
+            const data = await this.fetchApi('/tags/suggest-mechanical-merges');
+            this.mergeTotalTags = data.total_tags;
+            // Mechanical detection scans the whole corpus at once (no paging) —
+            // set offset/batch so the "showing X-Y" label reads as "all of it".
+            this.mergeOffset = 0;
+            this.mergeBatchSize = data.total_tags;
+            this.mergeGroups = (data.groups || []).map(g => ({
+                canonical: g.canonical,
+                merge: [...g.merge],
+                selected: true,
+            }));
+            if (this.mergeGroups.length === 0) {
+                this.showToast(this.t('settings.tagMerge.noGroups'), 'info');
+            }
+        } catch (e) {
+            this.showToast(e.message || this.t('errors.requestFailed'), 'error');
+        } finally {
+            this.mergeSuggesting = false;
+        }
+    },
+
     async applyTagMerges() {
         const selected = this.mergeGroups.filter(g => g.selected && g.merge.length > 0);
         if (selected.length === 0) return;

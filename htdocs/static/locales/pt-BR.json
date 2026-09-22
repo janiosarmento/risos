@@ -223,6 +223,8 @@
       "batchSize": "Lote:",
       "analyze": "Analisar",
       "analyzing": "Analisando...",
+      "mechanical": "Detectar automaticamente",
+      "mechanicalTooltip": "Detecta duplicatas óbvias (hífen, plural/singular) sem usar IA — instantâneo e determinístico",
       "apply": "Aplicar selecionados",
       "applying": "Aplicando...",
       "selectAll": "Selecionar todos",

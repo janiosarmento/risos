@@ -18,6 +18,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Feed, IgnoredTag, Post, PostTag, TopicTag
 from app.services.suggestions import clear_all_suggestions
+from app.services.tag_matching import build_mechanical_groups, clear_canonical_map_cache
 from app.services.tags import apply_tag_merge
 from app.services.user_profile import invalidate_user_profile
 
@@ -299,6 +300,7 @@ async def suggest_merges(
 ):
     """Use AI to suggest near-duplicate tags that should be merged."""
     from app.services.ai._api import call_llm_json
+    from app.services.ai._types import PermanentError
 
     total_tags = db.query(func.count(func.distinct(PostTag.tag))).scalar() or 0
 
@@ -469,7 +471,26 @@ Respond ONLY in JSON format:
 
 If no true duplicates/synonyms are found, return {{"groups": []}}"""
 
-    result = await call_llm_json(system_prompt, user_prompt, engine="ondemand")
+    # "openrouter/free" (the configured free-tier router) picks a different
+    # underlying model per call, and some of them can't do this task at all —
+    # a content-safety classifier that just answers "safe", or a reasoning
+    # model that burns the whole token budget narrating instead of answering.
+    # A retry re-rolls the model and usually lands on one that behaves.
+    max_json_retries = 2
+    result = None
+    for attempt in range(max_json_retries + 1):
+        try:
+            result = await call_llm_json(
+                system_prompt, user_prompt, max_tokens=8192, engine="ondemand"
+            )
+            break
+        except PermanentError as e:
+            if "unparseable JSON" not in str(e) or attempt == max_json_retries:
+                raise
+            logger.warning(
+                "suggest-merges: retrying after unparseable JSON (attempt %d/%d): %s",
+                attempt + 1, max_json_retries, e,
+            )
 
     # Validate: only include tags that actually existed in the generated candidate groups
     available = {tag for g in groups_to_eval for tag in g}
@@ -490,6 +511,26 @@ If no true duplicates/synonyms are found, return {{"groups": []}}"""
         "offset": body.offset,
         "batch_size": body.batch_size,
     }
+
+
+@router.get("/suggest-mechanical-merges")
+def suggest_mechanical_merges(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Detect tag duplicates via deterministic spelling rules (hyphenation,
+    plural/singular) across the whole corpus — no LLM involved. Same
+    response shape as /suggest-merges so the client can reuse the review UI.
+    """
+    rows = (
+        db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
+        .group_by(PostTag.tag)
+        .all()
+    )
+    tag_counts = {row.tag: row.count for row in rows}
+    groups = build_mechanical_groups(tag_counts)
+
+    return {"groups": groups, "total_tags": len(tag_counts)}
 
 
 @router.post("/apply-merges")
@@ -520,6 +561,7 @@ def apply_merges(
     if tags_removed > 0:
         clear_all_suggestions(db)
         invalidate_user_profile(db)
+        clear_canonical_map_cache()
 
     logger.info(
         "Tag merge applied: %d tags removed, %d posts affected",
@@ -651,6 +693,7 @@ def purge_rare_tags(
 
             clear_all_suggestions(db)
             invalidate_user_profile(db)
+            clear_canonical_map_cache()
 
             logger.info(
                 "Purged %d rare tags (max_count=%d), %d rows deleted",
