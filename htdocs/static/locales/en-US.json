@@ -223,7 +223,7 @@
       "batchSize": "Batch:",
       "analyze": "Analyze",
       "analyzing": "Analyzing...",
-      "mechanical": "Auto-detect",
+      "mechanical": "Detect (deterministic)",
       "mechanicalTooltip": "Detects obvious duplicates (hyphenation, plural/singular) without AI — instant and deterministic",
       "apply": "Apply selected",
       "applying": "Applying...",
