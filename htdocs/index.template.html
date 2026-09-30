@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260930a';</script>
+    <script>var APP_VERSION = '20260930b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -942,7 +942,7 @@
                                             @click.stop="toggleStory(post)"
                                             class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] hover:opacity-80"
                                         >
-                                            <span class="msym text-[14px]" x-text="post.story_open ? 'expand_less' : 'stacks'"></span>
+                                            <span class="msym text-[14px]" :class="post.story_open ? 'rotate-180' : ''" x-text="post.story_open ? 'expand_more' : 'rss_feed'"></span>
                                             <span x-text="t('posts.storySources').replace('{count}', post.story_siblings.length)"></span>
                                         </button>
                                         <!-- Tag chips: radius 8px per the handoff's component spec (content
