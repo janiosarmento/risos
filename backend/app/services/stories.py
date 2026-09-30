@@ -51,7 +51,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 5
+STORY_ALGO_VERSION = 6
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -86,7 +86,7 @@ TAG_SCORE_CONFIRM = 0.40
 TITLE_SCORE_MID = 0.35
 TAG_SCORE_CONFIRM_LOOSE = 0.15
 TITLE_SCORE_VERY_WEAK = 0.15
-TAG_SCORE_CONFIRM_STRONG = 0.55
+TAG_SCORE_CONFIRM_STRONG = 0.50
 # ...and then only with this many title tokens in common, not just two.
 WEAK_MIN_SHARED_TOKENS = 2
 
