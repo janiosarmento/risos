@@ -47,7 +47,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 2
+STORY_ALGO_VERSION = 4
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -75,7 +75,12 @@ TITLE_SCORE_STRONG = 0.55
 # share few words ("Three New Apple Smart Home Products" / "Apple Smart Home
 # Hub to Feature iMac G4-Style Design") while sharing most of their tags.
 TITLE_SCORE_WEAK = 0.30
-TAG_SCORE_CONFIRM = 0.55
+TAG_SCORE_CONFIRM = 0.50
+# Titles that already agree well (a distinctive name plus context, like
+# "DoorDash ... Apple Messages") need only a sanity check from the tags: the
+# LLM often tags one event quite differently from one article to the next.
+TITLE_SCORE_MID = 0.40
+TAG_SCORE_CONFIRM_LOOSE = 0.15
 TITLE_SCORE_VERY_WEAK = 0.20
 TAG_SCORE_CONFIRM_STRONG = 0.65
 # ...and then only with this many title tokens in common, not just two.
@@ -87,6 +92,10 @@ WEAK_MIN_SHARED_TOKENS = 3
 # relax this: measured on a real week, same-feed pairs that are one story and
 # pairs that are two items of a series overlap completely in tag score.
 SAME_FEED_TITLE_SCORE = 0.85
+
+# Pairs that name the same date ("October 13") may agree on much less of the
+# title, since the date is the identifying part.
+DATE_TITLE_SCORE = 0.12
 
 # Oversized components are re-clustered at a stricter title bar.
 MAX_GROUP_SIZE = 8
@@ -117,14 +126,37 @@ class StoryPost(NamedTuple):
     title: str
 
 
+_MONTHS = {
+    "jan": "january", "feb": "february", "mar": "march", "apr": "april",
+    "jun": "june", "jul": "july", "aug": "august", "sep": "september",
+    "sept": "september", "oct": "october", "nov": "november", "dec": "december",
+    "january": "january", "february": "february", "march": "march",
+    "april": "april", "may": "may", "june": "june", "july": "july",
+    "august": "august", "september": "september", "october": "october",
+    "november": "november", "december": "december",
+}  # fmt: skip
+
+# "October 13" / "Oct. 13" / "Oct 13th": a date in a headline names the event
+# ("...launching October 13") far better than any word around it does, so it is
+# folded into one token that survives the length filter and IDF then treats as
+# the rare, high-signal term it is.
+_DATE_RE = re.compile(r"\b([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b")
+
+
 def tokenize_title(title: str | None) -> set[str]:
     if not title:
         return set()
-    return {
+    lowered = title.lower()
+    tokens = {
         t
-        for t in _TOKEN_RE.findall(title.lower())
+        for t in _TOKEN_RE.findall(lowered)
         if len(t) >= MIN_TOKEN_LEN and t not in _STOPWORDS
     }
+    for word, day in _DATE_RE.findall(lowered):
+        month = _MONTHS.get(word)
+        if month:
+            tokens.add(f"{month}_{int(day)}")
+    return tokens
 
 
 def _title_idf(token_sets: dict[int, set[str]]) -> dict[str, float]:
@@ -186,12 +218,21 @@ def group_stories(
         if denom <= 0:
             continue
         t_score = sum(tidf[t] ** 2 for t in shared) / denom
-        if t_score < TITLE_SCORE_VERY_WEAK:
+        shares_date = any("_" in t for t in shared)
+        if t_score < (DATE_TITLE_SCORE if shares_date else TITLE_SCORE_VERY_WEAK):
             continue
         if by_id[a].feed_id == by_id[b].feed_id and t_score < SAME_FEED_TITLE_SCORE:
             continue
         if t_score < TITLE_SCORE_STRONG:
-            if n_shared < WEAK_MIN_SHARED_TOKENS:
+            # Naming the same date is itself strong evidence of the same event,
+            # so it stands in for tag confirmation when the title also agrees.
+            if shares_date and n_shared >= WEAK_MIN_SHARED_TOKENS:
+                if t_score >= TITLE_SCORE_VERY_WEAK:
+                    scores[(a, b)] = t_score
+                    continue
+            if n_shared < (
+                MIN_SHARED_TOKENS if shares_date else WEAK_MIN_SHARED_TOKENS
+            ):
                 continue
             tags_a = tags_by_post.get(a, set())
             tags_b = tags_by_post.get(b, set())
@@ -201,11 +242,14 @@ def group_stories(
             tag_score = (
                 sum(tag_idf_map.get(t, 0.0) ** 2 for t in tags_a & tags_b) / tag_denom
             )
-            needed = (
-                TAG_SCORE_CONFIRM
-                if t_score >= TITLE_SCORE_WEAK
-                else TAG_SCORE_CONFIRM_STRONG
-            )
+            if shares_date:
+                needed = TAG_SCORE_CONFIRM
+            elif t_score >= TITLE_SCORE_MID:
+                needed = TAG_SCORE_CONFIRM_LOOSE
+            elif t_score >= TITLE_SCORE_WEAK:
+                needed = TAG_SCORE_CONFIRM
+            else:
+                needed = TAG_SCORE_CONFIRM_STRONG
             if tag_score < needed:
                 continue
         scores[(a, b)] = t_score
