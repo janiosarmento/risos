@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260922f">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260922f">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260922f">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260930a">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260930a">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260930a">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260922f">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260930a">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260922f">
+    <link rel="manifest" href="/manifest.json?v=20260930a">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260922f"></script>
-    <script src="/static/vendor/popper.min.js?v=20260922f"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260922f"></script>
-    <script src="/static/vendor/purify.min.js?v=20260922f"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260922f in all ?v= below -->
-    <script>var APP_VERSION = '20260922f';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260922f">
+    <script src="/static/vendor/marked.min.js?v=20260930a"></script>
+    <script src="/static/vendor/popper.min.js?v=20260930a"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260930a"></script>
+    <script src="/static/vendor/purify.min.js?v=20260930a"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260930a in all ?v= below -->
+    <script>var APP_VERSION = '20260930a';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260930a">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260922f"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260922f"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260922f"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260922f"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260922f"></script>
-    <script defer src="/static/js/components/settings.js?v=20260922f"></script>
-    <script defer src="/static/js/components/curation.js?v=20260922f"></script>
-    <script defer src="/static/js/app.js?v=20260922f"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260930a"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260930a"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260930a"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260930a"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260930a"></script>
+    <script defer src="/static/js/components/settings.js?v=20260930a"></script>
+    <script defer src="/static/js/components/curation.js?v=20260930a"></script>
+    <script defer src="/static/js/app.js?v=20260930a"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -830,7 +830,7 @@
                                 }"
                                 :data-index="index"
                             >
-                                <div class="flex items-start gap-3">
+                                <div class="flex items-start gap-3" :class="post._story_child ? 'ml-6' : ''">
                                     <!-- Selection checkbox -->
                                     <div
                                         x-show="selectMode"
@@ -936,6 +936,15 @@
                                             class="mt-1 text-sm text-[var(--md-on-surface-variant)] italic"
                                             x-text="post.one_line_summary"
                                         ></p>
+                                        <!-- Same-story fold: siblings reporting this event, see services/stories.py -->
+                                        <button
+                                            x-show="post.story_siblings && post.story_siblings.length"
+                                            @click.stop="toggleStory(post)"
+                                            class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)] hover:opacity-80"
+                                        >
+                                            <span class="msym text-[14px]" x-text="post.story_open ? 'expand_less' : 'stacks'"></span>
+                                            <span x-text="t('posts.storySources').replace('{count}', post.story_siblings.length)"></span>
+                                        </button>
                                         <!-- Tag chips: radius 8px per the handoff's component spec (content
                                              tags aren't pills — only filter chips and badges are). -->
                                         <template x-if="post.tags && post.tags.length > 0">

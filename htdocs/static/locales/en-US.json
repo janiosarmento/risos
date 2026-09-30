@@ -53,6 +53,7 @@
     "select": "Select",
     "selectAll": "Select all",
     "clear": "Clear",
+    "storySources": "+{count} more sources",
     "selected": "selected"
   },
   "modal": {

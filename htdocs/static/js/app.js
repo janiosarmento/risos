@@ -164,6 +164,56 @@ function app() {
         suggestedCount: 0,
 
         // Post lookup helpers
+        // Fold posts that report the same event (same story_id) under the first one
+        // seen. The server tags them (services/stories.py); siblings can arrive on a
+        // later page than their lead, so the lead lives in `existing` and collects
+        // them here instead of the list growing a second row for the same story.
+        foldStories(existing, incoming) {
+            const out = [...existing];
+            const leads = new Map();
+            out.forEach((p, i) => {
+                if (p.story_id != null && !p._story_child) leads.set(p.story_id, i);
+            });
+            for (const post of incoming) {
+                const leadIdx = post.story_id != null ? leads.get(post.story_id) : undefined;
+                if (leadIdx === undefined) {
+                    if (post.story_id != null && post.story_size > 1) leads.set(post.story_id, out.length);
+                    out.push(post);
+                    continue;
+                }
+                const lead = out[leadIdx];
+                const siblings = [...(lead.story_siblings || []), post];
+                out[leadIdx] = { ...lead, story_siblings: siblings };
+                if (lead.story_open) {
+                    // Story is expanded: show the newcomer right after its group
+                    let at = leadIdx + 1;
+                    while (at < out.length && out[at]._story_child === lead.story_id) at++;
+                    out.splice(at, 0, { ...post, _story_child: lead.story_id });
+                    for (const [id, i] of leads) if (i >= at) leads.set(id, i + 1);
+                }
+            }
+            return out;
+        },
+
+        toggleStory(post) {
+            const idx = this.getPostIndex(post.id);
+            if (idx < 0 || !post.story_siblings?.length) return;
+            if (post.story_open) {
+                if (this.currentPost && post.story_siblings.some(s => s.id === this.currentPost.id)) {
+                    this.closePost();
+                }
+                this.posts = this.posts.filter(p => p._story_child !== post.story_id);
+                const i = this.getPostIndex(post.id);
+                this.posts[i] = { ...this.posts[i], story_open: false };
+            } else {
+                const kids = post.story_siblings.map(s => ({ ...s, _story_child: post.story_id }));
+                const next = [...this.posts];
+                next[idx] = { ...post, story_open: true };
+                next.splice(idx + 1, 0, ...kids);
+                this.posts = next;
+            }
+        },
+
         getPostIndex(id) {
             return this.posts.findIndex(p => p.id === id);
         },
@@ -1065,11 +1115,7 @@ function app() {
 
                 const data = await this.fetchApi(`/posts?${params}`);
 
-                if (reset) {
-                    this.posts = data.posts;
-                } else {
-                    this.posts = [...this.posts, ...data.posts];
-                }
+                this.posts = this.foldStories(reset ? [] : this.posts, data.posts);
 
                 this.hasMore = data.has_more || false;
                 this.offset += data.posts.length;
@@ -1468,7 +1514,10 @@ function app() {
             // Get unread posts currently visible in the interface
             // This ensures we only mark posts the user has seen, not new ones
             // that may have arrived via background refresh
+            // Siblings folded under a story card count as visible: the user saw
+            // the card, and leaving them behind would resurface the story as unread.
             const visibleUnread = this.posts
+                .flatMap(p => (p.story_open ? [p] : [p, ...(p.story_siblings || [])]))
                 .filter(p => !p.is_read && !p.keep_unread && (!blockedOnly || p.is_blocked));
             const visibleUnreadIds = visibleUnread.map(p => p.id);
 

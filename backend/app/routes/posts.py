@@ -50,6 +50,7 @@ from app.services.ai import (
 from app.services.ai._parsing import split_into_paragraphs
 from app.services.content_extractor import ensure_full_content
 from app.services.content_hasher import compute_content_hash
+from app.services.stories import get_story_map
 from app.services.tags import save_post_tags
 from app.services.url_safety import is_safe_external_url
 from app.topics_cache import invalidate as invalidate_topics_cache
@@ -320,10 +321,12 @@ def list_posts(
 
     # Load blocked terms for is_blocked computation
     blocked_terms = get_effective_blocked_terms(db)
+    story_map = get_story_map(db)
 
     # Convert to response
     result = []
     for post in posts:
+        story_id, story_size = story_map.get(post.id, (None, 1))
         summary = summaries_map.get(post.content_hash) if post.content_hash else None
         post_dict = {
             "id": post.id,
@@ -354,6 +357,8 @@ def list_posts(
                 for term in blocked_terms
             ),
             "tags": [pt.tag for pt in post.tags],
+            "story_id": story_id,
+            "story_size": story_size,
         }
         result.append(PostResponse(**post_dict))
 

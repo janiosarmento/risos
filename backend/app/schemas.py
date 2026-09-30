@@ -143,6 +143,9 @@ class PostResponse(BaseModel):
     keep_unread: bool = False
     is_blocked: bool = False
     tags: List[str] = []
+    # Posts reporting the same event share a story_id (see services/stories.py)
+    story_id: Optional[int] = None
+    story_size: int = 1
 
     model_config = ConfigDict(from_attributes=True)
 
