@@ -47,7 +47,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 1
+STORY_ALGO_VERSION = 2
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -70,15 +70,22 @@ MIN_SHARED_TOKENS = 2
 
 # Title cosine a pair must reach outright, or in combination with tags below.
 TITLE_SCORE_STRONG = 0.55
-# Weaker title agreement is accepted only when the tags confirm it.
-TITLE_SCORE_WEAK = 0.40
+# Weaker title agreement is accepted only when the tags confirm it, and the
+# weaker the title, the more the tags must agree. Headlines on one event often
+# share few words ("Three New Apple Smart Home Products" / "Apple Smart Home
+# Hub to Feature iMac G4-Style Design") while sharing most of their tags.
+TITLE_SCORE_WEAK = 0.30
 TAG_SCORE_CONFIRM = 0.55
+TITLE_SCORE_VERY_WEAK = 0.20
+TAG_SCORE_CONFIRM_STRONG = 0.65
 # ...and then only with this many title tokens in common, not just two.
 WEAK_MIN_SHARED_TOKENS = 3
 
 # A feed rarely reports one event twice; what it does do is post recurring
 # series ("Daily", "Deals", "Oferta: ...") whose titles overlap heavily. Two
-# posts from the same feed therefore need near-identical titles.
+# posts from the same feed therefore need near-identical titles. Tags cannot
+# relax this: measured on a real week, same-feed pairs that are one story and
+# pairs that are two items of a series overlap completely in tag score.
 SAME_FEED_TITLE_SCORE = 0.85
 
 # Oversized components are re-clustered at a stricter title bar.
@@ -156,27 +163,30 @@ def group_stories(
         for t in toks:
             posts_by_token[t].append(pid)
 
-    shared_counts: Counter = Counter()
+    # Common tokens are skipped when seeding, so a pair only needs to share one
+    # *distinctive* token to be looked at; the real overlap is counted below.
+    candidates: set[tuple[int, int]] = set()
     for tok, members in posts_by_token.items():
         if len(members) < 2 or len(members) > seed_cutoff:
             continue
         members.sort()
         for i, a in enumerate(members):
             for b in members[i + 1 :]:
-                shared_counts[(a, b)] += 1
+                candidates.add((a, b))
 
     scores: dict[tuple[int, int], float] = {}
-    for (a, b), n_shared in shared_counts.items():
-        if n_shared < MIN_SHARED_TOKENS:
-            continue
+    for a, b in candidates:
         if abs(by_id[a].sort_date - by_id[b].sort_date) > MAX_GAP:
             continue
         shared = token_sets[a] & token_sets[b]
+        n_shared = len(shared)
+        if n_shared < MIN_SHARED_TOKENS:
+            continue
         denom = title_norm[a] * title_norm[b]
         if denom <= 0:
             continue
         t_score = sum(tidf[t] ** 2 for t in shared) / denom
-        if t_score < TITLE_SCORE_WEAK:
+        if t_score < TITLE_SCORE_VERY_WEAK:
             continue
         if by_id[a].feed_id == by_id[b].feed_id and t_score < SAME_FEED_TITLE_SCORE:
             continue
@@ -191,11 +201,16 @@ def group_stories(
             tag_score = (
                 sum(tag_idf_map.get(t, 0.0) ** 2 for t in tags_a & tags_b) / tag_denom
             )
-            if tag_score < TAG_SCORE_CONFIRM:
+            needed = (
+                TAG_SCORE_CONFIRM
+                if t_score >= TITLE_SCORE_WEAK
+                else TAG_SCORE_CONFIRM_STRONG
+            )
+            if tag_score < needed:
                 continue
         scores[(a, b)] = t_score
 
-    return _split_until_small(list(scores), scores, TITLE_SCORE_WEAK)
+    return _split_until_small(list(scores), scores, TITLE_SCORE_VERY_WEAK)
 
 
 def _split_until_small(
