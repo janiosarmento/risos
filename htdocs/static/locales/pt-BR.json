@@ -28,6 +28,7 @@
     "unread": "Não lidos",
     "all": "Todos",
     "starred": "Favoritos",
+    "noSummary": "Sem resumo",
     "suggested": "Sugeridos",
     "regenerateSuggestions": "Regenerar sugestões",
     "regenerating": "Regenerando...",

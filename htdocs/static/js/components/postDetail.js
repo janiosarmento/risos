@@ -128,6 +128,9 @@ const postDetailMixin = {
             const data = await this.fetchApi(`/posts/${this.currentPost.id}/skip-summary`, {
                 method: 'POST',
             });
+            if (!this.currentPost.is_read && data.skip_summary !== this.currentPost.skip_summary) {
+                this.noSummaryCount = Math.max(0, this.noSummaryCount + (data.skip_summary ? 1 : -1));
+            }
             this.currentPost = { ...this.currentPost, skip_summary: data.skip_summary };
             this.updatePost(this.currentPost.id, { skip_summary: data.skip_summary });
         } catch (error) {

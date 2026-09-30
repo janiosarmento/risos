@@ -162,6 +162,7 @@ function app() {
 
         starredCount: 0,
         suggestedCount: 0,
+        noSummaryCount: 0,
 
         // Post lookup helpers
         // Fold posts that report the same event (same story_id) under the first one
@@ -331,6 +332,11 @@ function app() {
                     params.set('starred_only', 'true');
                 } else if (this.filter === 'suggested') {
                     params.set('suggested_only', 'true');
+                    if (this.postFilter === 'unread') {
+                        params.set('unread_only', 'true');
+                    }
+                } else if (this.filter === 'nosummary') {
+                    params.set('no_summary_only', 'true');
                     if (this.postFilter === 'unread') {
                         params.set('unread_only', 'true');
                     }
@@ -819,6 +825,11 @@ function app() {
                 items.push({ type: 'suggested' });
             }
 
+            // Unsummarizable posts (only if there are any)
+            if (this.noSummaryCount > 0) {
+                items.push({ type: 'nosummary' });
+            }
+
             // Topics — always navigable, regardless of whether the Topics
             // folder is currently expanded in the sidebar: unlike a feed
             // inside a collapsed category, a topic stays the active filter
@@ -862,6 +873,7 @@ function app() {
             return items.findIndex(item => {
                 if (item.type === 'unread' && this.filter === 'unread' && !this.selectedTopicId) return true;
                 if (item.type === 'suggested' && this.filter === 'suggested') return true;
+                if (item.type === 'nosummary' && this.filter === 'nosummary') return true;
                 if (item.type === 'topic' && this.selectedTopicId === item.id) return true;
                 if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
                 if (item.type === 'feed' && this.filter === 'feed' && this.filterId === item.id) return true;
@@ -874,6 +886,8 @@ function app() {
                 this.setFilter('unread');
             } else if (item.type === 'suggested') {
                 this.setFilter('suggested');
+            } else if (item.type === 'nosummary') {
+                this.setFilter('nosummary');
             } else if (item.type === 'topic') {
                 // The Topics folder can be collapsed while one of its topics
                 // is still the active filter (see getNavigableItems()) — if
@@ -1104,6 +1118,11 @@ function app() {
                     if (this.postFilter === 'unread') {
                         params.set('unread_only', 'true');
                     }
+                } else if (this.filter === 'nosummary') {
+                    params.set('no_summary_only', 'true');
+                    if (this.postFilter === 'unread') {
+                        params.set('unread_only', 'true');
+                    }
                 } else if (this.postFilter === 'unread') {
                     params.set('unread_only', 'true');
                 }
@@ -1143,6 +1162,9 @@ function app() {
                 // Update suggested count
                 if (data.suggested_count !== undefined) {
                     this.suggestedCount = data.suggested_count;
+                }
+                if (data.no_summary_count !== undefined) {
+                    this.noSummaryCount = data.no_summary_count;
                 }
 
                 // Refresh top tags when context changes
@@ -1255,6 +1277,8 @@ function app() {
                 title = this.t('sidebar.starred');
             } else if (this.filter === 'suggested') {
                 title = this.t('sidebar.suggested');
+            } else if (this.filter === 'nosummary') {
+                title = this.t('sidebar.noSummary');
             } else if (this.filter === 'feed') {
                 const feed = this.feeds.find(f => f.id === this.filterId);
                 title = feed ? feed.title : 'Feed';
@@ -1303,6 +1327,7 @@ function app() {
                 return category?.name || null;
             }
             if (this.filter === 'suggested') return this.t('sidebar.suggested');
+            if (this.filter === 'nosummary') return this.t('sidebar.noSummary');
             if (this.filter === 'starred') return this.t('sidebar.starred');
             if (this.selectedTopicId) {
                 const topic = this.topics.find(t => t.id === this.selectedTopicId);
@@ -1435,6 +1460,9 @@ function app() {
                     this.suggestedCount++;
                 }
             }
+            if (post.skip_summary) {
+                this.noSummaryCount = Math.max(0, this.noSummaryCount + (isRead ? -1 : 1));
+            }
             this._adjustTopicUnread(post, isRead ? -1 : 1);
         },
 
@@ -1533,6 +1561,8 @@ function app() {
                 contextName = category?.name || this.t('settings.tabs.categories');
             } else if (this.filter === 'suggested') {
                 contextName = this.t('sidebar.suggested');
+            } else if (this.filter === 'nosummary') {
+                contextName = this.t('sidebar.noSummary');
             } else if (this.filter === 'starred') {
                 contextName = this.t('sidebar.starred');
             } else {

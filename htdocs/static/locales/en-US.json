@@ -28,6 +28,7 @@
     "unread": "Unread",
     "all": "All",
     "starred": "Starred",
+    "noSummary": "No summary",
     "suggested": "Suggested",
     "regenerateSuggestions": "Regenerate suggestions",
     "regenerating": "Regenerating...",

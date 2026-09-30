@@ -151,6 +151,7 @@ def _apply_post_filters(
     unread_only: bool = False,
     starred_only: bool = False,
     suggested_only: bool = False,
+    no_summary_only: bool = False,
     search: Optional[str] = None,
 ):
     """Apply the standard post list filters to *query*.
@@ -196,6 +197,8 @@ def _apply_post_filters(
         query = query.filter(Post.is_starred.is_(True))
     if suggested_only:
         query = query.filter(Post.is_suggested.is_(True))
+    if no_summary_only:
+        query = query.filter(Post.skip_summary.is_(True))
     if unread_only:
         query = query.filter(Post.is_read.is_(False))
 
@@ -228,6 +231,9 @@ def list_posts(
     unread_only: bool = Query(False, description="Only unread"),
     starred_only: bool = Query(False, description="Only starred"),
     suggested_only: bool = Query(False, description="Only AI-suggested"),
+    no_summary_only: bool = Query(
+        False, description="Only posts the LLM could not summarize"
+    ),
     search: Optional[str] = Query(None, description="Search titles and summaries"),
     limit: int = Query(20, ge=1, le=100, description="Post limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
@@ -247,6 +253,7 @@ def list_posts(
         unread_only=unread_only,
         starred_only=starred_only,
         suggested_only=suggested_only,
+        no_summary_only=no_summary_only,
         search=search,
     )
 
@@ -319,6 +326,14 @@ def list_posts(
         .scalar()
     )
 
+    # Unread posts that were processed but can't be summarized (garbage or empty
+    # content, or marked by hand) — global, like the suggested count.
+    no_summary_count = (
+        db.query(func.count(Post.id))
+        .filter(Post.skip_summary.is_(True), Post.is_read.is_(False))
+        .scalar()
+    )
+
     # Load blocked terms for is_blocked computation
     blocked_terms = get_effective_blocked_terms(db)
     story_map = get_story_map(db)
@@ -371,6 +386,7 @@ def list_posts(
         feed_unread_counts=feed_unread_counts if feed_unread_counts else None,
         starred_count=starred_count,
         suggested_count=suggested_count,
+        no_summary_count=no_summary_count,
     )
 
 

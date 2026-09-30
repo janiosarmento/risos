@@ -181,6 +181,7 @@ class PostListResponse(BaseModel):
     feed_unread_counts: Optional[Dict[int, int]] = None  # {feed_id: unread_count}
     starred_count: Optional[int] = None  # Starred posts count for current context
     suggested_count: Optional[int] = None  # AI-suggested posts count
+    no_summary_count: Optional[int] = None  # Unread posts that can't be summarized
 
 
 class MarkReadRequest(BaseModel):

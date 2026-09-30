@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260930b';</script>
+    <script>var APP_VERSION = '20260930c';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -295,6 +295,21 @@
                                 <span class="msym text-[16px]" :class="regeneratingSuggestions ? 'animate-spin' : ''">refresh</span>
                             </button>
                         </div>
+                        <!-- Posts the LLM couldn't summarize (processed, not pending) -->
+                        <button
+                            x-show="noSummaryCount > 0"
+                            @click="postFilter = 'unread'; setFilter('nosummary')"
+                            class="w-full text-left px-3 py-2 rounded-[24px] text-sm flex items-center gap-2"
+                            :class="filter === 'nosummary' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]' : 'hover:bg-[var(--md-surface-container-highest)]'"
+                        >
+                            <span class="msym text-[16px]" :class="filter === 'nosummary' ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-on-surface-variant)]'">block</span>
+                            <span x-text="t('sidebar.noSummary')"></span>
+                            <span
+                                class="ml-auto"
+                                :class="filter === 'nosummary' ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-on-surface-variant)]'"
+                                x-text="noSummaryCount"
+                            ></span>
+                        </button>
                     </div>
 
                     <!-- Top Tags (collapsible, desktop only, hidden during search) -->
