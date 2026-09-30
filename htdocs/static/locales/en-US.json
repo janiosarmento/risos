@@ -54,6 +54,7 @@
     "select": "Select",
     "selectAll": "Select all",
     "clear": "Clear",
+    "storyRead": "You already read {count} on this story",
     "storySources": "+{count} more sources",
     "selected": "selected"
   },

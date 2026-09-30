@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260930d">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260930d">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260930d">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260930e">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20260930e">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20260930e">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260930d">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20260930e">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20260930d">
+    <link rel="manifest" href="/manifest.json?v=20260930e">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20260930d"></script>
-    <script src="/static/vendor/popper.min.js?v=20260930d"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260930d"></script>
-    <script src="/static/vendor/purify.min.js?v=20260930d"></script>
-    <!-- App version — single source of truth. Assembler replaces 20260930d in all ?v= below -->
-    <script>var APP_VERSION = '20260930d';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260930d">
+    <script src="/static/vendor/marked.min.js?v=20260930e"></script>
+    <script src="/static/vendor/popper.min.js?v=20260930e"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20260930e"></script>
+    <script src="/static/vendor/purify.min.js?v=20260930e"></script>
+    <!-- App version — single source of truth. Assembler replaces 20260930e in all ?v= below -->
+    <script>var APP_VERSION = '20260930e';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260930e">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20260930d"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20260930d"></script>
-    <script defer src="/static/js/stores/ui.js?v=20260930d"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20260930d"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20260930d"></script>
-    <script defer src="/static/js/components/settings.js?v=20260930d"></script>
-    <script defer src="/static/js/components/curation.js?v=20260930d"></script>
-    <script defer src="/static/js/app.js?v=20260930d"></script>
+    <script defer src="/static/js/stores/auth.js?v=20260930e"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20260930e"></script>
+    <script defer src="/static/js/stores/ui.js?v=20260930e"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20260930e"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20260930e"></script>
+    <script defer src="/static/js/components/settings.js?v=20260930e"></script>
+    <script defer src="/static/js/components/curation.js?v=20260930e"></script>
+    <script defer src="/static/js/app.js?v=20260930e"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -951,6 +951,14 @@
                                             class="mt-1 text-sm text-[var(--md-on-surface-variant)] italic"
                                             x-text="post.one_line_summary"
                                         ></p>
+                                        <!-- Already caught up on this story: siblings the user has read -->
+                                        <span
+                                            x-show="post.story_read_count > 0 && !post.is_read"
+                                            class="mt-1 mr-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]"
+                                        >
+                                            <span class="msym text-[14px]">check</span>
+                                            <span x-text="t('posts.storyRead').replace('{count}', post.story_read_count)"></span>
+                                        </span>
                                         <!-- Same-story fold: siblings reporting this event, see services/stories.py -->
                                         <button
                                             x-show="post.story_siblings && post.story_siblings.length"

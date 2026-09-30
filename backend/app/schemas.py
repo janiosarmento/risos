@@ -146,6 +146,8 @@ class PostResponse(BaseModel):
     # Posts reporting the same event share a story_id (see services/stories.py)
     story_id: Optional[int] = None
     story_size: int = 1
+    # Other posts of the same story the user has already read
+    story_read_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

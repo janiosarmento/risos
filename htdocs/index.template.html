@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20260930d';</script>
+    <script>var APP_VERSION = '20260930e';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -951,6 +951,14 @@
                                             class="mt-1 text-sm text-[var(--md-on-surface-variant)] italic"
                                             x-text="post.one_line_summary"
                                         ></p>
+                                        <!-- Already caught up on this story: siblings the user has read -->
+                                        <span
+                                            x-show="post.story_read_count > 0 && !post.is_read"
+                                            class="mt-1 mr-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-[var(--md-surface-container-highest)] text-[var(--md-on-surface-variant)]"
+                                        >
+                                            <span class="msym text-[14px]">check</span>
+                                            <span x-text="t('posts.storyRead').replace('{count}', post.story_read_count)"></span>
+                                        </span>
                                         <!-- Same-story fold: siblings reporting this event, see services/stories.py -->
                                         <button
                                             x-show="post.story_siblings && post.story_siblings.length"

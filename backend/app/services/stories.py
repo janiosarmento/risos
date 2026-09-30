@@ -435,7 +435,7 @@ def find_stories(db: Session, now: datetime | None = None) -> list[list[int]]:
 # new post just joins its story on the next refresh. Grouping is derived purely
 # from post content, so nothing needs to invalidate it.
 _CACHE_TTL_SECONDS = 60.0
-_cache: dict = {"data": None, "ts": 0.0}
+_cache: dict = {"data": None, "members": {}, "ts": 0.0}
 
 
 def get_story_map(db: Session) -> dict[int, tuple[int, int]]:
@@ -448,10 +448,41 @@ def get_story_map(db: Session) -> dict[int, tuple[int, int]]:
     if _cache["data"] is not None and now - _cache["ts"] < _CACHE_TTL_SECONDS:
         return _cache["data"]
     story_map: dict[int, tuple[int, int]] = {}
+    members: dict[int, list[int]] = {}
     for group in find_stories(db):
         story_id = min(group)
+        members[story_id] = group
         for pid in group:
             story_map[pid] = (story_id, len(group))
     _cache["data"] = story_map
+    _cache["members"] = members
     _cache["ts"] = now
     return story_map
+
+
+def get_story_read_counts(
+    db: Session, story_map: dict[int, tuple[int, int]], post_ids: list[int]
+) -> dict[int, int]:
+    """post_id -> how many *other* posts of its story are already read.
+
+    Read state changes on every click, so unlike the grouping this is queried
+    fresh, only for the stories present on the page being served.
+    """
+    story_ids = {story_map[pid][0] for pid in post_ids if pid in story_map}
+    if not story_ids:
+        return {}
+    members = _cache["members"]
+    all_ids = [pid for sid in story_ids for pid in members.get(sid, [])]
+    read_ids = {
+        row.id
+        for row in db.query(Post.id).filter(
+            Post.id.in_(all_ids), Post.is_read.is_(True)
+        )
+    }
+    counts: dict[int, int] = {}
+    for pid in post_ids:
+        if pid not in story_map:
+            continue
+        group = members.get(story_map[pid][0], [])
+        counts[pid] = sum(1 for other in group if other != pid and other in read_ids)
+    return counts
