@@ -9,6 +9,10 @@ in the main list, so precision matters far more than recall: two articles that
 merely both mention macOS must NOT be folded together, while two feeds
 reporting the same launch should.
 
+Tuned for recall over precision (the user would rather see a few unrelated
+posts folded together than miss real duplicates): a wrongly folded post is one
+click away, a missed duplicate is invisible.
+
 Three signals must agree, cheapest first:
 
 1. **Time.** Posts must be within `MAX_GAP` of each other. A story is an
@@ -47,7 +51,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 4
+STORY_ALGO_VERSION = 5
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -75,23 +79,24 @@ TITLE_SCORE_STRONG = 0.55
 # share few words ("Three New Apple Smart Home Products" / "Apple Smart Home
 # Hub to Feature iMac G4-Style Design") while sharing most of their tags.
 TITLE_SCORE_WEAK = 0.30
-TAG_SCORE_CONFIRM = 0.50
+TAG_SCORE_CONFIRM = 0.40
 # Titles that already agree well (a distinctive name plus context, like
 # "DoorDash ... Apple Messages") need only a sanity check from the tags: the
 # LLM often tags one event quite differently from one article to the next.
-TITLE_SCORE_MID = 0.40
+TITLE_SCORE_MID = 0.35
 TAG_SCORE_CONFIRM_LOOSE = 0.15
-TITLE_SCORE_VERY_WEAK = 0.20
-TAG_SCORE_CONFIRM_STRONG = 0.65
+TITLE_SCORE_VERY_WEAK = 0.15
+TAG_SCORE_CONFIRM_STRONG = 0.55
 # ...and then only with this many title tokens in common, not just two.
-WEAK_MIN_SHARED_TOKENS = 3
+WEAK_MIN_SHARED_TOKENS = 2
 
 # A feed rarely reports one event twice; what it does do is post recurring
 # series ("Daily", "Deals", "Oferta: ...") whose titles overlap heavily. Two
-# posts from the same feed therefore need near-identical titles. Tags cannot
-# relax this: measured on a real week, same-feed pairs that are one story and
-# pairs that are two items of a series overlap completely in tag score.
-SAME_FEED_TITLE_SCORE = 0.85
+# posts from the same feed therefore need clearly agreeing titles. Tags cannot
+# tell these apart: measured on a real week, same-feed pairs that are one story
+# and pairs that are two items of a series overlap in tag score. The bar is set
+# low on purpose (see the recall note above) so a feed's own follow-ups group.
+SAME_FEED_TITLE_SCORE = 0.55
 
 # Pairs that name the same date ("October 13") may agree on much less of the
 # title, since the date is the identifying part.
