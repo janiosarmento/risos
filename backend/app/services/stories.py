@@ -39,7 +39,7 @@ from typing import NamedTuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Post, PostTag
+from app.models import AISummary, Post, PostTag
 from app.services.curation import (
     _chunks,
     _load_global_tag_frequencies,
@@ -51,7 +51,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 6
+STORY_ALGO_VERSION = 7
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -124,6 +124,41 @@ _STOPWORDS = frozenset(
 )
 
 
+# Summary similarity: a third, independent route to the same conclusion. Two
+# feeds covering one event word their headlines differently but the AI summaries
+# are all in one language and repeat the concrete facts (names, figures, models).
+# Measured as *containment*, not plain cosine: a two-line summary of a short
+# post shares most of its words with a long summary of the same event, which
+# cosine dilutes (0.12) and containment keeps (0.21+).
+SUMMARY_CONTAIN_SCORE = 0.40
+# Same-feed pairs are mostly series ("Daily", "Deals: ..."), whose summaries
+# overlap heavily too, so they need a clearly higher bar.
+SUMMARY_SAME_FEED_SCORE = 0.65
+SUMMARY_SEED_MAX_RATIO = 0.05
+SUMMARY_SEED_MIN_FREQ = 20
+
+_SUMMARY_STOPWORDS = _STOPWORDS | frozenset(
+    """
+    não uma dos das para com por mais como seu sua são foi está também entre
+    sobre segundo artigo modelo modelos novo nova novos nova ainda até pelo pela
+    nas nos mas ser tem além ela ele eles elas isso essa esse esta este deve
+    pode podem sendo tendo foram será cada quando onde quer outros outras
+    """.split()
+)
+
+
+def tokenize_summary(text: str | None) -> set[str]:
+    if not text:
+        return set()
+    # The generating model appends a "— model name / timestamp" footer.
+    body = text.split("\n—")[0].lower()
+    return {
+        t
+        for t in _TOKEN_RE.findall(body)
+        if (len(t) >= MIN_TOKEN_LEN or t.isdigit()) and t not in _SUMMARY_STOPWORDS
+    }
+
+
 class StoryPost(NamedTuple):
     id: int
     feed_id: int
@@ -176,6 +211,7 @@ def group_stories(
     posts: list[StoryPost],
     tags_by_post: dict[int, set[str]],
     tag_idf_map: dict[str, float],
+    summaries: dict[int, str] | None = None,
 ) -> list[list[int]]:
     """Pure grouping logic over already-loaded data. Returns id groups (size>=2)."""
     if len(posts) < 2:
@@ -259,7 +295,67 @@ def group_stories(
                 continue
         scores[(a, b)] = t_score
 
+    _add_summary_pairs(scores, by_id, summaries or {})
+
     return _split_until_small(list(scores), scores, TITLE_SCORE_VERY_WEAK)
+
+
+def _add_summary_pairs(
+    scores: dict[tuple[int, int], float],
+    by_id: dict[int, "StoryPost"],
+    summaries: dict[int, str],
+) -> None:
+    """Add pairs whose AI summaries largely contain each other's content."""
+    token_sets = {
+        pid: toks
+        for pid, text in summaries.items()
+        if pid in by_id and (toks := tokenize_summary(text))
+    }
+    if len(token_sets) < 2:
+        return
+
+    n = len(token_sets)
+    df: Counter = Counter()
+    for toks in token_sets.values():
+        df.update(toks)
+    idf = {t: math.log((n + 1) / (c + 0.5)) for t, c in df.items()}
+    weight = {pid: sum(idf[t] ** 2 for t in toks) for pid, toks in token_sets.items()}
+
+    seed_cutoff = max(SUMMARY_SEED_MIN_FREQ, int(n * SUMMARY_SEED_MAX_RATIO))
+    posts_by_token: dict[str, list[int]] = defaultdict(list)
+    for pid, toks in token_sets.items():
+        for t in toks:
+            if df[t] <= seed_cutoff:
+                posts_by_token[t].append(pid)
+
+    # Pairs are enumerated along the time axis and stop as soon as the gap is
+    # exceeded: most pairs sharing a word are days apart and never qualify.
+    candidates: set[tuple[int, int]] = set()
+    for members in posts_by_token.values():
+        if len(members) < 2:
+            continue
+        members.sort(key=lambda pid: by_id[pid].sort_date)
+        for i, a in enumerate(members):
+            for b in members[i + 1 :]:
+                if by_id[b].sort_date - by_id[a].sort_date > MAX_GAP:
+                    break
+                candidates.add((a, b) if a < b else (b, a))
+
+    for a, b in candidates:
+        if abs(by_id[a].sort_date - by_id[b].sort_date) > MAX_GAP:
+            continue
+        smaller = min(weight[a], weight[b])
+        if smaller <= 0:
+            continue
+        shared = token_sets[a] & token_sets[b]
+        score = sum(idf[t] ** 2 for t in shared) / smaller
+        needed = (
+            SUMMARY_SAME_FEED_SCORE
+            if by_id[a].feed_id == by_id[b].feed_id
+            else SUMMARY_CONTAIN_SCORE
+        )
+        if score >= needed:
+            scores[(a, b)] = max(score, scores.get((a, b), 0.0))
 
 
 def _split_until_small(
@@ -316,7 +412,15 @@ def find_stories(db: Session, now: datetime | None = None) -> list[list[int]]:
     total_tagged = db.query(func.count(func.distinct(PostTag.post_id))).scalar() or 0
     idf = {t: tag_idf(freqs.get(t, 1), total_tagged) for t in all_tags}
 
-    groups = group_stories(posts, tags_by_post, idf)
+    summaries = {
+        pid: text
+        for pid, text in db.query(Post.id, AISummary.summary_pt)
+        .join(AISummary, AISummary.content_hash == Post.content_hash)
+        .filter(Post.sort_date >= since)
+        .all()
+        if text
+    }
+    groups = group_stories(posts, tags_by_post, idf, summaries)
     logger.info(
         "Story grouping: %d posts, %d stories covering %d posts",
         len(posts),
