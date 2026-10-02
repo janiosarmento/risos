@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 HEARTBEAT_INTERVAL = 30  # seconds
 LOCK_TIMEOUT = 60  # seconds - lock expires if heartbeat stops
+RETRY_DELAY_SECONDS = 60  # pause before re-trying feeds that failed in a cycle
 
 
 class Scheduler:
@@ -236,15 +237,16 @@ class Scheduler:
                             (Feed.next_retry_at.is_(None))
                             | (Feed.next_retry_at <= now),
                         )
-                        .order_by(
-                            Feed.error_count.asc()
-                        )  # Prioritize feeds without errors
+                        # Stalest first, so every feed is eventually visited
+                        # (ordering by error_count starved failing feeds).
+                        .order_by(Feed.last_fetched_at.asc().nullsfirst())
                         .limit(20)
                         .all()
                     )
 
                     logger.info(f"Job update_feeds: {len(feeds)} feeds to update")
 
+                    failed = []
                     for feed in feeds:
                         if not self._running or not self.is_leader:
                             break
@@ -256,11 +258,28 @@ class Scheduler:
                                 f"{result.new_posts} new, "
                                 f"{result.skipped_duplicates} duplicates"
                             )
+                            if feed.error_count:
+                                failed.append(feed)
                         except Exception as e:
                             logger.error(f"Error updating feed {feed.id}: {e}")
 
                         # Small delay between feeds
                         await asyncio.sleep(1)
+
+                    # One quick retry for feeds that failed this cycle, so
+                    # transient errors (DNS, timeouts) heal without waiting
+                    # for the next cycle.
+                    if failed and self._running and self.is_leader:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS)
+                        for feed in failed:
+                            if not self._running or not self.is_leader:
+                                break
+                            try:
+                                db.refresh(feed)
+                                await ingest_feed(db, feed)
+                            except Exception as e:
+                                logger.error(f"Retry failed for feed {feed.id}: {e}")
+                            await asyncio.sleep(1)
 
                 finally:
                     db.close()

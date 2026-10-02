@@ -4,7 +4,7 @@ Integrates parser, normalization, sanitization and deduplication.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from urllib.parse import urljoin
 
@@ -22,6 +22,17 @@ from app.services.html_sanitizer import sanitize_html
 from app.services.url_normalizer import normalize_url
 
 logger = logging.getLogger(__name__)
+
+BACKOFF_BASE_MINUTES = 5
+BACKOFF_MAX_MINUTES = 120
+
+
+def _backoff_delay(error_count: int) -> timedelta:
+    """Delay before retrying a failing feed: none at first, then 5, 10, 20... min."""
+    if error_count < 3:
+        return timedelta(0)
+    minutes = BACKOFF_BASE_MINUTES * 2 ** (error_count - 3)
+    return timedelta(minutes=min(minutes, BACKOFF_MAX_MINUTES))
 
 
 class FeedIngestionResult:
@@ -222,6 +233,8 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
         feed.error_count = (feed.error_count or 0) + 1
         feed.last_error = str(e)
         feed.last_error_at = now
+        delay = _backoff_delay(feed.error_count)
+        feed.next_retry_at = now + delay if delay else None
         db.commit()
         return result
 
@@ -270,6 +283,7 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
     feed.last_fetched_at = now
     feed.error_count = 0  # Reset on success
     feed.last_error = None
+    feed.next_retry_at = None
 
     try:
         db.commit()
