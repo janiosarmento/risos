@@ -35,6 +35,7 @@ import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import NamedTuple
+from urllib.parse import urlparse
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -51,7 +52,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 7
+STORY_ALGO_VERSION = 8
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -159,11 +160,30 @@ def tokenize_summary(text: str | None) -> set[str]:
     }
 
 
+# Host burst: an aggregator feed (Hacker News, Lobsters) often carries two posts
+# from one small site published minutes apart, announcing one release with
+# unrelated headlines ("Pi 1.0" / "Pi Durable"). Titles that short share no
+# tokens, so the shared host plus the tiny gap is the signal. Hosts with many
+# posts in the window (news sites, github.com) are skipped, and a weak content
+# agreement is still required.
+HOST_BURST_GAP = timedelta(hours=1)
+HOST_BURST_MAX_POSTS = 3
+HOST_BURST_CONFIRM = 0.10
+
+
+def post_host(url: str | None) -> str | None:
+    if not url:
+        return None
+    host = (urlparse(url).hostname or "").lower().removeprefix("www.")
+    return host or None
+
+
 class StoryPost(NamedTuple):
     id: int
     feed_id: int
     sort_date: datetime
     title: str
+    url: str | None = None
 
 
 _MONTHS = {
@@ -296,6 +316,7 @@ def group_stories(
         scores[(a, b)] = t_score
 
     _add_summary_pairs(scores, by_id, summaries or {})
+    _add_host_burst_pairs(scores, by_id, tags_by_post, tag_idf_map, summaries or {})
 
     return _split_until_small(list(scores), scores, TITLE_SCORE_VERY_WEAK)
 
@@ -358,6 +379,65 @@ def _add_summary_pairs(
             scores[(a, b)] = max(score, scores.get((a, b), 0.0))
 
 
+def _add_host_burst_pairs(
+    scores: dict[tuple[int, int], float],
+    by_id: dict[int, "StoryPost"],
+    tags_by_post: dict[int, set[str]],
+    tag_idf_map: dict[str, float],
+    summaries: dict[int, str],
+) -> None:
+    """Add same-feed pairs from one rarely seen host published close together."""
+    by_host: dict[str, list[StoryPost]] = defaultdict(list)
+    for post in by_id.values():
+        host = post_host(post.url)
+        if host:
+            by_host[host].append(post)
+
+    for members in by_host.values():
+        if not 2 <= len(members) <= HOST_BURST_MAX_POSTS:
+            continue
+        members.sort(key=lambda p: p.sort_date)
+        for i, a in enumerate(members):
+            for b in members[i + 1 :]:
+                if a.feed_id != b.feed_id:
+                    continue
+                if b.sort_date - a.sort_date > HOST_BURST_GAP:
+                    continue
+                agreement = max(
+                    _tag_cosine(tags_by_post, tag_idf_map, a.id, b.id),
+                    _summary_overlap(summaries, a.id, b.id),
+                )
+                if agreement >= HOST_BURST_CONFIRM:
+                    pair = (a.id, b.id) if a.id < b.id else (b.id, a.id)
+                    scores[pair] = max(agreement, scores.get(pair, 0.0))
+
+
+def _tag_cosine(
+    tags_by_post: dict[int, set[str]],
+    tag_idf_map: dict[str, float],
+    a: int,
+    b: int,
+) -> float:
+    tags_a = tags_by_post.get(a, set())
+    tags_b = tags_by_post.get(b, set())
+    norm = math.sqrt(sum(tag_idf_map.get(t, 0.0) ** 2 for t in tags_a)) * math.sqrt(
+        sum(tag_idf_map.get(t, 0.0) ** 2 for t in tags_b)
+    )
+    if norm <= 0:
+        return 0.0
+    return sum(tag_idf_map.get(t, 0.0) ** 2 for t in tags_a & tags_b) / norm
+
+
+def _summary_overlap(summaries: dict[int, str], a: int, b: int) -> float:
+    """Unweighted containment: shared share of the smaller summary's tokens."""
+    tokens_a = tokenize_summary(summaries.get(a))
+    tokens_b = tokenize_summary(summaries.get(b))
+    smaller = min(len(tokens_a), len(tokens_b))
+    if smaller == 0:
+        return 0.0
+    return len(tokens_a & tokens_b) / smaller
+
+
 def _split_until_small(
     pairs: list[tuple[int, int]],
     scores: dict[tuple[int, int], float],
@@ -395,12 +475,14 @@ def find_stories(db: Session, now: datetime | None = None) -> list[list[int]]:
     now = now or datetime.utcnow()
     since = now - LOOKBACK
     rows = (
-        db.query(Post.id, Post.feed_id, Post.sort_date, Post.title)
+        db.query(Post.id, Post.feed_id, Post.sort_date, Post.title, Post.url)
         .filter(Post.sort_date >= since, Post.title.isnot(None))
         .all()
     )
     posts = [
-        StoryPost(r.id, r.feed_id, r.sort_date, r.title) for r in rows if r.sort_date
+        StoryPost(r.id, r.feed_id, r.sort_date, r.title, r.url)
+        for r in rows
+        if r.sort_date
     ]
     if len(posts) < 2:
         return []
