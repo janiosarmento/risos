@@ -52,7 +52,7 @@ from app.services.curation import (
 logger = logging.getLogger(__name__)
 
 # Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 8
+STORY_ALGO_VERSION = 9
 
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
@@ -104,7 +104,7 @@ SAME_FEED_TITLE_SCORE = 0.55
 DATE_TITLE_SCORE = 0.12
 
 # Oversized components are re-clustered at a stricter title bar.
-MAX_GROUP_SIZE = 8
+MAX_GROUP_SIZE = 40
 SPLIT_STEP = 0.05
 SPLIT_MAX_SCORE = 0.95
 
