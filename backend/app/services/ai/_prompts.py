@@ -113,9 +113,12 @@ def get_user_prompt(
                 "below; otherwise set it to null. For gamers, aimed at them means "
                 "video games, game releases, consoles, game stores or deals, or PC "
                 "hardware advice whose use case is gaming. Set null when the topic "
-                "only appears in passing, or when the article serves another "
+                "only appears in passing, when the article serves another "
                 "audience: AI and local models, software development, self-hosting, "
-                "general computing or general consumer tech.\n"
+                "general computing or general consumer tech, or when it is a "
+                "technical deep-dive for engineers (reverse engineering, porting, "
+                "system internals, emulation or compatibility layers, graphics or "
+                "driver programming) even if games are its subject.\n"
                 f"{listing}"
             )
 
