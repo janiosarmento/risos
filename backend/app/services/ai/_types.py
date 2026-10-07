@@ -72,6 +72,7 @@ class SummaryResult:
     summary_pt: str
     one_line_summary: str
     translated_title: str = None
+    excluded_audience: str = None
     tags: List[str] = field(default_factory=list)
     model: str = ""
     duration: float = 0.0

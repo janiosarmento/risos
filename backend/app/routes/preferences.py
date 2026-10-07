@@ -47,6 +47,8 @@ PREF_SYSTEM_PROMPT = "pref_system_prompt"
 PREF_USER_PROMPT = "pref_user_prompt"
 # Blocked terms
 PREF_BLOCKED_TERMS = "pref_blocked_terms"
+# Audiences the user is not interested in (newline-separated, LLM-classified)
+PREF_EXCLUDED_AUDIENCES = "pref_excluded_audiences"
 # API base URL
 PREF_API_BASE_URL = "pref_api_base_url"
 PREF_AI_TIMEOUT = "pref_ai_timeout"
@@ -94,6 +96,8 @@ class PreferencesResponse(BaseModel):
     user_prompt: Optional[str] = None
     # Blocked terms (newline-separated)
     blocked_terms: Optional[str] = None
+    # Excluded audiences (newline-separated)
+    excluded_audiences: Optional[str] = None
     # API base URL
     api_base_url: Optional[str] = None
     ai_timeout: int = 30
@@ -134,6 +138,7 @@ class PreferencesUpdate(BaseModel):
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
     blocked_terms: Optional[str] = None
+    excluded_audiences: Optional[str] = None
     api_base_url: Optional[str] = None
     ai_timeout: Optional[int] = None
     related_posts_limit: Optional[int] = None
@@ -179,6 +184,7 @@ def get_preferences(
         PREF_SYSTEM_PROMPT,
         PREF_USER_PROMPT,
         PREF_BLOCKED_TERMS,
+        PREF_EXCLUDED_AUDIENCES,
         PREF_API_BASE_URL,
         PREF_BACKGROUND_JANO_SECRET_NAME,
         PREF_BACKGROUND_API_BASE_URL,
@@ -215,6 +221,7 @@ def get_preferences(
         system_prompt=prefs[PREF_SYSTEM_PROMPT] or prompts.get("system_prompt", ""),
         user_prompt=prefs[PREF_USER_PROMPT] or prompts.get("user_prompt", ""),
         blocked_terms=prefs[PREF_BLOCKED_TERMS] or "",
+        excluded_audiences=prefs[PREF_EXCLUDED_AUDIENCES] or "",
         api_base_url=prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
         ai_timeout=r("ai_timeout"),
         related_posts_limit=r("related_posts_limit"),
@@ -351,6 +358,14 @@ def update_preferences(
         lines = [ln.strip().lower() for ln in prefs.blocked_terms.splitlines() if ln.strip()]
         _set_setting(db, PREF_BLOCKED_TERMS, "\n".join(sorted(set(lines))))
         _unsuggest_blocked_posts(db, lines)
+
+    if prefs.excluded_audiences is not None:
+        lines = [
+            ln.strip().lower()
+            for ln in prefs.excluded_audiences.splitlines()
+            if ln.strip()
+        ]
+        _set_setting(db, PREF_EXCLUDED_AUDIENCES, "\n".join(sorted(set(lines))))
 
     if prefs.background_jano_secret_name is not None:
         _set_setting(
@@ -691,6 +706,14 @@ def get_effective_blocked_terms(db: Session) -> list:
     if not saved:
         return []
     return [line.strip() for line in saved.splitlines() if line.strip()]
+
+
+def get_effective_excluded_audiences(db: Session) -> list:
+    """Get excluded audiences from app_settings. Returns list of lowercase strings."""
+    saved = _get_setting(db, PREF_EXCLUDED_AUDIENCES)
+    if not saved:
+        return []
+    return [line.strip().lower() for line in saved.splitlines() if line.strip()]
 
 
 def get_effective_related_posts_limit(db: Session) -> int:

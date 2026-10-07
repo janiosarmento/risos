@@ -219,6 +219,9 @@
     "blockedTerms": "Termos Bloqueados",
     "blockedTermsDesc": "Posts com esses termos no título serão destacados. Use % como curinga (ex: best % to watch). Um termo por linha.",
     "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch",
+    "excludedAudiences": "Públicos Excluídos",
+    "excludedAudiencesDesc": "A IA marca novos artigos escritos principalmente para esses públicos, e eles são destacados como os termos bloqueados. Artigos que só citam o assunto de passagem não são marcados. Um público por linha.",
+    "excludedAudiencesPlaceholder": "gamers",
     "tagMerge": {
       "title": "Consolidação de Tags",
       "desc": "Use IA para encontrar e unificar tags duplicadas (ex: career-advice / career-tips). Revise as sugestões antes de aplicar.",

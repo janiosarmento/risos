@@ -1101,6 +1101,15 @@ const settingsMixin = {
         }
     },
 
+    setExcludedAudiences(value) {
+        const lines = value.split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
+        this.excludedAudiences = [...new Set(lines)].sort().join('\n');
+        if (this.authenticated) {
+            this.savePreferencesToServer();
+            this.loadPosts(true);
+        }
+    },
+
     setFeedReverseOrder(value) {
         this.feedReverseOrder = !!value;
         if (this.authenticated) {
@@ -1130,6 +1139,7 @@ const settingsMixin = {
                     suggestion_min_summary_length: this.suggestionMinSummaryLength,
                     tags_per_post: this.tagsPerPost,
                     blocked_terms: this.blockedTerms,
+                    excluded_audiences: this.excludedAudiences,
                     api_base_url: this.apiBaseUrl,
                     background_jano_secret_name: this.backgroundJanoSecretName || '',
                     background_api_base_url: this.backgroundApiBaseUrl,
@@ -1213,6 +1223,9 @@ const settingsMixin = {
             if (serverPrefs.user_prompt) this.userPrompt = serverPrefs.user_prompt;
             if (serverPrefs.blocked_terms !== null && serverPrefs.blocked_terms !== undefined) {
                 this.blockedTerms = serverPrefs.blocked_terms;
+            }
+            if (serverPrefs.excluded_audiences !== null && serverPrefs.excluded_audiences !== undefined) {
+                this.excludedAudiences = serverPrefs.excluded_audiences;
             }
             // Background AI settings
             this.backgroundJanoSecretName = serverPrefs.background_jano_secret_name || '';

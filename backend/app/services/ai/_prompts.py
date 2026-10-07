@@ -67,6 +67,7 @@ def get_user_prompt(
     """
     if db:
         from app.routes.preferences import (
+            get_effective_excluded_audiences,
             get_effective_tags_per_post,
             get_effective_user_prompt,
         )
@@ -98,6 +99,22 @@ def get_user_prompt(
         '"security" instead of "cybersecurity-vulnerabilities". '
         "Only use multi-word tags when a single word would be too ambiguous."
     )
+
+    # Ask the model to flag articles written for an out-of-interest audience
+    if db:
+        audiences = get_effective_excluded_audiences(db)
+        if audiences:
+            listing = "\n".join(f"- {a}" for a in audiences)
+            prompt += (
+                '\n\nAUDIENCE CHECK — add one extra key, "excluded_audience", to the '
+                "JSON output. Decide who the article is primarily written for. If its "
+                "main audience is one of the audiences below, set the key to that "
+                "audience EXACTLY as written below; otherwise set it to null. An "
+                "article only mentioning the topic in passing, or aimed at a broader "
+                "audience (for example hardware, AI or software readers), is NOT "
+                "primarily for that audience.\n"
+                f"{listing}"
+            )
 
     # Inject popular existing tags to encourage reuse
     if db:

@@ -44,5 +44,6 @@ document.addEventListener('alpine:init', () => {
         profileMinTagFreq: 2,
         suggestionMinSummaryLength: 100,
         blockedTerms: '',
+        excludedAudiences: '',
     });
 });

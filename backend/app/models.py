@@ -197,6 +197,8 @@ class AISummary(Base):
     translated_title = Column(
         Text, nullable=True
     )  # Translated title (if different from target language)
+    # Which configured out-of-interest audience the LLM says the article targets
+    excluded_audience = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

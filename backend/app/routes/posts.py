@@ -33,7 +33,10 @@ from app.models import (
     SummaryQueue,
     TopicTag,
 )
-from app.routes.preferences import get_effective_blocked_terms
+from app.routes.preferences import (
+    get_effective_blocked_terms,
+    get_effective_excluded_audiences,
+)
 from app.schemas import (
     MarkReadRequest,
     PostDetail,
@@ -336,6 +339,7 @@ def list_posts(
 
     # Load blocked terms for is_blocked computation
     blocked_terms = get_effective_blocked_terms(db)
+    excluded_audiences = set(get_effective_excluded_audiences(db))
     story_map = get_story_map(db)
     story_read_counts = get_story_read_counts(db, story_map, [p.id for p in posts])
 
@@ -371,6 +375,11 @@ def list_posts(
             "is_blocked": any(
                 title_matches_term((post.title or "").lower(), term)
                 for term in blocked_terms
+            )
+            or bool(
+                summary
+                and summary.excluded_audience
+                and summary.excluded_audience in excluded_audiences
             ),
             "tags": [pt.tag for pt in post.tags],
             "story_id": story_id,
@@ -992,6 +1001,7 @@ async def regenerate_summary(
             existing_summary.summary_pt = summary_text
             existing_summary.one_line_summary = result.one_line_summary
             existing_summary.translated_title = result.translated_title
+            existing_summary.excluded_audience = result.excluded_audience
             existing_summary.created_at = datetime.utcnow()
         else:
             # Create new summary
@@ -1000,6 +1010,7 @@ async def regenerate_summary(
                 summary_pt=summary_text,
                 one_line_summary=result.one_line_summary,
                 translated_title=result.translated_title,
+                excluded_audience=result.excluded_audience,
             )
             db.add(new_summary)
 

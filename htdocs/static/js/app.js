@@ -80,6 +80,8 @@ function app() {
         ignoredTags: new Set(), // Tags ignored for suggestions (loaded from server)
         get blockedTerms() { return Alpine.store('prefs').blockedTerms; },
         set blockedTerms(v) { Alpine.store('prefs').blockedTerms = v; },
+        get excludedAudiences() { return Alpine.store('prefs').excludedAudiences; },
+        set excludedAudiences(v) { Alpine.store('prefs').excludedAudiences = v; },
 
         get feedReverseOrder() { return Alpine.store('prefs').feedReverseOrder; },
         set feedReverseOrder(v) { Alpine.store('prefs').feedReverseOrder = v; },

@@ -754,6 +754,7 @@ class Scheduler:
                             summary_pt=summary_text,
                             one_line_summary=summary_result.one_line_summary,
                             translated_title=summary_result.translated_title,
+                            excluded_audience=summary_result.excluded_audience,
                         ))
                         if summary_result.tags:
                             save_post_tags(db, post.id, summary_result.tags)

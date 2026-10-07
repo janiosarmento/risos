@@ -219,6 +219,9 @@
     "blockedTerms": "Blocked Terms",
     "blockedTermsDesc": "Posts matching these terms in the title will be highlighted. Use % as wildcard (e.g. best % to watch). One term per line.",
     "blockedTermsPlaceholder": "tesla\nsmart home\nbest % to watch",
+    "excludedAudiences": "Excluded Audiences",
+    "excludedAudiencesDesc": "The AI flags new articles written mainly for these audiences and they are highlighted like blocked terms. Articles that only mention the topic in passing are not flagged. One audience per line.",
+    "excludedAudiencesPlaceholder": "gamers",
     "tagMerge": {
       "title": "Tag Consolidation",
       "desc": "Use AI to find and merge near-duplicate tags (e.g. career-advice / career-tips). Review suggestions before applying.",

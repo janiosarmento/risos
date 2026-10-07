@@ -198,6 +198,14 @@ def _parse_summary_result(
         if translated_title.lower() in ("null", "none", ""):
             translated_title = None
 
+    excluded_audience = result.get("excluded_audience")
+    if isinstance(excluded_audience, str):
+        excluded_audience = excluded_audience.strip().lower()
+        if excluded_audience in ("null", "none", "n/a", ""):
+            excluded_audience = None
+    else:
+        excluded_audience = None
+
     tags = normalize_tags(result.get("tags", []), MAX_TAGS)
 
     if bool(summary_pt) != bool(one_line):
@@ -219,6 +227,7 @@ def _parse_summary_result(
         summary_pt=summary_pt,
         one_line_summary=one_line,
         translated_title=translated_title,
+        excluded_audience=excluded_audience,
         tags=tags,
         model=model,
     )

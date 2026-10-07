@@ -12,7 +12,10 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models import AISummary, IgnoredTag, Post
 from app.routes.posts import title_matches_term
-from app.routes.preferences import get_effective_blocked_terms
+from app.routes.preferences import (
+    get_effective_blocked_terms,
+    get_effective_excluded_audiences,
+)
 from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
@@ -103,6 +106,20 @@ def get_suggestion_candidates(
             )
         ]
         logger.debug(f"{len(unread_posts)} posts remaining after blocked terms filter")
+
+    # Filter out posts the LLM flagged as written for an excluded audience
+    excluded_audiences = get_effective_excluded_audiences(db)
+    if excluded_audiences and unread_posts:
+        flagged_hashes = {
+            row.content_hash
+            for row in db.query(AISummary.content_hash).filter(
+                AISummary.excluded_audience.in_(excluded_audiences)
+            )
+        }
+        unread_posts = [p for p in unread_posts if p.content_hash not in flagged_hashes]
+        logger.debug(
+            f"{len(unread_posts)} posts remaining after excluded audiences filter"
+        )
 
     # Find posts with sufficient tag overlap
     candidates = []
