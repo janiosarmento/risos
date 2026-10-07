@@ -107,12 +107,15 @@ def get_user_prompt(
             listing = "\n".join(f"- {a}" for a in audiences)
             prompt += (
                 '\n\nAUDIENCE CHECK — add one extra key, "excluded_audience", to the '
-                "JSON output. Decide who the article is primarily written for. If its "
-                "main audience is one of the audiences below, set the key to that "
-                "audience EXACTLY as written below; otherwise set it to null. An "
-                "article only mentioning the topic in passing, or aimed at a broader "
-                "audience (for example hardware, AI or software readers), is NOT "
-                "primarily for that audience.\n"
+                "JSON output. Judge the article's framing: its main use case, "
+                "examples and advice. If that framing is aimed at one of the "
+                "audiences below, set the key to that audience EXACTLY as written "
+                "below; otherwise set it to null. For gamers, aimed at them means "
+                "video games, game releases, consoles, game stores or deals, or PC "
+                "hardware advice whose use case is gaming. Set null when the topic "
+                "only appears in passing, or when the article serves another "
+                "audience: AI and local models, software development, self-hosting, "
+                "general computing or general consumer tech.\n"
                 f"{listing}"
             )
 
