@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20261007a';</script>
+    <script>var APP_VERSION = '20261007b';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -308,6 +308,21 @@
                                 class="ml-auto text-xs"
                                 :class="filter === 'nosummary' ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
                                 x-text="noSummaryCount"
+                            ></span>
+                        </button>
+                        <!-- Unread posts matching blocked terms or excluded audiences -->
+                        <button
+                            x-show="blockedCount > 0"
+                            @click="postFilter = 'unread'; setFilter('blocked')"
+                            class="w-full text-left px-3 py-2 rounded-[24px] text-sm flex items-center gap-2"
+                            :class="filter === 'blocked' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]' : 'hover:bg-[var(--md-surface-container-highest)]'"
+                        >
+                            <span class="msym text-[16px] text-[var(--md-error)]">visibility_off</span>
+                            <span x-text="t('sidebar.blocked')"></span>
+                            <span
+                                class="ml-auto text-xs"
+                                :class="filter === 'blocked' ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
+                                x-text="blockedCount"
                             ></span>
                         </button>
                     </div>

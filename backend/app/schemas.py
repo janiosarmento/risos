@@ -184,6 +184,7 @@ class PostListResponse(BaseModel):
     starred_count: Optional[int] = None  # Starred posts count for current context
     suggested_count: Optional[int] = None  # AI-suggested posts count
     no_summary_count: Optional[int] = None  # Unread posts that can't be summarized
+    blocked_count: Optional[int] = None  # Unread posts matching blocked terms/audiences
 
 
 class MarkReadRequest(BaseModel):

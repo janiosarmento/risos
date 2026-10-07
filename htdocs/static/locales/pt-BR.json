@@ -29,6 +29,7 @@
     "all": "Todos",
     "starred": "Favoritos",
     "noSummary": "Sem resumo",
+    "blocked": "Bloqueados",
     "suggested": "Sugeridos",
     "regenerateSuggestions": "Regenerar sugestões",
     "regenerating": "Regenerando...",

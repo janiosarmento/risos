@@ -29,6 +29,7 @@
     "all": "All",
     "starred": "Starred",
     "noSummary": "No summary",
+    "blocked": "Blocked",
     "suggested": "Suggested",
     "regenerateSuggestions": "Regenerate suggestions",
     "regenerating": "Regenerating...",

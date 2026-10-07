@@ -165,6 +165,7 @@ function app() {
         starredCount: 0,
         suggestedCount: 0,
         noSummaryCount: 0,
+        blockedCount: 0,
 
         // Post lookup helpers
         // Fold posts that report the same event (same story_id) under the first one
@@ -342,6 +343,8 @@ function app() {
                     if (this.postFilter === 'unread') {
                         params.set('unread_only', 'true');
                     }
+                } else if (this.filter === 'blocked') {
+                    params.set('blocked_only', 'true');
                 } else if (this.postFilter === 'unread') {
                     params.set('unread_only', 'true');
                 }
@@ -832,6 +835,11 @@ function app() {
                 items.push({ type: 'nosummary' });
             }
 
+            // Blocked posts (only if there are any)
+            if (this.blockedCount > 0) {
+                items.push({ type: 'blocked' });
+            }
+
             // Topics — always navigable, regardless of whether the Topics
             // folder is currently expanded in the sidebar: unlike a feed
             // inside a collapsed category, a topic stays the active filter
@@ -876,6 +884,7 @@ function app() {
                 if (item.type === 'unread' && this.filter === 'unread' && !this.selectedTopicId) return true;
                 if (item.type === 'suggested' && this.filter === 'suggested') return true;
                 if (item.type === 'nosummary' && this.filter === 'nosummary') return true;
+                if (item.type === 'blocked' && this.filter === 'blocked') return true;
                 if (item.type === 'topic' && this.selectedTopicId === item.id) return true;
                 if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
                 if (item.type === 'feed' && this.filter === 'feed' && this.filterId === item.id) return true;
@@ -890,6 +899,8 @@ function app() {
                 this.setFilter('suggested');
             } else if (item.type === 'nosummary') {
                 this.setFilter('nosummary');
+            } else if (item.type === 'blocked') {
+                this.setFilter('blocked');
             } else if (item.type === 'topic') {
                 // The Topics folder can be collapsed while one of its topics
                 // is still the active filter (see getNavigableItems()) — if
@@ -1125,6 +1136,8 @@ function app() {
                     if (this.postFilter === 'unread') {
                         params.set('unread_only', 'true');
                     }
+                } else if (this.filter === 'blocked') {
+                    params.set('blocked_only', 'true');
                 } else if (this.postFilter === 'unread') {
                     params.set('unread_only', 'true');
                 }
@@ -1167,6 +1180,9 @@ function app() {
                 }
                 if (data.no_summary_count !== undefined) {
                     this.noSummaryCount = data.no_summary_count;
+                }
+                if (data.blocked_count !== undefined) {
+                    this.blockedCount = data.blocked_count;
                 }
 
                 // Refresh top tags when context changes
@@ -1281,6 +1297,8 @@ function app() {
                 title = this.t('sidebar.suggested');
             } else if (this.filter === 'nosummary') {
                 title = this.t('sidebar.noSummary');
+            } else if (this.filter === 'blocked') {
+                title = this.t('sidebar.blocked');
             } else if (this.filter === 'feed') {
                 const feed = this.feeds.find(f => f.id === this.filterId);
                 title = feed ? feed.title : 'Feed';
@@ -1330,6 +1348,7 @@ function app() {
             }
             if (this.filter === 'suggested') return this.t('sidebar.suggested');
             if (this.filter === 'nosummary') return this.t('sidebar.noSummary');
+            if (this.filter === 'blocked') return this.t('sidebar.blocked');
             if (this.filter === 'starred') return this.t('sidebar.starred');
             if (this.selectedTopicId) {
                 const topic = this.topics.find(t => t.id === this.selectedTopicId);
@@ -1465,6 +1484,9 @@ function app() {
             if (post.skip_summary) {
                 this.noSummaryCount = Math.max(0, this.noSummaryCount + (isRead ? -1 : 1));
             }
+            if (post.is_blocked) {
+                this.blockedCount = Math.max(0, this.blockedCount + (isRead ? -1 : 1));
+            }
             this._adjustTopicUnread(post, isRead ? -1 : 1);
         },
 
@@ -1565,6 +1587,8 @@ function app() {
                 contextName = this.t('sidebar.suggested');
             } else if (this.filter === 'nosummary') {
                 contextName = this.t('sidebar.noSummary');
+            } else if (this.filter === 'blocked') {
+                contextName = this.t('sidebar.blocked');
             } else if (this.filter === 'starred') {
                 contextName = this.t('sidebar.starred');
             } else {

@@ -109,6 +109,27 @@ def title_matches_term(title_lower: str, term: str) -> bool:
     return bool(re.search(pattern, title_lower))
 
 
+def get_blocked_unread_ids(db: Session) -> set[int]:
+    """IDs of unread posts that count as blocked: the title matches a blocked
+    term, or the LLM flagged the summary for an excluded audience."""
+    terms = get_effective_blocked_terms(db)
+    audiences = set(get_effective_excluded_audiences(db))
+    if not terms and not audiences:
+        return set()
+    rows = (
+        db.query(Post.id, Post.title, AISummary.excluded_audience)
+        .outerjoin(AISummary, Post.content_hash == AISummary.content_hash)
+        .filter(Post.is_read.is_(False))
+        .all()
+    )
+    return {
+        row.id
+        for row in rows
+        if (row.excluded_audience and row.excluded_audience in audiences)
+        or any(title_matches_term((row.title or "").lower(), t) for t in terms)
+    }
+
+
 def get_post_or_404(db: Session, post_id: int) -> Post:
     """Fetch post by ID or raise 404."""
     post = db.query(Post).filter(Post.id == post_id).first()
@@ -155,6 +176,7 @@ def _apply_post_filters(
     starred_only: bool = False,
     suggested_only: bool = False,
     no_summary_only: bool = False,
+    blocked_ids: Optional[set[int]] = None,
     search: Optional[str] = None,
 ):
     """Apply the standard post list filters to *query*.
@@ -202,6 +224,9 @@ def _apply_post_filters(
         query = query.filter(Post.is_suggested.is_(True))
     if no_summary_only:
         query = query.filter(Post.skip_summary.is_(True))
+    if blocked_ids is not None:
+        # Blocked view is unread-only: the ids are already unread posts
+        query = query.filter(Post.id.in_(blocked_ids))
     if unread_only:
         query = query.filter(Post.is_read.is_(False))
 
@@ -237,6 +262,9 @@ def list_posts(
     no_summary_only: bool = Query(
         False, description="Only posts the LLM could not summarize"
     ),
+    blocked_only: bool = Query(
+        False, description="Only unread posts matching blocked terms or audiences"
+    ),
     search: Optional[str] = Query(None, description="Search titles and summaries"),
     limit: int = Query(20, ge=1, le=100, description="Post limit"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
@@ -246,6 +274,7 @@ def list_posts(
     """List posts with pagination. Ordered by sort_date, newest first unless
     the feed_reverse_order preference is set."""
     query = db.query(Post).options(subqueryload(Post.tags))
+    blocked_ids = get_blocked_unread_ids(db)
     query, relevant_feed_ids, topic_tags, feed_ids_list = _apply_post_filters(
         query,
         db,
@@ -257,6 +286,7 @@ def list_posts(
         starred_only=starred_only,
         suggested_only=suggested_only,
         no_summary_only=no_summary_only,
+        blocked_ids=blocked_ids if blocked_only else None,
         search=search,
     )
 
@@ -398,6 +428,7 @@ def list_posts(
         starred_count=starred_count,
         suggested_count=suggested_count,
         no_summary_count=no_summary_count,
+        blocked_count=len(blocked_ids),
     )
 
 
