@@ -360,12 +360,12 @@ def update_preferences(
         _unsuggest_blocked_posts(db, lines)
 
     if prefs.excluded_audiences is not None:
-        lines = [
-            ln.strip().lower()
-            for ln in prefs.excluded_audiences.splitlines()
-            if ln.strip()
-        ]
-        _set_setting(db, PREF_EXCLUDED_AUDIENCES, "\n".join(sorted(set(lines))))
+        by_name = {}
+        for ln in prefs.excluded_audiences.splitlines():
+            name, note = parse_audience_line(ln)
+            if name:
+                by_name[name] = f"{name}: {note}" if note else name
+        _set_setting(db, PREF_EXCLUDED_AUDIENCES, "\n".join(sorted(by_name.values())))
 
     if prefs.background_jano_secret_name is not None:
         _set_setting(
@@ -708,12 +708,31 @@ def get_effective_blocked_terms(db: Session) -> list:
     return [line.strip() for line in saved.splitlines() if line.strip()]
 
 
-def get_effective_excluded_audiences(db: Session) -> list:
-    """Get excluded audiences from app_settings. Returns list of lowercase strings."""
+AUDIENCE_NOTE_MAX_LEN = 400
+
+
+def parse_audience_line(line: str) -> tuple[str, str]:
+    """Split an "name: note" audience line into (lowercase name, note).
+
+    The name is the text before the first colon; the note is optional and is
+    capped at AUDIENCE_NOTE_MAX_LEN characters.
+    """
+    name, _, note = line.partition(":")
+    return name.strip().lower(), note.strip()[:AUDIENCE_NOTE_MAX_LEN]
+
+
+def get_effective_excluded_audience_notes(db: Session) -> list[tuple[str, str]]:
+    """Excluded audiences as (lowercase name, note) pairs; note may be empty."""
     saved = _get_setting(db, PREF_EXCLUDED_AUDIENCES)
     if not saved:
         return []
-    return [line.strip().lower() for line in saved.splitlines() if line.strip()]
+    pairs = (parse_audience_line(ln) for ln in saved.splitlines() if ln.strip())
+    return [(name, note) for name, note in pairs if name]
+
+
+def get_effective_excluded_audiences(db: Session) -> list:
+    """Excluded audience names from app_settings, as lowercase strings."""
+    return [name for name, _ in get_effective_excluded_audience_notes(db)]
 
 
 def get_effective_related_posts_limit(db: Session) -> int:

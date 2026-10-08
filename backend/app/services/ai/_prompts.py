@@ -67,7 +67,7 @@ def get_user_prompt(
     """
     if db:
         from app.routes.preferences import (
-            get_effective_excluded_audiences,
+            get_effective_excluded_audience_notes,
             get_effective_tags_per_post,
             get_effective_user_prompt,
         )
@@ -100,25 +100,25 @@ def get_user_prompt(
         "Only use multi-word tags when a single word would be too ambiguous."
     )
 
-    # Ask the model to flag articles written for an out-of-interest audience
+    # Ask the model to flag articles written for an out-of-interest audience.
+    # Per-audience guidance lives in the user's settings ("name: note" lines),
+    # never in this code.
     if db:
-        audiences = get_effective_excluded_audiences(db)
+        audiences = get_effective_excluded_audience_notes(db)
         if audiences:
-            listing = "\n".join(f"- {a}" for a in audiences)
+            listing = "\n".join(
+                f"- {name}: {note}" if note else f"- {name}"
+                for name, note in audiences
+            )
             prompt += (
                 '\n\nAUDIENCE CHECK — add one extra key, "excluded_audience", to the '
                 "JSON output. Judge the article's framing: its main use case, "
-                "examples and advice. If that framing is aimed at one of the "
-                "audiences below, set the key to that audience EXACTLY as written "
-                "below; otherwise set it to null. For gamers, aimed at them means "
-                "video games, game releases, consoles, game stores or deals, or PC "
-                "hardware advice whose use case is gaming. Set null when the topic "
-                "only appears in passing, when the article serves another "
-                "audience: AI and local models, software development, self-hosting, "
-                "general computing or general consumer tech, or when it is a "
-                "technical deep-dive for engineers (reverse engineering, porting, "
-                "system internals, emulation or compatibility layers, graphics or "
-                "driver programming) even if games are its subject.\n"
+                "examples and advice. Set the key to one of the audiences below, "
+                "copied EXACTLY as written before any colon, only if that framing "
+                "is aimed at that audience. If the topic appears only in passing, "
+                "or as a tool, material or component of a project about something "
+                "else, set null. When in doubt, set null. Audience notes, when "
+                "present, take precedence over your own interpretation.\n"
                 f"{listing}"
             )
 

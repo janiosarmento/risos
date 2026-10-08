@@ -383,8 +383,23 @@ async def generate_summary(
             result.summary_pt, engine
         )
 
+    result.excluded_audience = _validate_excluded_audience(result.excluded_audience)
+
     result.duration = time.time() - start_time
     return result
+
+
+def _validate_excluded_audience(flagged: str | None) -> str | None:
+    """Drop audiences the model made up instead of picking from the user's list."""
+    if not flagged:
+        return None
+    from app.routes.preferences import get_effective_excluded_audiences
+
+    db = SessionLocal()
+    try:
+        return flagged if flagged in get_effective_excluded_audiences(db) else None
+    finally:
+        db.close()
 
 
 async def _enforce_summary_language(summary: str, engine: str) -> str:

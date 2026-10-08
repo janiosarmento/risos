@@ -31,3 +31,14 @@ def test_excluded_audience_null_variants_become_none():
 
 def test_missing_key_is_none():
     assert _parse_summary_result(_payload(), False, "m").excluded_audience is None
+
+
+def test_parse_audience_line_splits_name_and_note():
+    from app.routes.preferences import parse_audience_line
+
+    assert parse_audience_line("Gamers: Video games: consoles") == (
+        "gamers",
+        "Video games: consoles",
+    )
+    assert parse_audience_line("  gamers ") == ("gamers", "")
+    assert parse_audience_line("x: " + "a" * 1000)[1] == "a" * 400

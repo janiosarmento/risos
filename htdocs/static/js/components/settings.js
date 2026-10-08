@@ -1102,8 +1102,16 @@ const settingsMixin = {
     },
 
     setExcludedAudiences(value) {
-        const lines = value.split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
-        this.excludedAudiences = [...new Set(lines)].sort().join('\n');
+        // "name: note" lines: only the name is lowercased, the note keeps its case
+        const byName = new Map();
+        for (const raw of value.split('\n')) {
+            const idx = raw.indexOf(':');
+            const name = (idx < 0 ? raw : raw.slice(0, idx)).trim().toLowerCase();
+            if (!name) continue;
+            const note = idx < 0 ? '' : raw.slice(idx + 1).trim();
+            byName.set(name, note ? `${name}: ${note}` : name);
+        }
+        this.excludedAudiences = [...byName.values()].sort().join('\n');
         if (this.authenticated) {
             this.savePreferencesToServer();
             this.loadPosts(true);
