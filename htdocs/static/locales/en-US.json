@@ -209,6 +209,16 @@
     "relatedPostsLimit": "Assistant Limit",
     "relatedPostsLimitDesc": "Maximum number of related posts listed in the AI assistant",
     "resetDefaults": "Reset prompts to defaults",
+    "security": {
+          "title": "Security",
+          "desc": "Change the password used to sign in. Other devices are signed out.",
+          "current": "Current password",
+          "new": "New password (min. 8 characters)",
+          "confirm": "Confirm new password",
+          "submit": "Change password",
+          "mismatch": "The new passwords do not match",
+          "changed": "Password changed"
+    },
     "clearCache": "Clear cache",
     "resetCircuitBreaker": "Reset AI",
     "circuitBreakerReset": "AI circuit breaker reset successfully",

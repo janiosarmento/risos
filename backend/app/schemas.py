@@ -28,6 +28,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    """Request to change the app password"""
+
+    current_password: str
+    new_password: str
+
+
 class UserInfo(BaseModel):
     """Informações do usuário autenticado"""
 

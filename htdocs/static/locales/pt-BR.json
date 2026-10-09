@@ -209,6 +209,16 @@
     "relatedPostsLimit": "Limite do Assistente",
     "relatedPostsLimitDesc": "Número máximo de posts relacionados listados no assistente de IA",
     "resetDefaults": "Restaurar prompts padrão",
+    "security": {
+          "title": "Segurança",
+          "desc": "Altere a senha usada para entrar. Os outros dispositivos serão desconectados.",
+          "current": "Senha atual",
+          "new": "Nova senha (mín. 8 caracteres)",
+          "confirm": "Confirmar nova senha",
+          "submit": "Alterar senha",
+          "mismatch": "As novas senhas não coincidem",
+          "changed": "Senha alterada"
+    },
     "clearCache": "Limpar cache",
     "resetCircuitBreaker": "Resetar IA",
     "circuitBreakerReset": "Circuit breaker da IA resetado com sucesso",

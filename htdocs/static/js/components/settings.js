@@ -15,7 +15,9 @@ const settingsMixin = {
     showSettings: false,
     relatedPostsLimit: 30,
     settingsTab: 'categories',
-    settingsAccordion: { appearance: true, ai: false, data: false, interface: false, tagMerge: false },
+    settingsAccordion: { appearance: true, ai: false, data: false, interface: false, tagMerge: false, security: false },
+    passwordForm: { current: '', next: '', confirm: '' },
+    passwordSaving: false,
     systemStatus: null,
     loadingStatus: false,
 
@@ -1298,6 +1300,30 @@ const settingsMixin = {
             this.showToast(this.t('errors.requestFailed'), 'error');
         } finally {
             this.loadingStatus = false;
+        }
+    },
+
+    async changePassword() {
+        const f = this.passwordForm;
+        if (f.next !== f.confirm) {
+            this.showToast(this.t('settings.security.mismatch'), 'error');
+            return;
+        }
+        this.passwordSaving = true;
+        try {
+            await Alpine.store('auth').fetchApi('/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify({
+                    current_password: f.current,
+                    new_password: f.next,
+                }),
+            });
+            this.passwordForm = { current: '', next: '', confirm: '' };
+            this.showToast(this.t('settings.security.changed'), 'success');
+        } catch (e) {
+            this.showToast(e.message || this.t('errors.requestFailed'), 'error');
+        } finally {
+            this.passwordSaving = false;
         }
     },
 
