@@ -130,6 +130,9 @@ def _build_cleanup_messages(text: str, language_name: str) -> tuple:
         f'technical loanwords as-is (e.g. "chip", "site", "software", '
         f'"iPhone", "GitHub"). Do NOT invent words or awkwardly conjugate '
         f"foreign verbs.\n"
+        f"- Translate idioms and figures of speech by meaning, never word by "
+        f'word (e.g. "blue-collar workers" means manual/industrial workers, '
+        f"not a literal collar color).\n"
         f"- Only translate the parts that are in the wrong language; leave "
         f"already-correct {language_name} text untouched.\n"
         f"- Return ONLY the corrected text: no preamble, no explanation, no "

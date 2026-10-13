@@ -88,6 +88,18 @@ def get_user_prompt(
         tags_count=tags_count,
     )
 
+    # Always append idiom guidance: models translate English idioms word by word
+    # ("blue-collar worker" -> "trabalhador de colarinho azul"), which is nonsense.
+    prompt += (
+        "\n\nTRANSLATE MEANING, NOT WORDS: render English idioms, figures of "
+        "speech and culture-specific expressions with the natural equivalent a "
+        f"native {language or 'Brazilian Portuguese'} writer would use, or a plain "
+        "description of what they mean. Never translate them word by word. "
+        'For example, "blue-collar workers" means manual/industrial workers, '
+        '"white-collar jobs" means office jobs, "low-hanging fruit" means easy '
+        "wins."
+    )
+
     # Always append tag language enforcement (models ignore it when buried in system prompt)
     prompt += (
         "\n\nIMPORTANT: All tags MUST be in English, using lowercase hyphens "
