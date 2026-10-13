@@ -304,9 +304,13 @@ class Scheduler:
         queued or whose queue entries were lost.
         """
         from app.models import AISummary, Post, SummaryQueue
+        from app.routes.preferences import get_effective_blocked_terms
+        from app.services.blocked_terms import title_is_blocked
 
         db = SessionLocal()
         try:
+            blocked_terms = get_effective_blocked_terms(db)
+
             # Find orphaned posts:
             # - Has content_hash
             # - Not in summary_queue
@@ -321,9 +325,15 @@ class Scheduler:
                     ~Post.content_hash.in_(db.query(AISummary.content_hash)),
                 )
                 .order_by(Post.published_at.desc())  # Newer posts first
-                .limit(limit)
                 .all()
             )
+            # Blocked posts stay orphaned on purpose (no LLM call); filter them
+            # before the limit so they can't crowd out real candidates.
+            orphaned_posts = [
+                p
+                for p in orphaned_posts
+                if p.is_starred or not title_is_blocked(p.title, blocked_terms)
+            ][:limit]
 
             if not orphaned_posts:
                 return
@@ -610,6 +620,8 @@ class Scheduler:
         continues the main loop).
         """
         from app.models import AISummary, Post, SummaryQueue
+        from app.routes.preferences import get_effective_blocked_terms
+        from app.services.blocked_terms import title_is_blocked
 
         # Already summarized?
         existing = (
@@ -629,6 +641,18 @@ class Scheduler:
             return None, None, None
 
         if post.is_read and not post.is_starred:
+            db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
+            db.commit()
+            return None, None, None
+
+        # Blocked title: drop background entries without calling the LLM. Not
+        # marked skip_summary, so the post is picked up again if the term is
+        # removed. Explicit requeues (priority > 0) and starred posts still run.
+        if (
+            candidate.priority <= 0
+            and not post.is_starred
+            and title_is_blocked(post.title, get_effective_blocked_terms(db))
+        ):
             db.query(SummaryQueue).filter(SummaryQueue.id == candidate.id).delete()
             db.commit()
             return None, None, None

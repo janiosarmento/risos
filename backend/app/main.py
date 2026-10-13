@@ -198,6 +198,8 @@ def recover_orphaned_queue():
     """
     from app.database import SessionLocal
     from app.models import AISummary, Post, SummaryQueue
+    from app.routes.preferences import get_effective_blocked_terms
+    from app.services.blocked_terms import title_is_blocked
 
     db = SessionLocal()
     try:
@@ -218,8 +220,12 @@ def recover_orphaned_queue():
             logger.info("No orphaned posts found in queue recovery")
             return
 
+        blocked_terms = get_effective_blocked_terms(db)
+
         created_count = 0
         for post in orphaned_posts:
+            if title_is_blocked(post.title, blocked_terms):
+                continue  # Blocked posts are never summarized
             try:
                 # Double-check no race condition
                 existing = db.query(SummaryQueue).filter(

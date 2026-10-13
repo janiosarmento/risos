@@ -390,7 +390,7 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
     if not blocked_terms:
         return
     from app.models import Post
-    from app.routes.posts import title_matches_term
+    from app.services.blocked_terms import title_matches_term
 
     suggested = db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).all()
     count = 0

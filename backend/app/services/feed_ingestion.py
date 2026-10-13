@@ -11,6 +11,8 @@ from urllib.parse import urljoin
 from sqlalchemy.orm import Session
 
 from app.models import Feed, Post, SummaryQueue
+from app.routes.preferences import get_effective_blocked_terms
+from app.services.blocked_terms import title_is_blocked
 from app.services.content_hasher import compute_content_hash
 from app.services.feed_parser import (
     FeedFetchError,
@@ -249,6 +251,9 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
         feed.site_url = parsed_feed.site_url
         result.site_url_updated = True
 
+    # Blocked posts are never summarized, so they don't cost an LLM call
+    blocked_terms = get_effective_blocked_terms(db)
+
     # Process entries
     for entry in parsed_feed.entries:
         try:
@@ -262,8 +267,10 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
                 db.add(post)
                 db.flush()  # Generate post ID
 
-                # Add to summary queue (if has content_hash)
-                if post.content_hash:
+                # Add to summary queue (if has content_hash and not blocked)
+                if post.content_hash and not title_is_blocked(
+                    post.title, blocked_terms
+                ):
                     queue_entry = SummaryQueue(
                         post_id=post.id,
                         content_hash=post.content_hash,

@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import AISummary, IgnoredTag, Post
-from app.routes.posts import title_matches_term
+from app.services.blocked_terms import title_matches_term
 from app.routes.preferences import (
     get_effective_blocked_terms,
     get_effective_excluded_audiences,

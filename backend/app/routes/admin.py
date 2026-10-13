@@ -25,9 +25,11 @@ from app.models import (
     SummaryQueue,
 )
 from app.routes.preferences import (
+    get_effective_blocked_terms,
     get_effective_idle_refresh,
     get_effective_toast_timeout,
 )
+from app.services.blocked_terms import title_is_blocked
 
 logger = logging.getLogger(__name__)
 
@@ -606,9 +608,12 @@ def recover_orphaned_queue(
         )
         .all()
     )
+    blocked_terms = get_effective_blocked_terms(db)
 
     created_count = 0
     for post in orphaned_posts:
+        if title_is_blocked(post.title, blocked_terms):
+            continue  # Blocked posts are never summarized
         try:
             # Check if queue entry already exists (race condition)
             existing = db.query(SummaryQueue).filter(
