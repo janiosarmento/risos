@@ -29,13 +29,14 @@ pytest
 Caveats (verified, not guesses):
 
 - `requirements.txt` has an editable dep on `/opt/jano` that only exists on the
-  deployment host, so a clean `pip install` off that host fails. Review/verify
-  pure logic by reading, or by importing a single module with stubbed constants
-  (`app.services.ai._constants` is the usual stub point).
-- `pytest` needs `APP_PASSWORD` set and can't collect the full suite off the prod
-  host (same `/opt/jano` reason). Real tests that exist: `tests/test_language_gate.py`,
-  `tests/test_feed_parser_fallback.py`, `tests/test_ssh_fallback.py` (async via
-  `@pytest.mark.asyncio`).
+  deployment host, so a plain `pip install -r requirements.txt` off that host
+  fails. Install everything else instead — nothing imports jano at module level:
+  `grep -v /opt/jano requirements.txt | venv/bin/python -m pip install -r /dev/stdin`
+- Run tests as `APP_PASSWORD=x venv/bin/python -m pytest` from `backend/`. The
+  `pytest` on PATH is Homebrew's, which lacks `langdetect`/`feedparser`/`asyncssh`;
+  with it, the language-gate tests fail (detection silently returns nothing) and
+  two modules fail to collect. With the venv, the full suite must pass — every
+  failing test is ours to fix, there is no "pre-existing" excuse.
 - No JS build and no JS test runner. Check frontend edits with
   `node --check htdocs/static/js/<file>.js`.
 
