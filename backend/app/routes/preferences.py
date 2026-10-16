@@ -708,7 +708,7 @@ def get_effective_blocked_terms(db: Session) -> list:
     return [line.strip() for line in saved.splitlines() if line.strip()]
 
 
-AUDIENCE_NOTE_MAX_LEN = 400
+AUDIENCE_NOTE_MAX_LEN = 2000
 
 
 def parse_audience_line(line: str) -> tuple[str, str]:

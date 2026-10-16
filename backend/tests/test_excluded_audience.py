@@ -41,4 +41,4 @@ def test_parse_audience_line_splits_name_and_note():
         "Video games: consoles",
     )
     assert parse_audience_line("  gamers ") == ("gamers", "")
-    assert parse_audience_line("x: " + "a" * 1000)[1] == "a" * 400
+    assert parse_audience_line("x: " + "a" * 3000)[1] == "a" * 2000
