@@ -126,6 +126,7 @@
       "opml": "Import/Export",
       "ai": "AI",
       "topics": "Topics",
+      "blocking": "Blocking",
       "general": "General",
       "status": "Status"
     },
