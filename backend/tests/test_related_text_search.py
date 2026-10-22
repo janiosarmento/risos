@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models import AISummary, Feed, Post, PostTag
-from app.routes.posts import _text_search_related
+from app.routes.posts import _keywords_from_title, _text_search_related
 
 NOW = datetime(2026, 1, 1)
 
@@ -94,3 +94,20 @@ def test_limit_applies_after_whole_word_filter(db):
     _add(db, 10, "Arc Browser update", summary="Arc browser news.")
 
     assert _search(db, ["arc", "browser"], limit=1) == [10]
+
+
+def test_keywords_drop_possessive_suffix():
+    assert _keywords_from_title("China’s Linux and Apple's desktop") == [
+        "apple",
+        "china",
+        "desktop",
+        "linux",
+    ]
+
+
+def test_possessive_matches_its_base_word(db):
+    _add(db, 1, "Apple ships desktop")
+    # SQL LIKE '%apple%' finds "Apple's"; the whole-word check must too.
+    _add(db, 2, "Apple's new desktop")
+
+    assert _search(db, ["apple", "desktop"]) == [2]

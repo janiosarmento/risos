@@ -1817,12 +1817,21 @@ _RELATED_CANDIDATE_FACTOR = 4
 _RELATED_MIN_IDF = 0.1
 
 
+def _related_tokens(text: str) -> list[str]:
+    """Lowercase word tokens; possessives drop their 's ("China's" -> "china")."""
+    text = re.sub(r"['\u2019]s\b", "", text.lower())
+    return re.sub(r"[^\w\s-]", "", text).split()
+
+
 def _keywords_from_title(title: str | None) -> list[str]:
     """Tokenise *title*, drop stop-words and short tokens, return sorted list."""
     if not title:
         return []
-    clean = re.sub(r"[^\w\s-]", "", title.lower())
-    words = [w for w in clean.split() if len(w) >= 3 and w not in _RELATED_STOP_WORDS]
+    words = [
+        w
+        for w in _related_tokens(title)
+        if len(w) >= 3 and w not in _RELATED_STOP_WORDS
+    ]
     return sorted(words)
 
 
@@ -1944,7 +1953,7 @@ def _text_search_related(
             )
             if field
         )
-        candidate_words = re.sub(r"[^\w\s-]", "", candidate_text.lower()).split()
+        candidate_words = _related_tokens(candidate_text)
         candidate_len = max(len(candidate_words), 1)
 
         matched = [kw for kw in keywords if kw in candidate_words]
@@ -2096,9 +2105,7 @@ async def get_related_posts(
     if len(keywords) < 2 and post.title:
         # Fall back to all non-stop title tokens (any length)
         keywords = sorted(
-            w
-            for w in re.sub(r"[^\w\s-]", "", post.title.lower()).split()
-            if w not in _RELATED_STOP_WORDS
+            w for w in _related_tokens(post.title) if w not in _RELATED_STOP_WORDS
         )
 
     posts_list = _text_search_related(
