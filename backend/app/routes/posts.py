@@ -131,6 +131,7 @@ def _apply_post_filters(
     starred_only: bool = False,
     suggested_only: bool = False,
     no_summary_only: bool = False,
+    keep_unread_only: bool = False,
     blocked_ids: Optional[set[int]] = None,
     search: Optional[str] = None,
 ):
@@ -179,6 +180,8 @@ def _apply_post_filters(
         query = query.filter(Post.is_suggested.is_(True))
     if no_summary_only:
         query = query.filter(Post.skip_summary.is_(True))
+    if keep_unread_only:
+        query = query.filter(Post.keep_unread.is_(True))
     if blocked_ids is not None:
         # Blocked view is unread-only: the ids are already unread posts
         query = query.filter(Post.id.in_(blocked_ids))
@@ -217,6 +220,9 @@ def list_posts(
     no_summary_only: bool = Query(
         False, description="Only posts the LLM could not summarize"
     ),
+    keep_unread_only: bool = Query(
+        False, description="Only posts protected by keep_unread"
+    ),
     blocked_only: bool = Query(
         False, description="Only unread posts matching blocked terms or audiences"
     ),
@@ -241,6 +247,7 @@ def list_posts(
         starred_only=starred_only,
         suggested_only=suggested_only,
         no_summary_only=no_summary_only,
+        keep_unread_only=keep_unread_only,
         blocked_ids=blocked_ids if blocked_only else None,
         search=search,
     )
@@ -322,6 +329,11 @@ def list_posts(
         .scalar()
     )
 
+    # keep_unread implies unread (enforced by the toggle), so no is_read filter
+    keep_unread_count = (
+        db.query(func.count(Post.id)).filter(Post.keep_unread.is_(True)).scalar()
+    )
+
     # Load blocked terms for is_blocked computation
     blocked_terms = get_effective_blocked_terms(db)
     excluded_audiences = set(get_effective_excluded_audiences(db))
@@ -383,6 +395,7 @@ def list_posts(
         starred_count=starred_count,
         suggested_count=suggested_count,
         no_summary_count=no_summary_count,
+        keep_unread_count=keep_unread_count,
         blocked_count=len(blocked_ids),
     )
 

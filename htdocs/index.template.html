@@ -61,7 +61,7 @@
     <script src="/static/vendor/tippy-bundle.umd.min.js?v={{APP_VERSION}}"></script>
     <script src="/static/vendor/purify.min.js?v={{APP_VERSION}}"></script>
     <!-- App version — single source of truth. Assembler replaces {{APP_VERSION}} in all ?v= below -->
-    <script>var APP_VERSION = '20261016a';</script>
+    <script>var APP_VERSION = '20261022a';</script>
     <link rel="stylesheet" href="/static/css/app.css?v={{APP_VERSION}}">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
@@ -308,6 +308,21 @@
                                 class="ml-auto text-xs"
                                 :class="filter === 'nosummary' ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
                                 x-text="noSummaryCount"
+                            ></span>
+                        </button>
+                        <!-- Posts protected by keep-unread -->
+                        <button
+                            x-show="keepUnreadCount > 0"
+                            @click="postFilter = 'unread'; setFilter('keepunread')"
+                            class="w-full text-left px-3 py-2 rounded-[24px] text-sm flex items-center gap-2"
+                            :class="filter === 'keepunread' ? 'bg-[var(--md-secondary-container)] text-[var(--md-on-secondary-container)]' : 'hover:bg-[var(--md-surface-container-highest)]'"
+                        >
+                            <span class="msym msym-fill text-[16px] text-blue-600 dark:text-blue-400">lock</span>
+                            <span x-text="t('sidebar.keepUnread')"></span>
+                            <span
+                                class="ml-auto text-xs"
+                                :class="filter === 'keepunread' ? 'text-[var(--md-on-secondary-container)]' : 'text-[var(--md-primary)]'"
+                                x-text="keepUnreadCount"
                             ></span>
                         </button>
                         <!-- Unread posts matching blocked terms or excluded audiences -->

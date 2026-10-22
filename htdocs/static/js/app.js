@@ -165,6 +165,7 @@ function app() {
         starredCount: 0,
         suggestedCount: 0,
         noSummaryCount: 0,
+        keepUnreadCount: 0,
         blockedCount: 0,
 
         // Post lookup helpers
@@ -343,6 +344,8 @@ function app() {
                     if (this.postFilter === 'unread') {
                         params.set('unread_only', 'true');
                     }
+                } else if (this.filter === 'keepunread') {
+                    params.set('keep_unread_only', 'true');
                 } else if (this.filter === 'blocked') {
                     params.set('blocked_only', 'true');
                 } else if (this.postFilter === 'unread') {
@@ -835,6 +838,11 @@ function app() {
                 items.push({ type: 'nosummary' });
             }
 
+            // Posts protected by keep-unread (only if there are any)
+            if (this.keepUnreadCount > 0) {
+                items.push({ type: 'keepunread' });
+            }
+
             // Blocked posts (only if there are any)
             if (this.blockedCount > 0) {
                 items.push({ type: 'blocked' });
@@ -884,6 +892,7 @@ function app() {
                 if (item.type === 'unread' && this.filter === 'unread' && !this.selectedTopicId) return true;
                 if (item.type === 'suggested' && this.filter === 'suggested') return true;
                 if (item.type === 'nosummary' && this.filter === 'nosummary') return true;
+                if (item.type === 'keepunread' && this.filter === 'keepunread') return true;
                 if (item.type === 'blocked' && this.filter === 'blocked') return true;
                 if (item.type === 'topic' && this.selectedTopicId === item.id) return true;
                 if (item.type === 'category' && this.filter === 'category' && this.filterId === item.id) return true;
@@ -899,6 +908,8 @@ function app() {
                 this.setFilter('suggested');
             } else if (item.type === 'nosummary') {
                 this.setFilter('nosummary');
+            } else if (item.type === 'keepunread') {
+                this.setFilter('keepunread');
             } else if (item.type === 'blocked') {
                 this.setFilter('blocked');
             } else if (item.type === 'topic') {
@@ -1136,6 +1147,8 @@ function app() {
                     if (this.postFilter === 'unread') {
                         params.set('unread_only', 'true');
                     }
+                } else if (this.filter === 'keepunread') {
+                    params.set('keep_unread_only', 'true');
                 } else if (this.filter === 'blocked') {
                     params.set('blocked_only', 'true');
                 } else if (this.postFilter === 'unread') {
@@ -1180,6 +1193,9 @@ function app() {
                 }
                 if (data.no_summary_count !== undefined) {
                     this.noSummaryCount = data.no_summary_count;
+                }
+                if (data.keep_unread_count !== undefined) {
+                    this.keepUnreadCount = data.keep_unread_count;
                 }
                 if (data.blocked_count !== undefined) {
                     this.blockedCount = data.blocked_count;
@@ -1297,6 +1313,8 @@ function app() {
                 title = this.t('sidebar.suggested');
             } else if (this.filter === 'nosummary') {
                 title = this.t('sidebar.noSummary');
+            } else if (this.filter === 'keepunread') {
+                title = this.t('sidebar.keepUnread');
             } else if (this.filter === 'blocked') {
                 title = this.t('sidebar.blocked');
             } else if (this.filter === 'feed') {
@@ -1348,6 +1366,7 @@ function app() {
             }
             if (this.filter === 'suggested') return this.t('sidebar.suggested');
             if (this.filter === 'nosummary') return this.t('sidebar.noSummary');
+            if (this.filter === 'keepunread') return this.t('sidebar.keepUnread');
             if (this.filter === 'blocked') return this.t('sidebar.blocked');
             if (this.filter === 'starred') return this.t('sidebar.starred');
             if (this.selectedTopicId) {
@@ -1448,6 +1467,7 @@ function app() {
 
         async toggleKeepUnread(post) {
             const wasRead = post.is_read;
+            const wasKept = post.keep_unread;
             try {
                 const data = await this.fetchApi(`/posts/${post.id}/keep-unread`, {
                     method: 'PATCH',
@@ -1458,6 +1478,9 @@ function app() {
                     is_read: data.is_read,
                     read_at: data.read_at,
                 });
+                if (data.keep_unread !== wasKept) {
+                    this.keepUnreadCount = Math.max(0, this.keepUnreadCount + (data.keep_unread ? 1 : -1));
+                }
 
                 // If post was forced back to unread, update counters
                 if (wasRead && !data.is_read) {
@@ -1587,6 +1610,8 @@ function app() {
                 contextName = this.t('sidebar.suggested');
             } else if (this.filter === 'nosummary') {
                 contextName = this.t('sidebar.noSummary');
+            } else if (this.filter === 'keepunread') {
+                contextName = this.t('sidebar.keepUnread');
             } else if (this.filter === 'blocked') {
                 contextName = this.t('sidebar.blocked');
             } else if (this.filter === 'starred') {
