@@ -17,6 +17,9 @@ REFACTOR.md
 # Claude Code
 .claude/
 
+# Recall (local session-context capture tool)
+.recall/
+
 # Python
 __pycache__/
 *.py[cod]
