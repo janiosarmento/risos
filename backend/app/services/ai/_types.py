@@ -78,7 +78,8 @@ class SummaryResult:
     duration: float = 0.0
 
     def get_summary_with_signature(self) -> str:
-        """Returns the summary text appended with the model name, timestamp and generation duration."""
+        """Returns the summary text appended with the model name, timestamp
+        and generation duration."""
         if not self.summary_pt:
             return ""
         if not self.model:

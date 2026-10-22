@@ -299,13 +299,16 @@ async def suggest_tags_for_topic(
         "Topic names may be in any language (e.g. Portuguese)."
     )
 
-    user_prompt = f"""The user has a topic called "{topic.name}" with these tags already assigned: {current_tags}
+    user_prompt = f"""The user has a topic called "{topic.name}" \
+with these tags already assigned: {current_tags}
 
 Here are unassigned tags (with post counts):
 
 {tags_list}
 
-Which of these tags belong in the topic "{topic.name}"? Select ONLY tags that genuinely fit this topic. Be selective — it's better to miss a tag than to include one that doesn't belong.
+Which of these tags belong in the topic "{topic.name}"? \
+Select ONLY tags that genuinely fit this topic. Be selective — \
+it's better to miss a tag than to include one that doesn't belong.
 
 Respond ONLY in JSON:
 {{
@@ -372,7 +375,8 @@ async def suggest_topics(
         "Create coherent, useful groupings that help the user navigate their reading."
     )
 
-    user_prompt = f"""Here are the most frequent tags in this RSS reader, with post counts:
+    user_prompt = f"""Here are the most frequent tags in this RSS reader, \
+with post counts:
 
 {tags_with_counts}
 {existing_block}

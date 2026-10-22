@@ -12,13 +12,13 @@ from urllib.parse import urlparse
 import feedparser
 import httpx
 
-logger = logging.getLogger(__name__)
-
-# Configuration
 from app.config import USER_AGENT
 from app.services.ssh_fallback import socks_tunnel
 from app.services.url_safety import is_safe_external_url
 
+logger = logging.getLogger(__name__)
+
+# Configuration
 TIMEOUT_SECONDS = 30
 MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_REDIRECTS = 3
@@ -163,12 +163,14 @@ async def _fetch_feed_content_once(
 
                     if not is_safe:
                         logger.warning(
-                            f"Redirect to different domain: {current_url} -> {redirect_url}"
+                            f"Redirect to different domain: {current_url} -> "
+                            f"{redirect_url}"
                         )
 
                     if response.status_code == 301:
                         logger.info(
-                            f"Permanent redirect (301): {current_url} -> {redirect_url}. "
+                            f"Permanent redirect (301): {current_url} -> "
+                            f"{redirect_url}. "
                             "Consider updating the feed URL manually."
                         )
 
@@ -187,7 +189,8 @@ async def _fetch_feed_content_once(
                 content_length = response.headers.get("content-length")
                 if content_length and int(content_length) > MAX_SIZE_BYTES:
                     raise FeedFetchError(
-                        f"Feed too large: {int(content_length)} bytes (max: {MAX_SIZE_BYTES})"
+                        f"Feed too large: {int(content_length)} bytes (max: "
+                        f"{MAX_SIZE_BYTES})"
                     )
 
                 # Read content with limit

@@ -22,20 +22,6 @@ from app.services.ai._constants import (
     RATE_LIMIT_COOLDOWN_SECONDS,
     SUMMARY_TEMPERATURE,
 )
-
-# Sentinel key used for local endpoints (e.g. LM Studio) that don't require auth.
-_LOCAL_API_KEY_SENTINEL = "lm-studio"
-
-
-def _resolve_api_key(api_key: Optional[str], base_url: str) -> Optional[str]:
-    """Return api_key, falling back to sentinel for non-default (local) endpoints."""
-    if api_key:
-        return api_key
-    if base_url and base_url.rstrip("/") != DEFAULT_API_BASE_URL.rstrip("/"):
-        return _LOCAL_API_KEY_SENTINEL
-    return None
-
-
 from app.services.ai._infrastructure import (  # noqa: F401
     api_key_rotator,
 )
@@ -59,7 +45,21 @@ from app.services.ai._types import (
 
 logger = logging.getLogger(__name__)
 
-# Global locks: separate locks so background batch processing doesn't block on-demand calls
+# Sentinel key used for local endpoints (e.g. LM Studio) that don't require auth.
+_LOCAL_API_KEY_SENTINEL = "lm-studio"
+
+
+def _resolve_api_key(api_key: Optional[str], base_url: str) -> Optional[str]:
+    """Return api_key, falling back to sentinel for non-default (local) endpoints."""
+    if api_key:
+        return api_key
+    if base_url and base_url.rstrip("/") != DEFAULT_API_BASE_URL.rstrip("/"):
+        return _LOCAL_API_KEY_SENTINEL
+    return None
+
+
+# Global locks: separate locks so background batch processing doesn't block
+# on-demand calls
 _api_lock_ondemand = asyncio.Lock()
 _api_lock_background = asyncio.Lock()
 

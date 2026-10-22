@@ -6,7 +6,7 @@ Usage:
     python scripts/regenerate.py                          # tagless posts (default)
     python scripts/regenerate.py --starred                # ALL starred (force re-gen)
     python scripts/regenerate.py --unread                 # unread without tags
-    python scripts/regenerate.py --unread --starred       # unread OR starred, without tags
+    python scripts/regenerate.py --unread --starred       # unread OR starred, no tags
     python scripts/regenerate.py --local                  # use Ollama
     python scripts/regenerate.py --batch-size 200         # limit total posts
 """

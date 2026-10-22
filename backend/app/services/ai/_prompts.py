@@ -100,7 +100,8 @@ def get_user_prompt(
         "wins."
     )
 
-    # Always append tag language enforcement (models ignore it when buried in system prompt)
+    # Always append tag language enforcement (models ignore it when buried in
+    # the system prompt)
     prompt += (
         "\n\nIMPORTANT: All tags MUST be in English, using lowercase hyphens "
         '(e.g. "open-source", "artificial-intelligence"). '
@@ -140,7 +141,8 @@ def get_user_prompt(
             tags_str = ", ".join(popular)
             prompt += (
                 "\n\nPREFERRED TAGS — reuse these when they fit the article's topics "
-                "(only create a new tag if none of these adequately describe a topic):\n"
+                "(only create a new tag if none of these adequately describe a "
+                "topic):\n"
                 f"{tags_str}"
             )
 

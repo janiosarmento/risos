@@ -7,18 +7,16 @@ Updates post_tags rows in-place and also updates user_profile tags.
 """
 
 import asyncio
+import json
+import logging
 import os
 import re
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import json
-import logging
-
 import httpx
 
-logger = logging.getLogger(__name__)
+# Make the backend package importable when run as a standalone script
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.config import USER_AGENT
 from app.database import SessionLocal
@@ -31,6 +29,8 @@ from app.services.ai._constants import (
 )
 from app.services.ai._infrastructure import api_key_rotator
 from app.services.ai._parsing import normalize_tag
+
+logger = logging.getLogger(__name__)
 
 # Portuguese patterns to detect non-English tags (even without accents)
 PT_PATTERNS = [
@@ -61,11 +61,19 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
     messages = [
         {
             "role": "system",
-            "content": "You translate tags to English. Reply with ONLY the comma-separated translated tags, nothing else. Keep the EXACT same order and count as input.",
+            "content": (
+                "You translate tags to English. Reply with ONLY the "
+                "comma-separated translated tags, nothing else. Keep the EXACT "
+                "same order and count as input."
+            ),
         },
         {
             "role": "user",
-            "content": f"Translate these tags to English (keep brand names, proper nouns, and already-English tags exactly as-is; use lowercase hyphens): {tags_str}",
+            "content": (
+                "Translate these tags to English (keep brand names, proper "
+                "nouns, and already-English tags exactly as-is; use lowercase "
+                f"hyphens): {tags_str}"
+            ),
         },
     ]
 
@@ -113,7 +121,8 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
 
         if len(translated) != len(tags):
             print(
-                f"  WARNING [{key_label}]: sent {len(tags)} tags, got {len(translated)} back"
+                f"  WARNING [{key_label}]: sent {len(tags)} tags, got "
+                f"{len(translated)} back"
             )
             if len(translated) < len(tags) // 2:
                 return {}
@@ -210,7 +219,8 @@ async def main():
             db.commit()
             total_translated += len(mapping)
             print(
-                f"  Translated {len(mapping)} tags, {total_rows_updated} rows updated so far"
+                f"  Translated {len(mapping)} tags, {total_rows_updated} rows updated "
+                "so far"
             )
             for old, new in sorted(mapping.items()):
                 print(f"    {old} -> {new}")
@@ -250,7 +260,8 @@ async def main():
 
     db.close()
     print(
-        f"\nDone! Translated {total_translated} distinct tags, {total_rows_updated} total rows."
+        f"\nDone! Translated {total_translated} distinct tags, {total_rows_updated} "
+        "total rows."
     )
 
 

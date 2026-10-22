@@ -71,7 +71,8 @@ def login(request: Request, credentials: LoginRequest, db: Session = Depends(get
         value=session_id,
         httponly=True,
         samesite="lax",
-        secure=settings.cookie_secure,  # True in production; set COOKIE_SECURE=false for local HTTP dev
+        # True in production; set COOKIE_SECURE=false for local HTTP dev
+        secure=settings.cookie_secure,
         max_age=COOKIE_MAX_AGE,
         path="/",
     )

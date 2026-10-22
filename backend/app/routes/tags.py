@@ -391,11 +391,12 @@ async def suggest_merges(
                     candidate_pool.update(segment_to_tags[p])
 
         # Heuristic 5: Levenshtein spelling check (restricted strictly to distance <= 1)
-        # Only checked against tags of similar length starting with the same first character
+        # Only checked against tags of similar length starting with the same
+        # first character
         if len(t1_clean) >= 4:
             first_char = t1_clean[0]
-            for l in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
-                for t2 in tags_by_len_and_first_char[(l, first_char)]:
+            for length in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
+                for t2 in tags_by_len_and_first_char[(length, first_char)]:
                     t2_clean = tag_metadata[t2]["clean"]
                     # Strict distance <= 1 check
                     if _edit_dist(t1_clean, t2_clean) <= 1:
@@ -449,13 +450,20 @@ async def suggest_merges(
         "should be merged into a single canonical tag."
     )
 
-    user_prompt = f"""I have pre-grouped some tags that are potential synonyms or near-duplicates. For each group, evaluate if they are indeed true synonyms or duplicates.
+    user_prompt = f"""I have pre-grouped some tags that are potential synonyms \
+or near-duplicates. For each group, evaluate if they are indeed true synonyms \
+or duplicates.
 
 IMPORTANT Rules:
-- Choose the most descriptive, commonly-used tag as the canonical form (prefer the one with the higher post count).
+- Choose the most descriptive, commonly-used tag as the canonical form \
+(prefer the one with the higher post count).
 - Only group tags that truly mean the same thing.
-- Tags that are distinct concepts should NOT be grouped (e.g. 'ai' and 'ai-ethics' are different).
-- Do NOT merge different versions, generations, or numerical values (e.g., '4g' and '5g' are different, 'ipv4' and 'ipv6' are different, '2k' and '4k' are different, 'react-17' and 'react-18' are different, 'python2' and 'python3' are different).
+- Tags that are distinct concepts should NOT be grouped \
+(e.g. 'ai' and 'ai-ethics' are different).
+- Do NOT merge different versions, generations, or numerical values \
+(e.g., '4g' and '5g' are different, 'ipv4' and 'ipv6' are different, \
+'2k' and '4k' are different, 'react-17' and 'react-18' are different, \
+'python2' and 'python3' are different).
 - If a group contains no true duplicates/synonyms, skip it entirely.
 
 Here are the candidate groups to evaluate:
@@ -494,7 +502,8 @@ If no true duplicates/synonyms are found, return {{"groups": []}}"""
                 e,
             )
 
-    # Validate: only include tags that actually existed in the generated candidate groups
+    # Validate: only include tags that actually existed in the generated
+    # candidate groups
     available = {tag for g in groups_to_eval for tag in g}
     groups = []
     for g in result.get("groups", []):

@@ -297,10 +297,18 @@ async def extract_full_content(url: str) -> ExtractedContent:
             response = await client.get(
                 url,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                    "User-Agent": (
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/128.0.0.0 Safari/537.36"
+                    ),
+                    "Accept": (
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+                        "image/avif,image/webp,image/apng,*/*;q=0.8"
+                    ),
                     "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
-                    "Accept-Encoding": "gzip, deflate",  # No brotli (br) - httpx doesn't support it
+                    # No brotli (br) - httpx doesn't support it
+                    "Accept-Encoding": "gzip, deflate",
                     "DNT": "1",
                     "Connection": "keep-alive",
                     "Upgrade-Insecure-Requests": "1",
@@ -317,7 +325,8 @@ async def extract_full_content(url: str) -> ExtractedContent:
                 # Check if it's a Cloudflare block
                 if _is_cloudflare_blocked(response.status_code, response.text):
                     logger.info(
-                        f"Cloudflare block detected for {url} (HTTP {response.status_code})"
+                        f"Cloudflare block detected for {url} (HTTP "
+                        f"{response.status_code})"
                     )
                     use_curl_fallback = True
                 else:

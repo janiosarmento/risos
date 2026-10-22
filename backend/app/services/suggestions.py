@@ -70,7 +70,8 @@ def get_suggestion_candidates(
         return []
 
     logger.debug(
-        f"Finding candidates with min {min_tag_overlap} tags overlap (profile has {len(profile_tags)} tags)"
+        f"Finding candidates with min {min_tag_overlap} tags overlap (profile has "
+        f"{len(profile_tags)} tags)"
     )
 
     # Get unread posts with their tags
@@ -134,7 +135,8 @@ def get_suggestion_candidates(
         if overlap_count >= min_tag_overlap:
             candidates.append((post, overlap_count))
             logger.debug(
-                f"Candidate: '{post.title[:50]}...' with {overlap_count} tags in common: {common_tags}"
+                f"Candidate: '{post.title[:50]}...' with {overlap_count} tags in "
+                f"common: {common_tags}"
             )
 
     # Sort by overlap count (highest first)
@@ -185,7 +187,8 @@ def process_suggestion_candidates(db: Session) -> int:
         post.suggested_at = now
         suggested_count += 1
         logger.info(
-            f"Suggested: '{post.title[:50]}...' (score: {score}, overlap: {overlap_count})"
+            f"Suggested: '{post.title[:50]}...' (score: {score}, overlap: "
+            f"{overlap_count})"
         )
 
     db.commit()

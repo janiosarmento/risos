@@ -665,7 +665,8 @@ async def get_post(
             summary_status = "ready"
         elif not post.skip_summary:
             # No summary yet. Check if already in background queue.
-            # Never auto-enqueue on open — only explicit user action triggers generation.
+            # Never auto-enqueue on open — only explicit user action triggers
+            # generation.
             existing_queue = (
                 db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
             )

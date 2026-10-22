@@ -138,7 +138,8 @@ async def call_llm_with_retry(
             )
             if is_retryable and attempt < MAX_RETRIES:
                 log(
-                    f"    Retry {attempt}/{MAX_RETRIES} after error: {e} (waiting {RETRY_WAIT}s)"
+                    f"    Retry {attempt}/{MAX_RETRIES} after error: {e} (waiting "
+                    f"{RETRY_WAIT}s)"
                 )
                 await asyncio.sleep(RETRY_WAIT)
             else:
@@ -236,7 +237,8 @@ def build_cluster_prompt(clusters: list, tag_counts: dict) -> str:
     return (
         "I have pre-grouped these tags by shared word stems. For each group, decide:\n"
         "- Which tags are TRUE synonyms/duplicates that should be merged?\n"
-        "- Pick the most descriptive, commonly-used tag as canonical (prefer higher post counts)\n"
+        "- Pick the most descriptive, commonly-used tag as canonical (prefer higher "
+        "post counts)\n"
         "- Tags that are distinct concepts must NOT be merged "
         "(e.g. 'data-science' and 'data-privacy' are different)\n"
         "- A group may have NO true duplicates — skip it entirely\n\n"
@@ -286,7 +288,8 @@ async def refine_clusters_with_llm(
         batches.append([cluster])
 
     log(
-        f"Phase 2: {len(batches)} LLM batches ({len(small)} small clusters, {len(large)} large clusters)"
+        f"Phase 2: {len(batches)} LLM batches ({len(small)} small clusters, "
+        f"{len(large)} large clusters)"
     )
 
     all_groups = []
@@ -354,24 +357,30 @@ async def catch_all_ungrouped(
     for i, batch in enumerate(batches, 1):
         tags_list = "\n".join(f"- {tag} ({tag_counts[tag]} posts)" for tag in batch)
         prompt = (
-            f"Here are {len(batch)} tags that had no obvious word-stem overlap with other tags.\n"
+            f"Here are {len(batch)} tags that had no obvious word-stem overlap with "
+            "other tags.\n"
             "Look especially for:\n"
-            "- Acronyms and their expansions (e.g. 'ai' and 'artificial-intelligence')\n"
-            "- Semantic synonyms with different wording (e.g. 'privacy' and 'data-privacy')\n"
+            "- Acronyms and their expansions (e.g. 'ai' and "
+            "'artificial-intelligence')\n"
+            "- Semantic synonyms with different wording (e.g. 'privacy' and "
+            "'data-privacy')\n"
             "- Spelling variations\n\n"
             f"{tags_list}\n\n"
             "Group any tags that are synonyms or near-duplicates.\n"
-            "Pick the most descriptive, commonly-used tag as canonical (prefer higher post counts).\n"
+            "Pick the most descriptive, commonly-used tag as canonical (prefer higher "
+            "post counts).\n"
             "Tags that are distinct concepts should NOT be grouped.\n\n"
             "Respond ONLY in JSON:\n"
-            '{"groups": [{"canonical": "best-tag", "merge": ["synonym1", "synonym2"]}]}\n'
+            '{"groups": [{"canonical": "best-tag", "merge": ["synonym1", '
+            '"synonym2"]}]}\n'
             'If no duplicates are found, return {"groups": []}'
         )
 
         valid_tags = set(batch)
         sample = batch[:5]
         log(
-            f"  Batch {i}/{len(batches)}: sending {len(batch)} tags to LLM (e.g. {', '.join(sample)})..."
+            f"  Batch {i}/{len(batches)}: sending {len(batch)} tags to LLM (e.g. "
+            f"{', '.join(sample)})..."
         )
 
         try:
@@ -485,7 +494,8 @@ async def main():
     clusters, ungrouped = build_stem_clusters(tag_counts, args.max_fan_out)
     clustered_count = sum(len(c) for c in clusters)
     log(
-        f"Found {len(clusters)} clusters ({clustered_count} tags), {len(ungrouped)} ungrouped\n"
+        f"Found {len(clusters)} clusters ({clustered_count} tags), {len(ungrouped)} "
+        "ungrouped\n"
     )
 
     if args.phase == 1:

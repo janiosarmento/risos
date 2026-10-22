@@ -52,7 +52,8 @@ def main():
         print("\n--- Database Metrics ---")
         print(f"Total distinct tags: {total_tags}")
         print(
-            f"Active batch tags in alphabetical window (offset {offset}, size {batch_size}): {len(rows)}"
+            f"Active batch tags in alphabetical window (offset {offset}, size "
+            f"{batch_size}): {len(rows)}"
         )
         print(f"Total unique tags in DB: {len(all_rows)}")
 
@@ -84,7 +85,8 @@ def main():
             seg for seg, tags in segment_to_tags.items() if len(tags) > 5
         }
         print(
-            f"Generic segments (>5 tags): {len(generic_segments)} identified (out of {len(segment_to_tags)} total)"
+            f"Generic segments (>5 tags): {len(generic_segments)} identified (out of "
+            f"{len(segment_to_tags)} total)"
         )
 
         # 5. Build hyphenless_to_tags index (For exact hyphen difference)
@@ -158,12 +160,14 @@ def main():
                     if p in segment_to_tags:
                         candidate_pool.update(segment_to_tags[p])
 
-            # Heuristic 5: Levenshtein spelling check (restricted strictly to distance <= 1)
-            # Only checked against tags of similar length starting with the same first character
+            # Heuristic 5: Levenshtein spelling check (restricted strictly to
+            # distance <= 1)
+            # Only checked against tags of similar length starting with the same
+            # first character
             if len(t1_clean) >= 4:
                 first_char = t1_clean[0]
-                for l in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
-                    for t2 in tags_by_len_and_first_char[(l, first_char)]:
+                for length in [len(t1_clean) - 1, len(t1_clean), len(t1_clean) + 1]:
+                    for t2 in tags_by_len_and_first_char[(length, first_char)]:
                         t2_clean = tag_metadata[t2]["clean"]
                         # Strict distance <= 1 check
                         if _edit_dist(t1_clean, t2_clean) <= 1:
@@ -197,7 +201,8 @@ def main():
         print("\n--- Candidate Groups Details ---")
         if not groups_to_eval:
             print(
-                "No groups found. Short-circuit occurred (runs instantly, no LLM call required)."
+                "No groups found. Short-circuit occurred (runs instantly, no LLM call "
+                "required)."
             )
         else:
             for i, g in enumerate(groups_to_eval, 1):

@@ -4,7 +4,8 @@ Stores locale, theme, AI settings, and data settings in app_settings table.
 """
 
 import logging
-from typing import Optional
+from dataclasses import dataclass
+from typing import Any, Callable, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -433,9 +434,6 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
 # Used by get_preferences(), update_preferences(), and every get_effective_*().
 # =============================================================================
 
-from dataclasses import dataclass
-from typing import Any, Callable
-
 
 def _cast_int(val: Any) -> int | None:
     if val is None:
@@ -580,7 +578,7 @@ def _get_effective(db: Session, name: str) -> Any:
 
 
 def _resolve_spec(prefs: dict, name: str) -> Any:
-    """Like _get_effective but from a pre-fetched key→value dict (avoids N+1 queries)."""
+    """Like _get_effective but from a pre-fetched key→value dict (no N+1)."""
     spec = PREF_SPEC.get(name)
     if spec is None:
         return None
@@ -693,7 +691,8 @@ def get_effective_profile_min_tag_freq(db: Session) -> int:
 
 
 def get_effective_suggestion_min_summary_length(db: Session) -> int:
-    """Min translated summary length (chars) for a post to be eligible for suggestions (default: 100)."""
+    """Min translated summary length (chars) for a post to be eligible for
+    suggestions (default: 100)."""
     return _get_effective(db, "suggestion_min_summary_length")
 
 

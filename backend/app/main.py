@@ -21,6 +21,18 @@ from alembic import command
 from app.config import settings
 from app.database import engine
 from app.rate_limiter import limiter
+from app.routes import (
+    admin,
+    auth,
+    categories,
+    feeds,
+    posts,
+    preferences,
+    proxy,
+    suggestions,
+    tags,
+    topics,
+)
 from app.services.ai._types import (
     CircuitBreakerOpen,
     ModelNotFound,
@@ -136,7 +148,8 @@ def check_database_integrity():
 
             logger.info("Database integrity check passed")
 
-        # Libera todas as conexões físicas do pool do SQLite para evitar locks residuais antes do Alembic
+        # Release every physical connection in the SQLite pool so no stale
+        # lock survives into the Alembic run
         engine.dispose()
 
     except Exception as e:
@@ -318,7 +331,8 @@ async def handle_circuit_breaker_open(request: Request, exc: CircuitBreakerOpen)
     return JSONResponse(
         status_code=502,
         content={
-            "detail": "AI is temporarily paused after repeated errors. Try again in a few minutes."
+            "detail": "AI is temporarily paused after repeated errors. "
+            "Try again in a few minutes."
         },
     )
 
@@ -379,19 +393,6 @@ async def health_check():
 
 
 # Include routers
-from app.routes import (
-    admin,
-    auth,
-    categories,
-    feeds,
-    posts,
-    preferences,
-    proxy,
-    suggestions,
-    tags,
-    topics,
-)
-
 app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(feeds.router, prefix="/api")
