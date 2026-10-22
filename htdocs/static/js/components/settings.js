@@ -13,7 +13,7 @@
 const settingsMixin = {
     // --- State ---
     showSettings: false,
-    relatedPostsLimit: 30,
+    relatedPostsLimit: 15,
     settingsTab: 'categories',
     settingsAccordion: { appearance: true, ai: false, data: false, interface: false, tagMerge: false, security: false },
     passwordForm: { current: '', next: '', confirm: '' },
@@ -1062,7 +1062,7 @@ const settingsMixin = {
     },
 
     setRelatedPostsLimit(value) {
-        this.relatedPostsLimit = parseInt(value) || 30;
+        this.relatedPostsLimit = parseInt(value) || 15;
         if (this.authenticated) this.savePreferencesToServer();
     },
 

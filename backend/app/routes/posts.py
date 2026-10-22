@@ -1811,10 +1811,12 @@ _RELATED_STOP_WORDS: set[str] = {
 }
 
 
-# How many SQL candidates to fetch per result slot in the related-posts
-# search, since the whole-word filter drops substring-only LIKE hits.
+# How many FTS candidates to fetch per result slot in the related-posts
+# search, since the common-tag filter is applied after ranking.
 _RELATED_CANDIDATE_FACTOR = 4
-_RELATED_MIN_IDF = 0.1
+
+# BM25 column weights for posts_fts: title, translated_title, one_line, summary.
+_RELATED_BM25_WEIGHTS = "5.0, 5.0, 2.0, 1.0"
 
 
 def _related_tokens(text: str) -> list[str]:
@@ -1845,141 +1847,76 @@ def _text_search_related(
     include_unread: bool,
     min_common_tags: int,
 ) -> list[dict]:
-    """Keyword TF-IDF search (Part A).  Returns scored post dicts or []."""
-    import math
+    """Full-text search over posts_fts, ranked by BM25 (Part A).
 
-    from sqlalchemy import case, or_
+    Any keyword may match; BM25 weighs rare keywords up and long documents
+    down. Returns scored post dicts or [].
+    """
+    from sqlalchemy import text
 
     if not keywords:
         return []
 
-    # Batch IDF per keyword
-    total_posts = db.query(func.count(Post.id)).scalar() or 1
-    freq_cases = [
-        func.sum(case((func.lower(Post.title).like(f"%{kw}%"), 1), else_=0))
-        for kw in keywords
-    ]
-    freq_row = db.query(*freq_cases).first()
-    # Floored so a keyword in nearly every title still adds a little weight
-    # instead of a negative one.
-    kw_idf = {
-        kw: max(math.log(max(total_posts, 1) / (1 + (freq or 0))), _RELATED_MIN_IDF)
-        for kw, freq in zip(keywords, freq_row)
-    }
-
-    # SQL LIKE is a substring match ("arc" hits "search"), so it only narrows
-    # the candidate set; whole-word matching is enforced in Python below. The
-    # feed excerpt (Post.content) is left out: it adds substring noise, and the
-    # AI summary fields already describe the article.
-    score_conditions = []
-    kw_any_match = []
-
-    for kw in keywords:
-        term = f"%{kw}%"
-        idf = kw_idf[kw]
-
-        title_match = or_(
-            func.lower(Post.title).like(term),
-            func.lower(AISummary.translated_title).like(term),
-        )
-        summary_match = or_(
-            func.lower(AISummary.one_line_summary).like(term),
-            func.lower(AISummary.summary_pt).like(term),
-        )
-        kw_any_match.append(or_(title_match, summary_match))
-        score_conditions.append(case((title_match, 5.0 * idf), else_=0.0))
-        score_conditions.append(case((summary_match, 1.5 * idf), else_=0.0))
-
-    text_score = sum(score_conditions)
-    match_count = sum(case((m, 1), else_=0) for m in kw_any_match)
-
-    text_query = (
-        db.query(
-            Post.id,
-            Post.title,
-            Post.feed_id,
-            Post.is_suggested,
-            Feed.title.label("feed_title"),
-            AISummary.translated_title,
-            AISummary.one_line_summary,
-            AISummary.summary_pt,
-        )
-        .outerjoin(AISummary, Post.content_hash == AISummary.content_hash)
-        .join(Feed, Post.feed_id == Feed.id)
-        .filter(Post.id != post_id)
-        .filter(match_count >= 2)
-    )
+    match_query = " OR ".join(f'"{kw}"' for kw in keywords)
+    read_filter = ""
     if not include_read:
-        text_query = text_query.filter(Post.is_read.is_(False))
+        read_filter += " AND p.is_read = 0"
     if not include_unread:
-        text_query = text_query.filter(Post.is_read.is_(True))
-    # Over-fetch: the whole-word filter below discards substring-only hits.
-    text_results = (
-        text_query.order_by(text_score.desc(), Post.sort_date.desc())
-        .limit(limit * _RELATED_CANDIDATE_FACTOR)
-        .all()
-    )
+        read_filter += " AND p.is_read = 1"
 
-    if not text_results:
+    rows = db.execute(
+        text(
+            f"""
+            SELECT p.id, p.title, p.feed_id, p.is_suggested,
+                   f.title AS feed_title
+            FROM posts_fts
+            JOIN posts p ON p.id = posts_fts.rowid
+            JOIN feeds f ON f.id = p.feed_id
+            WHERE posts_fts MATCH :match_query AND p.id != :post_id{read_filter}
+            ORDER BY bm25(posts_fts, {_RELATED_BM25_WEIGHTS})
+            LIMIT :candidates
+            """
+        ),
+        {
+            "match_query": match_query,
+            "post_id": post_id,
+            "candidates": limit * _RELATED_CANDIDATE_FACTOR,
+        },
+    ).all()
+
+    if not rows:
         return []
 
-    # Post-ID → common-tag count (for UI)
-    post_ids_found = [r.id for r in text_results]
+    # Post-ID → common-tag count (for UI and the min_common_tags filter)
     tag_counts_map: dict[int, int] = {}
     if active_tags:
         tag_counts = (
             db.query(PostTag.post_id, func.count(PostTag.tag))
             .filter(PostTag.tag.in_(active_tags))
-            .filter(PostTag.post_id.in_(post_ids_found))
+            .filter(PostTag.post_id.in_([r.id for r in rows]))
             .group_by(PostTag.post_id)
             .all()
         )
         tag_counts_map = {p_id: count for p_id, count in tag_counts}
 
-    # Python-side whole-word filter + TF-IDF re-ranking
-    scored = []
-    for r in text_results:
+    results = []
+    for r in rows:
         common_count = tag_counts_map.get(r.id, 0)
         if common_count < min_common_tags:
             continue
-
-        candidate_text = " ".join(
-            re.sub(r"<[^>]+>", " ", field)
-            for field in (
-                r.title,
-                r.translated_title,
-                r.one_line_summary,
-                r.summary_pt,
-            )
-            if field
+        results.append(
+            {
+                "id": r.id,
+                "title": r.title,
+                "feed_title": r.feed_title,
+                "feed_id": r.feed_id,
+                "is_suggested": bool(r.is_suggested),
+                "common_tags_count": common_count,
+            }
         )
-        candidate_words = _related_tokens(candidate_text)
-        candidate_len = max(len(candidate_words), 1)
-
-        matched = [kw for kw in keywords if kw in candidate_words]
-        if len(matched) < 2:
-            continue
-
-        tfidf_score = 0.0
-        for kw in matched:
-            idf_val = kw_idf.get(kw, 1.0)
-            tf = candidate_words.count(kw) / candidate_len
-            tfidf_score += tf * idf_val
-        combined_score = tfidf_score * (1 + 0.15 * common_count)
-        scored.append((combined_score, r, common_count))
-
-    scored.sort(key=lambda x: -x[0])
-    return [
-        {
-            "id": r.id,
-            "title": r.title,
-            "feed_title": r.feed_title,
-            "feed_id": r.feed_id,
-            "is_suggested": bool(r.is_suggested),
-            "common_tags_count": common_count,
-        }
-        for _, r, common_count in scored[:limit]
-    ]
+        if len(results) == limit:
+            break
+    return results
 
 
 def _tag_search_related(

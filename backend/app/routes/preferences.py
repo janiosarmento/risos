@@ -102,7 +102,7 @@ class PreferencesResponse(BaseModel):
     # API base URL
     api_base_url: Optional[str] = None
     ai_timeout: int = 30
-    related_posts_limit: int = 30
+    related_posts_limit: int = 15
     ai_max_tokens: int = 8192
     # Background AI settings (fall back to on-demand if not set)
     background_jano_secret_name: Optional[str] = None
@@ -554,7 +554,7 @@ PREF_SPEC: dict[str, PrefSpec] = {
     ),
     "related_posts_limit": PrefSpec(
         PREF_RELATED_POSTS_LIMIT,
-        30,
+        15,
         cast=_cast_int,
         clamp=lambda sp, v: max(5, min(100, v)),
     ),

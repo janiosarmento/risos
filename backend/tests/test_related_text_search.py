@@ -1,9 +1,11 @@
-"""Tests for the assistant's keyword search for related posts."""
+"""Tests for the assistant's full-text search for related posts."""
 
+import importlib.util
 from datetime import datetime
+from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
@@ -11,12 +13,26 @@ from app.models import AISummary, Feed, Post, PostTag
 from app.routes.posts import _keywords_from_title, _text_search_related
 
 NOW = datetime(2026, 1, 1)
+MIGRATION = (
+    Path(__file__).resolve().parent.parent
+    / "alembic/versions/c3f9a1b7d5e2_add_posts_fts_index.py"
+)
+
+
+def _fts_statements() -> list[str]:
+    spec = importlib.util.spec_from_file_location("fts_migration", MIGRATION)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.STATEMENTS
 
 
 @pytest.fixture
 def db():
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        for statement in _fts_statements():
+            conn.execute(text(statement))
     session = sessionmaker(bind=engine)()
     session.add(Feed(id=1, title="Feed", url="https://example.com/feed"))
     session.commit()
@@ -24,8 +40,8 @@ def db():
     session.close()
 
 
-def _add(db, post_id, title, content=None, summary=None, tags=()):
-    content_hash = f"hash-{post_id}" if summary else None
+def _add(db, post_id, title, content=None, summary=None, tags=(), is_read=False):
+    content_hash = f"hash-{post_id}"
     db.add(
         Post(
             id=post_id,
@@ -34,66 +50,141 @@ def _add(db, post_id, title, content=None, summary=None, tags=()):
             content=content,
             content_hash=content_hash,
             sort_date=NOW,
+            is_read=is_read,
         )
     )
     if summary:
-        db.add(
-            AISummary(
-                content_hash=content_hash,
-                summary_pt=summary,
-                one_line_summary="",
-            )
-        )
+        _summarize(db, post_id, summary)
     for tag in tags:
         db.add(PostTag(post_id=post_id, tag=tag))
     db.commit()
 
 
-def _search(db, keywords, min_common_tags=0, limit=30, active_tags=()):
+def _summarize(db, post_id, summary):
+    db.add(
+        AISummary(
+            content_hash=f"hash-{post_id}",
+            summary_pt=summary,
+            one_line_summary="",
+        )
+    )
+    db.commit()
+
+
+def _search(db, keywords, min_common_tags=0, limit=30, active_tags=(), **kwargs):
+    options = dict(include_read=True, include_unread=True) | kwargs
     results = _text_search_related(
         db,
         post_id=1,
         keywords=keywords,
         active_tags=list(active_tags),
         limit=limit,
-        include_read=True,
-        include_unread=True,
         min_common_tags=min_common_tags,
+        **options,
     )
     return [r["id"] for r in results]
 
 
-def test_substring_hits_are_not_related(db):
+def test_keywords_match_whole_words_only(db):
     _add(db, 1, "Arc Browser ships tab sync")
-    _add(db, 2, "Arc Browser adds split view")
     # "arc" only occurs inside "research", "search" and "March".
-    _add(db, 3, "Browser research from March", summary="A search engine study.")
+    _add(db, 2, "Research from March", summary="A search engine study.")
 
-    assert _search(db, ["arc", "browser"]) == [2]
+    assert _search(db, ["arc", "browser"]) == []
+
+
+def test_more_matching_keywords_rank_higher(db):
+    _add(db, 1, "Arc Browser ships tab sync")
+    _add(db, 2, "Browser market share report")
+    _add(db, 3, "Arc Browser adds split view")
+
+    assert _search(db, ["arc", "browser"]) == [3, 2]
 
 
 def test_feed_excerpt_does_not_count_as_a_match(db):
     _add(db, 1, "Arc Browser ships tab sync")
-    _add(db, 2, "New browser released", content="Built by the Arc team.")
+    _add(db, 2, "New release", content="Built by the Arc browser team.")
 
     assert _search(db, ["arc", "browser"]) == []
 
 
 def test_ai_summary_counts_as_a_match(db):
     _add(db, 1, "Arc Browser ships tab sync")
-    _add(db, 2, "New browser released", summary="<p>Built by the Arc team.</p>")
+    _add(db, 2, "New release", summary="<p>Built by the Arc team.</p>")
 
     assert _search(db, ["arc", "browser"]) == [2]
 
 
-def test_limit_applies_after_whole_word_filter(db):
-    _add(db, 1, "Arc Browser ships tab sync")
-    # Substring-only candidates rank first in SQL (two title hits each).
-    for post_id in range(2, 6):
-        _add(db, post_id, f"Browser research {post_id}")
-    _add(db, 10, "Arc Browser update", summary="Arc browser news.")
+def test_possessive_and_diacritics_match_base_word(db):
+    _add(db, 1, "Café ships desktop")
+    _add(db, 2, "Cafe's new desktop")
 
-    assert _search(db, ["arc", "browser"], limit=1) == [10]
+    assert _search(db, ["café", "desktop"]) == [2]
+
+
+def test_hyphenated_keyword_matches_as_phrase(db):
+    _add(db, 1, "SparkyOS debuts as an Arch-based distro")
+    _add(db, 2, "Omarchy is an Arch-based distro")
+    _add(db, 3, "Arch bridges are based on stone")
+
+    assert _search(db, ["arch-based"]) == [2]
+
+
+def test_common_tag_filter_and_limit(db):
+    _add(db, 1, "Arc Browser ships tab sync", tags=("arc",))
+    _add(db, 2, "Arc Browser adds split view")
+    _add(db, 3, "Arc Browser adds profiles", tags=("arc",))
+    _add(db, 4, "Arc Browser hits beta", tags=("arc",))
+
+    found = _search(db, ["arc", "browser"], min_common_tags=1, active_tags=("arc",))
+    assert sorted(found) == [3, 4]
+    limited = _search(
+        db, ["arc", "browser"], min_common_tags=1, active_tags=("arc",), limit=1
+    )
+    assert len(limited) == 1
+
+
+def test_read_state_filters(db):
+    _add(db, 1, "Arc Browser ships tab sync")
+    _add(db, 2, "Arc Browser adds split view", is_read=True)
+    _add(db, 3, "Arc Browser adds profiles")
+
+    assert _search(db, ["arc"], include_read=False) == [3]
+    assert _search(db, ["arc"], include_unread=False) == [2]
+
+
+def test_index_follows_summary_writes(db):
+    _add(db, 1, "Arc Browser ships tab sync")
+    _add(db, 2, "New release")
+    assert _search(db, ["arc"]) == []
+
+    _summarize(db, 2, "Built by the Arc team.")
+    assert _search(db, ["arc"]) == [2]
+
+    summary = db.query(AISummary).filter_by(content_hash="hash-2").one()
+    summary.summary_pt = "Built by another team."
+    db.commit()
+    assert _search(db, ["arc"]) == []
+
+    summary.summary_pt = "Built by the Arc team."
+    db.commit()
+    db.delete(summary)
+    db.commit()
+    assert _search(db, ["arc"]) == []
+
+
+def test_index_follows_post_updates_and_deletes(db):
+    _add(db, 1, "Arc Browser ships tab sync")
+    _add(db, 2, "New release")
+
+    post = db.get(Post, 2)
+    post.title = "Arc release"
+    db.commit()
+    assert _search(db, ["arc"]) == [2]
+
+    db.delete(post)
+    db.commit()
+    assert _search(db, ["arc"]) == []
 
 
 def test_keywords_drop_possessive_suffix():
@@ -103,11 +194,3 @@ def test_keywords_drop_possessive_suffix():
         "desktop",
         "linux",
     ]
-
-
-def test_possessive_matches_its_base_word(db):
-    _add(db, 1, "Apple ships desktop")
-    # SQL LIKE '%apple%' finds "Apple's"; the whole-word check must too.
-    _add(db, 2, "Apple's new desktop")
-
-    assert _search(db, ["apple", "desktop"]) == [2]
