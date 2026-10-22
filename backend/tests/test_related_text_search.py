@@ -187,6 +187,18 @@ def test_index_follows_post_updates_and_deletes(db):
     assert _search(db, ["arc"]) == []
 
 
+def test_single_generic_word_hits_are_dropped(db):
+    keywords = ["bowel", "common", "disease", "multiple", "sclerosis", "treatment"]
+    _add(db, 1, "Common multiple sclerosis treatment linked to bowel disease")
+    _add(db, 2, "Why Common Lisp is the best programming language")
+    _add(db, 3, "Multiple sclerosis drug raises bowel disease risk")
+    # Unrelated filler, so the keywords are rare as in a real database.
+    for post_id in range(10, 40):
+        _add(db, post_id, f"Unrelated headline number {post_id}")
+
+    assert _search(db, keywords) == [3]
+
+
 def test_keywords_drop_possessive_suffix():
     assert _keywords_from_title("China’s Linux and Apple's desktop") == [
         "apple",

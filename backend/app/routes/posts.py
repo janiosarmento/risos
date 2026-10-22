@@ -1818,6 +1818,12 @@ _RELATED_CANDIDATE_FACTOR = 4
 # BM25 column weights for posts_fts: title, translated_title, one_line, summary.
 _RELATED_BM25_WEIGHTS = "5.0, 5.0, 2.0, 1.0"
 
+# Minimum BM25 score, as a share of the source post's own score for the same
+# query (its perfect match). With OR semantics BM25 always returns something;
+# when nothing related is left, single generic-word hits ("common", "risk")
+# score ~0.1 of it, while real matches score 0.25+.
+_RELATED_MIN_RELATIVE_SCORE = 0.2
+
 
 def _related_tokens(text: str) -> list[str]:
     """Lowercase word tokens; possessives drop their 's ("China's" -> "china")."""
@@ -1850,7 +1856,8 @@ def _text_search_related(
     """Full-text search over posts_fts, ranked by BM25 (Part A).
 
     Any keyword may match; BM25 weighs rare keywords up and long documents
-    down. Returns scored post dicts or [].
+    down. Posts scoring below _RELATED_MIN_RELATIVE_SCORE of the source post's
+    own score are dropped. Returns scored post dicts or [].
     """
     from sqlalchemy import text
 
@@ -1868,7 +1875,8 @@ def _text_search_related(
         text(
             f"""
             SELECT p.id, p.title, p.feed_id, p.is_suggested,
-                   f.title AS feed_title
+                   f.title AS feed_title,
+                   -bm25(posts_fts, {_RELATED_BM25_WEIGHTS}) AS score
             FROM posts_fts
             JOIN posts p ON p.id = posts_fts.rowid
             JOIN feeds f ON f.id = p.feed_id
@@ -1883,6 +1891,20 @@ def _text_search_related(
             "candidates": limit * _RELATED_CANDIDATE_FACTOR,
         },
     ).all()
+
+    self_score = db.execute(
+        text(
+            f"""
+            SELECT -bm25(posts_fts, {_RELATED_BM25_WEIGHTS})
+            FROM posts_fts
+            WHERE posts_fts MATCH :match_query AND rowid = :post_id
+            """
+        ),
+        {"match_query": match_query, "post_id": post_id},
+    ).scalar()
+    if self_score:
+        min_score = self_score * _RELATED_MIN_RELATIVE_SCORE
+        rows = [r for r in rows if r.score >= min_score]
 
     if not rows:
         return []
