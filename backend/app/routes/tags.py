@@ -489,7 +489,9 @@ If no true duplicates/synonyms are found, return {{"groups": []}}"""
                 raise
             logger.warning(
                 "suggest-merges: retrying after unparseable JSON (attempt %d/%d): %s",
-                attempt + 1, max_json_retries, e,
+                attempt + 1,
+                max_json_retries,
+                e,
             )
 
     # Validate: only include tags that actually existed in the generated candidate groups

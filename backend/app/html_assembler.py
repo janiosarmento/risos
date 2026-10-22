@@ -50,9 +50,7 @@ def assemble_html_files():
                 return f"<!-- ERROR: Traversal blocked for {rel_path} -->"
 
             if str(include_file) in loaded_files:
-                logger.error(
-                    f"HTML Assembler: Circular dependency for '{rel_path}'"
-                )
+                logger.error(f"HTML Assembler: Circular dependency for '{rel_path}'")
                 return f"<!-- ERROR: Circular dependency for {rel_path} -->"
 
             if not include_file.exists():
@@ -71,14 +69,10 @@ def assemble_html_files():
         assembled_content = include_pattern.sub(replacer, content)
 
         # Replace {{APP_VERSION}} with the version from the script tag
-        version_match = re.search(
-            r"var APP_VERSION\s*=\s*'([^']+)'", assembled_content
-        )
+        version_match = re.search(r"var APP_VERSION\s*=\s*'([^']+)'", assembled_content)
         if version_match:
             version = version_match.group(1)
-            assembled_content = assembled_content.replace(
-                "{{APP_VERSION}}", version
-            )
+            assembled_content = assembled_content.replace("{{APP_VERSION}}", version)
             logger.info(f"HTML Assembler: APP_VERSION = {version}")
 
             # Also update htdocs/manifest.json icons with cache-busting version params
@@ -88,12 +82,11 @@ def assemble_html_files():
                 manifest_content = re.sub(
                     r'("src"\s*:\s*"/static/icons/[^"?]+)(?:\?v=[^"]*)?"',
                     rf'\1?v={version}"',
-                    manifest_content
+                    manifest_content,
                 )
                 manifest_path.write_text(manifest_content, encoding="utf-8")
                 logger.info(
-                    "HTML Assembler: Updated htdocs/manifest.json icons "
-                    f"to v={version}"
+                    f"HTML Assembler: Updated htdocs/manifest.json icons to v={version}"
                 )
 
         # Write to final htdocs/index.html
@@ -109,4 +102,3 @@ def assemble_html_files():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     assemble_html_files()
-

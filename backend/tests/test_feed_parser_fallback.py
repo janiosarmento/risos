@@ -29,7 +29,9 @@ async def test_fetch_feed_content_succeeds_direct_without_touching_fallback(
         feed_parser, "socks_tunnel", lambda: _tunnel_should_not_be_called()
     )
 
-    content, final_url = await feed_parser.fetch_feed_content("https://example.com/feed")
+    content, final_url = await feed_parser.fetch_feed_content(
+        "https://example.com/feed"
+    )
 
     assert content == b"<rss></rss>"
     assert final_url is None
@@ -50,7 +52,9 @@ async def test_fetch_feed_content_retries_via_fallback_and_succeeds(monkeypatch)
         feed_parser, "socks_tunnel", lambda: _fake_tunnel("socks5://127.0.0.1:1080")
     )
 
-    content, final_url = await feed_parser.fetch_feed_content("https://example.com/feed")
+    content, final_url = await feed_parser.fetch_feed_content(
+        "https://example.com/feed"
+    )
 
     assert content == b"<rss>ok</rss>"
     assert final_url is None

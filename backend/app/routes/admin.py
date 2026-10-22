@@ -458,9 +458,9 @@ def delete_unread_summaries(
     )
 
     # Clear queue entries so posts are re-enqueued without old error state
-    db.query(SummaryQueue).filter(
-        SummaryQueue.content_hash.in_(unread_hashes)
-    ).delete(synchronize_session=False)
+    db.query(SummaryQueue).filter(SummaryQueue.content_hash.in_(unread_hashes)).delete(
+        synchronize_session=False
+    )
 
     db.commit()
 
@@ -555,6 +555,7 @@ async def list_available_models(
         )
 
     import httpx
+
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.get(
@@ -563,7 +564,12 @@ async def list_available_models(
             )
             if response.status_code != 200:
                 return JSONResponse(
-                    content={"error": "api_error", "status": response.status_code, "detail": response.text[:300], "url": f"{api_url}/models"},
+                    content={
+                        "error": "api_error",
+                        "status": response.status_code,
+                        "detail": response.text[:300],
+                        "url": f"{api_url}/models",
+                    },
                     status_code=502,
                     headers={"Cache-Control": "no-store"},
                 )
@@ -578,7 +584,11 @@ async def list_available_models(
             return JSONResponse(content=models, headers={"Cache-Control": "no-store"})
     except Exception as e:
         return JSONResponse(
-            content={"error": "exception", "detail": f"{type(e).__name__}: {e}", "url": f"{api_url}/models"},
+            content={
+                "error": "exception",
+                "detail": f"{type(e).__name__}: {e}",
+                "url": f"{api_url}/models",
+            },
             status_code=502,
             headers={"Cache-Control": "no-store"},
         )
@@ -593,7 +603,6 @@ def recover_orphaned_queue(
     Fixes orphaned unread posts that have content but were never enqueued for summary.
     Read posts are excluded (no need to summarize).
     """
-    from sqlalchemy import func
     from app.models import AISummary
 
     # Find unread posts with content_hash but no queue entry and no summary
@@ -616,9 +625,9 @@ def recover_orphaned_queue(
             continue  # Blocked posts are never summarized
         try:
             # Check if queue entry already exists (race condition)
-            existing = db.query(SummaryQueue).filter(
-                SummaryQueue.post_id == post.id
-            ).first()
+            existing = (
+                db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
+            )
             if existing:
                 continue
 
@@ -659,6 +668,7 @@ def diagnose_queue(
     Summaries are stored in ai_summaries (matched via content_hash from posts).
     """
     from sqlalchemy import func
+
     from app.models import AISummary
 
     now = datetime.utcnow()
@@ -668,11 +678,10 @@ def diagnose_queue(
         db.query(func.count(Post.id))
         .filter(
             Post.content_hash.isnot(None),
-            ~Post.content_hash.in_(
-                db.query(AISummary.content_hash)
-            ),
+            ~Post.content_hash.in_(db.query(AISummary.content_hash)),
         )
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     # Total in queue
@@ -683,26 +692,27 @@ def diagnose_queue(
         db.query(func.count(Post.id))
         .filter(
             Post.content_hash.isnot(None),
-            ~Post.content_hash.in_(
-                db.query(AISummary.content_hash)
-            ),
+            ~Post.content_hash.in_(db.query(AISummary.content_hash)),
             ~Post.id.in_(db.query(SummaryQueue.post_id)),
         )
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     # Posts in cooldown (waiting to retry)
     cooldown_count = (
         db.query(func.count(SummaryQueue.id))
         .filter(SummaryQueue.cooldown_until > now)
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     # Posts currently locked (being processed)
     locked_count = (
         db.query(func.count(SummaryQueue.id))
         .filter(SummaryQueue.locked_at.isnot(None))
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     # Posts ready to process (not in cooldown, not locked)
@@ -710,16 +720,12 @@ def diagnose_queue(
 
     # Posts without content_hash (likely skipped or incomplete)
     no_content_hash = (
-        db.query(func.count(Post.id))
-        .filter(Post.content_hash.is_(None))
-        .scalar() or 0
+        db.query(func.count(Post.id)).filter(Post.content_hash.is_(None)).scalar() or 0
     )
 
     # Skip_summary flag count
     skip_summary_count = (
-        db.query(func.count(Post.id))
-        .filter(Post.skip_summary.is_(True))
-        .scalar() or 0
+        db.query(func.count(Post.id)).filter(Post.skip_summary.is_(True)).scalar() or 0
     )
 
     return {

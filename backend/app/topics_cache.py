@@ -17,10 +17,7 @@ _cache: dict = {"data": None, "ts": 0.0}
 
 def get_cached():
     """Return the cached topic list, or None if absent or expired."""
-    if (
-        _cache["data"] is not None
-        and time.monotonic() - _cache["ts"] < _TTL_SECONDS
-    ):
+    if _cache["data"] is not None and time.monotonic() - _cache["ts"] < _TTL_SECONDS:
         return _cache["data"]
     return None
 

@@ -34,6 +34,8 @@ def _resolve_api_key(api_key: Optional[str], base_url: str) -> Optional[str]:
     if base_url and base_url.rstrip("/") != DEFAULT_API_BASE_URL.rstrip("/"):
         return _LOCAL_API_KEY_SENTINEL
     return None
+
+
 from app.services.ai._infrastructure import (  # noqa: F401
     api_key_rotator,
 )
@@ -82,8 +84,8 @@ async def _resolve_engine_settings(engine: str) -> tuple:
     from app.routes.preferences import (
         get_effective_ai_api_key,
         get_effective_ai_model,
-        get_effective_api_base_url,
         get_effective_ai_timeout,
+        get_effective_api_base_url,
         get_effective_background_ai_api_key,
         get_effective_background_ai_model,
         get_effective_background_api_base_url,
@@ -276,11 +278,10 @@ async def _call_model(
                 logger.warning(
                     "HTTP 400 with presence_penalty set (base_url=%s), "
                     "retrying without it: %s",
-                    target_url, response.text[:300],
+                    target_url,
+                    response.text[:300],
                 )
-                payload = {
-                    k: v for k, v in payload.items() if k != "presence_penalty"
-                }
+                payload = {k: v for k, v in payload.items() if k != "presence_penalty"}
                 response = await client.post(
                     f"{target_url}/chat/completions", headers=headers, json=payload
                 )
@@ -289,7 +290,9 @@ async def _call_model(
                 retry_after = response.headers.get("retry-after", "unknown")
                 logger.warning(
                     "Rate limit 429 on key %s: retry-after=%s, headers=%s",
-                    key_index + 1, retry_after, dict(response.headers),
+                    key_index + 1,
+                    retry_after,
+                    dict(response.headers),
                 )
                 api_key_rotator.set_key_cooldown(
                     api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
@@ -302,7 +305,9 @@ async def _call_model(
             if response.status_code >= 400:
                 logger.error(
                     "[API] HTTP %s from %s: %s",
-                    response.status_code, target_url, response.text[:500],
+                    response.status_code,
+                    target_url,
+                    response.text[:500],
                 )
                 raise ModelSpecificError(f"Request error: HTTP {response.status_code}")
 
@@ -323,9 +328,12 @@ async def _call_model(
                 if "oxit_model" in data:
                     logger.info(
                         "Proxy fallback: requested %s, used %s",
-                        model, data["oxit_model"],
+                        model,
+                        data["oxit_model"],
                     )
-                return _parse_summary_result(content_response, was_truncated, actual_model)
+                return _parse_summary_result(
+                    content_response, was_truncated, actual_model
+                )
             except (json.JSONDecodeError, ValueError) as e:
                 logger.error("Error parsing response from model %s: %s", model, e)
                 logger.error("Raw response: %s", content_response[:500])
@@ -371,17 +379,20 @@ async def generate_summary(
     lock = _api_lock_background if engine == "background" else _api_lock_ondemand
     async with lock:
         result = await _generate_summary_locked(
-            content, title, title_only,
-            api_key=api_key, model=model, base_url=base_url, timeout=timeout,
+            content,
+            title,
+            title_only,
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            timeout=timeout,
         )
 
     # Post-process: ensure the summary body is entirely in the target language.
     # Runs outside the lock because the cleanup makes its own locked LLM call.
     # No-op (detection only) when the body is already clean.
     if result.summary_pt:
-        result.summary_pt = await _enforce_summary_language(
-            result.summary_pt, engine
-        )
+        result.summary_pt = await _enforce_summary_language(result.summary_pt, engine)
 
     result.excluded_audience = _validate_excluded_audience(result.excluded_audience)
 
@@ -430,8 +441,13 @@ async def _enforce_summary_language(summary: str, engine: str) -> str:
 
 
 async def _generate_summary_locked(
-    content: str, title: str, title_only: bool,
-    api_key: str, model: str, base_url: str, timeout: int,
+    content: str,
+    title: str,
+    title_only: bool,
+    api_key: str,
+    model: str,
+    base_url: str,
+    timeout: int,
 ) -> SummaryResult:
     """Inner implementation, called under the appropriate lock."""
     # Truncate content if too large
@@ -476,8 +492,15 @@ async def _generate_summary_locked(
 
     # Use preferred model only (proxy handles fallback)
     result = await _call_model(
-        model, api_key, 0, messages, timeout, ai_max_tokens, base_url=base_url,
-        temperature=temperature, presence_penalty=presence_penalty,
+        model,
+        api_key,
+        0,
+        messages,
+        timeout,
+        ai_max_tokens,
+        base_url=base_url,
+        temperature=temperature,
+        presence_penalty=presence_penalty,
     )
 
     # Empty result means the model deemed the content unusable
@@ -515,8 +538,14 @@ async def call_llm_json(
     lock = _api_lock_background if engine == "background" else _api_lock_ondemand
     async with lock:
         return await _call_llm_json_locked(
-            system_prompt, user_prompt, max_tokens, temperature,
-            api_key=api_key, model=model, base_url=base_url, timeout=timeout,
+            system_prompt,
+            user_prompt,
+            max_tokens,
+            temperature,
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            timeout=timeout,
         )
 
 
@@ -570,11 +599,10 @@ async def _call_llm_json_locked(
                 logger.warning(
                     "HTTP 400 with response_format set (model=%s), retrying "
                     "without it: %s",
-                    model, response.text[:300],
+                    model,
+                    response.text[:300],
                 )
-                payload = {
-                    k: v for k, v in payload.items() if k != "response_format"
-                }
+                payload = {k: v for k, v in payload.items() if k != "response_format"}
                 response = await client.post(
                     f"{target_url}/chat/completions",
                     headers=headers,
@@ -602,7 +630,10 @@ async def _call_llm_json_locked(
             logger.error(
                 "call_llm_json parse failure (model=%s, finish_reason=%s): %s\n"
                 "Raw response: %s",
-                data.get("model", model), finish, e, (content or "")[:800],
+                data.get("model", model),
+                finish,
+                e,
+                (content or "")[:800],
             )
             hint = (
                 " — response was truncated (raise the token limit or pick a "
@@ -645,8 +676,14 @@ async def call_llm_text(
     lock = _api_lock_background if engine == "background" else _api_lock_ondemand
     async with lock:
         return await _call_llm_text_locked(
-            system_prompt, user_prompt, max_tokens, temperature,
-            api_key=api_key, model=model, base_url=base_url, timeout=timeout,
+            system_prompt,
+            user_prompt,
+            max_tokens,
+            temperature,
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            timeout=timeout,
         )
 
 
@@ -714,4 +751,3 @@ async def _call_llm_text_locked(
         raise
     except Exception as e:
         raise PermanentError(f"LLM call failed: {e}")
-

@@ -212,10 +212,10 @@ def _strip_reasoning(content: str) -> str:
     # Unbalanced closer left behind ("... reasoning ...</think>\n{json}")
     m = re.search(r"</(?:think|thinking|reasoning)>", content, re.IGNORECASE)
     if m:
-        content = content[m.end():]
+        content = content[m.end() :]
     # Unbalanced opener with no closer: reasoning ran to the end, no JSON after
     m = re.search(r"<(?:think|thinking|reasoning)>", content, re.IGNORECASE)
-    if m and "{" not in content[m.end():] and "[" not in content[m.end():]:
+    if m and "{" not in content[m.end() :] and "[" not in content[m.end() :]:
         content = content[: m.start()]
     return content
 
@@ -282,7 +282,7 @@ def parse_json_response(content: str) -> dict:
     else:
         open_fence = re.search(r"```(?:json)?\s*", content)
         if open_fence:
-            content = content[open_fence.end():]
+            content = content[open_fence.end() :]
 
     # Try direct parse first
     try:

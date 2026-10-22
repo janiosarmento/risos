@@ -99,7 +99,9 @@ async def test_clean_text_skips_llm_call():
     async def translate(_system, _user):
         raise AssertionError("translate must not be called on clean text")
 
-    assert await enforce_language(CLEAN_PT, "Brazilian Portuguese", translate) == CLEAN_PT
+    assert (
+        await enforce_language(CLEAN_PT, "Brazilian Portuguese", translate) == CLEAN_PT
+    )
 
 
 @pytest.mark.asyncio

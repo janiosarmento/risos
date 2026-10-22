@@ -91,8 +91,16 @@ async def test_only_clustered_posts_are_sent_to_the_model(db, monkeypatch):
     calls: list = []
     _stub_llm(
         monkeypatch,
-        {"decisions": [{"post_id": 2, "verdict": "redundant", "covered_by": [1],
-                        "reason": "covered by 1"}]},
+        {
+            "decisions": [
+                {
+                    "post_id": 2,
+                    "verdict": "redundant",
+                    "covered_by": [1],
+                    "reason": "covered by 1",
+                }
+            ]
+        },
         calls,
     )
     _add_post(db, 1, "SPF explained", ["spf", "dkim"])
@@ -202,9 +210,7 @@ async def test_a_value_pass_that_condemns_everything_is_discarded(db, monkeypatc
         monkeypatch,
         {"decisions": []},
         calls,
-        ephemeral={
-            "ephemeral": [{"post_id": i, "reason": "meh"} for i in ids]
-        },
+        ephemeral={"ephemeral": [{"post_id": i, "reason": "meh"} for i in ids]},
     )
     for i in ids:
         _add_post(db, i, f"Article {i}", [f"topic{i}", f"other{i}"])
@@ -246,8 +252,9 @@ async def test_value_pass_failure_does_not_fail_curation(db, monkeypatch):
     async def half_broken(system_prompt, user_prompt, **kwargs):
         if "Group 1" in user_prompt:
             calls.append({"pass": "groups"})
-            return {"decisions": [{"post_id": 2, "verdict": "redundant",
-                                   "covered_by": [1]}]}
+            return {
+                "decisions": [{"post_id": 2, "verdict": "redundant", "covered_by": [1]}]
+            }
         raise RuntimeError("model unavailable")
 
     monkeypatch.setattr(ai_api, "call_llm_json", half_broken)

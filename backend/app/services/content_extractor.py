@@ -101,6 +101,7 @@ def _mark_extraction_failed(url: str) -> None:
         for k in [k for k, exp in _recent_extraction_failures.items() if exp < now]:
             _recent_extraction_failures.pop(k, None)
 
+
 # Cloudflare detection patterns
 CLOUDFLARE_PATTERNS = [
     "cloudflare",

@@ -123,9 +123,7 @@ def _get_key_to_canonical(db) -> Dict[str, str]:
     from app.models import PostTag
 
     rows = (
-        db.query(PostTag.tag, func.count(PostTag.post_id))
-        .group_by(PostTag.tag)
-        .all()
+        db.query(PostTag.tag, func.count(PostTag.post_id)).group_by(PostTag.tag).all()
     )
     tag_counts = {tag: count for tag, count in rows}
 

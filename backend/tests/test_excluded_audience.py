@@ -23,9 +23,7 @@ def test_excluded_audience_is_normalized():
 
 def test_excluded_audience_null_variants_become_none():
     for value in (None, "null", "None", "", "n/a", 3):
-        result = _parse_summary_result(
-            _payload(excluded_audience=value), False, "m"
-        )
+        result = _parse_summary_result(_payload(excluded_audience=value), False, "m")
         assert result.excluded_audience is None
 
 

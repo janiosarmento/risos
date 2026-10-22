@@ -165,9 +165,7 @@ def _apply_post_filters(
         query = query.filter(Post.feed_id == feed_id)
         relevant_feed_ids.add(feed_id)
     elif category_id is not None:
-        category_feeds = (
-            db.query(Feed.id).filter(Feed.category_id == category_id).all()
-        )
+        category_feeds = db.query(Feed.id).filter(Feed.category_id == category_id).all()
         feed_ids_list = [f.id for f in category_feeds]
         relevant_feed_ids.update(feed_ids_list)
         feed_ids = db.query(Feed.id).filter(Feed.category_id == category_id).subquery()
@@ -570,7 +568,6 @@ def export_starred(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{zip_filename}"'},
     )
-
 
 
 @router.get("/export-mimir")
@@ -983,7 +980,9 @@ async def regenerate_summary(
 
     try:
         logger.info(f"Regenerating summary for post {post_id}")
-        result = await generate_summary(content_for_summary, title=post.title, engine="ondemand")
+        result = await generate_summary(
+            content_for_summary, title=post.title, engine="ondemand"
+        )
 
         # Check if summary already exists with this hash
         existing_summary = (
@@ -1502,9 +1501,7 @@ def _store_curation_cache(db: Session, scope_key: str, payload: dict) -> None:
     """Persist a curation result, best-effort — a cache write must never be
     the reason an otherwise successful analysis fails to reach the user."""
     try:
-        db.add(
-            CurationCache(scope_key=scope_key, result_json=json.dumps(payload))
-        )
+        db.add(CurationCache(scope_key=scope_key, result_json=json.dumps(payload)))
         db.commit()
         stale = (
             db.query(CurationCache.id)
@@ -1614,34 +1611,202 @@ class RelatedSummaryRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 _RELATED_STOP_WORDS: set[str] = {
-    "a", "about", "above", "across", "after", "again", "against", "all",
-    "also", "an", "and", "any", "are", "article", "artigo", "as", "at",
-    "atualizacao", "because", "been", "before", "being", "below",
-    "between", "blog", "both", "by", "can", "com", "could", "da",
-    "de", "did", "do", "does", "doing", "done", "down", "during",
-    "each", "em", "even", "every", "feed", "few", "first", "for",
-    "from", "further", "furthermore", "get", "gets", "got", "has",
-    "had", "have", "having", "here", "hereafter", "hereby", "herein",
-    "how", "however", "in", "indeed", "instead", "into", "is", "it",
-    "its", "just", "lancada", "lancado", "last", "like", "made",
-    "make", "makes", "many", "may", "meanwhile", "might", "more",
-    "moreover", "most", "much", "must", "na", "nas", "neither",
-    "never", "new", "next", "no", "nonetheless", "nor", "nos",
-    "not", "nova", "novo", "now", "o", "of", "on", "one", "only",
-    "or", "os", "other", "otherwise", "ou", "over", "own", "para",
-    "people", "perhaps", "por", "post", "que", "rather", "released",
-    "said", "same", "se", "shall", "should", "since", "site",
-    "some", "somehow", "somewhat", "still", "such", "than", "that",
-    "the", "their", "them", "then", "there", "thereafter", "thereby",
-    "therefore", "therein", "thereupon", "these", "they", "this",
-    "those", "through", "throughout", "time", "to", "together",
-    "too", "toward", "towards", "um", "uma", "under", "unless",
-    "unto", "update", "upon", "usando", "using", "version", "versao",
-    "very", "was", "way", "ways", "web", "well", "were", "what",
-    "when", "whence", "where", "whereas", "whereby", "wherein",
-    "whereupon", "wherever", "whether", "which", "whichever",
-    "while", "whilst", "who", "why", "will", "with", "within",
-    "without", "would",
+    "a",
+    "about",
+    "above",
+    "across",
+    "after",
+    "again",
+    "against",
+    "all",
+    "also",
+    "an",
+    "and",
+    "any",
+    "are",
+    "article",
+    "artigo",
+    "as",
+    "at",
+    "atualizacao",
+    "because",
+    "been",
+    "before",
+    "being",
+    "below",
+    "between",
+    "blog",
+    "both",
+    "by",
+    "can",
+    "com",
+    "could",
+    "da",
+    "de",
+    "did",
+    "do",
+    "does",
+    "doing",
+    "done",
+    "down",
+    "during",
+    "each",
+    "em",
+    "even",
+    "every",
+    "feed",
+    "few",
+    "first",
+    "for",
+    "from",
+    "further",
+    "furthermore",
+    "get",
+    "gets",
+    "got",
+    "has",
+    "had",
+    "have",
+    "having",
+    "here",
+    "hereafter",
+    "hereby",
+    "herein",
+    "how",
+    "however",
+    "in",
+    "indeed",
+    "instead",
+    "into",
+    "is",
+    "it",
+    "its",
+    "just",
+    "lancada",
+    "lancado",
+    "last",
+    "like",
+    "made",
+    "make",
+    "makes",
+    "many",
+    "may",
+    "meanwhile",
+    "might",
+    "more",
+    "moreover",
+    "most",
+    "much",
+    "must",
+    "na",
+    "nas",
+    "neither",
+    "never",
+    "new",
+    "next",
+    "no",
+    "nonetheless",
+    "nor",
+    "nos",
+    "not",
+    "nova",
+    "novo",
+    "now",
+    "o",
+    "of",
+    "on",
+    "one",
+    "only",
+    "or",
+    "os",
+    "other",
+    "otherwise",
+    "ou",
+    "over",
+    "own",
+    "para",
+    "people",
+    "perhaps",
+    "por",
+    "post",
+    "que",
+    "rather",
+    "released",
+    "said",
+    "same",
+    "se",
+    "shall",
+    "should",
+    "since",
+    "site",
+    "some",
+    "somehow",
+    "somewhat",
+    "still",
+    "such",
+    "than",
+    "that",
+    "the",
+    "their",
+    "them",
+    "then",
+    "there",
+    "thereafter",
+    "thereby",
+    "therefore",
+    "therein",
+    "thereupon",
+    "these",
+    "they",
+    "this",
+    "those",
+    "through",
+    "throughout",
+    "time",
+    "to",
+    "together",
+    "too",
+    "toward",
+    "towards",
+    "um",
+    "uma",
+    "under",
+    "unless",
+    "unto",
+    "update",
+    "upon",
+    "usando",
+    "using",
+    "version",
+    "versao",
+    "very",
+    "was",
+    "way",
+    "ways",
+    "web",
+    "well",
+    "were",
+    "what",
+    "when",
+    "whence",
+    "where",
+    "whereas",
+    "whereby",
+    "wherein",
+    "whereupon",
+    "wherever",
+    "whether",
+    "which",
+    "whichever",
+    "while",
+    "whilst",
+    "who",
+    "why",
+    "will",
+    "with",
+    "within",
+    "without",
+    "would",
 }
 
 
@@ -1734,7 +1899,9 @@ def _text_search_related(
         text_query = text_query.filter(Post.is_read.is_(False))
     if not include_unread:
         text_query = text_query.filter(Post.is_read.is_(True))
-    text_results = text_query.order_by(text_score.desc(), Post.sort_date.desc()).limit(limit).all()
+    text_results = (
+        text_query.order_by(text_score.desc(), Post.sort_date.desc()).limit(limit).all()
+    )
 
     if not text_results:
         return []
@@ -1811,8 +1978,7 @@ def _tag_search_related(
         .all()
     )
     tag_weights = {
-        tag: 1.0 / math.log(freq + 1) if freq > 0 else 0.1
-        for tag, freq in tag_freqs
+        tag: 1.0 / math.log(freq + 1) if freq > 0 else 0.1 for tag, freq in tag_freqs
     }
     if not tag_weights:
         relevance_score = func.count(PostTag.tag)
@@ -1866,7 +2032,11 @@ def _tag_search_related(
         else:
             temp_boost = 1.0
         cat_boost = 1.0
-        if source_feed_category_id and r.category_id and r.category_id == source_feed_category_id:
+        if (
+            source_feed_category_id
+            and r.category_id
+            and r.category_id == source_feed_category_id
+        ):
             cat_boost = 1.3
         scored.append((score * temp_boost * cat_boost, r))
 
@@ -1898,26 +2068,40 @@ async def get_related_posts(
     from app.routes.preferences import get_effective_related_posts_limit
 
     post = get_post_or_404(db, post_id)
-    active_tags = [t[0] for t in db.query(PostTag.tag).filter(PostTag.post_id == post_id).all()]
+    active_tags = [
+        t[0] for t in db.query(PostTag.tag).filter(PostTag.post_id == post_id).all()
+    ]
     limit = get_effective_related_posts_limit(db)
 
     keywords = _keywords_from_title(post.title)
     if len(keywords) < 2 and post.title:
         # Fall back to all non-stop title tokens (any length)
         keywords = sorted(
-            w for w in re.sub(r"[^\w\s-]", "", post.title.lower()).split()
+            w
+            for w in re.sub(r"[^\w\s-]", "", post.title.lower()).split()
             if w not in _RELATED_STOP_WORDS
         )
 
     posts_list = _text_search_related(
-        db, post_id, keywords, active_tags, limit,
-        include_read, include_unread, min_common_tags,
+        db,
+        post_id,
+        keywords,
+        active_tags,
+        limit,
+        include_read,
+        include_unread,
+        min_common_tags,
     )
 
     if not posts_list and active_tags and use_tag_fallback:
         posts_list = _tag_search_related(
-            db, post_id, post, active_tags, limit,
-            include_read, include_unread,
+            db,
+            post_id,
+            post,
+            active_tags,
+            limit,
+            include_read,
+            include_unread,
         )
 
     return {"posts": posts_list}
@@ -1957,14 +2141,10 @@ async def generate_related_summary(
     summaries_map = {}
     if content_hashes:
         summaries = (
-            db.query(AISummary)
-            .filter(AISummary.content_hash.in_(content_hashes))
-            .all()
+            db.query(AISummary).filter(AISummary.content_hash.in_(content_hashes)).all()
         )
         summaries_map = {
-            s.content_hash: s.summary_pt
-            for s in summaries
-            if s.summary_pt
+            s.content_hash: s.summary_pt for s in summaries if s.summary_pt
         }
 
     # 3. Constrói o texto consolidado
@@ -1977,9 +2157,7 @@ async def generate_related_summary(
 
         if summary_text.strip():
             clean_summary = re.sub(r"<[^>]+>", "", summary_text)
-            prompt_content.append(
-                f"Título: {p.title}\nResumo:\n{clean_summary}\n---"
-            )
+            prompt_content.append(f"Título: {p.title}\nResumo:\n{clean_summary}\n---")
 
     if not prompt_content:
         raise HTTPException(
@@ -2026,6 +2204,3 @@ async def generate_related_summary(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Erro ao processar consolidação no LLM: {str(e)}",
         )
-
-
-

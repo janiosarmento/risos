@@ -195,8 +195,12 @@ def get_preferences(
         prefs[row.key] = row.value
 
     prompts = load_prompts()
-    def r(name): return _resolve_spec(prefs, name)
-    def i(name, default): return _resolve_spec(prefs, name) if name in PREF_SPEC else default
+
+    def r(name):
+        return _resolve_spec(prefs, name)
+
+    def i(name, default):
+        return _resolve_spec(prefs, name) if name in PREF_SPEC else default
 
     return PreferencesResponse(
         locale=prefs[PREF_LOCALE],
@@ -227,8 +231,12 @@ def get_preferences(
         related_posts_limit=r("related_posts_limit"),
         ai_max_tokens=r("ai_max_tokens"),
         background_jano_secret_name=prefs[PREF_BACKGROUND_JANO_SECRET_NAME],
-        background_api_base_url=prefs[PREF_BACKGROUND_API_BASE_URL] or prefs[PREF_API_BASE_URL] or DEFAULT_API_BASE_URL,
-        background_ai_model=prefs[PREF_BACKGROUND_AI_MODEL] or prefs[PREF_AI_MODEL] or "llama-3.3-70b",
+        background_api_base_url=prefs[PREF_BACKGROUND_API_BASE_URL]
+        or prefs[PREF_API_BASE_URL]
+        or DEFAULT_API_BASE_URL,
+        background_ai_model=prefs[PREF_BACKGROUND_AI_MODEL]
+        or prefs[PREF_AI_MODEL]
+        or "llama-3.3-70b",
     )
 
 
@@ -321,6 +329,7 @@ def update_preferences(
         clamped = max(1, min(max_tags, prefs.suggestion_min_tags))
         _set_setting(db, PREF_SUGGESTION_MIN_TAGS, str(clamped))
         from app.services.suggestions import clear_all_suggestions
+
         clear_all_suggestions(db)
 
     if prefs.profile_min_tag_freq is not None:
@@ -328,6 +337,7 @@ def update_preferences(
         _set_setting(db, PREF_PROFILE_MIN_TAG_FREQ, str(clamped))
         from app.services.suggestions import clear_all_suggestions
         from app.services.user_profile import invalidate_user_profile
+
         clear_all_suggestions(db)
         invalidate_user_profile(db)
 
@@ -335,6 +345,7 @@ def update_preferences(
         clamped = max(0, min(2000, prefs.suggestion_min_summary_length))
         _set_setting(db, PREF_SUGGESTION_MIN_SUMMARY_LENGTH, str(clamped))
         from app.services.suggestions import clear_all_suggestions
+
         clear_all_suggestions(db)
 
     if prefs.jano_secret_name is not None:
@@ -349,13 +360,21 @@ def update_preferences(
         _set_setting(db, PREF_API_BASE_URL, _validate_api_base_url(prefs.api_base_url))
 
     if prefs.related_posts_limit is not None:
-        _set_setting(db, PREF_RELATED_POSTS_LIMIT, str(max(5, min(100, prefs.related_posts_limit))))
+        _set_setting(
+            db,
+            PREF_RELATED_POSTS_LIMIT,
+            str(max(5, min(100, prefs.related_posts_limit))),
+        )
 
     if prefs.ai_max_tokens is not None:
-        _set_setting(db, PREF_AI_MAX_TOKENS, str(max(256, min(32768, prefs.ai_max_tokens))))
+        _set_setting(
+            db, PREF_AI_MAX_TOKENS, str(max(256, min(32768, prefs.ai_max_tokens)))
+        )
 
     if prefs.blocked_terms is not None:
-        lines = [ln.strip().lower() for ln in prefs.blocked_terms.splitlines() if ln.strip()]
+        lines = [
+            ln.strip().lower() for ln in prefs.blocked_terms.splitlines() if ln.strip()
+        ]
         _set_setting(db, PREF_BLOCKED_TERMS, "\n".join(sorted(set(lines))))
         _unsuggest_blocked_posts(db, lines)
 
@@ -451,71 +470,99 @@ class PrefSpec:
 
 
 PREF_SPEC: dict[str, PrefSpec] = {
-    "summary_language": PrefSpec(
-        PREF_SUMMARY_LANGUAGE, "Brazilian Portuguese"
-    ),
-    "ai_model": PrefSpec(
-        PREF_AI_MODEL, "llama-3.3-70b"
-    ),
+    "summary_language": PrefSpec(PREF_SUMMARY_LANGUAGE, "Brazilian Portuguese"),
+    "ai_model": PrefSpec(PREF_AI_MODEL, "llama-3.3-70b"),
     "feed_update_interval": PrefSpec(
-        PREF_FEED_UPDATE_INTERVAL, 30, cast=_cast_int,
+        PREF_FEED_UPDATE_INTERVAL,
+        30,
+        cast=_cast_int,
     ),
     "max_post_age_days": PrefSpec(
-        PREF_MAX_POST_AGE_DAYS, 365, cast=_cast_int,
+        PREF_MAX_POST_AGE_DAYS,
+        365,
+        cast=_cast_int,
     ),
     "max_unread_days": PrefSpec(
-        PREF_MAX_UNREAD_DAYS, 90, cast=_cast_int,
+        PREF_MAX_UNREAD_DAYS,
+        90,
+        cast=_cast_int,
     ),
     "toast_timeout_seconds": PrefSpec(
-        PREF_TOAST_TIMEOUT, 2, cast=_cast_int,
+        PREF_TOAST_TIMEOUT,
+        2,
+        cast=_cast_int,
     ),
     "idle_refresh_seconds": PrefSpec(
-        PREF_IDLE_REFRESH, 180, cast=_cast_int,
+        PREF_IDLE_REFRESH,
+        180,
+        cast=_cast_int,
     ),
     "reading_mode": PrefSpec(
-        PREF_READING_MODE, "fullscreen",
+        PREF_READING_MODE,
+        "fullscreen",
     ),
     "split_ratio": PrefSpec(
-        PREF_SPLIT_RATIO, 40, cast=_cast_int,
+        PREF_SPLIT_RATIO,
+        40,
+        cast=_cast_int,
         clamp=lambda sp, v: max(20, min(80, v)),
     ),
     "feed_reverse_order": PrefSpec(
-        PREF_FEED_REVERSE_ORDER, False, cast=_cast_bool,
+        PREF_FEED_REVERSE_ORDER,
+        False,
+        cast=_cast_bool,
     ),
     "summary_temperature": PrefSpec(
-        PREF_SUMMARY_TEMPERATURE, SUMMARY_TEMPERATURE, cast=_cast_float,
+        PREF_SUMMARY_TEMPERATURE,
+        SUMMARY_TEMPERATURE,
+        cast=_cast_float,
         clamp=lambda sp, v: max(0.0, min(2.0, v)),
     ),
     "summary_presence_penalty": PrefSpec(
-        PREF_SUMMARY_PRESENCE_PENALTY, 0.0, cast=_cast_float,
+        PREF_SUMMARY_PRESENCE_PENALTY,
+        0.0,
+        cast=_cast_float,
         clamp=lambda sp, v: max(-2.0, min(2.0, v)),
     ),
     "profile_min_tag_freq": PrefSpec(
-        PREF_PROFILE_MIN_TAG_FREQ, 2, cast=_cast_int,
+        PREF_PROFILE_MIN_TAG_FREQ,
+        2,
+        cast=_cast_int,
         clamp=lambda sp, v: max(1, min(20, v)),
     ),
     "suggestion_min_summary_length": PrefSpec(
-        PREF_SUGGESTION_MIN_SUMMARY_LENGTH, 100, cast=_cast_int,
+        PREF_SUGGESTION_MIN_SUMMARY_LENGTH,
+        100,
+        cast=_cast_int,
         clamp=lambda sp, v: max(0, min(2000, v)),
     ),
     "tags_per_post": PrefSpec(
-        PREF_TAGS_PER_POST, 7, cast=_cast_int,
+        PREF_TAGS_PER_POST,
+        7,
+        cast=_cast_int,
         clamp=lambda sp, v: max(3, min(15, v)),
     ),
     "ai_timeout": PrefSpec(
-        PREF_AI_TIMEOUT, 900, cast=_cast_int,
+        PREF_AI_TIMEOUT,
+        900,
+        cast=_cast_int,
         clamp=lambda sp, v: max(5, v),
     ),
     "ai_max_tokens": PrefSpec(
-        PREF_AI_MAX_TOKENS, 8192, cast=_cast_int,
+        PREF_AI_MAX_TOKENS,
+        8192,
+        cast=_cast_int,
         clamp=lambda sp, v: max(256, min(32768, v)),
     ),
     "related_posts_limit": PrefSpec(
-        PREF_RELATED_POSTS_LIMIT, 30, cast=_cast_int,
+        PREF_RELATED_POSTS_LIMIT,
+        30,
+        cast=_cast_int,
         clamp=lambda sp, v: max(5, min(100, v)),
     ),
     "curation_engine": PrefSpec(
-        PREF_CURATION_ENGINE, "ondemand",
+        PREF_CURATION_ENGINE,
+        "ondemand",
     ),
 }
 
@@ -552,13 +599,13 @@ def _resolve_spec(prefs: dict, name: str) -> Any:
 # =============================================================================
 
 
-
 def get_effective_ai_api_key(db: Session) -> Optional[str]:
     """Retorna a chave de API única configurada via Jano, ou None."""
     secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
     if not secret_name:
         return None
     from app.services.jano_client import get_jano_secret
+
     try:
         val = get_jano_secret(secret_name)
         return val.strip() if val and val.strip() else None
@@ -677,13 +724,19 @@ def get_effective_background_ai_api_key(db: Session) -> Optional[str]:
             if val and val.strip():
                 return val.strip()
         except Exception as e:
-            logging.getLogger(__name__).debug("jano_secret lookup failed for %s: %s", secret_name, e)
+            logging.getLogger(__name__).debug(
+                "jano_secret lookup failed for %s: %s", secret_name, e
+            )
     return get_effective_ai_api_key(db)
 
 
 def get_effective_background_api_base_url(db: Session) -> str:
     """Background API base URL — falls back to on-demand URL if not set."""
-    row = db.query(AppSettings).filter(AppSettings.key == PREF_BACKGROUND_API_BASE_URL).first()
+    row = (
+        db.query(AppSettings)
+        .filter(AppSettings.key == PREF_BACKGROUND_API_BASE_URL)
+        .first()
+    )
     if row and row.value:
         return row.value.rstrip("/")
     return get_effective_api_base_url(db)

@@ -83,9 +83,7 @@ def run_migrations():
             # Find alembic.ini relative to project directory
             base_dir = Path(__file__).resolve().parent.parent
             alembic_cfg = Config(str(base_dir / "alembic.ini"))
-            alembic_cfg.set_main_option(
-                "script_location", str(base_dir / "alembic")
-            )
+            alembic_cfg.set_main_option("script_location", str(base_dir / "alembic"))
 
             logger.info("Running database migrations...")
             command.upgrade(alembic_cfg, "head")
@@ -137,7 +135,7 @@ def check_database_integrity():
                 sys.exit(1)
 
             logger.info("Database integrity check passed")
-            
+
         # Libera todas as conexões físicas do pool do SQLite para evitar locks residuais antes do Alembic
         engine.dispose()
 
@@ -228,9 +226,11 @@ def recover_orphaned_queue():
                 continue  # Blocked posts are never summarized
             try:
                 # Double-check no race condition
-                existing = db.query(SummaryQueue).filter(
-                    SummaryQueue.post_id == post.id
-                ).first()
+                existing = (
+                    db.query(SummaryQueue)
+                    .filter(SummaryQueue.post_id == post.id)
+                    .first()
+                )
                 if existing:
                     continue
 
@@ -246,9 +246,7 @@ def recover_orphaned_queue():
 
         db.commit()
         if created_count > 0:
-            logger.info(
-                f"Queue recovery: enqueued {created_count} orphaned posts"
-            )
+            logger.info(f"Queue recovery: enqueued {created_count} orphaned posts")
 
     except Exception as e:
         logger.error(f"Error in queue recovery: {e}")

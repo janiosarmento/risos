@@ -73,6 +73,7 @@ class Settings(BaseSettings):
             if name.strip()
         }
 
+
 # Global configuration instance
 settings = Settings()
 

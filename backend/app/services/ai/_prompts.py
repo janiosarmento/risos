@@ -119,8 +119,7 @@ def get_user_prompt(
         audiences = get_effective_excluded_audience_notes(db)
         if audiences:
             listing = "\n".join(
-                f"- {name}: {note}" if note else f"- {name}"
-                for name, note in audiences
+                f"- {name}: {note}" if note else f"- {name}" for name, note in audiences
             )
             prompt += (
                 '\n\nAUDIENCE CHECK — add one extra key, "excluded_audience", to the '

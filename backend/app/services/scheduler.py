@@ -718,9 +718,7 @@ class Scheduler:
                 )
 
         db.commit()
-        logger.warning(
-            "%s error post %s: %s", type(error).__name__, post.id, error
-        )
+        logger.warning("%s error post %s: %s", type(error).__name__, post.id, error)
 
     async def _job_process_summaries(self):
         """Job to process AI summary queue."""
@@ -755,7 +753,9 @@ class Scheduler:
                         await asyncio.sleep(interval)
                         continue
 
-                    post, content, title_only = self._validate_and_prepare_post(db, candidate)
+                    post, content, title_only = self._validate_and_prepare_post(
+                        db, candidate
+                    )
                     if not post:
                         continue
 
@@ -768,18 +768,22 @@ class Scheduler:
                     try:
                         logger.info("Generating summary for post %s...", post.id)
                         summary_result = await generate_summary(
-                            content, title=post.title, title_only=title_only,
+                            content,
+                            title=post.title,
+                            title_only=title_only,
                             engine="background",
                         )
                         summary_text = summary_result.get_summary_with_signature()
 
-                        db.add(AISummary(
-                            content_hash=candidate.content_hash,
-                            summary_pt=summary_text,
-                            one_line_summary=summary_result.one_line_summary,
-                            translated_title=summary_result.translated_title,
-                            excluded_audience=summary_result.excluded_audience,
-                        ))
+                        db.add(
+                            AISummary(
+                                content_hash=candidate.content_hash,
+                                summary_pt=summary_text,
+                                one_line_summary=summary_result.one_line_summary,
+                                translated_title=summary_result.translated_title,
+                                excluded_audience=summary_result.excluded_audience,
+                            )
+                        )
                         if summary_result.tags:
                             save_post_tags(db, post.id, summary_result.tags)
                         db.query(SummaryQueue).filter(
@@ -788,7 +792,10 @@ class Scheduler:
                         db.commit()
                         logger.info("Summary generated for post %s", post.id)
 
-                        from app.services.ai._constants import SUMMARY_QUEUE_SLEEP_SECONDS
+                        from app.services.ai._constants import (
+                            SUMMARY_QUEUE_SLEEP_SECONDS,
+                        )
+
                         await asyncio.sleep(SUMMARY_QUEUE_SLEEP_SECONDS)
 
                     except (GarbageContentError, TemporaryError, PermanentError) as e:

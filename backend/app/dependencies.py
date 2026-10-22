@@ -31,11 +31,7 @@ def get_current_user(
     if not session_id:
         raise credentials_exception
 
-    session = (
-        db.query(UserSession)
-        .filter(UserSession.id == session_id)
-        .first()
-    )
+    session = db.query(UserSession).filter(UserSession.id == session_id).first()
 
     if not session:
         raise credentials_exception

@@ -11,11 +11,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import AISummary, IgnoredTag, Post
-from app.services.blocked_terms import title_matches_term
 from app.routes.preferences import (
     get_effective_blocked_terms,
     get_effective_excluded_audiences,
 )
+from app.services.blocked_terms import title_matches_term
 from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)

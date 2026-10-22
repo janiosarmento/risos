@@ -81,7 +81,10 @@ def _check_duplicate_by_guid(
 
 
 def _check_duplicate_by_url(
-    db: Session, feed: Feed, normalized_url: Optional[str], raw_url: Optional[str] = None
+    db: Session,
+    feed: Feed,
+    normalized_url: Optional[str],
+    raw_url: Optional[str] = None,
 ) -> bool:
     """Check for duplicates by normalized URL, with raw URL fallback.
 
@@ -104,7 +107,11 @@ def _check_duplicate_by_url(
     if raw_url:
         existing_by_raw = (
             db.query(Post)
-            .filter(Post.feed_id == feed.id, Post.url == raw_url, Post.normalized_url.is_(None))
+            .filter(
+                Post.feed_id == feed.id,
+                Post.url == raw_url,
+                Post.normalized_url.is_(None),
+            )
             .first()
         )
         if existing_by_raw:
@@ -138,7 +145,6 @@ def _check_duplicate_by_hash(
     )
 
     return existing is not None
-
 
 
 def _process_entry(

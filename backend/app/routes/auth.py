@@ -29,6 +29,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 COOKIE_MAX_AGE = 60 * 60 * 24 * 90  # 90 days
 
+
 def verify_password(db: Session, password: str) -> bool:
     """Check against the stored hash if one was set, else the env password."""
     row = db.query(AppSettings).filter(AppSettings.key == PASSWORD_HASH_KEY).first()
@@ -62,7 +63,9 @@ def login(request: Request, credentials: LoginRequest, db: Session = Depends(get
     db.add(session)
     db.commit()
 
-    response = Response(content=json.dumps({"success": True}), media_type="application/json")
+    response = Response(
+        content=json.dumps({"success": True}), media_type="application/json"
+    )
     response.set_cookie(
         key="risos_session",
         value=session_id,
@@ -122,7 +125,10 @@ def logout(request: Request, db: Session = Depends(get_db)):
         db.query(UserSession).filter(UserSession.id == session_id).delete()
         db.commit()
 
-    response = Response(content=json.dumps({"message": "Successfully logged out"}), media_type="application/json")
+    response = Response(
+        content=json.dumps({"message": "Successfully logged out"}),
+        media_type="application/json",
+    )
     response.delete_cookie(key="risos_session", path="/")
     return response
 
