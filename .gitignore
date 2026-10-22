@@ -66,8 +66,4 @@ Thumbs.db
 *.temp
 *.bak
 
-# Beads / Dolt files (removed; ignore any local leftovers)
-.dolt/
-.beads/
-.beads-credential-key
 graphify-out/
