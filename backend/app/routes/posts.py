@@ -1811,6 +1811,12 @@ _RELATED_STOP_WORDS: set[str] = {
 }
 
 
+# How many SQL candidates to fetch per result slot in the related-posts
+# search, since the whole-word filter drops substring-only LIKE hits.
+_RELATED_CANDIDATE_FACTOR = 4
+_RELATED_MIN_IDF = 0.1
+
+
 def _keywords_from_title(title: str | None) -> list[str]:
     """Tokenise *title*, drop stop-words and short tokens, return sorted list."""
     if not title:
@@ -1845,41 +1851,37 @@ def _text_search_related(
         for kw in keywords
     ]
     freq_row = db.query(*freq_cases).first()
+    # Floored so a keyword in nearly every title still adds a little weight
+    # instead of a negative one.
     kw_idf = {
-        kw: math.log(max(total_posts, 1) / (1 + (freq or 0)))
+        kw: max(math.log(max(total_posts, 1) / (1 + (freq or 0))), _RELATED_MIN_IDF)
         for kw, freq in zip(keywords, freq_row)
     }
 
+    # SQL LIKE is a substring match ("arc" hits "search"), so it only narrows
+    # the candidate set; whole-word matching is enforced in Python below. The
+    # feed excerpt (Post.content) is left out: it adds substring noise, and the
+    # AI summary fields already describe the article.
     score_conditions = []
-    keyword_or_groups = []
+    kw_any_match = []
 
     for kw in keywords:
         term = f"%{kw}%"
         idf = kw_idf[kw]
 
-        kw_matches = [
-            func.lower(Post.title).like(term),
-            func.lower(Post.content).like(term),
-            func.lower(AISummary.translated_title).like(term),
-            func.lower(AISummary.one_line_summary).like(term),
-            func.lower(AISummary.summary_pt).like(term),
-        ]
-        keyword_or_groups.append(kw_matches)
-
         title_match = or_(
             func.lower(Post.title).like(term),
             func.lower(AISummary.translated_title).like(term),
         )
-        content_match = or_(
-            func.lower(Post.content).like(term),
+        summary_match = or_(
             func.lower(AISummary.one_line_summary).like(term),
             func.lower(AISummary.summary_pt).like(term),
         )
+        kw_any_match.append(or_(title_match, summary_match))
         score_conditions.append(case((title_match, 5.0 * idf), else_=0.0))
-        score_conditions.append(case((content_match, 1.5 * idf), else_=0.0))
+        score_conditions.append(case((summary_match, 1.5 * idf), else_=0.0))
 
     text_score = sum(score_conditions)
-    kw_any_match = [or_(*group) for group in keyword_or_groups]
     match_count = sum(case((m, 1), else_=0) for m in kw_any_match)
 
     text_query = (
@@ -1889,6 +1891,8 @@ def _text_search_related(
             Post.feed_id,
             Post.is_suggested,
             Feed.title.label("feed_title"),
+            AISummary.translated_title,
+            AISummary.one_line_summary,
             AISummary.summary_pt,
         )
         .outerjoin(AISummary, Post.content_hash == AISummary.content_hash)
@@ -1900,8 +1904,11 @@ def _text_search_related(
         text_query = text_query.filter(Post.is_read.is_(False))
     if not include_unread:
         text_query = text_query.filter(Post.is_read.is_(True))
+    # Over-fetch: the whole-word filter below discards substring-only hits.
     text_results = (
-        text_query.order_by(text_score.desc(), Post.sort_date.desc()).limit(limit).all()
+        text_query.order_by(text_score.desc(), Post.sort_date.desc())
+        .limit(limit * _RELATED_CANDIDATE_FACTOR)
+        .all()
     )
 
     if not text_results:
@@ -1920,21 +1927,32 @@ def _text_search_related(
         )
         tag_counts_map = {p_id: count for p_id, count in tag_counts}
 
-    # Python-side TF-IDF re-ranking
+    # Python-side whole-word filter + TF-IDF re-ranking
     scored = []
     for r in text_results:
         common_count = tag_counts_map.get(r.id, 0)
         if common_count < min_common_tags:
             continue
 
-        candidate_text = r.title or ""
-        if r.summary_pt:
-            candidate_text += " " + re.sub(r"<[^>]+>", "", r.summary_pt)
+        candidate_text = " ".join(
+            re.sub(r"<[^>]+>", " ", field)
+            for field in (
+                r.title,
+                r.translated_title,
+                r.one_line_summary,
+                r.summary_pt,
+            )
+            if field
+        )
         candidate_words = re.sub(r"[^\w\s-]", "", candidate_text.lower()).split()
         candidate_len = max(len(candidate_words), 1)
 
+        matched = [kw for kw in keywords if kw in candidate_words]
+        if len(matched) < 2:
+            continue
+
         tfidf_score = 0.0
-        for kw in keywords:
+        for kw in matched:
             idf_val = kw_idf.get(kw, 1.0)
             tf = candidate_words.count(kw) / candidate_len
             tfidf_score += tf * idf_val
@@ -1951,7 +1969,7 @@ def _text_search_related(
             "is_suggested": bool(r.is_suggested),
             "common_tags_count": common_count,
         }
-        for _, r, common_count in scored
+        for _, r, common_count in scored[:limit]
     ]
 
 
