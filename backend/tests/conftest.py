@@ -1,8 +1,11 @@
-"""Make the backend package importable when running pytest from anywhere."""
+"""Make the backend package importable, and share fixtures across tests."""
 
+import importlib.util
 import sys
 import types
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -26,3 +29,32 @@ except ModuleNotFoundError:  # pragma: no cover
     stub.css_sanitizer = css_sanitizer
     sys.modules["bleach"] = stub
     sys.modules["bleach.css_sanitizer"] = css_sanitizer
+
+
+FTS_MIGRATION = (
+    Path(__file__).resolve().parent.parent
+    / "alembic/versions/c3f9a1b7d5e2_add_posts_fts_index.py"
+)
+
+
+@pytest.fixture
+def fts_engine():
+    """In-memory database with the full schema plus the posts_fts index.
+
+    The index and its triggers live only in their Alembic migration, so the
+    migration's own statements are run here instead of a copy of them.
+    """
+    from sqlalchemy import create_engine, text
+
+    from app.database import Base
+
+    spec = importlib.util.spec_from_file_location("fts_migration", FTS_MIGRATION)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        for statement in migration.STATEMENTS:
+            conn.execute(text(statement))
+    return engine

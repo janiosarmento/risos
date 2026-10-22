@@ -96,7 +96,8 @@ summaries/tags and for grouping tags into topics.
   it shares any of the topic's tags, so one post can be in several topics);
   `ai_summaries` keyed by `content_hash`; `summary_queue`; `app_settings`;
   `user_sessions`. `posts_fts` is a contentless FTS5 index (title + AI summary
-  fields, BM25) used by the Smart Assistant's related-post search; SQL triggers
+  fields, BM25) used by the Smart Assistant's related-post search and the post
+  list's search box; SQL triggers
   on `posts` and `ai_summaries` keep it in sync, so app code never writes to it.
 - **Topic count cache** `app/topics_cache.py` — the sidebar's per-topic
   post/unread counts come from an expensive `GROUP BY` over `post_tags`, cached

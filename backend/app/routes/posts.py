@@ -17,7 +17,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session, joinedload, subqueryload
 from starlette.responses import Response
 
@@ -119,6 +119,47 @@ def get_summary_status(db: Session, post: Post) -> str:
     return "not_configured"
 
 
+def _search_match_query(search: str) -> str | None:
+    """Turn search-box text into an FTS5 query for posts_fts.
+
+    Every word must match, in any order; words of 3+ characters also match as
+    a prefix ("kube" finds "Kubernetes"). Returns None when no word is longer
+    than one character: the tokenizer drops symbols, so "c++" or "c#" would
+    become a bare "c" that matches thousands of posts.
+    """
+    words = re.findall(r"\w+", search.lower())
+    if not any(len(w) > 1 for w in words):
+        return None
+    return " ".join(f'"{w}"*' if len(w) >= 3 else f'"{w}"' for w in words)
+
+
+def _filter_by_search(query, search: str):
+    """Restrict a Post query to posts matching *search*.
+
+    Uses posts_fts, falling back to a literal substring match for searches
+    the index cannot express (see _search_match_query).
+    """
+    match_query = _search_match_query(search)
+    if match_query is None:
+        term = f"%{search.strip().lower()}%"
+        return query.outerjoin(
+            AISummary, Post.content_hash == AISummary.content_hash
+        ).filter(
+            or_(
+                func.lower(Post.title).like(term),
+                func.lower(Post.content).like(term),
+                func.lower(AISummary.translated_title).like(term),
+                func.lower(AISummary.one_line_summary).like(term),
+                func.lower(AISummary.summary_pt).like(term),
+            )
+        )
+    return query.filter(
+        text(
+            "posts.id IN (SELECT rowid FROM posts_fts WHERE posts_fts MATCH :search)"
+        ).bindparams(search=match_query)
+    )
+
+
 def _apply_post_filters(
     query,
     db: Session,
@@ -188,18 +229,7 @@ def _apply_post_filters(
 
     # search
     if search and search.strip():
-        term = f"%{search.strip().lower()}%"
-        query = query.outerjoin(
-            AISummary, Post.content_hash == AISummary.content_hash
-        ).filter(
-            or_(
-                func.lower(Post.title).like(term),
-                func.lower(Post.content).like(term),
-                func.lower(AISummary.translated_title).like(term),
-                func.lower(AISummary.one_line_summary).like(term),
-                func.lower(AISummary.summary_pt).like(term),
-            )
-        )
+        query = _filter_by_search(query, search)
 
     return query, relevant_feed_ids, topic_tags, feed_ids_list
 
@@ -298,18 +328,7 @@ def list_posts(
     elif category_id is not None:
         starred_query = starred_query.filter(Post.feed_id.in_(feed_ids_list))
     if search and search.strip():
-        term = f"%{search.strip().lower()}%"
-        starred_query = starred_query.outerjoin(
-            AISummary, Post.content_hash == AISummary.content_hash
-        ).filter(
-            or_(
-                func.lower(Post.title).like(term),
-                func.lower(Post.content).like(term),
-                func.lower(AISummary.translated_title).like(term),
-                func.lower(AISummary.one_line_summary).like(term),
-                func.lower(AISummary.summary_pt).like(term),
-            )
-        )
+        starred_query = _filter_by_search(starred_query, search)
     starred_count = starred_query.scalar()
 
     # Get suggested unread count (global - not filtered by feed/category)
@@ -1859,8 +1878,6 @@ def _text_search_related(
     down. Posts scoring below _RELATED_MIN_RELATIVE_SCORE of the source post's
     own score are dropped. Returns scored post dicts or [].
     """
-    from sqlalchemy import text
-
     if not keywords:
         return []
 

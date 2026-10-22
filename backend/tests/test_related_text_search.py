@@ -1,39 +1,19 @@
 """Tests for the assistant's full-text search for related posts."""
 
-import importlib.util
 from datetime import datetime
-from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from app.database import Base
 from app.models import AISummary, Feed, Post, PostTag
 from app.routes.posts import _keywords_from_title, _text_search_related
 
 NOW = datetime(2026, 1, 1)
-MIGRATION = (
-    Path(__file__).resolve().parent.parent
-    / "alembic/versions/c3f9a1b7d5e2_add_posts_fts_index.py"
-)
-
-
-def _fts_statements() -> list[str]:
-    spec = importlib.util.spec_from_file_location("fts_migration", MIGRATION)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.STATEMENTS
 
 
 @pytest.fixture
-def db():
-    engine = create_engine("sqlite://")
-    Base.metadata.create_all(engine)
-    with engine.begin() as conn:
-        for statement in _fts_statements():
-            conn.execute(text(statement))
-    session = sessionmaker(bind=engine)()
+def db(fts_engine):
+    session = sessionmaker(bind=fts_engine)()
     session.add(Feed(id=1, title="Feed", url="https://example.com/feed"))
     session.commit()
     yield session
