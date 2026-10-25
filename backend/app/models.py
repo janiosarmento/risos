@@ -155,7 +155,7 @@ Index(
 Index(
     "idx_posts_suggested",
     Post.is_suggested,
-    sqlite_where=Post.is_suggested == 1,
+    sqlite_where=Post.is_suggested.is_(True),
 )
 
 

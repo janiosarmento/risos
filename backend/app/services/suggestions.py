@@ -200,7 +200,7 @@ def clear_all_suggestions(db: Session) -> int:
     """
     count = (
         db.query(Post)
-        .filter(Post.is_suggested == 1, Post.is_read == 0)
+        .filter(Post.is_suggested.is_(True), Post.is_read == 0)
         .update(
             {
                 Post.is_suggested: 0,
@@ -229,11 +229,11 @@ def get_suggestion_stats(db: Session) -> dict:
 
     # Count suggested posts (not read)
     suggested_unread = (
-        db.query(Post).filter(Post.is_suggested == 1, Post.is_read == 0).count()
+        db.query(Post).filter(Post.is_suggested.is_(True), Post.is_read == 0).count()
     )
 
     # Total suggested posts
-    suggested_total = db.query(Post).filter(Post.is_suggested == 1).count()
+    suggested_total = db.query(Post).filter(Post.is_suggested.is_(True)).count()
 
     # Get profile info
     profile = get_user_profile(db)
