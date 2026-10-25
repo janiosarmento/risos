@@ -28,6 +28,7 @@ Grouping is transitive (union-find) like curation, so chains are broken the
 same way: an oversized component is re-clustered at a stricter title bar.
 """
 
+import bisect
 import logging
 import math
 import re
@@ -35,6 +36,7 @@ import threading
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
+from functools import lru_cache
 from typing import NamedTuple
 from urllib.parse import urlparse
 
@@ -150,16 +152,19 @@ _SUMMARY_STOPWORDS = _STOPWORDS | frozenset(
 )
 
 
-def tokenize_summary(text: str | None) -> set[str]:
+# A summary never changes once written, and every rebuild re-reads the same
+# week of them, so their tokens are kept across rebuilds.
+@lru_cache(maxsize=8192)
+def tokenize_summary(text: str | None) -> frozenset[str]:
     if not text:
-        return set()
+        return frozenset()
     # The generating model appends a "— model name / timestamp" footer.
     body = text.split("\n—")[0].lower()
-    return {
+    return frozenset(
         t
         for t in _TOKEN_RE.findall(body)
         if (len(t) >= MIN_TOKEN_LEN or t.isdigit()) and t not in _SUMMARY_STOPWORDS
-    }
+    )
 
 
 # Host burst: an aggregator feed (Hacker News, Lobsters) often carries two posts
@@ -328,7 +333,21 @@ def _add_summary_pairs(
     by_id: dict[int, "StoryPost"],
     summaries: dict[int, str],
 ) -> None:
-    """Add pairs whose AI summaries largely contain each other's content."""
+    """Add pairs whose AI summaries largely contain each other's content.
+
+    A pair qualifies when it is within MAX_GAP, shares at least one seed token
+    (one in at most SUMMARY_SEED_MAX_RATIO of the summaries), and its
+    containment reaches the feed-dependent threshold.
+
+    Almost every pair sharing a word scores far below that threshold, so
+    candidates come from prefix filtering instead of from every shared word.
+    Order a summary's tokens rarest first; its prefix is the shortest run of
+    them after which less than `floor` of its weight remains. If a pair's
+    containment reaches `floor`, the shared weight is at least `floor` times
+    the smaller summary's weight, which the suffix alone cannot supply, so the
+    pair shares a token from the smaller summary's prefix. Looking only there
+    finds every qualifying pair while skipping about nine in ten candidates.
+    """
     token_sets = {
         pid: toks
         for pid, text in summaries.items()
@@ -342,36 +361,47 @@ def _add_summary_pairs(
     for toks in token_sets.values():
         df.update(toks)
     idf = {t: math.log((n + 1) / (c + 0.5)) for t, c in df.items()}
+    idf_sq = {t: v**2 for t, v in idf.items()}
     weight = {pid: sum(idf[t] ** 2 for t in toks) for pid, toks in token_sets.items()}
-
     seed_cutoff = max(SUMMARY_SEED_MIN_FREQ, int(n * SUMMARY_SEED_MAX_RATIO))
-    posts_by_token: dict[str, list[int]] = defaultdict(list)
-    for pid, toks in token_sets.items():
-        for t in toks:
-            if df[t] <= seed_cutoff:
-                posts_by_token[t].append(pid)
+    floor = min(SUMMARY_CONTAIN_SCORE, SUMMARY_SAME_FEED_SCORE)
 
-    # Pairs are enumerated along the time axis and stop as soon as the gap is
-    # exceeded: most pairs sharing a word are days apart and never qualify.
+    # Posts in date order; each token's posting list holds their positions, so
+    # the MAX_GAP window is a bisect on both.
+    ids = sorted(token_sets, key=lambda pid: by_id[pid].sort_date)
+    dates = [by_id[pid].sort_date for pid in ids]
+    postings: dict[str, list[int]] = defaultdict(list)
+    for i, pid in enumerate(ids):
+        for t in token_sets[pid]:
+            postings[t].append(i)
+
     candidates: set[tuple[int, int]] = set()
-    for members in posts_by_token.values():
-        if len(members) < 2:
+    for i, x in enumerate(ids):
+        wx = weight[x]
+        if wx <= 0:
             continue
-        members.sort(key=lambda pid: by_id[pid].sort_date)
-        for i, a in enumerate(members):
-            for b in members[i + 1 :]:
-                if by_id[b].sort_date - by_id[a].sort_date > MAX_GAP:
-                    break
-                candidates.add((a, b) if a < b else (b, a))
+        # x only probes partners at least as heavy: the prefix argument holds
+        # for the smaller summary of the pair (ties broken by id).
+        x_key = (wx, x)
+        lo = bisect.bisect_left(dates, dates[i] - MAX_GAP)
+        hi = bisect.bisect_right(dates, dates[i] + MAX_GAP)
+        remaining = wx
+        for t in sorted(token_sets[x], key=idf_sq.__getitem__, reverse=True):
+            if remaining < floor * wx:
+                break
+            remaining -= idf_sq[t]
+            plist = postings[t]
+            start, end = bisect.bisect_left(plist, lo), bisect.bisect_left(plist, hi)
+            for j in plist[start:end]:
+                y = ids[j]
+                if y != x and (weight[y], y) > x_key:
+                    candidates.add((x, y) if x < y else (y, x))
 
     for a, b in candidates:
-        if abs(by_id[a].sort_date - by_id[b].sort_date) > MAX_GAP:
-            continue
-        smaller = min(weight[a], weight[b])
-        if smaller <= 0:
-            continue
         shared = token_sets[a] & token_sets[b]
-        score = sum(idf[t] ** 2 for t in shared) / smaller
+        if not any(df[t] <= seed_cutoff for t in shared):
+            continue
+        score = sum(idf[t] ** 2 for t in shared) / min(weight[a], weight[b])
         needed = (
             SUMMARY_SAME_FEED_SCORE
             if by_id[a].feed_id == by_id[b].feed_id

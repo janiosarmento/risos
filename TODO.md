@@ -10,7 +10,3 @@
   file the backend must read belongs under `/etc/risos/` (or an explicit
   `ReadWritePaths`/exception), never the deploying user's home. Add this to the
   README's deploy notes.
-- [ ] **Story grouping costs ~1s of CPU per rebuild** (most of it in
-  `_add_summary_pairs`). It now runs off the request path, but still holds the
-  GIL while it runs. Either speed it up or compute it in the scheduler and
-  store the story ids.
