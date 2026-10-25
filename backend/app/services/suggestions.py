@@ -15,7 +15,7 @@ from app.routes.preferences import (
     get_effective_blocked_terms,
     get_effective_excluded_audiences,
 )
-from app.services.blocked_terms import title_matches_term
+from app.services.blocked_terms import title_is_blocked
 from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
@@ -99,12 +99,7 @@ def get_suggestion_candidates(
     blocked_terms = get_effective_blocked_terms(db)
     if blocked_terms:
         unread_posts = [
-            p
-            for p in unread_posts
-            if not any(
-                title_matches_term((p.title or "").lower(), term)
-                for term in blocked_terms
-            )
+            p for p in unread_posts if not title_is_blocked(p.title, blocked_terms)
         ]
         logger.debug(f"{len(unread_posts)} posts remaining after blocked terms filter")
 

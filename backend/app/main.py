@@ -304,6 +304,12 @@ async def lifespan(app: FastAPI):
     # Start background jobs scheduler
     await scheduler.start()
 
+    # Build the story grouping now, so the first post list doesn't wait on it
+    from app.database import engine
+    from app.services.stories import refresh_story_map_in_background
+
+    refresh_story_map_in_background(engine)
+
     yield
 
     # Shutdown

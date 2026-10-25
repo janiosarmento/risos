@@ -6,6 +6,7 @@ summary pipeline, which skips blocked posts so they never cost an LLM call.
 """
 
 import re
+from functools import lru_cache
 
 
 def _word_boundary(escaped: str, side: str) -> str:
@@ -28,9 +29,9 @@ def _word_boundary(escaped: str, side: str) -> str:
         return ""  # non-word char at end — no boundary needed
 
 
-def title_matches_term(title_lower: str, term: str) -> bool:
-    """
-    Check if a title matches a blocked term.
+@lru_cache(maxsize=4096)
+def _term_pattern(term: str) -> str | None:
+    """Regex source for one blocked term, or None if it can never match.
 
     Without *: whole-word match ("ford" won't match "affordable").
     With *: substring match per segment, joined by .*?
@@ -40,21 +41,47 @@ def title_matches_term(title_lower: str, term: str) -> bool:
         escaped = re.escape(term)
         lb = _word_boundary(escaped, "start")
         rb = _word_boundary(escaped, "end")
-        pattern = lb + escaped + rb
-        return bool(re.search(pattern, title_lower))
+        return lb + escaped + rb
     parts = [re.escape(seg) for seg in term.split("*") if seg]
     if not parts:
-        return False
+        return None
     # Add word boundaries to first/last segments
     pattern = ".*?".join(parts)
     if not term.startswith("*"):
         pattern = _word_boundary(parts[0], "start") + pattern
     if not term.endswith("*"):
         pattern = pattern + _word_boundary(parts[-1], "end")
-    return bool(re.search(pattern, title_lower))
+    return pattern
+
+
+@lru_cache(maxsize=4096)
+def _term_regex(term: str) -> re.Pattern | None:
+    pattern = _term_pattern(term)
+    return re.compile(pattern) if pattern is not None else None
+
+
+@lru_cache(maxsize=8)
+def _terms_regex(terms: tuple[str, ...]) -> re.Pattern | None:
+    """One alternation over every term, so a title is scanned once.
+
+    Hundreds of terms against every unread title is on the post list's hot
+    path; matching them one by one was most of that request's time.
+    """
+    patterns = [p for p in map(_term_pattern, terms) if p is not None]
+    if not patterns:
+        return None
+    return re.compile("|".join(f"(?:{p})" for p in patterns))
+
+
+def title_matches_term(title_lower: str, term: str) -> bool:
+    """Check if a title matches one blocked term (see _term_pattern)."""
+    regex = _term_regex(term)
+    return bool(regex and regex.search(title_lower))
 
 
 def title_is_blocked(title: str | None, terms: list) -> bool:
     """True if *title* matches any of the blocked *terms*."""
-    title_lower = (title or "").lower()
-    return any(title_matches_term(title_lower, term) for term in terms)
+    if not terms:
+        return False
+    regex = _terms_regex(tuple(terms))
+    return bool(regex and regex.search((title or "").lower()))

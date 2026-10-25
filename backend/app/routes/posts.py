@@ -17,8 +17,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy import func, or_, text
-from sqlalchemy.orm import Session, joinedload, subqueryload
+from sqlalchemy import func, or_, select, text
+from sqlalchemy.orm import Session, joinedload, selectinload, subqueryload
 from starlette.responses import Response
 
 from app.database import get_db
@@ -51,7 +51,7 @@ from app.services.ai import (
     generate_summary,
 )
 from app.services.ai._parsing import split_into_paragraphs
-from app.services.blocked_terms import title_matches_term
+from app.services.blocked_terms import title_is_blocked
 from app.services.content_extractor import ensure_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.stories import get_story_map, get_story_read_counts
@@ -81,7 +81,7 @@ def get_blocked_unread_ids(db: Session) -> set[int]:
         row.id
         for row in rows
         if (row.excluded_audience and row.excluded_audience in audiences)
-        or any(title_matches_term((row.title or "").lower(), t) for t in terms)
+        or title_is_blocked(row.title, terms)
     }
 
 
@@ -93,6 +93,31 @@ def get_post_or_404(db: Session, post_id: int) -> Post:
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
     return post
+
+
+def _queue_statuses(db: Session, post_ids: list[int]) -> dict[int, str]:
+    """post_id -> "pending"/"failed" for posts sitting in the summary queue."""
+    if not post_ids:
+        return {}
+    rows = (
+        db.query(SummaryQueue.post_id, SummaryQueue.error_type)
+        .filter(SummaryQueue.post_id.in_(post_ids))
+        .all()
+    )
+    return {
+        row.post_id: "failed" if row.error_type == "permanent" else "pending"
+        for row in rows
+    }
+
+
+def _has_any_tag(tags: list[str]):
+    """Filter clause: the post carries at least one of *tags*.
+
+    A semi-join on the (tag, post_id) index. Joining post_tags instead yields
+    one row per matching tag, and the DISTINCT needed to undo that ran over
+    every selected column, post content included.
+    """
+    return Post.id.in_(select(PostTag.post_id).where(PostTag.tag.in_(tags)))
 
 
 def get_summary_status(db: Session, post: Post) -> str:
@@ -195,11 +220,11 @@ def _apply_post_filters(
             .all()
         ]
         if topic_tags:
-            query = query.join(PostTag).filter(PostTag.tag.in_(topic_tags)).distinct()
+            query = query.filter(_has_any_tag(topic_tags))
         else:
             query = query.filter(Post.id == -1)
     elif tag:
-        query = query.join(PostTag).filter(PostTag.tag == tag.strip().lower())
+        query = query.filter(_has_any_tag([tag.strip().lower()]))
 
     # feed / category
     if feed_id is not None:
@@ -262,7 +287,7 @@ def list_posts(
 ):
     """List posts with pagination. Ordered by sort_date, newest first unless
     the feed_reverse_order preference is set."""
-    query = db.query(Post).options(subqueryload(Post.tags))
+    query = db.query(Post).options(selectinload(Post.tags))
     blocked_ids = get_blocked_unread_ids(db)
     query, relevant_feed_ids, topic_tags, feed_ids_list = _apply_post_filters(
         query,
@@ -314,15 +339,11 @@ def list_posts(
                 feed_unread_counts[fid] = 0
 
     # Get starred count for current context
-    starred_query = db.query(func.count(func.distinct(Post.id))).filter(
-        Post.is_starred.is_(True)
-    )
+    starred_query = db.query(func.count(Post.id)).filter(Post.is_starred.is_(True))
     if topic_id is not None and topic_tags:
-        starred_query = starred_query.join(PostTag).filter(PostTag.tag.in_(topic_tags))
+        starred_query = starred_query.filter(_has_any_tag(topic_tags))
     elif tag:
-        starred_query = starred_query.join(PostTag).filter(
-            PostTag.tag == tag.strip().lower()
-        )
+        starred_query = starred_query.filter(_has_any_tag([tag.strip().lower()]))
     if feed_id is not None:
         starred_query = starred_query.filter(Post.feed_id == feed_id)
     elif category_id is not None:
@@ -356,6 +377,10 @@ def list_posts(
     excluded_audiences = set(get_effective_excluded_audiences(db))
     story_map = get_story_map(db)
     story_read_counts = get_story_read_counts(db, story_map, [p.id for p in posts])
+    queue_statuses = _queue_statuses(
+        db,
+        [p.id for p in posts if p.content_hash and p.content_hash not in summaries_map],
+    )
 
     # Convert to response
     result = []
@@ -381,15 +406,14 @@ def list_posts(
             "liked_at": post.liked_at,
             "is_suggested": bool(post.is_suggested),
             "suggestion_score": post.suggestion_score,
-            "summary_status": ("ready" if summary else get_summary_status(db, post)),
+            "summary_status": (
+                "ready" if summary else queue_statuses.get(post.id, "not_configured")
+            ),
             "one_line_summary": summary.one_line_summary if summary else None,
             "translated_title": summary.translated_title if summary else None,
             "skip_summary": bool(post.skip_summary),
             "keep_unread": bool(post.keep_unread),
-            "is_blocked": any(
-                title_matches_term((post.title or "").lower(), term)
-                for term in blocked_terms
-            )
+            "is_blocked": title_is_blocked(post.title, blocked_terms)
             or bool(
                 summary
                 and summary.excluded_audience

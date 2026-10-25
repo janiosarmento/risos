@@ -136,7 +136,7 @@ Index(
         & Post.normalized_url.is_(None)
     ),
 )
-Index("idx_posts_feed", Post.feed_id)
+Index("idx_posts_feed_sort", Post.feed_id, Post.sort_date)
 Index("idx_posts_read", Post.is_read)
 Index("idx_posts_sort", Post.sort_date.desc())
 Index("idx_posts_hash", Post.content_hash)
@@ -147,6 +147,11 @@ Index(
     sqlite_where=Post.is_starred.is_(True),
 )
 Index("idx_posts_liked", Post.is_liked, sqlite_where=Post.is_liked == 1)
+Index(
+    "idx_posts_keep_unread",
+    Post.keep_unread,
+    sqlite_where=Post.keep_unread.is_(True),
+)
 Index(
     "idx_posts_suggested",
     Post.is_suggested,

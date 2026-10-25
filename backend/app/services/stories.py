@@ -31,6 +31,7 @@ same way: an oversized component is re-clustered at a stricter title bar.
 import logging
 import math
 import re
+import threading
 import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
@@ -38,6 +39,7 @@ from typing import NamedTuple
 from urllib.parse import urlparse
 
 from sqlalchemy import func
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.models import AISummary, Post, PostTag
@@ -518,17 +520,10 @@ def find_stories(db: Session, now: datetime | None = None) -> list[list[int]]:
 # from post content, so nothing needs to invalidate it.
 _CACHE_TTL_SECONDS = 60.0
 _cache: dict = {"data": None, "members": {}, "ts": 0.0}
+_refresh_lock = threading.Lock()
 
 
-def get_story_map(db: Session) -> dict[int, tuple[int, int]]:
-    """post_id -> (story_id, story_size), cached briefly.
-
-    `story_id` is the lowest post id in the group, which is stable as the group
-    grows and lets the client fold siblings that arrive on different pages.
-    """
-    now = time.monotonic()
-    if _cache["data"] is not None and now - _cache["ts"] < _CACHE_TTL_SECONDS:
-        return _cache["data"]
+def _rebuild_story_map(db: Session) -> dict[int, tuple[int, int]]:
     story_map: dict[int, tuple[int, int]] = {}
     members: dict[int, list[int]] = {}
     for group in find_stories(db):
@@ -538,8 +533,46 @@ def get_story_map(db: Session) -> dict[int, tuple[int, int]]:
             story_map[pid] = (story_id, len(group))
     _cache["data"] = story_map
     _cache["members"] = members
-    _cache["ts"] = now
+    _cache["ts"] = time.monotonic()
     return story_map
+
+
+def refresh_story_map_in_background(bind: Engine) -> None:
+    """Rebuild the cached grouping on a worker thread, at most one at a time.
+
+    The grouping takes seconds on a small server; doing it inline made the
+    first post list request after every expiry wait for it.
+    """
+    if not _refresh_lock.acquire(blocking=False):
+        return
+
+    def run() -> None:
+        db = Session(bind=bind)
+        try:
+            _rebuild_story_map(db)
+        except Exception:
+            logger.exception("Story grouping refresh failed")
+        finally:
+            db.close()
+            _refresh_lock.release()
+
+    threading.Thread(target=run, name="story-map-refresh", daemon=True).start()
+
+
+def get_story_map(db: Session) -> dict[int, tuple[int, int]]:
+    """post_id -> (story_id, story_size), cached briefly.
+
+    `story_id` is the lowest post id in the group, which is stable as the group
+    grows and lets the client fold siblings that arrive on different pages.
+
+    An expired grouping is still served while a fresh one is built in the
+    background; only a process that has none yet builds it inline.
+    """
+    if _cache["data"] is None:
+        return _rebuild_story_map(db)
+    if time.monotonic() - _cache["ts"] >= _CACHE_TTL_SECONDS:
+        refresh_story_map_in_background(db.get_bind())
+    return _cache["data"]
 
 
 def get_story_read_counts(
