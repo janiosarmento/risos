@@ -26,7 +26,7 @@ against the current code, and update this list as items land.
   "AI state" dot on the status screen (always shows "normal" — misleading).
   `scripts/lib.py`'s `clear_rate_limits()` touches it too. Remove the related
   i18n keys in both locales.
-- [ ] **2. Collapse `ApiKeyRotator` to a plain key getter.** There is one key
+- [x] **2. Collapse `ApiKeyRotator` to a plain key getter.** There is one key
   and no rotation: `get_next_key` is unused, `set_key_cooldown` only logs,
   `clear_cooldown` is a no-op. Callers: `_api.py` (3 cooldown calls),
   `admin.py` queue status (`get_status()`), `scheduler.py`
@@ -61,7 +61,7 @@ against the current code, and update this list as items land.
   - Manual ops tools (curl / README): `reprocess-summary`, `vacuum`,
     `queue-status`, `clear-queue-cooldowns`, `recover-orphaned-queue`,
     `diagnose-queue`. Keep only those still used; fix the README to match.
-    Item 2 changes what `queue-status` reports. `clear-queue-cooldowns` is
+    Since item 2, `queue-status` reports `api_key_configured` (bool). `clear-queue-cooldowns` is
     no longer ops-only: since item 1 it backs Settings' "Reset AI queue"
     button (keep it).
 - [ ] **8. Fix or delete broken maintenance scripts.**

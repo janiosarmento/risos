@@ -2,7 +2,7 @@
 """
 Batch-translate all non-English tags in the database to English.
 Uses Cerebras llama3.1-8b for translation, same as the live pipeline.
-Rotates through ALL configured API keys round-robin to avoid rate limits.
+Round-robins over the configured API keys (today there is only one).
 Updates post_tags rows in-place and also updates user_profile tags.
 """
 
@@ -27,7 +27,6 @@ from app.services.ai._constants import (
     TAG_TRANSLATION_TEMPERATURE,
     TAG_TRANSLATION_TIMEOUT,
 )
-from app.services.ai._infrastructure import api_key_rotator
 from app.services.ai._parsing import normalize_tag
 
 logger = logging.getLogger(__name__)
@@ -51,8 +50,16 @@ def is_likely_non_english(tag: str) -> bool:
 
 
 def get_all_keys() -> list:
-    """Get all API keys from configuration."""
-    return api_key_rotator._get_keys()
+    """The configured API key as a one-item list (empty if unset); the loop
+    below still round-robins over it."""
+    from app.routes.preferences import get_effective_ai_api_key
+
+    db = SessionLocal()
+    try:
+        key = get_effective_ai_api_key(db)
+    finally:
+        db.close()
+    return [key] if key else []
 
 
 async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:

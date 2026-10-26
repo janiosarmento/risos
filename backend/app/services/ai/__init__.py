@@ -6,9 +6,7 @@ from app.services.ai._api import (  # noqa: F401
     clear_models_cache,
     generate_summary,
     get_available_models,
-)
-from app.services.ai._infrastructure import (  # noqa: F401
-    api_key_rotator,
+    has_background_api_key,
 )
 from app.services.ai._parsing import (  # noqa: F401
     is_garbage_content,
@@ -34,7 +32,7 @@ __all__ = [
     "get_available_models",
     "clear_models_cache",
     "call_llm_text",
-    "api_key_rotator",
+    "has_background_api_key",
     "AIError",
     "CerebrasError",
     "TemporaryError",

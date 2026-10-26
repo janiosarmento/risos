@@ -727,8 +727,8 @@ class Scheduler:
             GarbageContentError,
             PermanentError,
             TemporaryError,
-            api_key_rotator,
             generate_summary,
+            has_background_api_key,
         )
         from app.services.content_extractor import ensure_full_content
         from app.services.tags import save_post_tags
@@ -737,7 +737,7 @@ class Scheduler:
 
         while self._running and self.is_leader:
             try:
-                if not api_key_rotator.has_available_key():
+                if not has_background_api_key():
                     await asyncio.sleep(30)
                     continue
 

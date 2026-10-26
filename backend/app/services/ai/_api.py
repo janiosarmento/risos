@@ -19,11 +19,7 @@ from app.services.ai._constants import (
     MAX_ONE_LINE_LENGTH,
     MAX_TAGS,
     MODELS_FETCH_TIMEOUT,
-    RATE_LIMIT_COOLDOWN_SECONDS,
     SUMMARY_TEMPERATURE,
-)
-from app.services.ai._infrastructure import (  # noqa: F401
-    api_key_rotator,
 )
 from app.services.ai._parsing import (
     is_garbage_content,  # noqa: F401
@@ -56,6 +52,26 @@ def _resolve_api_key(api_key: Optional[str], base_url: str) -> Optional[str]:
     if base_url and base_url.rstrip("/") != DEFAULT_API_BASE_URL.rstrip("/"):
         return _LOCAL_API_KEY_SENTINEL
     return None
+
+
+def has_background_api_key() -> bool:
+    """True if the background engine (the summary queue's) can authenticate.
+
+    Mirrors _resolve_engine_settings("background"): the background key falls
+    back to the on-demand key, and a keyless local endpoint gets the sentinel.
+    """
+    from app.routes.preferences import (
+        get_effective_background_ai_api_key,
+        get_effective_background_api_base_url,
+    )
+
+    db = SessionLocal()
+    try:
+        api_key = get_effective_background_ai_api_key(db)
+        base_url = get_effective_background_api_base_url(db)
+    finally:
+        db.close()
+    return bool(_resolve_api_key(api_key, base_url))
 
 
 # Global locks: separate locks so background batch processing doesn't block
@@ -238,7 +254,6 @@ def _parse_summary_result(
 async def _call_model(
     model: str,
     api_key: str,
-    key_index: int,
     messages: list,
     timeout: int = 30,
     max_tokens: int = 8192,
@@ -289,15 +304,11 @@ async def _call_model(
             if response.status_code == 429:
                 retry_after = response.headers.get("retry-after", "unknown")
                 logger.warning(
-                    "Rate limit 429 on key %s: retry-after=%s, headers=%s",
-                    key_index + 1,
+                    "Rate limit 429: retry-after=%s, headers=%s",
                     retry_after,
                     dict(response.headers),
                 )
-                api_key_rotator.set_key_cooldown(
-                    api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
-                )
-                raise RateLimited(f"Rate limit reached on key {key_index + 1}")
+                raise RateLimited("Rate limit reached")
 
             if response.status_code >= 500:
                 raise TemporaryError(f"Server error: HTTP {response.status_code}")
@@ -494,7 +505,6 @@ async def _generate_summary_locked(
     result = await _call_model(
         model,
         api_key,
-        0,
         messages,
         timeout,
         ai_max_tokens,
@@ -610,9 +620,6 @@ async def _call_llm_json_locked(
                 )
 
             if response.status_code == 429:
-                api_key_rotator.set_key_cooldown(
-                    api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
-                )
                 raise RateLimited("Rate limit reached")
 
             if response.status_code != 200:
@@ -728,9 +735,6 @@ async def _call_llm_text_locked(
             )
 
             if response.status_code == 429:
-                api_key_rotator.set_key_cooldown(
-                    api_key, seconds=RATE_LIMIT_COOLDOWN_SECONDS
-                )
                 raise RateLimited("Rate limit reached")
 
             if response.status_code != 200:

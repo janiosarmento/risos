@@ -22,7 +22,7 @@ from sqlalchemy import not_, or_
 
 from app.database import SessionLocal
 from app.models import Post, PostTag
-from scripts.lib import clear_rate_limits, log, run_batch_loop
+from scripts.lib import log, run_batch_loop
 
 DELAY_CEREBRAS = 20
 DELAY_LOCAL = 1
@@ -106,9 +106,6 @@ async def main():
         return
 
     delay = DELAY_LOCAL if args.local else DELAY_CEREBRAS
-
-    if not args.local:
-        clear_rate_limits()
 
     success, skipped, errors = await run_batch_loop(
         db,

@@ -283,10 +283,10 @@ def get_queue_status(
     db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
     """
-    Return detailed queue status including items with cooldowns.
-    Also shows API key rotator status.
+    Return detailed queue status including items with cooldowns, and whether
+    the background engine has an API key.
     """
-    from app.services.ai import api_key_rotator
+    from app.services.ai import has_background_api_key
 
     now = datetime.utcnow()
 
@@ -343,9 +343,6 @@ def get_queue_status(
         for item in cooldown_items
     ]
 
-    # API key status
-    api_key_status = api_key_rotator.get_status()
-
     return {
         "queue": {
             "total": total,
@@ -354,7 +351,7 @@ def get_queue_status(
             "locked": locked,
             "cooldown_items": cooldown_list,
         },
-        "api_keys": api_key_status,
+        "api_key_configured": has_background_api_key(),
     }
 
 

@@ -79,10 +79,9 @@ summaries/tags and for grouping tags into topics.
   retention cleanup, DB-size guard — serialized across workers via the
   `scheduler_lock` row); and `ai/`.
 - **AI subsystem** `app/services/ai/` — `_api.py` orchestrates OpenAI-compatible
-  calls (`generate_summary`, `call_llm_json`, `call_llm_text`) with key rotation
-  (`_infrastructure.py`) and per-model cooldowns; `_parsing.py`
-  hardens JSON extraction from weaker models (strips reasoning wrappers, tolerates
-  unclosed fences, repairs truncated JSON); `_language_gate.py` re-translates
+  calls (`generate_summary`, `call_llm_json`, `call_llm_text`) with per-model
+  cooldowns; `_parsing.py` hardens JSON extraction from weaker models (strips
+  reasoning wrappers, tolerates unclosed fences, repairs truncated JSON); `_language_gate.py` re-translates
   summary sentences that came back in the wrong language. Endpoint, key(s), model,
   and timeout all come from `preferences` (`pref_api_base_url`,
   `pref_ai_api_keys`, `pref_ai_model`, …). The "Cerebras" naming in this code is

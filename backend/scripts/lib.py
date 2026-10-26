@@ -4,7 +4,6 @@ Shared utilities for batch-processing scripts.
 Provides:
 - log()                  — flushed print with optional timestamp
 - compute_content_hash() — SHA-256 content hash for dedup
-- clear_rate_limits()    — clear API key cooldowns
 - regenerate_one()       — regenerate summary/tags for a single post
 - run_batch_loop()       — batch processing loop with delay + counting
 """
@@ -18,7 +17,6 @@ from app.services.ai import (
     GarbageContentError,
     generate_summary,
 )
-from app.services.ai._infrastructure import api_key_rotator
 from app.services.tags import save_post_tags
 
 
@@ -40,15 +38,6 @@ def log(msg, timestamp=False):
 def compute_content_hash(content, title="", url=""):
     raw = f"{title}|{url}|{content[:500]}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
-
-
-# ---------------------------------------------------------------------------
-# Rate limit management
-# ---------------------------------------------------------------------------
-def clear_rate_limits():
-    """Clear all key cooldowns."""
-    for key in api_key_rotator._get_keys():
-        api_key_rotator.clear_cooldown(key)
 
 
 # ---------------------------------------------------------------------------
