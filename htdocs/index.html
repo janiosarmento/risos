@@ -6,15 +6,15 @@
     <title>Risos</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261026b">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20261026b">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20261026b">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261026c">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png?v=20261026c">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16.png?v=20261026c">
 
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20261026b">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=20261026c">
 
     <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json?v=20261026b">
+    <link rel="manifest" href="/manifest.json?v=20261026c">
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS meta tags -->
@@ -56,23 +56,23 @@
         }
     </script>
     <!-- Vendored locally (not CDN) so CSP script-src can drop jsdelivr/unpkg and SRI stays meaningful -->
-    <script src="/static/vendor/marked.min.js?v=20261026b"></script>
-    <script src="/static/vendor/popper.min.js?v=20261026b"></script>
-    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20261026b"></script>
-    <script src="/static/vendor/purify.min.js?v=20261026b"></script>
-    <!-- App version — single source of truth. Assembler replaces 20261026b in all ?v= below -->
-    <script>var APP_VERSION = '20261026b';</script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20261026b">
+    <script src="/static/vendor/marked.min.js?v=20261026c"></script>
+    <script src="/static/vendor/popper.min.js?v=20261026c"></script>
+    <script src="/static/vendor/tippy-bundle.umd.min.js?v=20261026c"></script>
+    <script src="/static/vendor/purify.min.js?v=20261026c"></script>
+    <!-- App version — single source of truth. Assembler replaces 20261026c in all ?v= below -->
+    <script>var APP_VERSION = '20261026c';</script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20261026c">
 
     <!-- App scripts: defer preserves execution order; declared before Alpine so stores/mixins register first -->
-    <script defer src="/static/js/stores/auth.js?v=20261026b"></script>
-    <script defer src="/static/js/stores/i18n.js?v=20261026b"></script>
-    <script defer src="/static/js/stores/ui.js?v=20261026b"></script>
-    <script defer src="/static/js/stores/prefs.js?v=20261026b"></script>
-    <script defer src="/static/js/components/postDetail.js?v=20261026b"></script>
-    <script defer src="/static/js/components/settings.js?v=20261026b"></script>
-    <script defer src="/static/js/components/curation.js?v=20261026b"></script>
-    <script defer src="/static/js/app.js?v=20261026b"></script>
+    <script defer src="/static/js/stores/auth.js?v=20261026c"></script>
+    <script defer src="/static/js/stores/i18n.js?v=20261026c"></script>
+    <script defer src="/static/js/stores/ui.js?v=20261026c"></script>
+    <script defer src="/static/js/stores/prefs.js?v=20261026c"></script>
+    <script defer src="/static/js/components/postDetail.js?v=20261026c"></script>
+    <script defer src="/static/js/components/settings.js?v=20261026c"></script>
+    <script defer src="/static/js/components/curation.js?v=20261026c"></script>
+    <script defer src="/static/js/app.js?v=20261026c"></script>
 
     <!-- Alpine (deferred after local scripts — executes last, triggers alpine:init) -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -2907,9 +2907,9 @@
                                 <span class="text-xs text-[var(--md-on-surface-variant)]" x-text="'v' + appVersion"></span>
                                 <div class="flex items-center gap-3">
                                     <button
-                                        @click="resetCircuitBreaker()"
+                                        @click="resetAiQueue()"
                                         class="text-xs text-[var(--md-primary)] hover:underline"
-                                        x-text="t('settings.resetCircuitBreaker')"
+                                        x-text="t('settings.resetAiQueue')"
                                     ></button>
                                     <button
                                         @click="clearCacheAndReload()"
@@ -3036,29 +3036,22 @@
                                     <div class="p-4 rounded-2xl bg-[var(--md-surface-container-low)] space-y-4">
                                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div>
-                                                <p class="text-sm font-semibold text-[var(--md-on-surface)]" x-text="t('settings.status.aiState')"></p>
-                                                <!-- Health dot/text: a live on/off status indicator, not a
-                                                     button or badge — same "no M3 role fits a transient
-                                                     status color" reasoning that left the toast and OPML
-                                                     result colors alone (steps 8/16). -->
-                                                <div class="flex items-center gap-2 mt-1.5">
-                                                    <span class="w-2.5 h-2.5 rounded-full" :class="systemStatus.circuit_breaker === 'closed' ? 'bg-green-500' : 'bg-red-500'"></span>
-                                                    <span class="text-xs text-[var(--md-on-surface-variant)]" x-text="systemStatus.circuit_breaker === 'closed' ? t('settings.status.aiStateNormal') : t('settings.status.aiStateTriggered')"></span>
-                                                </div>
+                                                <p class="text-sm font-semibold text-[var(--md-on-surface)]" x-text="t('settings.status.aiQueue')"></p>
+                                                <p class="text-xs text-[var(--md-on-surface-variant)] mt-1" x-text="t('settings.status.aiQueueDesc')"></p>
                                             </div>
 
                                             <!-- Reset button -->
                                             <button
-                                                @click="resetCircuitBreaker(); loadSystemStatus()"
+                                                @click="await resetAiQueue(); loadSystemStatus()"
                                                 class="px-4 py-2 text-xs font-semibold rounded-full border border-[var(--md-outline)] text-[var(--md-primary)] hover:bg-[var(--md-primary-container)] transition-colors flex items-center gap-1.5 self-start sm:self-auto"
                                             >
                                                 <span class="msym text-[14px]">refresh</span>
-                                                <span x-text="t('settings.resetCircuitBreaker')"></span>
+                                                <span x-text="t('settings.resetAiQueue')"></span>
                                             </button>
                                         </div>
 
                                         <!-- Health warning, if any: a persistent banner (not a transient
-                                             toast), so unlike the dot above it DOES get the M3 error role. -->
+                                             toast), so it gets the M3 error role. -->
                                         <template x-if="systemStatus.health_warning">
                                             <div class="p-3 bg-[var(--md-error-container)] rounded-lg flex items-start gap-2 text-xs text-[var(--md-on-error-container)]">
                                                 <span class="font-bold uppercase" x-text="t('settings.status.warning')"></span>

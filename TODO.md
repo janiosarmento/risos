@@ -17,7 +17,7 @@ Ordered for execution. Items interact: removing one often deletes code (or
 strings) another item mentions. Before starting each item, re-check its notes
 against the current code, and update this list as items land.
 
-- [ ] **1. Remove the circuit breaker.** Disabled in `5eea6f7` (2026-04) but
+- [x] **1. Remove the circuit breaker.** Disabled in `5eea6f7` (2026-04) but
   still mostly present: `CircuitBreaker` in `services/ai/_infrastructure.py`
   (~170 lines, `record_success`/`record_failure` never called, no state ever
   persisted in prod), `CircuitBreakerOpen` (never raised) and its handler in
@@ -32,6 +32,7 @@ against the current code, and update this list as items land.
   `admin.py` queue status (`get_status()`), `scheduler.py`
   (`has_available_key`), `scripts/translate_all_tags.py` (`_get_keys`),
   `scripts/lib.py`. Its comments are in Portuguese — rewrite in English.
+  CLAUDE.md's AI-subsystem bullet still says "key rotation" — fix it too.
 - [ ] **3. Delete the dead `recover_orphaned_queue()` in `main.py`** (~65
   lines, never called; the endpoint uses its own copy in `admin.py`). Drop the
   `NOTE` comment that points at it.
@@ -39,6 +40,8 @@ against the current code, and update this list as items land.
   `requirements.txt` (never imported by the app, scripts, tests, or Jano on
   the server). Keep `lxml`, `lxml-html-clean`, `python-multipart` (indirect).
   Translate the Portuguese section comments in the file while there.
+  README (tech stack) and CLAUDE.md (`lifespan` bullet) still name
+  APScheduler — the scheduler is plain asyncio loops; fix both.
 - [ ] **5. Drop the `summary_failures` table.** Nothing writes to it anymore
   (594 stale rows in prod). Remove the model, the `failures_count` in
   `GET /admin/status` and its UI, the delete in `reprocess-summary`, and add an
@@ -58,7 +61,9 @@ against the current code, and update this list as items land.
   - Manual ops tools (curl / README): `reprocess-summary`, `vacuum`,
     `queue-status`, `clear-queue-cooldowns`, `recover-orphaned-queue`,
     `diagnose-queue`. Keep only those still used; fix the README to match.
-    Item 2 changes what `queue-status`/`clear-queue-cooldowns` report.
+    Item 2 changes what `queue-status` reports. `clear-queue-cooldowns` is
+    no longer ops-only: since item 1 it backs Settings' "Reset AI queue"
+    button (keep it).
 - [ ] **8. Fix or delete broken maintenance scripts.**
   `scripts/smart_merge_tags.py` imports `app.services.ollama` (gone) and fails
   on import; `scripts/lib.py`'s local mode and `regenerate.py --local` hit the

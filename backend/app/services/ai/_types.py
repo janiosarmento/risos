@@ -1,14 +1,7 @@
 """Types, exceptions, and data classes for the AI client."""
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import List
-
-
-class CircuitState(Enum):
-    CLOSED = "closed"  # Normal, allowing calls
-    OPEN = "open"  # Blocked after many failures
-    HALF = "half"  # Testing if service recovered
 
 
 class AIError(Exception):
@@ -23,12 +16,6 @@ CerebrasError = AIError
 
 class TemporaryError(AIError):
     """Temporary error (timeout, 429, 5xx)."""
-
-    pass
-
-
-class CircuitBreakerOpen(TemporaryError):
-    """Circuit breaker is open — service is paused after repeated failures."""
 
     pass
 

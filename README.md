@@ -85,13 +85,12 @@ All other settings — including AI API key, base URL, model, summary language, 
 
 The app includes built-in protections to handle API rate limits gracefully:
 
-- **Circuit Breaker** — Temporarily stops API calls after repeated failures, preventing cascade errors. Automatically recovers after a cooldown period. Can be manually reset via Settings.
 - **Model Fallback** — When the preferred AI model returns invalid responses, the system automatically tries other available models before giving up.
 - **Rate Limit Handling** — When the API returns 429 (rate limited), the app backs off for 5 minutes before retrying.
 - **Queue Management** — Summary requests are queued and processed at a controlled rate. Failed requests are retried with exponential backoff.
-- **State Reset on Restart** — All cooldowns and circuit breaker state are cleared when the service restarts, ensuring a fresh start.
+- **State Reset on Restart** — All queue cooldowns are cleared when the service restarts, ensuring a fresh start.
 
-You can monitor the queue status via `GET /api/admin/queue-status` and clear stuck items with `POST /api/admin/clear-queue-cooldowns`.
+You can monitor the queue status via `GET /api/admin/queue-status` and clear stuck items with **Reset AI queue** in Settings (or `POST /api/admin/clear-queue-cooldowns`).
 
 ### Cloudflare Bypass (Optional)
 
@@ -236,7 +235,7 @@ Edit `htdocs/static/locales/en-US.json` or `pt-BR.json`.
 
 - **Backend**: Python, FastAPI, SQLAlchemy, SQLite (WAL mode), APScheduler
 - **Frontend**: Alpine.js, Tailwind CSS (CDN)
-- **AI**: Any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.) with automatic model fallback and circuit breaker
+- **AI**: Any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.) with automatic model fallback
 
 ## Development
 

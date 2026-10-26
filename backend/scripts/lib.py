@@ -4,7 +4,7 @@ Shared utilities for batch-processing scripts.
 Provides:
 - log()                  — flushed print with optional timestamp
 - compute_content_hash() — SHA-256 content hash for dedup
-- clear_rate_limits()    — reset Cerebras circuit breaker + key cooldowns
+- clear_rate_limits()    — clear API key cooldowns
 - regenerate_one()       — regenerate summary/tags for a single post
 - run_batch_loop()       — batch processing loop with delay + counting
 """
@@ -16,7 +16,6 @@ from datetime import datetime
 from app.models import AISummary, PostTag
 from app.services.ai import (
     GarbageContentError,
-    circuit_breaker,
     generate_summary,
 )
 from app.services.ai._infrastructure import api_key_rotator
@@ -47,9 +46,7 @@ def compute_content_hash(content, title="", url=""):
 # Rate limit management
 # ---------------------------------------------------------------------------
 def clear_rate_limits():
-    """Reset circuit breaker timing and clear all key cooldowns."""
-    circuit_breaker.last_call = None
-    circuit_breaker._save_state()
+    """Clear all key cooldowns."""
     for key in api_key_rotator._get_keys():
         api_key_rotator.clear_cooldown(key)
 
@@ -165,10 +162,6 @@ async def run_batch_loop(
 
         last_called_api = False
         for post in batch:
-            if not use_local:
-                circuit_breaker.last_call = None
-                circuit_breaker._save_state()
-
             if last_called_api:
                 await asyncio.sleep(delay)
 

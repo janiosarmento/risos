@@ -9,7 +9,6 @@ from app.services.ai._api import (  # noqa: F401
 )
 from app.services.ai._infrastructure import (  # noqa: F401
     api_key_rotator,
-    circuit_breaker,
 )
 from app.services.ai._parsing import (  # noqa: F401
     is_garbage_content,
@@ -21,8 +20,6 @@ from app.services.ai._prompts import (  # noqa: F401
 from app.services.ai._types import (  # noqa: F401
     AIError,
     CerebrasError,  # legacy alias
-    CircuitBreakerOpen,
-    CircuitState,
     GarbageContentError,
     ModelNotFound,
     ModelSpecificError,
@@ -37,11 +34,9 @@ __all__ = [
     "get_available_models",
     "clear_models_cache",
     "call_llm_text",
-    "circuit_breaker",
     "api_key_rotator",
     "AIError",
     "CerebrasError",
-    "CircuitBreakerOpen",
     "TemporaryError",
     "RateLimited",
     "PermanentError",
@@ -49,7 +44,6 @@ __all__ = [
     "ModelSpecificError",
     "GarbageContentError",
     "SummaryResult",
-    "CircuitState",
     "is_garbage_content",
     "get_system_prompt",
     "get_user_prompt",

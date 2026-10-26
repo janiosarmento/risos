@@ -34,7 +34,6 @@ from app.routes import (
     topics,
 )
 from app.services.ai._types import (
-    CircuitBreakerOpen,
     ModelNotFound,
     PermanentError,
     RateLimited,
@@ -159,29 +158,14 @@ def check_database_integrity():
 
 def reset_ai_state():
     """
-    Reset all AI-related state on startup.
-    Clears circuit breaker, API key cooldowns, and queue cooldowns.
-    This ensures a fresh start after service restart.
+    Reset the summary queue's cooldowns, attempts and locks on startup, so a
+    service restart gives every queued item a fresh start.
     """
     from app.database import SessionLocal
-    from app.models import AppSettings, SummaryQueue
+    from app.models import SummaryQueue
 
     db = SessionLocal()
     try:
-        # Reset circuit breaker state
-        db.query(AppSettings).filter(
-            AppSettings.key.in_(
-                [
-                    "ai_state",
-                    "ai_failures",
-                    "ai_half_successes",
-                    "ai_last_failure",
-                    "ai_last_call",
-                ]
-            )
-        ).delete()
-
-        # Reset queue cooldowns and attempts
         db.query(SummaryQueue).update(
             {
                 "cooldown_until": None,
@@ -191,7 +175,7 @@ def reset_ai_state():
         )
 
         db.commit()
-        logger.info("AI state reset: circuit breaker, queue cooldowns cleared")
+        logger.info("AI state reset: queue cooldowns cleared")
 
     except Exception as e:
         logger.error(f"Error resetting AI state: {e}")
@@ -293,7 +277,7 @@ async def lifespan(app: FastAPI):
     # Run migrations
     run_migrations()
 
-    # Reset AI state (circuit breaker, cooldowns) for fresh start
+    # Reset queue cooldowns for a fresh start
     reset_ai_state()
 
     # NOTE: recover_orphaned_queue() is available as POST /admin/recover-orphaned-queue
@@ -331,18 +315,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # AI error handlers — log technical detail, return user-friendly message
-@app.exception_handler(CircuitBreakerOpen)
-async def handle_circuit_breaker_open(request: Request, exc: CircuitBreakerOpen):
-    logger.warning(f"CircuitBreakerOpen on {request.url.path}: {exc}")
-    return JSONResponse(
-        status_code=502,
-        content={
-            "detail": "AI is temporarily paused after repeated errors. "
-            "Try again in a few minutes."
-        },
-    )
-
-
 @app.exception_handler(RateLimited)
 async def handle_rate_limited(request: Request, exc: RateLimited):
     logger.warning(f"RateLimited on {request.url.path}: {exc}")

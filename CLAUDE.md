@@ -67,8 +67,7 @@ summaries/tags and for grouping tags into topics.
   `/api`, and a `lifespan` that (1) runs the HTML assembler, (2) runs Alembic
   migrations to `head` under an `flock` (safe with >1 gunicorn worker), (3) starts
   the APScheduler background jobs. Exception handlers map the AI subsystem's typed
-  errors (`TemporaryError`, `RateLimited`, `PermanentError`, `CircuitBreakerOpen`,
-  …) to HTTP 502.
+  errors (`TemporaryError`, `RateLimited`, `PermanentError`, …) to HTTP 502.
 - **Routes** `app/routes/*.py` — one module per resource: `auth`, `feeds`,
   `categories`, `posts` (the large one: list/filter/read-state/curation), `tags`,
   `topics`, `preferences`, `admin`, `suggestions`, `proxy` (image/CORS proxy).
@@ -80,8 +79,8 @@ summaries/tags and for grouping tags into topics.
   retention cleanup, DB-size guard — serialized across workers via the
   `scheduler_lock` row); and `ai/`.
 - **AI subsystem** `app/services/ai/` — `_api.py` orchestrates OpenAI-compatible
-  calls (`generate_summary`, `call_llm_json`, `call_llm_text`) with key rotation,
-  a circuit breaker (`_infrastructure.py`), and per-model cooldowns; `_parsing.py`
+  calls (`generate_summary`, `call_llm_json`, `call_llm_text`) with key rotation
+  (`_infrastructure.py`) and per-model cooldowns; `_parsing.py`
   hardens JSON extraction from weaker models (strips reasoning wrappers, tolerates
   unclosed fences, repairs truncated JSON); `_language_gate.py` re-translates
   summary sentences that came back in the wrong language. Endpoint, key(s), model,

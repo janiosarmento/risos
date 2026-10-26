@@ -201,13 +201,13 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
     """
     Return detailed system status.
 
-    Includes counters, database size, circuit breaker state, etc.
+    Includes counters, database size, scheduler health, etc.
     """
     from datetime import timedelta
 
     from sqlalchemy import func
 
-    from app.models import AppSettings, Feed, Post, SchedulerLock
+    from app.models import Feed, Post, SchedulerLock
     from app.routes.preferences import get_effective_feed_update_interval
 
     # Counters
@@ -256,19 +256,9 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
         else 0
     )
 
-    # Circuit breaker
-    circuit_state = "closed"
-    health_warning = None
-
-    for row in (
-        db.query(AppSettings)
-        .filter(AppSettings.key.in_(["ai_state", "health_warning"]))
-        .all()
-    ):
-        if row.key == "ai_state":
-            circuit_state = row.value
-        elif row.key == "health_warning":
-            health_warning = row.value
+    health_warning = (
+        db.query(AppSettings.value).filter(AppSettings.key == "health_warning").scalar()
+    )
 
     return {
         "feeds_count": feeds_count,
@@ -279,7 +269,6 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
         "starred_count": starred_count,
         "summaries_count": summaries_count,
         "failures_count": failures_count,
-        "circuit_breaker": circuit_state,
         "health_warning": health_warning,
         "db_size_mb": db_size_mb,
         "oldest_post_date": oldest_post_date,
@@ -374,48 +363,9 @@ def clear_queue_cooldowns(
     db: Session = Depends(get_db), user: dict = Depends(get_current_user)
 ):
     """
-    Clear all cooldowns from queue items.
-    This allows stuck items to be retried immediately.
+    Clear cooldowns, attempts and stale locks from every queue item, so stuck
+    items are retried immediately. Backs the settings' "Reset AI queue" button.
     """
-    now = datetime.utcnow()
-
-    # Count items in cooldown
-    in_cooldown = (
-        db.query(SummaryQueue).filter(SummaryQueue.cooldown_until > now).count()
-    )
-
-    # Clear cooldowns
-    db.query(SummaryQueue).filter(SummaryQueue.cooldown_until > now).update(
-        {"cooldown_until": None, "attempts": 0}
-    )
-    db.commit()
-
-    return {"ok": True, "cleared": in_cooldown}
-
-
-@router.post("/reset-circuit-breaker")
-def reset_circuit_breaker(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
-    """
-    Reset circuit breaker, API key cooldowns, and queue cooldowns.
-    """
-    from app.services.ai import circuit_breaker
-
-    # Reset circuit breaker in DB
-    db.query(AppSettings).filter(
-        AppSettings.key.in_(
-            [
-                "ai_state",
-                "ai_failures",
-                "ai_half_successes",
-                "ai_last_failure",
-                "ai_last_call",
-            ]
-        )
-    ).delete()
-
-    # Reset queue cooldowns
     in_cooldown = (
         db.query(SummaryQueue)
         .filter(SummaryQueue.cooldown_until > datetime.utcnow())
@@ -424,13 +374,9 @@ def reset_circuit_breaker(
     db.query(SummaryQueue).update(
         {"cooldown_until": None, "attempts": 0, "locked_at": None}
     )
-
     db.commit()
 
-    # Reload in-memory state
-    circuit_breaker._load_state()
-
-    return {"ok": True, "queue_cooldowns_cleared": in_cooldown}
+    return {"ok": True, "cleared": in_cooldown}
 
 
 @router.delete("/summaries/unread")

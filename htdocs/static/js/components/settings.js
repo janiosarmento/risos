@@ -1253,12 +1253,12 @@ const settingsMixin = {
     },
 
     // --- Misc settings actions ---
-    async resetCircuitBreaker() {
+    async resetAiQueue() {
         try {
-            await this.fetchApi('/admin/reset-circuit-breaker', { method: 'POST' });
-            this.showToast(this.t('settings.circuitBreakerReset'));
+            await this.fetchApi('/admin/clear-queue-cooldowns', { method: 'POST' });
+            this.showToast(this.t('settings.aiQueueReset'));
         } catch (error) {
-            console.error('Failed to reset circuit breaker:', error);
+            console.error('Failed to reset AI queue:', error);
         }
     },
 
