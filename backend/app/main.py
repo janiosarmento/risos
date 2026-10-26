@@ -184,74 +184,6 @@ def reset_ai_state():
         db.close()
 
 
-def recover_orphaned_queue():
-    """
-    Enqueue all unread posts with content_hash that are not in summary_queue.
-    Fixes unread posts created without content_hash or updated outside feed_ingestion
-    that were never enqueued for background AI processing.
-    Read posts are excluded (no need to summarize).
-    """
-    from app.database import SessionLocal
-    from app.models import AISummary, Post, SummaryQueue
-    from app.routes.preferences import get_effective_blocked_terms
-    from app.services.blocked_terms import title_is_blocked
-
-    db = SessionLocal()
-    try:
-        # Find unread posts with content_hash but no queue entry and no summary
-        orphaned_posts = (
-            db.query(Post)
-            .filter(
-                Post.content_hash.isnot(None),
-                Post.is_read.is_(False),  # Only unread posts
-                ~Post.id.in_(db.query(SummaryQueue.post_id)),
-                ~Post.content_hash.in_(db.query(AISummary.content_hash)),
-                Post.skip_summary.is_(False),
-            )
-            .all()
-        )
-
-        if not orphaned_posts:
-            logger.info("No orphaned posts found in queue recovery")
-            return
-
-        blocked_terms = get_effective_blocked_terms(db)
-
-        created_count = 0
-        for post in orphaned_posts:
-            if title_is_blocked(post.title, blocked_terms):
-                continue  # Blocked posts are never summarized
-            try:
-                # Double-check no race condition
-                existing = (
-                    db.query(SummaryQueue)
-                    .filter(SummaryQueue.post_id == post.id)
-                    .first()
-                )
-                if existing:
-                    continue
-
-                queue_entry = SummaryQueue(
-                    post_id=post.id,
-                    content_hash=post.content_hash,
-                    priority=0,  # Background priority
-                )
-                db.add(queue_entry)
-                created_count += 1
-            except Exception as e:
-                logger.error(f"Error recovering post {post.id}: {e}")
-
-        db.commit()
-        if created_count > 0:
-            logger.info(f"Queue recovery: enqueued {created_count} orphaned posts")
-
-    except Exception as e:
-        logger.error(f"Error in queue recovery: {e}")
-        db.rollback()
-    finally:
-        db.close()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -279,11 +211,6 @@ async def lifespan(app: FastAPI):
 
     # Reset queue cooldowns for a fresh start
     reset_ai_state()
-
-    # NOTE: recover_orphaned_queue() is available as POST /admin/recover-orphaned-queue
-    # but NOT called automatically on startup to avoid blocking initialization.
-    # Large batches (5000+ posts) can take several minutes and block migrations.
-    # Call it manually after app is running if needed.
 
     # Start background jobs scheduler
     await scheduler.start()
