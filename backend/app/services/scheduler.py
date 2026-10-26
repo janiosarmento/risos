@@ -27,6 +27,22 @@ LOCK_TIMEOUT = 60  # seconds - lock expires if heartbeat stops
 RETRY_DELAY_SECONDS = 60  # pause before re-trying feeds that failed in a cycle
 
 
+def delete_posts(db, *criteria) -> int:
+    """
+    Bulk-delete the posts matching `criteria`, with their tags and queue entries.
+
+    A bulk query delete skips the ORM cascade, and SQLite runs without
+    PRAGMA foreign_keys, so the dependent rows must be deleted explicitly or
+    they are left orphaned.
+    """
+    from app.models import Post, PostTag, SummaryQueue
+
+    ids = db.query(Post.id).filter(*criteria).scalar_subquery()
+    for model in (PostTag, SummaryQueue):
+        db.query(model).filter(model.post_id.in_(ids)).delete(synchronize_session=False)
+    return db.query(Post).filter(*criteria).delete(synchronize_session=False)
+
+
 class Scheduler:
     """Background jobs manager with distributed lock."""
 
@@ -410,34 +426,26 @@ class Scheduler:
                     cutoff_read = now - timedelta(
                         days=get_effective_max_post_age_days(db)
                     )
-                    result = (
-                        db.query(Post)
-                        .filter(
-                            Post.is_read.is_(True),
-                            Post.read_at < cutoff_read,
-                            (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
-                            Post.keep_unread.is_(False),
-                        )
-                        .delete(synchronize_session=False)
+                    posts_removed += delete_posts(
+                        db,
+                        Post.is_read.is_(True),
+                        Post.read_at < cutoff_read,
+                        (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
+                        Post.keep_unread.is_(False),
                     )
-                    posts_removed += result
 
                     # 2. Remove unread posts older than MAX_UNREAD_DAYS
                     # (except favorites and keep_unread which are never removed)
                     cutoff_unread = now - timedelta(
                         days=get_effective_max_unread_days(db)
                     )
-                    result = (
-                        db.query(Post)
-                        .filter(
-                            Post.is_read.is_(False),
-                            Post.fetched_at < cutoff_unread,
-                            (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
-                            Post.keep_unread.is_(False),
-                        )
-                        .delete(synchronize_session=False)
+                    unread_removed += delete_posts(
+                        db,
+                        Post.is_read.is_(False),
+                        Post.fetched_at < cutoff_unread,
+                        (Post.is_starred.is_(False)) | (Post.is_starred.is_(None)),
+                        Post.keep_unread.is_(False),
                     )
-                    unread_removed += result
 
                     # 3. Clear full_content from posts read more than 30 days ago
                     # (except favorites and keep_unread which keep content)

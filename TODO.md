@@ -90,10 +90,10 @@ against the current code, and update this list as items land.
   socket defaults to the user's home, which systemd hardening makes read-only.
   Harmless noise: disable the control server or point it at a writable path
   (e.g. under `backend/data/`) in `install.sh` and the prod drop-in.
-- [ ] **15. Find what leaves orphan `post_tags` rows.** `post_tags` has 8 rows
-  whose `post_id` no longer exists (same 8 locally and in prod, out of ~552k,
-  found by `PRAGMA foreign_key_check` on 2026-10-26). Some path deletes posts
-  without their tags — SQLite runs without `PRAGMA foreign_keys`, so only the
-  ORM cascade or explicit deletes clean up. Suspects: the retention cleanup's
-  bulk `query(Post).delete()` and other bulk deletes. Find the path, fix it,
-  delete the orphans.
+- [x] **15. Find what leaves orphan `post_tags` rows.** The 8 rows all
+  belonged to one post (95744, fetched and tagged 2026-09-09, deleted soon
+  after). No code path explains that one; retention can't have (the post was
+  too new) and feed deletes cascade, so it was most likely a manual delete.
+  Retention's bulk deletes did skip the cascade, though — a latent source of
+  orphan tags and queue entries. `delete_posts()` in the scheduler now deletes
+  them explicitly, and migration `a7d2e9c41f03` removes the existing orphans.
