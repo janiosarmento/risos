@@ -42,7 +42,7 @@ against the current code, and update this list as items land.
   Translate the Portuguese section comments in the file while there.
   README (tech stack) and CLAUDE.md (`lifespan` bullet) still name
   APScheduler — the scheduler is plain asyncio loops; fix both.
-- [ ] **5. Drop the `summary_failures` table.** Nothing writes to it anymore
+- [x] **5. Drop the `summary_failures` table.** Nothing writes to it anymore
   (594 stale rows in prod). Remove the model, the `failures_count` in
   `GET /admin/status` and its UI, the delete in `reprocess-summary`, and add an
   Alembic migration that drops the table.

@@ -251,18 +251,6 @@ Index("idx_queue_priority", SummaryQueue.priority.desc(), SummaryQueue.created_a
 Index("idx_queue_pending", SummaryQueue.locked_at, SummaryQueue.cooldown_until)
 
 
-class SummaryFailure(Base):
-    __tablename__ = "summary_failures"
-
-    id = Column(Integer, primary_key=True)
-    content_hash = Column(Text, nullable=False)
-    last_error = Column(Text)
-    failed_at = Column(DateTime, default=datetime.utcnow)
-
-
-Index("idx_failures_hash", SummaryFailure.content_hash)
-
-
 class AppSettings(Base):
     __tablename__ = "app_settings"
 

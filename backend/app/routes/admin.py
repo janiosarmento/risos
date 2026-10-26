@@ -21,7 +21,6 @@ from app.models import (
     AISummary,
     AppSettings,
     Post,
-    SummaryFailure,
     SummaryQueue,
 )
 from app.routes.preferences import (
@@ -55,7 +54,6 @@ def reprocess_summary(
     Requeue a summary for processing.
 
     - Find post by content_hash
-    - Remove from summary_failures if exists
     - Remove existing summary from ai_summaries
     - Create entry in summary_queue
     """
@@ -83,11 +81,6 @@ def reprocess_summary(
         existing_queue.priority = 10  # High priority
         db.commit()
         return {"ok": True, "queued": True, "action": "reset_existing"}
-
-    # Remove from failures if exists
-    db.query(SummaryFailure).filter(
-        SummaryFailure.content_hash == content_hash
-    ).delete()
 
     # Remove existing summary (force reprocessing)
     db.query(AISummary).filter(AISummary.content_hash == content_hash).delete()
@@ -224,7 +217,6 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
     unread_queue_size = queue_size  # Same as queue_size (already filtered unread)
     starred_count = db.query(Post).filter(Post.is_starred.is_(True)).count()
     summaries_count = db.query(AISummary).count()
-    failures_count = db.query(SummaryFailure).count()
 
     # Fetching metrics
     feed_update_interval = get_effective_feed_update_interval(db)
@@ -268,7 +260,6 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
         "unread_queue_size": unread_queue_size,
         "starred_count": starred_count,
         "summaries_count": summaries_count,
-        "failures_count": failures_count,
         "health_warning": health_warning,
         "db_size_mb": db_size_mb,
         "oldest_post_date": oldest_post_date,
