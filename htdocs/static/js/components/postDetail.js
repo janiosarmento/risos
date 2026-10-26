@@ -19,7 +19,7 @@ const postDetailMixin = {
     assistantGenerating: false,
     assistantIncludeRead: false,
     assistantIncludeUnread: true,
-    assistantIncludeZeroCommonTags: false,
+    assistantIncludeZeroCommonTags: true,
     assistantUseTagFallback: false,
     assistantMarkingRead: false,
 
@@ -189,7 +189,7 @@ const postDetailMixin = {
         this.showAssistantModal = true;
         this.assistantIncludeRead = false;
         this.assistantIncludeUnread = true;
-        this.assistantIncludeZeroCommonTags = false;
+        this.assistantIncludeZeroCommonTags = true;
         this.assistantUseTagFallback = false;
         this.assistantSummary = null;
         this.relatedPosts = [];
@@ -212,7 +212,7 @@ const postDetailMixin = {
         this.assistantSummary = null;
         this.assistantIncludeRead = false;
         this.assistantIncludeUnread = true;
-        this.assistantIncludeZeroCommonTags = false;
+        this.assistantIncludeZeroCommonTags = true;
         this.assistantUseTagFallback = false;
     },
 
