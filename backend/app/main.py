@@ -196,8 +196,8 @@ async def lifespan(app: FastAPI):
     logger.info(f"Database: {settings.database_path}")
     logger.info(f"Log level: {settings.log_level}")
 
-    # Nota: index.html é gerado localmente (python -m app.html_assembler)
-    # antes do commit. NÃO rodar no servidor — causa erros de permissão.
+    # index.html is generated locally (python -m app.html_assembler) before
+    # committing. Never run it on the server: the checkout is read-only there.
 
     # Ensure data directory exists
     Path(settings.database_path).parent.mkdir(parents=True, exist_ok=True)

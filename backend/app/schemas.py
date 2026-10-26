@@ -1,5 +1,5 @@
 """
-Schemas Pydantic para validação de requests/responses.
+Pydantic schemas for request/response validation.
 """
 
 from datetime import datetime
@@ -19,11 +19,11 @@ def fix_literal_newlines(text: Optional[str]) -> Optional[str]:
 MAX_CATEGORY_NAME_LENGTH = 255
 
 
-# === Autenticação ===
+# === Authentication ===
 
 
 class LoginRequest(BaseModel):
-    """Request para login"""
+    """Login request"""
 
     password: str
 
@@ -36,16 +36,16 @@ class ChangePasswordRequest(BaseModel):
 
 
 class UserInfo(BaseModel):
-    """Informações do usuário autenticado"""
+    """Authenticated user info"""
 
     authenticated: bool
 
 
-# === Categorias ===
+# === Categories ===
 
 
 class CategoryCreate(BaseModel):
-    """Request para criar categoria"""
+    """Create-category request"""
 
     name: str = Field(..., min_length=1, max_length=MAX_CATEGORY_NAME_LENGTH)
     parent_id: Optional[int] = None
@@ -53,7 +53,7 @@ class CategoryCreate(BaseModel):
 
 
 class CategoryUpdate(BaseModel):
-    """Request para atualizar categoria"""
+    """Update-category request"""
 
     name: Optional[str] = Field(None, min_length=1, max_length=MAX_CATEGORY_NAME_LENGTH)
     parent_id: Optional[int] = None
@@ -61,7 +61,7 @@ class CategoryUpdate(BaseModel):
 
 
 class CategoryResponse(BaseModel):
-    """Response de categoria"""
+    """Category response"""
 
     id: int
     name: str
@@ -74,7 +74,7 @@ class CategoryResponse(BaseModel):
 
 
 class FeedCreate(BaseModel):
-    """Request para criar feed"""
+    """Create-feed request"""
 
     url: str
     title: Optional[str] = None
@@ -83,7 +83,7 @@ class FeedCreate(BaseModel):
 
 
 class FeedUpdate(BaseModel):
-    """Request para atualizar feed"""
+    """Update-feed request"""
 
     title: Optional[str] = None
     url: Optional[str] = None
@@ -92,7 +92,7 @@ class FeedUpdate(BaseModel):
 
 
 class FeedResponse(BaseModel):
-    """Response de feed"""
+    """Feed response"""
 
     id: int
     category_id: Optional[int]
@@ -114,7 +114,7 @@ class FeedResponse(BaseModel):
 
 
 class PostResponse(BaseModel):
-    """Response de post"""
+    """Post response"""
 
     id: int
     feed_id: int
@@ -156,7 +156,7 @@ class PostResponse(BaseModel):
 
 
 class PostDetail(PostResponse):
-    """Response de post com conteúdo completo"""
+    """Post response with full content"""
 
     full_content: Optional[str]
     summary_pt: Optional[str] = None
@@ -173,7 +173,7 @@ class PostDetail(PostResponse):
 
 
 class PostListResponse(BaseModel):
-    """Response de listagem de posts com paginação"""
+    """Paginated post list response"""
 
     posts: List[PostResponse]
     total: int
@@ -187,7 +187,7 @@ class PostListResponse(BaseModel):
 
 
 class MarkReadRequest(BaseModel):
-    """Request para marcar posts como lidos em lote"""
+    """Batch mark-as-read request"""
 
     feed_id: Optional[int] = None
     category_id: Optional[int] = None
@@ -196,13 +196,13 @@ class MarkReadRequest(BaseModel):
 
 
 class SummaryStatusRequest(BaseModel):
-    """Request para consultar o status de resumo de um lote de posts"""
+    """Summary-status request for a batch of posts"""
 
     post_ids: List[int]
 
 
 class SummaryStatusItem(BaseModel):
-    """Status de resumo atual de um post — usado para o refresh leve da lista"""
+    """A post's current summary status — used for the list's light refresh"""
 
     id: int
     summary_status: str
@@ -212,6 +212,6 @@ class SummaryStatusItem(BaseModel):
 
 
 class SummaryStatusResponse(BaseModel):
-    """Response em lote para SummaryStatusRequest"""
+    """Batch response for SummaryStatusRequest"""
 
     posts: List[SummaryStatusItem]

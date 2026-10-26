@@ -42,7 +42,7 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """
     Run migrations in 'offline' mode.
-    Gera SQL sem conectar ao banco.
+    Generate SQL without connecting to the database.
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -50,7 +50,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # SQLite requer batch mode para ALTER TABLE
+        render_as_batch=True,  # SQLite needs batch mode for ALTER TABLE
     )
 
     with context.begin_transaction():
@@ -60,7 +60,7 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """
     Run migrations in 'online' mode.
-    Conecta ao banco e executa migrations.
+    Connect to the database and run the migrations.
     """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -72,7 +72,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,  # SQLite requer batch mode para ALTER TABLE
+            render_as_batch=True,  # SQLite needs batch mode for ALTER TABLE
         )
 
         with context.begin_transaction():

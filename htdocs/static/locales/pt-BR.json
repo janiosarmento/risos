@@ -449,6 +449,27 @@
     "Could_not_fetch_URL": "Não foi possível acessar a URL",
     "Category_cannot_be_its_own_parent": "Categoria não pode ser pai de si mesma",
     "Post_has_insufficient_content_for_summary": "Post não tem conteúdo suficiente para resumo",
-    "Cannot_delete_feed_with_starred_posts": "Não é possível excluir feed com posts favoritos"
+    "Cannot_delete_feed_with_starred_posts": "Não é possível excluir feed com posts favoritos",
+    "AI_could_not_process_this_request_": "A IA não conseguiu processar esta solicitação.",
+    "AI_rate_limit_reached__Try_again_in_a_few_minutes_": "Limite de uso da IA atingido. Tente novamente em alguns minutos.",
+    "AI_temporarily_unavailable__Try_again_shortly_": "IA temporariamente indisponível. Tente novamente em instantes.",
+    "Current_password_is_incorrect": "A senha atual está incorreta",
+    "Jano_secret_not_resolved": "Segredo do Jano não encontrado",
+    "Must_specify_post_ids__feed_id__category_id__or_all_true": "Informe post_ids, feed_id, category_id ou all=true",
+    "No_RSS_Atom_feed_found_for_this_site": "Nenhum feed RSS/Atom encontrado neste site",
+    "No_posts_found": "Nenhum post encontrado",
+    "No_posts_selected": "Nenhum post selecionado",
+    "No_posts_selected_to_consolidate": "Nenhum post selecionado para consolidar",
+    "No_starred_posts_found": "Nenhum post favorito encontrado",
+    "None_of_the_selected_posts_has_a_summary_or_content": "Nenhum dos posts selecionados tem resumo ou conteúdo",
+    "Not_authenticated": "Não autenticado",
+    "Post_is_protected_by_keep_unread": "O post está protegido por \"manter não lido\"",
+    "Posts_not_found": "Posts não encontrados",
+    "Tag_cannot_be_empty": "A tag não pode ser vazia",
+    "The_configured_AI_model_is_unavailable__Check_Settings___AI_": "O modelo de IA configurado está indisponível. Verifique Configurações > IA.",
+    "Topic_name_cannot_be_empty": "O nome do tópico não pode ser vazio",
+    "Topic_not_found": "Tópico não encontrado",
+    "Topic_with_this_name_already_exists": "Já existe um tópico com este nome",
+    "api_base_url_may_not_target_a_metadata_endpoint": "A URL base da API não pode apontar para um endpoint de metadados"
   }
 }

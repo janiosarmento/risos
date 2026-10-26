@@ -604,7 +604,7 @@ def _resolve_spec(prefs: dict, name: str) -> Any:
 
 
 def get_effective_ai_api_key(db: Session) -> Optional[str]:
-    """Retorna a chave de API única configurada via Jano, ou None."""
+    """Return the API key configured through Jano, or None."""
     secret_name = _get_setting(db, PREF_JANO_SECRET_NAME)
     if not secret_name:
         return None

@@ -74,11 +74,12 @@ against the current code, and update this list as items land.
   review). Dropped the stale `JWT_SECRET` from the README, `CEREBRAS_API_KEY`
   from `install.sh`, and rewrote `backend/.env.example` to the variables
   `config.py` actually reads.
-- [ ] **12. Translate remaining Portuguese in backend code to English.** Error
-  messages (e.g. "Nenhum post selecionado para consolidar", "Posts não
-  encontrados", "Erro ao processar consolidação no LLM") and comments.
-  Earlier items delete some of it, so do this late and re-grep. Translated
-  error messages need matching `backendErrors.*` keys in both locales.
+- [x] **12. Translate remaining Portuguese in backend code to English.**
+  The related-posts consolidation endpoint (errors, prompt — which now follows
+  the summary-language setting instead of hardcoding Brazilian Portuguese —
+  and comments; AI errors now reach the app's AI error handlers), `schemas.py`
+  docstrings, `alembic/env.py`, `main.py`, `preferences.py`. Added
+  `backendErrors.*` keys for every backend error message that lacked one.
 - [ ] **13. Re-run the dead-code scan** to catch what the cleanup exposed:
   `vulture app scripts --min-confidence 60` (ignore route handlers and
   Pydantic fields), routes vs. frontend `fetchApi` calls, unused i18n keys,

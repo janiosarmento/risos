@@ -449,6 +449,27 @@
     "Could_not_fetch_URL": "Could not fetch URL",
     "Category_cannot_be_its_own_parent": "Category cannot be its own parent",
     "Post_has_insufficient_content_for_summary": "Post has insufficient content for summary",
-    "Cannot_delete_feed_with_starred_posts": "Cannot delete feed with starred posts"
+    "Cannot_delete_feed_with_starred_posts": "Cannot delete feed with starred posts",
+    "AI_could_not_process_this_request_": "AI could not process this request.",
+    "AI_rate_limit_reached__Try_again_in_a_few_minutes_": "AI rate limit reached. Try again in a few minutes.",
+    "AI_temporarily_unavailable__Try_again_shortly_": "AI temporarily unavailable. Try again shortly.",
+    "Current_password_is_incorrect": "Current password is incorrect",
+    "Jano_secret_not_resolved": "Jano secret not resolved",
+    "Must_specify_post_ids__feed_id__category_id__or_all_true": "Must specify post_ids, feed_id, category_id, or all=true",
+    "No_RSS_Atom_feed_found_for_this_site": "No RSS/Atom feed found for this site",
+    "No_posts_found": "No posts found",
+    "No_posts_selected": "No posts selected",
+    "No_posts_selected_to_consolidate": "No posts selected to consolidate",
+    "No_starred_posts_found": "No starred posts found",
+    "None_of_the_selected_posts_has_a_summary_or_content": "None of the selected posts has a summary or content",
+    "Not_authenticated": "Not authenticated",
+    "Post_is_protected_by_keep_unread": "Post is protected by keep_unread",
+    "Posts_not_found": "Posts not found",
+    "Tag_cannot_be_empty": "Tag cannot be empty",
+    "The_configured_AI_model_is_unavailable__Check_Settings___AI_": "The configured AI model is unavailable. Check Settings > AI.",
+    "Topic_name_cannot_be_empty": "Topic name cannot be empty",
+    "Topic_not_found": "Topic not found",
+    "Topic_with_this_name_already_exists": "Topic with this name already exists",
+    "api_base_url_may_not_target_a_metadata_endpoint": "api_base_url may not target a metadata endpoint"
   }
 }

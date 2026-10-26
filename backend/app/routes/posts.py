@@ -2125,23 +2125,24 @@ async def generate_related_summary(
     if not body.post_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nenhum post selecionado para consolidar",
+            detail="No posts selected to consolidate",
         )
 
     import re
 
     from app.models import AISummary, Post
+    from app.routes.preferences import get_effective_summary_language
     from app.services.ai import call_llm_text
 
-    # 1. Carrega os posts
+    # 1. Load the posts
     posts = db.query(Post).filter(Post.id.in_(body.post_ids)).all()
     if not posts:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Posts não encontrados",
+            detail="Posts not found",
         )
 
-    # 2. Carrega os resumos correspondentes
+    # 2. Load their summaries
     content_hashes = [p.content_hash for p in posts if p.content_hash]
     summaries_map = {}
     if content_hashes:
@@ -2152,60 +2153,53 @@ async def generate_related_summary(
             s.content_hash: s.summary_pt for s in summaries if s.summary_pt
         }
 
-    # 3. Constrói o texto consolidado
+    # 3. Build the combined text
     prompt_content = []
     for p in posts:
         summary_text = summaries_map.get(p.content_hash)
         if not summary_text:
-            # Fallback se não tiver resumo
+            # Fall back to the article content when there is no summary
             summary_text = p.content or ""
 
         if summary_text.strip():
             clean_summary = re.sub(r"<[^>]+>", "", summary_text)
-            prompt_content.append(f"Título: {p.title}\nResumo:\n{clean_summary}\n---")
+            prompt_content.append(f"Title: {p.title}\nSummary:\n{clean_summary}\n---")
 
     if not prompt_content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nenhum dos posts selecionados possui resumo ou conteúdo válido",
+            detail="None of the selected posts has a summary or content",
         )
 
     combined_summaries = "\n\n".join(prompt_content)
 
-    # 4. Invoca o LLM
+    # 4. Call the LLM. AI errors propagate to the app's AIError handlers.
+    language = get_effective_summary_language(db)
     system_prompt = (
-        "Você é o assistente inteligente de consolidação do Risos "
-        "(Sparkle Assistant).\n"
-        "Sua tarefa é analisar os resumos e títulos de múltiplos posts e "
-        "produzir uma síntese global unificada ('sumário dos sumários').\n"
-        "Crie um resumo de alto nível, bem estruturado em tópicos lógicos, "
-        "destacando os pontos convergentes, divergências significativas e "
-        "uma conclusão consolidada.\n"
-        "Sua resposta deve ser escrita obrigatoriamente em "
-        "Português Brasileiro, formatada em Markdown elegante.\n"
-        "Seja direto e objetivo, sem introduções desnecessárias ou saudações. "
-        "Vá direto ao conteúdo consolidado."
+        "You are Risos' consolidation assistant (Sparkle Assistant).\n"
+        "Your task is to analyze the titles and summaries of several posts and "
+        "produce one unified synthesis (a 'summary of summaries').\n"
+        "Write a high-level summary, well structured into logical topics, "
+        "highlighting where the sources converge, any significant "
+        "disagreements, and a consolidated conclusion.\n"
+        f"Your answer must be written in {language}, formatted as clean "
+        "Markdown.\n"
+        "Be direct and objective, with no introductions or greetings. "
+        "Go straight to the consolidated content."
     )
 
     user_prompt = (
-        "Aqui estão as matérias selecionadas e seus respectivos resumos:\n\n"
+        "Here are the selected articles and their summaries:\n\n"
         f"{combined_summaries}\n\n"
-        "Por favor, consolide tudo isso em um único sumário estruturado, "
-        "elegante e fácil de ler."
+        "Consolidate all of this into a single structured summary that is "
+        "easy to read."
     )
 
-    try:
-        super_summary = await call_llm_text(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            max_tokens=4096,
-            temperature=0.3,
-            engine="ondemand",
-        )
-        return {"summary": super_summary}
-    except Exception as e:
-        logger.error(f"Erro ao gerar sumário consolidado: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Erro ao processar consolidação no LLM: {str(e)}",
-        )
+    super_summary = await call_llm_text(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_tokens=4096,
+        temperature=0.3,
+        engine="ondemand",
+    )
+    return {"summary": super_summary}
