@@ -52,6 +52,13 @@ sudo systemctl restart risos
 
 The installer creates a Python venv, installs dependencies, runs migrations, and sets up a systemd service. On WordOps, nginx is configured automatically.
 
+The service is hardened (`ProtectSystem=strict`, `ProtectHome=true`): the
+checkout is read-only and only `backend/data/` is writable. `ProtectHome` also
+hides `/home` from the process, so any file the backend must read (an SSH key
+for the feed fallback, the sops age key for Jano) belongs under `/etc/risos/`,
+not in a user's home. The unit's `PATH` includes `/usr/local/bin` so Jano can
+find `sops`.
+
 ## Configuration
 
 Edit `backend/.env`:

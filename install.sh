@@ -284,11 +284,14 @@ Type=simple
 User=$RUN_USER
 Group=$RUN_GROUP
 WorkingDirectory=$BACKEND_DIR
-Environment="PATH=$BACKEND_DIR/venv/bin"
+# /usr/local/bin is needed for sops, which Jano uses to decrypt the AI key.
+Environment="PATH=$BACKEND_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin"
 # Unbuffered stdio so tracebacks and error logs reach the journal/log file
 # immediately instead of sitting in a block buffer until the next restart.
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 2 --timeout 630 --max-requests 1000 --max-requests-jitter 50
+# --no-control-socket: gunicorn 25's control socket defaults to the user's
+# home, which ProtectHome hides; nothing here uses it.
+ExecStart=$BACKEND_DIR/venv/bin/gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 127.0.0.1:$PORT --workers 2 --timeout 630 --max-requests 1000 --max-requests-jitter 50 --no-control-socket
 Restart=always
 RestartSec=5
 

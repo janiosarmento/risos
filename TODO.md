@@ -1,15 +1,8 @@
 # TODO
 
-- [ ] **`install.sh` generates a systemd `PATH` without `/usr/local/bin`.** The
-  unit gets `Environment="PATH=$BACKEND_DIR/venv/bin"`, so `sops` (used by Jano
-  to decrypt secrets) isn't found after a restart and AI summaries stop working.
-  Prod was patched by hand in the drop-in `override.conf`
-  (`/usr/local/bin:/usr/bin:/bin`); a fresh install would regress. Fix
-  `install.sh` and document it in the README's deploy notes.
-- [ ] **Document that `ProtectHome=true` hides `/home` from the service.** Any
-  file the backend must read belongs under `/etc/risos/` (or an explicit
-  `ReadWritePaths`/exception), never the deploying user's home. Add this to the
-  README's deploy notes.
+- [x] **`install.sh` systemd `PATH` and `ProtectHome` notes.** The unit's
+  `PATH` now includes `/usr/local/bin` (for sops); the README's Quick Start
+  documents the hardening and that backend-read files belong in `/etc/risos/`.
 
 ## Dead-code cleanup (analysis of 2026-10-26)
 
@@ -84,12 +77,9 @@ against the current code, and update this list as items land.
   `vulture app scripts --min-confidence 60` (ignore route handlers and
   Pydantic fields), routes vs. frontend `fetchApi` calls, unused i18n keys,
   unread model columns, unimported requirements.
-- [ ] **14. Silence gunicorn's control-server error.** Every start logs
-  `Control server error: [Errno 30] Read-only file system:
-  '/var/www/.gunicorn'` (841 times since 2026-04). gunicorn 25's control
-  socket defaults to the user's home, which systemd hardening makes read-only.
-  Harmless noise: disable the control server or point it at a writable path
-  (e.g. under `backend/data/`) in `install.sh` and the prod drop-in.
+- [x] **14. Silence gunicorn's control-server error.** `install.sh` passes
+  `--no-control-socket` (gunicorn pinned to >=25.3.0); prod's unit file was
+  patched the same way (backup at `risos.service.bak-20261026`).
 - [x] **15. Find what leaves orphan `post_tags` rows.** The 8 rows all
   belonged to one post (95744, fetched and tagged 2026-09-09, deleted soon
   after). No code path explains that one; retention can't have (the post was
