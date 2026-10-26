@@ -105,3 +105,10 @@ against the current code, and update this list as items land.
   socket defaults to the user's home, which systemd hardening makes read-only.
   Harmless noise: disable the control server or point it at a writable path
   (e.g. under `backend/data/`) in `install.sh` and the prod drop-in.
+- [ ] **15. Find what leaves orphan `post_tags` rows.** `post_tags` has 8 rows
+  whose `post_id` no longer exists (same 8 locally and in prod, out of ~552k,
+  found by `PRAGMA foreign_key_check` on 2026-10-26). Some path deletes posts
+  without their tags — SQLite runs without `PRAGMA foreign_keys`, so only the
+  ORM cascade or explicit deletes clean up. Suspects: the retention cleanup's
+  bulk `query(Post).delete()` and other bulk deletes. Find the path, fix it,
+  delete the orphans.
