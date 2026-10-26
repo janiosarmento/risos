@@ -220,7 +220,7 @@ if [ ! -f "$BACKEND_DIR/.env" ]; then
         cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
 
         echo_warn ".env created from .env.example - please edit it with your settings!"
-        echo_warn "At minimum, set APP_PASSWORD and CEREBRAS_API_KEY"
+        echo_warn "At minimum, set APP_PASSWORD"
     else
         echo_error ".env.example not found!"
         exit 1
@@ -487,7 +487,7 @@ echo ""
 if [ "$WORDOPS_DETECTED" = true ]; then
     echo "Next steps:"
     echo "  1. Edit $BACKEND_DIR/.env with your settings"
-    echo "     - Set APP_PASSWORD and CEREBRAS_API_KEY"
+    echo "     - Set APP_PASSWORD (the AI key is set in the app under Settings)"
     echo "  2. Restart the service: systemctl restart $SERVICE_NAME"
     echo ""
     echo "Nginx has been configured automatically at:"
@@ -496,7 +496,7 @@ if [ "$WORDOPS_DETECTED" = true ]; then
 else
     echo "Next steps:"
     echo "  1. Edit $BACKEND_DIR/.env with your settings"
-    echo "     - Set APP_PASSWORD and CEREBRAS_API_KEY"
+    echo "     - Set APP_PASSWORD (the AI key is set in the app under Settings)"
     echo "  2. Configure nginx (see example below)"
     echo "  3. Restart the service: systemctl restart $SERVICE_NAME"
     echo ""

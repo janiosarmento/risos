@@ -64,3 +64,6 @@ Thumbs.db
 *.bak
 
 graphify-out/
+
+# Brainstorm tool state
+.superpowers/

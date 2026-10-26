@@ -68,13 +68,12 @@ against the current code, and update this list as items land.
   (`modal.*` shortcut hints, `time.daysAgo`/`hoursAgo`, `settings.status.title`,
   `backendErrors.Feed_is_disabled`, …). `meta.languageName` stays: the
   backend's `GET /admin/locales` reads it.
-- [ ] **11. Clean up stray repo files.** `reasonix.toml` and
-  `install-litellm.sh` (unreferenced; the latter installs a LiteLLM proxy for
-  the Anthropic API, unrelated to Risos), `.superpowers/brainstorm/` (tool
-  state, even a `server.pid`), finished plans in `docs/superpowers/` and
-  `docs/history/`. `AI.md` (May 2026 developer guide superseded by
-  CLAUDE.md; still says single-worker + APScheduler). `screenshots/` (2025-12) predates the Material 3 redesign —
-  retake or drop, then fix the README.
+- [x] **11. Clean up stray repo files.** Deleted `reasonix.toml`,
+  `install-litellm.sh`, `.superpowers/`, `docs/superpowers/`, `docs/history/`,
+  `AI.md` and `screenshots/` (README section removed; retake after the docs
+  review). Dropped the stale `JWT_SECRET` from the README, `CEREBRAS_API_KEY`
+  from `install.sh`, and rewrote `backend/.env.example` to the variables
+  `config.py` actually reads.
 - [ ] **12. Translate remaining Portuguese in backend code to English.** Error
   messages (e.g. "Nenhum post selecionado para consolidar", "Posts não
   encontrados", "Erro ao processar consolidação no LLM") and comments.

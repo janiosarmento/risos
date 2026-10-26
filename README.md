@@ -38,12 +38,6 @@ A self-hosted RSS reader with AI-powered summaries.
 - **OPML Import/Export** — Migrate from other readers
 - **Mobile Friendly** — Responsive design with streamlined mobile interface (advanced features like Topics and Curation available on desktop/tablet)
 
-## Screenshots
-
-![Main screen](screenshots/1-main_screen.png)
-![Settings](screenshots/2-settings.png)
-![Post view](screenshots/3-post.png)
-
 ## Quick Start
 
 ### Native (systemd)
@@ -52,7 +46,7 @@ A self-hosted RSS reader with AI-powered summaries.
 git clone https://github.com/janiosarmento/risos.git /var/www/risos
 cd /var/www/risos
 sudo ./install.sh
-sudo nano backend/.env  # Set APP_PASSWORD, JWT_SECRET
+sudo nano backend/.env  # Set APP_PASSWORD
 sudo systemctl restart risos
 ```
 
@@ -65,8 +59,10 @@ Edit `backend/.env`:
 ```bash
 # Required
 APP_PASSWORD=your_password
-JWT_SECRET=your_secret_key_minimum_32_chars  # openssl rand -hex 32
 ```
+
+`backend/.env.example` lists the other bootstrap settings (database path, session
+TTL, logging, CORS, SSH fallback).
 
 All other settings — including AI API key, base URL, model, summary language, data retention, and interface behavior — are configured in the UI via **Settings**. The settings page also shows the app version and a "Clear cache" link for troubleshooting.
 
