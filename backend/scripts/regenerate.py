@@ -7,7 +7,6 @@ Usage:
     python scripts/regenerate.py --starred                # ALL starred (force re-gen)
     python scripts/regenerate.py --unread                 # unread without tags
     python scripts/regenerate.py --unread --starred       # unread OR starred, no tags
-    python scripts/regenerate.py --local                  # use Ollama
     python scripts/regenerate.py --batch-size 200         # limit total posts
 """
 
@@ -24,8 +23,7 @@ from app.database import SessionLocal
 from app.models import Post, PostTag
 from scripts.lib import log, run_batch_loop
 
-DELAY_CEREBRAS = 20
-DELAY_LOCAL = 1
+DELAY_SECONDS = 20  # between API calls
 DEFAULT_BATCH_SIZE = 100
 
 
@@ -47,11 +45,6 @@ def parse_args():
         action="store_true",
         help="Only starred posts (alone = force re-gen ALL starred; "
         "with --unread = starred OR unread without tags)",
-    )
-    parser.add_argument(
-        "--local",
-        action="store_true",
-        help="Use local Ollama model instead of Cerebras",
     )
     return parser.parse_args()
 
@@ -98,20 +91,16 @@ async def main():
         else:
             mode_desc = "without tags"
 
-    engine = "local/Ollama" if args.local else "Cerebras"
-    log(f"Found {len(posts)} posts to process ({mode_desc}, {engine})\n")
+    log(f"Found {len(posts)} posts to process ({mode_desc})\n")
 
     if not posts:
         db.close()
         return
 
-    delay = DELAY_LOCAL if args.local else DELAY_CEREBRAS
-
     success, skipped, errors = await run_batch_loop(
         db,
         posts,
-        use_local=args.local,
-        delay=delay,
+        delay=DELAY_SECONDS,
         delete_existing_tags=delete_existing_tags,
     )
 

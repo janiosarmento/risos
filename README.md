@@ -46,17 +46,6 @@ A self-hosted RSS reader with AI-powered summaries.
 
 ## Quick Start
 
-### Docker
-
-```bash
-git clone https://github.com/janiosarmento/risos.git
-cd risos
-cp backend/.env.example backend/.env
-# Edit backend/.env with your settings
-docker-compose up -d
-# Access at http://localhost:8100
-```
-
 ### Native (systemd)
 
 ```bash

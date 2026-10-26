@@ -289,13 +289,6 @@ app.add_middleware(
 )
 
 
-# Health check endpoint (no authentication)
-@app.get("/health")
-async def health_check():
-    """Basic health check"""
-    return {"status": "ok"}
-
-
 # Include routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")

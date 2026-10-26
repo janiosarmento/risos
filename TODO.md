@@ -58,16 +58,12 @@ against the current code, and update this list as items land.
   and the curl-only ops tools (`reprocess-summary`, `vacuum`, `queue-status`,
   `recover-orphaned-queue`, `diagnose-queue`) with their schemas, helpers and
   error strings. `clear-queue-cooldowns` stays (Settings' "Reset AI queue").
-- [ ] **8. Fix or delete broken maintenance scripts.**
-  `scripts/smart_merge_tags.py` imports `app.services.ollama` (gone) and fails
-  on import; `scripts/lib.py`'s local mode and `regenerate.py --local` hit the
-  same import. Check the rest (`translate_all_tags.py` docstring still claims
-  Cerebras key rotation; `test_merges_perf.py`) after items 1–2.
-- [ ] **9. Remove or fix the Docker setup.** `backend/Dockerfile` can't build
-  (`requirements.txt` has `-e /opt/jano`), `docker-compose.yml` is untouched
-  since 2025-12, and the README's Docker section is stale. `GET /health` is
-  only used by the compose healthcheck — remove it with Docker, or keep it if
-  Docker is fixed.
+- [x] **8. Delete broken maintenance scripts.** Deleted
+  `scripts/smart_merge_tags.py` (tag merging lives in Settings) and the Ollama
+  `--local` mode of `regenerate.py`/`lib.py`. Also fixed `lib.py` hashing
+  posts with its own formula instead of the app's `compute_content_hash`.
+- [x] **9. Remove the Docker setup.** Deleted `backend/Dockerfile`,
+  `docker-compose.yml`, the README's Docker section and `GET /health`.
 - [ ] **10. Remove unused i18n keys** (after 1, 5 and 7, which orphan more
   strings — re-scan first). As of the analysis: `modal.closeEsc`,
   `modal.markRead`, `modal.markUnread`, `modal.starShortcut`,

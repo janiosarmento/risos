@@ -3,12 +3,10 @@ Shared utilities for batch-processing scripts.
 
 Provides:
 - log()                  — flushed print with optional timestamp
-- compute_content_hash() — SHA-256 content hash for dedup
 - regenerate_one()       — regenerate summary/tags for a single post
 - run_batch_loop()       — batch processing loop with delay + counting
 """
 
-import hashlib
 import time
 from datetime import datetime
 
@@ -17,6 +15,7 @@ from app.services.ai import (
     GarbageContentError,
     generate_summary,
 )
+from app.services.content_hasher import compute_content_hash
 from app.services.tags import save_post_tags
 
 
@@ -33,24 +32,15 @@ def log(msg, timestamp=False):
 
 
 # ---------------------------------------------------------------------------
-# Content hashing
-# ---------------------------------------------------------------------------
-def compute_content_hash(content, title="", url=""):
-    raw = f"{title}|{url}|{content[:500]}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:16]
-
-
-# ---------------------------------------------------------------------------
 # Single post regeneration
 # ---------------------------------------------------------------------------
-async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
+async def regenerate_one(db, post, delete_existing_tags=False):
     """
     Regenerate summary and tags for a single post.
 
     Args:
         db: SQLAlchemy session
         post: Post model instance
-        use_local: Use Ollama instead of Cerebras
         delete_existing_tags: Delete existing tags before regenerating
             (True for starred/force mode, False for tagless/unread)
 
@@ -69,12 +59,7 @@ async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
         db.commit()
 
     try:
-        if use_local:
-            from app.services.ollama import generate_summary_local
-
-            result = await generate_summary_local(content, title=post.title, db=db)
-        else:
-            result = await generate_summary(content, title=post.title)
+        result = await generate_summary(content, title=post.title)
     except GarbageContentError as e:
         post.skip_summary = True
         db.commit()
@@ -84,7 +69,7 @@ async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
         log(f"  #{post.id}: ERROR ({e})")
         return False, True
 
-    # Save summary
+    # Save summary, keyed by the same hash the app computes for this content
     content_hash = compute_content_hash(content, post.title, post.url)
     if post.content_hash != content_hash:
         post.content_hash = content_hash
@@ -127,9 +112,7 @@ async def regenerate_one(db, post, use_local=False, delete_existing_tags=False):
 INTERNAL_BATCH_SIZE = 6  # Posts per visual batch group
 
 
-async def run_batch_loop(
-    db, posts, use_local=False, delay=20, delete_existing_tags=False
-):
+async def run_batch_loop(db, posts, delay=20, delete_existing_tags=False):
     """
     Process a list of posts in batches, with delay between API calls.
 
@@ -157,7 +140,6 @@ async def run_batch_loop(
             ok, called_api = await regenerate_one(
                 db,
                 post,
-                use_local=use_local,
                 delete_existing_tags=delete_existing_tags,
             )
             last_called_api = called_api
