@@ -133,6 +133,29 @@ def test_read_state_filters(db):
     assert _search(db, ["arc"], include_unread=False) == [2]
 
 
+
+def test_results_carry_read_state(db):
+    # The assistant only decrements unread counters for posts that were
+    # actually unread, so each result reports is_read and keep_unread.
+    _add(db, 1, "Arc Browser ships tab sync")
+    _add(db, 2, "Arc Browser adds split view", is_read=True)
+    _add(db, 3, "Arc Browser adds profiles")
+    db.get(Post, 3).keep_unread = True
+    db.commit()
+
+    results = _text_search_related(
+        db,
+        post_id=1,
+        keywords=["arc"],
+        active_tags=[],
+        limit=30,
+        min_common_tags=0,
+        include_read=True,
+        include_unread=True,
+    )
+    state = {r["id"]: (r["is_read"], r["keep_unread"]) for r in results}
+    assert state == {2: (True, False), 3: (False, True)}
+
 def test_index_follows_summary_writes(db):
     _add(db, 1, "Arc Browser ships tab sync")
     _add(db, 2, "New release")

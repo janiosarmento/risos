@@ -310,17 +310,24 @@ const postDetailMixin = {
                 body: JSON.stringify({ post_ids: postIds }),
             });
 
-            // Atualiza o estado is_read local e ajusta contadores da sidebar
+            // Update local read state; only posts that were actually unread
+            // (the server skips read and keep_unread ones) touch the counters.
+            // The source post is usually already read from being opened.
             postIds.forEach(id => {
-                // Busca o post na lista principal ou nos relacionados
                 const post = this.posts.find(p => p.id === id) || this.relatedPosts.find(p => p.id === id);
-                if (!post) return;
+                if (!post || post.keep_unread) return;
+                const wasUnread = !post.is_read;
 
-                // Atualiza na lista principal (se presente)
                 this.updatePost(id, { is_read: true });
-                // Ajusta contadores de não lidos (feed, sugeridos, tópicos)
-                this._adjustUnreadCounters(post, true);
+                const related = this.relatedPosts.find(p => p.id === id);
+                if (related) related.is_read = true;
+                if (wasUnread) this._adjustUnreadCounters(post, true);
             });
+
+            // Related posts don't carry tags, so local topic adjustment can't
+            // cover them; resync sidebar counts from the server.
+            this.loadFeeds();
+            this.scheduleTopicsRefresh(0);
 
             this.showToast(this.t('modal.markedAsReadSuccess') || 'Posts marcados como lidos!');
         } catch (e) {

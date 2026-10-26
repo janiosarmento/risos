@@ -1916,7 +1916,7 @@ def _text_search_related(
         text(
             f"""
             SELECT p.id, p.title, p.feed_id, p.is_suggested,
-                   f.title AS feed_title,
+                   p.is_read, p.keep_unread, f.title AS feed_title,
                    -bm25(posts_fts, {_RELATED_BM25_WEIGHTS}) AS score
             FROM posts_fts
             JOIN posts p ON p.id = posts_fts.rowid
@@ -1974,6 +1974,8 @@ def _text_search_related(
                 "feed_title": r.feed_title,
                 "feed_id": r.feed_id,
                 "is_suggested": bool(r.is_suggested),
+                "is_read": bool(r.is_read),
+                "keep_unread": bool(r.keep_unread),
                 "common_tags_count": common_count,
             }
         )
@@ -2020,6 +2022,8 @@ def _tag_search_related(
             Post.title,
             Post.feed_id,
             Post.is_suggested,
+            Post.is_read,
+            Post.keep_unread,
             Feed.title.label("feed_title"),
             Feed.category_id,
             Post.sort_date,
@@ -2076,6 +2080,8 @@ def _tag_search_related(
             "feed_title": r.feed_title,
             "feed_id": r.feed_id,
             "is_suggested": bool(r.is_suggested),
+            "is_read": bool(r.is_read),
+            "keep_unread": bool(r.keep_unread),
             "common_tags_count": r.common_tags_count,
         }
         for _, r in scored
