@@ -4,6 +4,32 @@
   `PATH` now includes `/usr/local/bin` (for sops); the README's Quick Start
   documents the hardening and that backend-read files belong in `/etc/risos/`.
 
+## Documentation review (before handing a copy to a friend)
+
+Goal: someone other than the author can install and run Risos from the README
+alone. Noted 2026-10-26; do it before offering the friend a copy.
+
+- [ ] **Screenshots.** Retake them on the Material 3 UI and restore the README
+  section (removed with the old 2025-12 images).
+- [ ] **AI key without Jano.** The key is only read through Jano
+  (`get_effective_ai_api_key` resolves a Jano secret name), and
+  `requirements.txt` has `-e /opt/jano`, which breaks `pip install` anywhere
+  else. A fresh install gets no AI except a keyless local endpoint. Decide on a
+  plain key path (env var or a key stored in Settings), make Jano optional,
+  then document both.
+- [ ] **Host-specific defaults.** `cors_origins` defaults to
+  `https://rss.sarmento.org`, and the `USER_AGENT` URL and
+  `DEFAULT_API_BASE_URL` (Cerebras) point at the author's setup. Make them
+  neutral or document them in `.env.example`.
+- [ ] **Install walk-through.** Follow the README on a clean machine
+  (`install.sh`, `.env`, nginx/WordOps, first login, adding feeds, configuring
+  AI) and fix every step that is wrong or missing.
+- [ ] **README accuracy.** Re-check "Rate Limiting & Reliability" (model
+  fallback, 5-minute backoff, exponential retry) against the code, plus the
+  feature list, keyboard shortcuts, tech stack and CLI scripts sections.
+  Check `PROMPTS.md` against the current prompts. Decide whether the personal
+  "100% Vibe Coded" section stays.
+
 ## Dead-code cleanup (analysis of 2026-10-26)
 
 Ordered for execution. Items interact: removing one often deletes code (or
