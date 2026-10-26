@@ -469,9 +469,6 @@
     "Feed_is_disabled": "Feed is disabled",
     "Could_not_fetch_URL": "Could not fetch URL",
     "Category_cannot_be_its_own_parent": "Category cannot be its own parent",
-    "Image_too_large": "Image too large",
-    "Timeout_fetching_image": "Timeout fetching image",
-    "Error_fetching_image": "Error fetching image",
     "Post_has_insufficient_content_for_summary": "Post has insufficient content for summary",
     "Cannot_delete_feed_with_starred_posts": "Cannot delete feed with starred posts"
   }

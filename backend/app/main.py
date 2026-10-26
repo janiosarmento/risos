@@ -28,7 +28,6 @@ from app.routes import (
     feeds,
     posts,
     preferences,
-    proxy,
     suggestions,
     tags,
     topics,
@@ -302,7 +301,6 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(feeds.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")
-app.include_router(proxy.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(preferences.router, prefix="/api")
 app.include_router(suggestions.router, prefix="/api")

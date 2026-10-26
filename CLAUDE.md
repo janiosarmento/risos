@@ -71,9 +71,9 @@ summaries/tags and for grouping tags into topics.
   `PermanentError`, …) to HTTP 502.
 - **Routes** `app/routes/*.py` — one module per resource: `auth`, `feeds`,
   `categories`, `posts` (the large one: list/filter/read-state/curation), `tags`,
-  `topics`, `preferences`, `admin`, `suggestions`, `proxy` (image/CORS proxy).
-  All runtime settings live in the `app_settings` table and are read through
-  `get_effective_*` helpers in `preferences.py`.
+  `topics`, `preferences`, `admin`, `suggestions`. All runtime settings live in
+  the `app_settings` table and are read through `get_effective_*` helpers in
+  `preferences.py`.
 - **Services** `app/services/*` — feed fetch/parse (`feed_parser`,
   `feed_ingestion`, `content_extractor`, `html_sanitizer`, `ssh_fallback` for
   Cloudflare-blocked feeds); `scheduler.py` (feed refresh, summary-queue worker,

@@ -54,10 +54,12 @@ against the current code, and update this list as items land.
   (written on every cleanup, 1,278 rows, never read): drop it, or show it on
   the status screen. One Alembic migration for the schema changes.
 - [ ] **7. Decide on API routes the frontend never calls.**
-  - Likely dead: `GET /api/proxy/image` (SSRF-hardened image proxy, pure
-    attack surface if unused), `GET /api/posts/{id}/redirect`,
+  - Done: `GET /api/proxy/image` removed (never wired to the frontend, not
+    even in the initial release; mixed content is handled by the sanitizer
+    dropping `http://` images).
+  - Likely dead: `GET /api/posts/{id}/redirect`,
     `PATCH /api/categories/reorder` (no reorder UI),
-    `GET /api/suggestions/status`. If proxy and redirect go, update
+    `GET /api/suggestions/status`. If redirect goes, update
     `services/url_safety.py`'s docstring.
   - Manual ops tools (curl / README): `reprocess-summary`, `vacuum`,
     `queue-status`, `clear-queue-cooldowns`, `recover-orphaned-queue`,

@@ -34,10 +34,6 @@ class Settings(BaseSettings):
     # Retention
     max_db_size_mb: int = 1024
 
-    # Proxy
-    proxy_timeout_seconds: int = 10
-    proxy_max_size_bytes: int = 5_242_880  # 5MB
-
     # SSH Fallback (feed fetch) — retry via SOCKS tunnel when direct fetch fails.
     # Unset (default) disables the fallback entirely.
     ssh_fallback_host: Optional[str] = None
