@@ -51,7 +51,7 @@ from app.services.ai import (
     generate_summary,
 )
 from app.services.ai._parsing import split_into_paragraphs
-from app.services.blocked_terms import title_is_blocked
+from app.services.blocked_terms import post_is_blocked
 from app.services.content_extractor import ensure_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.stories import get_story_map, get_story_read_counts
@@ -65,14 +65,21 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 def get_blocked_unread_ids(db: Session) -> set[int]:
-    """IDs of unread posts that count as blocked: the title matches a blocked
-    term, or the LLM flagged the summary for an excluded audience."""
+    """IDs of unread posts that count as blocked: the title or one-line summary
+    matches a blocked term, or the LLM flagged the summary for an excluded
+    audience."""
     terms = get_effective_blocked_terms(db)
     audiences = set(get_effective_excluded_audiences(db))
     if not terms and not audiences:
         return set()
     rows = (
-        db.query(Post.id, Post.title, AISummary.excluded_audience)
+        db.query(
+            Post.id,
+            Post.title,
+            AISummary.translated_title,
+            AISummary.one_line_summary,
+            AISummary.excluded_audience,
+        )
         .outerjoin(AISummary, Post.content_hash == AISummary.content_hash)
         .filter(Post.is_read.is_(False))
         .all()
@@ -81,7 +88,7 @@ def get_blocked_unread_ids(db: Session) -> set[int]:
         row.id
         for row in rows
         if (row.excluded_audience and row.excluded_audience in audiences)
-        or title_is_blocked(row.title, terms)
+        or post_is_blocked(row.title, row.translated_title, row.one_line_summary, terms)
     }
 
 
@@ -413,7 +420,12 @@ def list_posts(
             "translated_title": summary.translated_title if summary else None,
             "skip_summary": bool(post.skip_summary),
             "keep_unread": bool(post.keep_unread),
-            "is_blocked": title_is_blocked(post.title, blocked_terms)
+            "is_blocked": post_is_blocked(
+                post.title,
+                summary.translated_title if summary else None,
+                summary.one_line_summary if summary else None,
+                blocked_terms,
+            )
             or bool(
                 summary
                 and summary.excluded_audience

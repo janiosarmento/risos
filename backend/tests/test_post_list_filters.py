@@ -11,9 +11,22 @@ from sqlalchemy.pool import StaticPool
 
 import app.services.stories as stories
 from app.database import Base
-from app.models import Feed, Post, PostTag, SummaryQueue, Topic, TopicTag
+from app.models import (
+    AISummary,
+    AppSettings,
+    Feed,
+    Post,
+    PostTag,
+    SummaryQueue,
+    Topic,
+    TopicTag,
+)
 from app.routes.posts import list_posts
-from app.services.blocked_terms import title_is_blocked, title_matches_term
+from app.services.blocked_terms import (
+    post_is_blocked,
+    title_is_blocked,
+    title_matches_term,
+)
 
 
 @pytest.fixture
@@ -146,6 +159,50 @@ def test_blocked_terms_match_as_one_pattern_like_term_by_term():
     for title in titles:
         expected = any(title_matches_term((title or "").lower(), t) for t in terms)
         assert title_is_blocked(title, terms) == expected, title
+
+
+def test_post_is_blocked_checks_title_and_one_line_summary_not_long_summary():
+    terms = ["ryobi", "best * to watch"]
+    assert post_is_blocked("Ryobi drill review", None, None, terms)
+    assert post_is_blocked("Power tools in the cold", None, "Ryobi batteries", terms)
+    assert post_is_blocked("Cordless tools", "Ferramentas Ryobi", None, terms)
+    assert not post_is_blocked("Power tools in the cold", None, "Batteries", terms)
+    # A wildcard must not stitch together text from two different fields
+    assert not post_is_blocked("The best phones", None, "Shows to watch", terms)
+    assert not post_is_blocked("Ryobi", None, None, [])
+
+
+def test_list_blocks_posts_whose_one_line_summary_matches(db):
+    db.add(AppSettings(key="pref_blocked_terms", value="ryobi"))
+    db.add(Feed(id=1, title="Feed", url="https://example.com/feed"))
+    db.add_all(
+        [
+            Post(id=1, feed_id=1, title="Cold tools", sort_date=NOW, content_hash="a"),
+            Post(id=2, feed_id=1, title="Leaf tools", sort_date=NOW, content_hash="b"),
+            Post(id=3, feed_id=1, title="No summary", sort_date=NOW),
+        ]
+    )
+    db.add_all(
+        [
+            AISummary(
+                content_hash="a",
+                one_line_summary="Ryobi batteries lose power below freezing",
+                summary_pt="Long summary.",
+            ),
+            # Only the long summary names the brand: not blocked
+            AISummary(
+                content_hash="b",
+                one_line_summary="A mulcher shrinks leaf bags",
+                summary_pt="The author uses a Ryobi mulcher.",
+            ),
+        ]
+    )
+    db.commit()
+
+    result = _list(db)
+    assert {p.id: p.is_blocked for p in result.posts} == {1: True, 2: False, 3: False}
+    assert result.blocked_count == 1
+    assert [p.id for p in _list(db, blocked_only=True).posts] == [1]
 
 
 def test_expired_story_map_is_served_stale_and_rebuilt_in_background(db, monkeypatch):

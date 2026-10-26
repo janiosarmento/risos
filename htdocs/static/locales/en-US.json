@@ -230,7 +230,7 @@
     "ignoredTagsDesc": "Tags excluded from suggestions and profile. Click x to restore.",
     "noIgnoredTags": "No ignored tags",
     "blockedTerms": "Blocked Terms",
-    "blockedTermsDesc": "Posts matching these terms in the title will be highlighted. Use * as wildcard (e.g. best * to watch). One term per line.",
+    "blockedTermsDesc": "Posts matching these terms in the title or the one-line AI summary will be highlighted. Use * as wildcard (e.g. best * to watch). One term per line.",
     "blockedTermsPlaceholder": "tesla\nsmart home\nbest * to watch",
     "excludedAudiences": "Excluded Audiences",
     "excludedAudiencesDesc": "The AI flags new articles written mainly for these audiences and they are highlighted like blocked terms. Articles that only mention the topic in passing are not flagged. One audience per line. Add guidance after a colon, e.g. \"gamers: video games and consoles; not engineering deep-dives\".",

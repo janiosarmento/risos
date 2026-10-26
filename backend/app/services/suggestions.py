@@ -15,7 +15,7 @@ from app.routes.preferences import (
     get_effective_blocked_terms,
     get_effective_excluded_audiences,
 )
-from app.services.blocked_terms import title_is_blocked
+from app.services.blocked_terms import post_is_blocked
 from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
@@ -80,8 +80,8 @@ def get_suggestion_candidates(
 
     min_summary_length = get_effective_suggestion_min_summary_length(db)
 
-    unread_posts = (
-        db.query(Post)
+    unread_rows = (
+        db.query(Post, AISummary.translated_title, AISummary.one_line_summary)
         .join(AISummary, Post.content_hash == AISummary.content_hash)
         .options(joinedload(Post.tags))
         .filter(
@@ -93,14 +93,18 @@ def get_suggestion_candidates(
         .all()
     )
 
-    logger.debug(f"Found {len(unread_posts)} unread posts to check")
+    logger.debug(f"Found {len(unread_rows)} unread posts to check")
 
     # Filter out posts matching blocked terms
     blocked_terms = get_effective_blocked_terms(db)
+    unread_posts = [
+        post
+        for post, translated_title, one_line_summary in unread_rows
+        if not post_is_blocked(
+            post.title, translated_title, one_line_summary, blocked_terms
+        )
+    ]
     if blocked_terms:
-        unread_posts = [
-            p for p in unread_posts if not title_is_blocked(p.title, blocked_terms)
-        ]
         logger.debug(f"{len(unread_posts)} posts remaining after blocked terms filter")
 
     # Filter out posts the LLM flagged as written for an excluded audience

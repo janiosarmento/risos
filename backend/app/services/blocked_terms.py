@@ -1,8 +1,9 @@
 """
-Blocked-term matching against post titles.
+Blocked-term matching against post titles and their AI one-line summaries.
 
 Shared by the post list (is_blocked / Blocked view), suggestions, and the
-summary pipeline, which skips blocked posts so they never cost an LLM call.
+summary pipeline, which skips blocked posts so they never cost an LLM call
+(there is no summary yet at that point, so it matches the title alone).
 """
 
 import re
@@ -85,3 +86,30 @@ def title_is_blocked(title: str | None, terms: list) -> bool:
         return False
     regex = _terms_regex(tuple(terms))
     return bool(regex and regex.search((title or "").lower()))
+
+
+@lru_cache(maxsize=16384)
+def _text_is_blocked(text: str, terms: tuple[str, ...]) -> bool:
+    regex = _terms_regex(terms)
+    return bool(regex and regex.search(text))
+
+
+def post_is_blocked(
+    title: str | None,
+    translated_title: str | None,
+    one_line_summary: str | None,
+    terms: list,
+) -> bool:
+    """True if the title, or the AI's translated title or one-line summary,
+    matches any blocked term.
+
+    The long summary is left out on purpose: it names brands and products in
+    passing, so terms meant for titles blocked far too much. Fields are joined
+    with newlines, which a wildcard's .*? never crosses, so a term can't match
+    across two of them. Memoized because the unread set is rescanned on every
+    post list request and its texts rarely change.
+    """
+    if not terms:
+        return False
+    text = "\n".join(t for t in (title, translated_title, one_line_summary) if t)
+    return _text_is_blocked(text.lower(), tuple(terms))

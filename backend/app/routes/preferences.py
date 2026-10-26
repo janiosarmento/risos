@@ -409,15 +409,20 @@ def _unsuggest_blocked_posts(db: Session, blocked_terms: list):
     """Remove suggestion status from posts matching blocked terms."""
     if not blocked_terms:
         return
-    from app.models import Post
-    from app.services.blocked_terms import title_is_blocked
+    from app.models import AISummary, Post
+    from app.services.blocked_terms import post_is_blocked
 
     suggested = (
-        db.query(Post).filter(Post.is_suggested.is_(True), Post.is_read == 0).all()
+        db.query(Post, AISummary.translated_title, AISummary.one_line_summary)
+        .outerjoin(AISummary, Post.content_hash == AISummary.content_hash)
+        .filter(Post.is_suggested.is_(True), Post.is_read == 0)
+        .all()
     )
     count = 0
-    for post in suggested:
-        if title_is_blocked(post.title, blocked_terms):
+    for post, translated_title, one_line_summary in suggested:
+        if post_is_blocked(
+            post.title, translated_title, one_line_summary, blocked_terms
+        ):
             post.is_suggested = 0
             post.suggestion_score = None
             post.suggested_at = None
