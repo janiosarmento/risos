@@ -217,37 +217,3 @@ def clear_all_suggestions(db: Session) -> int:
         db.commit()
         logger.info(f"Cleared {count} suggestions")
     return count
-
-
-def get_suggestion_stats(db: Session) -> dict:
-    """
-    Get statistics about the suggestion system.
-
-    Returns:
-        Dict with suggestion system statistics
-    """
-    from app.services.user_profile import (
-        get_liked_posts_count,
-        is_profile_stale,
-    )
-
-    # Count suggested posts (not read)
-    suggested_unread = (
-        db.query(Post).filter(Post.is_suggested.is_(True), Post.is_read == 0).count()
-    )
-
-    # Total suggested posts
-    suggested_total = db.query(Post).filter(Post.is_suggested.is_(True)).count()
-
-    # Get profile info
-    profile = get_user_profile(db)
-
-    return {
-        "liked_count": get_liked_posts_count(db),
-        "profile_ready": profile is not None,
-        "profile_stale": is_profile_stale(db),
-        "profile_tags_count": len(profile.get("tags", [])) if profile else 0,
-        "suggested_unread": suggested_unread,
-        "suggested_total": suggested_total,
-        "last_profile_update": profile.get("updated_at") if profile else None,
-    }

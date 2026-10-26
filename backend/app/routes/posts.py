@@ -15,7 +15,6 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session, joinedload, selectinload, subqueryload
@@ -56,7 +55,6 @@ from app.services.content_extractor import ensure_full_content
 from app.services.content_hasher import compute_content_hash
 from app.services.stories import get_story_map, get_story_read_counts
 from app.services.tags import save_post_tags
-from app.services.url_safety import is_safe_external_url
 from app.topics_cache import invalidate as invalidate_topics_cache
 
 logger = logging.getLogger(__name__)
@@ -955,43 +953,6 @@ def mark_read_batch(
         invalidate_topics_cache()
 
     return {"marked_read": count}
-
-
-@router.get("/{post_id}/redirect")
-def redirect_to_post(
-    post_id: int,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """
-    Redirect to the original post URL.
-
-    - Validates URL scheme (http/https only)
-    - Marks post as read
-    - Returns HTTP 302 to original URL
-    """
-    post = get_post_or_404(db, post_id)
-
-    if not post.url:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Post has no URL"
-        )
-
-    # Validate URL to prevent open redirect attacks
-    if not is_safe_external_url(post.url):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or unsafe URL",
-        )
-
-    # Mark as read (skip if protected)
-    if not post.is_read and not post.keep_unread:
-        post.is_read = True
-        post.read_at = datetime.utcnow()
-        db.commit()
-        invalidate_topics_cache()
-
-    return RedirectResponse(url=post.url, status_code=status.HTTP_302_FOUND)
 
 
 @router.post("/{post_id}/regenerate-summary")

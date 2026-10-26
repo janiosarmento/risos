@@ -73,15 +73,6 @@ class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CategoryReorder(BaseModel):
-    """Request para reordenar categorias"""
-
-    order: List[int]  # Lista de IDs na nova ordem
-
-
-# === Feeds ===
-
-
 class FeedCreate(BaseModel):
     """Request para criar feed"""
 

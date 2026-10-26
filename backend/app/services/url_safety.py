@@ -1,7 +1,6 @@
 """
 URL safety validation for outbound fetches (feeds, article content, the AI
-endpoint) and the post redirect.
-Blocks SSRF / open-redirect targets: private, loopback, link-local and
+endpoint). Blocks SSRF targets: private, loopback, link-local and
 reserved IP ranges (v4 and v6), with DNS resolution so hostnames that
 merely point at internal IPs are also rejected.
 """

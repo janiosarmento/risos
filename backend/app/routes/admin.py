@@ -1,6 +1,6 @@
 """
 Admin routes.
-Summary reprocessing and database maintenance.
+System status, AI queue reset, model/secret/locale lookups for settings.
 """
 
 import json
@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -24,11 +24,9 @@ from app.models import (
     SummaryQueue,
 )
 from app.routes.preferences import (
-    get_effective_blocked_terms,
     get_effective_idle_refresh,
     get_effective_toast_timeout,
 )
-from app.services.blocked_terms import title_is_blocked
 
 logger = logging.getLogger(__name__)
 
@@ -38,102 +36,6 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 LOCALES_DIR = (
     Path(__file__).parent.parent.parent.parent / "htdocs" / "static" / "locales"
 )
-
-
-class ReprocessRequest(BaseModel):
-    content_hash: str
-
-
-@router.post("/reprocess-summary")
-def reprocess_summary(
-    request: ReprocessRequest,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """
-    Requeue a summary for processing.
-
-    - Find post by content_hash
-    - Remove existing summary from ai_summaries
-    - Create entry in summary_queue
-    """
-    content_hash = request.content_hash
-
-    # Find post with this hash
-    post = db.query(Post).filter(Post.content_hash == content_hash).first()
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No post found with this content_hash",
-        )
-
-    # Check if already in queue
-    existing_queue = (
-        db.query(SummaryQueue).filter(SummaryQueue.content_hash == content_hash).first()
-    )
-    if existing_queue:
-        # Reset existing entry
-        existing_queue.attempts = 0
-        existing_queue.last_error = None
-        existing_queue.error_type = None
-        existing_queue.locked_at = None
-        existing_queue.cooldown_until = None
-        existing_queue.priority = 10  # High priority
-        db.commit()
-        return {"ok": True, "queued": True, "action": "reset_existing"}
-
-    # Remove existing summary (force reprocessing)
-    db.query(AISummary).filter(AISummary.content_hash == content_hash).delete()
-
-    # Create queue entry
-    queue_entry = SummaryQueue(
-        post_id=post.id,
-        content_hash=content_hash,
-        priority=10,  # High priority
-    )
-    db.add(queue_entry)
-    db.commit()
-
-    return {"ok": True, "queued": True, "action": "created_new"}
-
-
-@router.post("/vacuum")
-def vacuum_database(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
-    """
-    Execute VACUUM on SQLite database.
-
-    - Frees space from unused pages
-    - Returns bytes freed
-    """
-    db_path = settings.database_path
-
-    # Get size before
-    size_before = os.path.getsize(db_path) if os.path.exists(db_path) else 0
-
-    # Execute VACUUM (must be outside transaction)
-    # SQLAlchemy 2.x requires commit first
-    db.commit()
-
-    # VACUUM cannot run inside a transaction
-    connection = db.get_bind().raw_connection()
-    try:
-        connection.execute("VACUUM")
-    finally:
-        connection.close()
-
-    # Get size after
-    size_after = os.path.getsize(db_path) if os.path.exists(db_path) else 0
-    freed_bytes = size_before - size_after
-
-    return {
-        "ok": True,
-        "size_before_mb": round(size_before / (1024 * 1024), 2),
-        "size_after_mb": round(size_after / (1024 * 1024), 2),
-        "freed_bytes": max(0, freed_bytes),
-        "freed_mb": round(max(0, freed_bytes) / (1024 * 1024), 2),
-    }
 
 
 @router.get("/config")
@@ -266,83 +168,6 @@ def get_status(db: Session = Depends(get_db), user: dict = Depends(get_current_u
         "feed_update_interval": feed_update_interval,
         "last_fetched_date": last_fetched_date,
         "scheduler_active": scheduler_active,
-    }
-
-
-@router.get("/queue-status")
-def get_queue_status(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
-    """
-    Return detailed queue status including items with cooldowns, and whether
-    the background engine has an API key.
-    """
-    from app.services.ai import has_background_api_key
-
-    now = datetime.utcnow()
-
-    # Queue stats — only unread posts (read posts don't need summaries)
-    total = (
-        db.query(SummaryQueue)
-        .join(Post, SummaryQueue.post_id == Post.id)
-        .filter(Post.is_read.is_(False))
-        .count()
-    )
-    in_cooldown = (
-        db.query(SummaryQueue)
-        .join(Post, SummaryQueue.post_id == Post.id)
-        .filter(
-            Post.is_read.is_(False),
-            SummaryQueue.cooldown_until > now,
-        )
-        .count()
-    )
-    locked = (
-        db.query(SummaryQueue)
-        .join(Post, SummaryQueue.post_id == Post.id)
-        .filter(
-            Post.is_read.is_(False),
-            SummaryQueue.locked_at.isnot(None),
-        )
-        .count()
-    )
-    ready = total - in_cooldown - locked
-
-    # Get items in cooldown (first 10, unread only)
-    cooldown_items = (
-        db.query(SummaryQueue)
-        .join(Post, SummaryQueue.post_id == Post.id)
-        .filter(
-            Post.is_read.is_(False),
-            SummaryQueue.cooldown_until > now,
-        )
-        .order_by(SummaryQueue.cooldown_until.asc())
-        .limit(10)
-        .all()
-    )
-
-    cooldown_list = [
-        {
-            "id": item.id,
-            "post_id": item.post_id,
-            "attempts": item.attempts,
-            "last_error": item.last_error,
-            "cooldown_remaining_hours": round(
-                (item.cooldown_until - now).total_seconds() / 3600, 1
-            ),
-        }
-        for item in cooldown_items
-    ]
-
-    return {
-        "queue": {
-            "total": total,
-            "ready": ready,
-            "in_cooldown": in_cooldown,
-            "locked": locked,
-            "cooldown_items": cooldown_list,
-        },
-        "api_key_configured": has_background_api_key(),
     }
 
 
@@ -528,161 +353,6 @@ async def list_available_models(
         )
 
 
-@router.post("/recover-orphaned-queue")
-def recover_orphaned_queue(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
-    """
-    Recovery endpoint: enqueue all unread posts with content_hash that are not in queue.
-    Fixes orphaned unread posts that have content but were never enqueued for summary.
-    Read posts are excluded (no need to summarize).
-    """
-    from app.models import AISummary
-
-    # Find unread posts with content_hash but no queue entry and no summary
-    orphaned_posts = (
-        db.query(Post)
-        .filter(
-            Post.content_hash.isnot(None),
-            Post.is_read.is_(False),  # Only unread posts
-            ~Post.id.in_(db.query(SummaryQueue.post_id)),
-            ~Post.content_hash.in_(db.query(AISummary.content_hash)),
-            Post.skip_summary.is_(False),
-        )
-        .all()
-    )
-    blocked_terms = get_effective_blocked_terms(db)
-
-    created_count = 0
-    for post in orphaned_posts:
-        if title_is_blocked(post.title, blocked_terms):
-            continue  # Blocked posts are never summarized
-        try:
-            # Check if queue entry already exists (race condition)
-            existing = (
-                db.query(SummaryQueue).filter(SummaryQueue.post_id == post.id).first()
-            )
-            if existing:
-                continue
-
-            # Create queue entry
-            queue_entry = SummaryQueue(
-                post_id=post.id,
-                content_hash=post.content_hash,
-                priority=0,  # Background priority
-            )
-            db.add(queue_entry)
-            created_count += 1
-        except Exception as e:
-            logger.error(f"Error recovering post {post.id}: {e}")
-
-    try:
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        return {
-            "error": f"Failed to commit: {e}",
-            "created": created_count,
-        }
-
-    return {
-        "status": "success",
-        "orphaned_posts_recovered": created_count,
-        "message": f"Enqueued {created_count} orphaned posts for background processing",
-    }
-
-
-@router.get("/diagnose-queue")
-def diagnose_queue(
-    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
-):
-    """
-    Diagnose queue state: count posts without summaries vs. queued items.
-    Helps identify orphaned posts or enqueuing bugs.
-    Summaries are stored in ai_summaries (matched via content_hash from posts).
-    """
-    from sqlalchemy import func
-
-    from app.models import AISummary
-
-    now = datetime.utcnow()
-
-    # Posts without summary: posts whose content_hash is NOT in ai_summaries
-    posts_without_summary = (
-        db.query(func.count(Post.id))
-        .filter(
-            Post.content_hash.isnot(None),
-            ~Post.content_hash.in_(db.query(AISummary.content_hash)),
-        )
-        .scalar()
-        or 0
-    )
-
-    # Total in queue
-    total_queued = db.query(func.count(SummaryQueue.id)).scalar() or 0
-
-    # Posts without summary that are NOT in queue (orphaned)
-    orphaned = (
-        db.query(func.count(Post.id))
-        .filter(
-            Post.content_hash.isnot(None),
-            ~Post.content_hash.in_(db.query(AISummary.content_hash)),
-            ~Post.id.in_(db.query(SummaryQueue.post_id)),
-        )
-        .scalar()
-        or 0
-    )
-
-    # Posts in cooldown (waiting to retry)
-    cooldown_count = (
-        db.query(func.count(SummaryQueue.id))
-        .filter(SummaryQueue.cooldown_until > now)
-        .scalar()
-        or 0
-    )
-
-    # Posts currently locked (being processed)
-    locked_count = (
-        db.query(func.count(SummaryQueue.id))
-        .filter(SummaryQueue.locked_at.isnot(None))
-        .scalar()
-        or 0
-    )
-
-    # Posts ready to process (not in cooldown, not locked)
-    ready_count = total_queued - cooldown_count - locked_count
-
-    # Posts without content_hash (likely skipped or incomplete)
-    no_content_hash = (
-        db.query(func.count(Post.id)).filter(Post.content_hash.is_(None)).scalar() or 0
-    )
-
-    # Skip_summary flag count
-    skip_summary_count = (
-        db.query(func.count(Post.id)).filter(Post.skip_summary.is_(True)).scalar() or 0
-    )
-
-    return {
-        "posts_without_summary": posts_without_summary,
-        "total_queued": total_queued,
-        "orphaned_posts": orphaned,
-        "queued_ready": ready_count,
-        "queued_cooldown": cooldown_count,
-        "queued_locked": locked_count,
-        "no_content_hash": no_content_hash,
-        "skip_summary_flag": skip_summary_count,
-        "discrepancy": posts_without_summary - total_queued,
-        "note": (
-            "Healthy: orphaned_posts ≈ 0, discrepancy ≈ 0. "
-            "If orphaned_posts > 0: posts created but never enqueued. "
-            "If no_content_hash > 0: posts missing content extraction. "
-            "If skip_summary_flag > 0: posts explicitly skipped."
-        ),
-    }
-
-
-# Static list of target languages for AI summaries
-# Key: English name (used in prompts), Value: Native name (for display)
 SUMMARY_LANGUAGES = {
     "Arabic": "العربية",
     "Brazilian Portuguese": "Português (Brasil)",

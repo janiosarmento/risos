@@ -14,7 +14,6 @@ from app.dependencies import get_current_user
 from app.models import Category, Feed
 from app.schemas import (
     CategoryCreate,
-    CategoryReorder,
     CategoryResponse,
     CategoryUpdate,
 )
@@ -205,38 +204,3 @@ def delete_category(
     db.commit()
 
     return None
-
-
-@router.patch("/reorder", response_model=List[CategoryResponse])
-def reorder_categories(
-    reorder: CategoryReorder,
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """
-    Reorder categories.
-    Receives list of IDs in new order.
-    """
-    # Check if all IDs exist
-    existing_ids = set(
-        id
-        for (id,) in db.query(Category.id).filter(Category.id.in_(reorder.order)).all()
-    )
-
-    if len(existing_ids) != len(reorder.order):
-        missing = set(reorder.order) - existing_ids
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Categories not found: {missing}",
-        )
-
-    # Update positions
-    for position, category_id in enumerate(reorder.order):
-        db.query(Category).filter(Category.id == category_id).update(
-            {"position": position}
-        )
-
-    db.commit()
-
-    # Return updated list
-    return list_categories(db=db, user=user)

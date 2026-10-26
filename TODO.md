@@ -53,20 +53,11 @@ against the current code, and update this list as items land.
   cascade that deletes queue entries when a feed is deleted). Decide on `cleanup_logs`
   (written on every cleanup, 1,278 rows, never read): drop it, or show it on
   the status screen. One Alembic migration for the schema changes.
-- [ ] **7. Decide on API routes the frontend never calls.**
-  - Done: `GET /api/proxy/image` removed (never wired to the frontend, not
-    even in the initial release; mixed content is handled by the sanitizer
-    dropping `http://` images).
-  - Likely dead: `GET /api/posts/{id}/redirect`,
-    `PATCH /api/categories/reorder` (no reorder UI),
-    `GET /api/suggestions/status`. If redirect goes, update
-    `services/url_safety.py`'s docstring.
-  - Manual ops tools (curl / README): `reprocess-summary`, `vacuum`,
-    `queue-status`, `clear-queue-cooldowns`, `recover-orphaned-queue`,
-    `diagnose-queue`. Keep only those still used; fix the README to match.
-    Since item 2, `queue-status` reports `api_key_configured` (bool). `clear-queue-cooldowns` is
-    no longer ops-only: since item 1 it backs Settings' "Reset AI queue"
-    button (keep it).
+- [x] **7. Remove API routes the frontend never calls.** Removed the image
+  proxy, `posts/{id}/redirect`, `categories/reorder`, `suggestions/status`,
+  and the curl-only ops tools (`reprocess-summary`, `vacuum`, `queue-status`,
+  `recover-orphaned-queue`, `diagnose-queue`) with their schemas, helpers and
+  error strings. `clear-queue-cooldowns` stays (Settings' "Reset AI queue").
 - [ ] **8. Fix or delete broken maintenance scripts.**
   `scripts/smart_merge_tags.py` imports `app.services.ollama` (gone) and fails
   on import; `scripts/lib.py`'s local mode and `regenerate.py --local` hit the

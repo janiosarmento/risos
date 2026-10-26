@@ -90,7 +90,7 @@ The app includes built-in protections to handle API rate limits gracefully:
 - **Queue Management** — Summary requests are queued and processed at a controlled rate. Failed requests are retried with exponential backoff.
 - **State Reset on Restart** — All queue cooldowns are cleared when the service restarts, ensuring a fresh start.
 
-You can monitor the queue status via `GET /api/admin/queue-status` and clear stuck items with **Reset AI queue** in Settings (or `POST /api/admin/clear-queue-cooldowns`).
+Settings → Status shows the queue size; clear stuck items with **Reset AI queue** there.
 
 ### Cloudflare Bypass (Optional)
 

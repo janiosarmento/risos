@@ -13,7 +13,6 @@ from app.database import get_db
 from app.routes.auth import get_current_user
 from app.services.suggestions import (
     clear_all_suggestions,
-    get_suggestion_stats,
     process_suggestion_candidates,
 )
 from app.services.user_profile import (
@@ -28,48 +27,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/suggestions", tags=["suggestions"])
 
 
-class SuggestionStatusResponse(BaseModel):
-    """Response for suggestion system status."""
-
-    liked_count: int
-    min_liked_required: int
-    profile_ready: bool
-    profile_stale: bool
-    profile_tags_count: int
-    suggested_unread: int
-    suggested_total: int
-    last_profile_update: str | None
-
-
 class AdminActionResponse(BaseModel):
     """Response for admin actions."""
 
     success: bool
     message: str
-
-
-@router.get("/status", response_model=SuggestionStatusResponse)
-def get_status(
-    db: Session = Depends(get_db),
-    user: dict = Depends(get_current_user),
-):
-    """
-    Get the current status of the suggestion system.
-    Shows whether the user has enough likes for suggestions,
-    if the profile is ready, and how many suggestions exist.
-    """
-    stats = get_suggestion_stats(db)
-
-    return SuggestionStatusResponse(
-        liked_count=stats["liked_count"],
-        min_liked_required=MIN_LIKED_POSTS,
-        profile_ready=stats["profile_ready"],
-        profile_stale=stats["profile_stale"],
-        profile_tags_count=stats["profile_tags_count"],
-        suggested_unread=stats["suggested_unread"],
-        suggested_total=stats["suggested_total"],
-        last_profile_update=stats["last_profile_update"],
-    )
 
 
 @router.post("/admin/regenerate-profile", response_model=AdminActionResponse)
