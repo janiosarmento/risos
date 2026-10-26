@@ -371,7 +371,7 @@ class Scheduler:
 
     async def _job_cleanup_retention(self):
         """Job to clean up old posts."""
-        from app.models import CleanupLog, Post
+        from app.models import Post
 
         while self._running and self.is_leader:
             try:
@@ -465,17 +465,7 @@ class Scheduler:
 
                         topics_cache.invalidate()
 
-                    # Log in cleanup_logs
                     duration = (datetime.utcnow() - start_time).total_seconds()
-                    log = CleanupLog(
-                        posts_removed=posts_removed,
-                        full_content_cleared=full_content_cleared,
-                        unread_removed=unread_removed,
-                        duration_seconds=duration,
-                    )
-                    db.add(log)
-                    db.commit()
-
                     logger.info(
                         f"Job cleanup_retention: completed in {duration:.1f}s - "
                         f"posts removed: {posts_removed}, "

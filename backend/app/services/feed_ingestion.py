@@ -92,7 +92,7 @@ def _check_duplicate_by_url(
     was implemented (normalized_url = NULL) or where normalization produced a
     different result between the original and current ingest.
     """
-    if not normalized_url or feed.allow_duplicate_urls:
+    if not normalized_url:
         return False
 
     existing = (
@@ -240,7 +240,6 @@ async def ingest_feed(db: Session, feed: Feed) -> FeedIngestionResult:
         result.errors.append(str(e))
         feed.error_count = (feed.error_count or 0) + 1
         feed.last_error = str(e)
-        feed.last_error_at = now
         delay = _backoff_delay(feed.error_count)
         feed.next_retry_at = now + delay if delay else None
         db.commit()

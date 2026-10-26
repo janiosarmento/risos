@@ -49,15 +49,11 @@ class Feed(Base):
     # Error handling
     error_count = Column(Integer, default=0)
     last_error = Column(Text)
-    last_error_at = Column(DateTime)
     next_retry_at = Column(DateTime)
 
     # Unstable GUID detection
     guid_unreliable = Column(Boolean, default=False)
     guid_collision_count = Column(Integer, default=0)
-
-    # URL deduplication bypass
-    allow_duplicate_urls = Column(Boolean, default=False)
 
     # Summary queue priority weight (higher = processed first)
     weight = Column(Integer, default=0)
@@ -104,6 +100,9 @@ class Post(Base):
 
     # Relationships
     feed = relationship("Feed", back_populates="posts")
+    # Never read, but load-bearing: deleting a feed deletes its posts through
+    # the ORM cascade, and this takes their queue entries along (SQLite runs
+    # without PRAGMA foreign_keys, so the database won't).
     summary_queue_entry = relationship(
         "SummaryQueue", back_populates="post", cascade="all, delete-orphan"
     )
@@ -278,22 +277,6 @@ class SchedulerLock(Base):
     locked_by = Column(Text, nullable=False)
     locked_at = Column(DateTime, nullable=False)
     heartbeat_at = Column(DateTime, nullable=False)
-
-
-class CleanupLog(Base):
-    __tablename__ = "cleanup_logs"
-
-    id = Column(Integer, primary_key=True)
-    executed_at = Column(DateTime, default=datetime.utcnow)
-    posts_removed = Column(Integer, default=0)
-    full_content_cleared = Column(Integer, default=0)
-    summaries_cleared = Column(Integer, default=0)
-    unread_removed = Column(Integer, default=0)
-    bytes_freed = Column(Integer, default=0)
-    duration_seconds = Column(Float)
-
-
-Index("idx_cleanup_executed", CleanupLog.executed_at.desc())
 
 
 class Topic(Base):

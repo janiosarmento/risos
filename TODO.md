@@ -46,10 +46,11 @@ against the current code, and update this list as items land.
   (594 stale rows in prod). Remove the model, the `failures_count` in
   `GET /admin/status` and its UI, the delete in `reprocess-summary`, and add an
   Alembic migration that drops the table.
-- [ ] **6. Drop unused columns/relationships.** `Feed.allow_duplicate_urls`
+- [x] **6. Drop unused columns/relationships.** `Feed.allow_duplicate_urls`
   (no API/UI sets it, 0 everywhere in prod — also remove its branch in
   `feed_ingestion.py`), `Feed.last_error_at` (written, never read),
-  `Post.summary_queue_entry` (relationship, unused). Decide on `cleanup_logs`
+  `Post.summary_queue_entry` (relationship, unused — KEPT: it is the ORM
+  cascade that deletes queue entries when a feed is deleted). Decide on `cleanup_logs`
   (written on every cleanup, 1,278 rows, never read): drop it, or show it on
   the status screen. One Alembic migration for the schema changes.
 - [ ] **7. Decide on API routes the frontend never calls.**
