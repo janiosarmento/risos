@@ -62,13 +62,10 @@
   },
   "modal": {
     "close": "Fechar",
-    "closeEsc": "Fechar (ESC)",
     "starPost": "Favoritar (S)",
     "unstarPost": "Desfavoritar (S)",
     "likePost": "Curtir (L)",
     "unlikePost": "Descurtir (L)",
-    "markRead": "Marcar como lido (M)",
-    "markUnread": "Marcar como não lido (M)",
     "dismiss": "Fechar",
     "original": "Original",
     "originalContent": "Conteúdo Original",
@@ -88,9 +85,6 @@
     "antiBotReasons": "Isso pode acontecer quando:",
     "antiBotReason1": "O site bloqueia acesso automatizado",
     "antiBotReason2": "O conteúdo é um vídeo ou mídia",
-    "shortcuts": "ESC fechar | M lido/não lido | A assistente",
-    "starShortcut": "S favoritar | L gostei | Shift+R regenerar | Y copiar",
-    "navShortcuts": "J/K navegar posts",
     "read": "Lido",
     "unread": "Não lido",
     "noContent": "Sem conteúdo disponível",
@@ -103,8 +97,6 @@
     "processing": "Processando...",
     "consolidatedSummary": "Sumário Consolidado",
     "copyConsolidated": "Copiar Sumário",
-    "selectAllRelated": "Marcar Todos",
-    "selectNoneRelated": "Desmarcar Todos",
     "noRelatedPosts": "Nenhum post relacionado encontrado no banco de dados.",
     "commonTags": "{count} tag(s) em comum",
     "goToPost": "Ir para este post no feed",
@@ -139,7 +131,6 @@
     "themeDark": "Escuro",
     "language": "Idioma",
     "languageDesc": "Selecione seu idioma preferido",
-    "aiSummaries": "Resumos IA",
     "summaryLanguage": "Idioma dos Resumos",
     "summaryLanguageDesc": "Idioma para resumos gerados por IA",
     "curationEngine": "Motor de Curadoria",
@@ -199,10 +190,8 @@
     "backgroundApiBaseUrlDesc": "Opcional: endpoint separado para processamento em lote. Usa a URL principal se vazio.",
     "backgroundAiModel": "Modelo IA (Background)",
     "backgroundAiModelDesc": "Modelo para geração de resumos em lote. Usa o modelo principal se vazio.",
-    "backgroundAiModelPlaceholder": "ex: llama-3.2-3b",
     "ondemandAiTitle": "IA Sob Demanda (interativo)",
     "secretNotFound": "Segredo não encontrado. Verifique o nome ou crie-o primeiro.",
-    "checkSecretName": "Confira o nome do segredo e tente novamente.",
     "secretValid": "Segredo encontrado",
     "userPrompt": "Prompt do Usuário",
     "tagsPerPost": "Tags por Post",
@@ -212,14 +201,14 @@
     "relatedPostsLimitDesc": "Número máximo de posts relacionados listados no assistente de IA",
     "resetDefaults": "Restaurar prompts padrão",
     "security": {
-          "title": "Segurança",
-          "desc": "Altere a senha usada para entrar. Os outros dispositivos serão desconectados.",
-          "current": "Senha atual",
-          "new": "Nova senha (mín. 8 caracteres)",
-          "confirm": "Confirmar nova senha",
-          "submit": "Alterar senha",
-          "mismatch": "As novas senhas não coincidem",
-          "changed": "Senha alterada"
+      "title": "Segurança",
+      "desc": "Altere a senha usada para entrar. Os outros dispositivos serão desconectados.",
+      "current": "Senha atual",
+      "new": "Nova senha (mín. 8 caracteres)",
+      "confirm": "Confirmar nova senha",
+      "submit": "Alterar senha",
+      "mismatch": "As novas senhas não coincidem",
+      "changed": "Senha alterada"
     },
     "clearCache": "Limpar cache",
     "resetAiQueue": "Resetar fila da IA",
@@ -241,7 +230,6 @@
       "offset": "Início:",
       "batchSize": "Lote:",
       "analyze": "Analisar",
-      "analyzing": "Analisando...",
       "mechanical": "Detectar (determinístico)",
       "mechanicalTooltip": "Detecta duplicatas óbvias (hífen, plural/singular) sem usar IA — instantâneo e determinístico",
       "apply": "Aplicar selecionados",
@@ -286,7 +274,6 @@
       "loading": "Carregando tópicos..."
     },
     "status": {
-      "title": "Status do Sistema",
       "loading": "Carregando métricas do sistema...",
       "refresh": "Atualizar Métricas",
       "llmQueue": "Aguardando IA (Não Lidos)",
@@ -318,7 +305,6 @@
     "ignoredTooltip": "Ignorada — clique para restaurar",
     "profileTooltip": "No seu perfil — clique para ignorar",
     "neutralTooltip": "Clique para ignorar",
-    "filterTooltip": "Clique para filtrar por esta tag",
     "clearFilter": "Limpar filtro de tag"
   },
   "topics": {
@@ -328,7 +314,6 @@
   },
   "curation": {
     "curate": "Curadoria",
-    "results": "Curadoria IA:",
     "essential": "Essencial",
     "redundant": "Redundante",
     "situational": "Situacional",
@@ -437,9 +422,7 @@
   },
   "time": {
     "now": "agora",
-    "unknown": "Desconhecido",
-    "hoursAgo": "{n} hora(s) atrás",
-    "daysAgo": "{n} dia(s) atrás"
+    "unknown": "Desconhecido"
   },
   "refresh": {
     "updating": "Atualizando {current}/{total}: {title}...",
@@ -463,7 +446,6 @@
     "Invalid_OPML__no_body_element": "OPML inválido: elemento body ausente",
     "File_must_be__opml_or__xml": "Arquivo deve ser .opml ou .xml",
     "File_too_large__max_1MB_": "Arquivo muito grande (máx 1MB)",
-    "Feed_is_disabled": "Feed está desabilitado",
     "Could_not_fetch_URL": "Não foi possível acessar a URL",
     "Category_cannot_be_its_own_parent": "Categoria não pode ser pai de si mesma",
     "Post_has_insufficient_content_for_summary": "Post não tem conteúdo suficiente para resumo",

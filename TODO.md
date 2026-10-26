@@ -64,14 +64,10 @@ against the current code, and update this list as items land.
   posts with its own formula instead of the app's `compute_content_hash`.
 - [x] **9. Remove the Docker setup.** Deleted `backend/Dockerfile`,
   `docker-compose.yml`, the README's Docker section and `GET /health`.
-- [ ] **10. Remove unused i18n keys** (after 1, 5 and 7, which orphan more
-  strings — re-scan first). As of the analysis: `modal.closeEsc`,
-  `modal.markRead`, `modal.markUnread`, `modal.starShortcut`,
-  `modal.navShortcuts`, `modal.selectAllRelated`, `modal.selectNoneRelated`,
-  `settings.aiSummaries`, `settings.backgroundAiModelPlaceholder`,
-  `settings.checkSecretName`, `tags.filterTooltip`, and the stale
-  `backendErrors.Feed_is_disabled`. `backendErrors.*` keys are looked up
-  dynamically from the error text, so check them against backend messages.
+- [x] **10. Remove unused i18n keys.** Removed 18 keys from both locales
+  (`modal.*` shortcut hints, `time.daysAgo`/`hoursAgo`, `settings.status.title`,
+  `backendErrors.Feed_is_disabled`, …). `meta.languageName` stays: the
+  backend's `GET /admin/locales` reads it.
 - [ ] **11. Clean up stray repo files.** `reasonix.toml` and
   `install-litellm.sh` (unreferenced; the latter installs a LiteLLM proxy for
   the Anthropic API, unrelated to Risos), `.superpowers/brainstorm/` (tool

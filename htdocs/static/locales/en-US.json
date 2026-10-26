@@ -62,13 +62,10 @@
   },
   "modal": {
     "close": "Close",
-    "closeEsc": "Close (ESC)",
     "starPost": "Star (S)",
     "unstarPost": "Unstar (S)",
     "likePost": "Like (L)",
     "unlikePost": "Unlike (L)",
-    "markRead": "Mark as read (M)",
-    "markUnread": "Mark as unread (M)",
     "dismiss": "Dismiss",
     "original": "Original",
     "originalContent": "Original Content",
@@ -88,9 +85,6 @@
     "antiBotReasons": "This can happen when:",
     "antiBotReason1": "The site blocks automated access",
     "antiBotReason2": "The content is video or media",
-    "shortcuts": "ESC close | M read/unread | A assistant",
-    "starShortcut": "S star | L like | Shift+R regenerate | Y copy",
-    "navShortcuts": "J/K navigate posts",
     "read": "Read",
     "unread": "Unread",
     "noContent": "No content available",
@@ -103,8 +97,6 @@
     "processing": "Processing...",
     "consolidatedSummary": "Consolidated Summary",
     "copyConsolidated": "Copy Summary",
-    "selectAllRelated": "Select All",
-    "selectNoneRelated": "Deselect All",
     "noRelatedPosts": "No related posts found in the database.",
     "commonTags": "{count} tag(s) in common",
     "goToPost": "Go to this post in the feed",
@@ -139,7 +131,6 @@
     "themeDark": "Dark",
     "language": "Language",
     "languageDesc": "Select your preferred language",
-    "aiSummaries": "AI Summaries",
     "summaryLanguage": "Summary Language",
     "summaryLanguageDesc": "Language for AI-generated summaries",
     "curationEngine": "Curation Engine",
@@ -199,10 +190,8 @@
     "backgroundApiBaseUrlDesc": "Optional: separate endpoint for batch processing. Falls back to main URL if empty.",
     "backgroundAiModel": "Background AI Model",
     "backgroundAiModelDesc": "Model for batch summary generation. Falls back to main model if empty.",
-    "backgroundAiModelPlaceholder": "e.g. llama-3.2-3b",
     "ondemandAiTitle": "On-demand AI (interactive)",
     "secretNotFound": "Secret not found. Check spelling or create it first.",
-    "checkSecretName": "Check the secret name and try again.",
     "secretValid": "Secret found",
     "userPrompt": "User Prompt",
     "tagsPerPost": "Tags per Post",
@@ -212,14 +201,14 @@
     "relatedPostsLimitDesc": "Maximum number of related posts listed in the AI assistant",
     "resetDefaults": "Reset prompts to defaults",
     "security": {
-          "title": "Security",
-          "desc": "Change the password used to sign in. Other devices are signed out.",
-          "current": "Current password",
-          "new": "New password (min. 8 characters)",
-          "confirm": "Confirm new password",
-          "submit": "Change password",
-          "mismatch": "The new passwords do not match",
-          "changed": "Password changed"
+      "title": "Security",
+      "desc": "Change the password used to sign in. Other devices are signed out.",
+      "current": "Current password",
+      "new": "New password (min. 8 characters)",
+      "confirm": "Confirm new password",
+      "submit": "Change password",
+      "mismatch": "The new passwords do not match",
+      "changed": "Password changed"
     },
     "clearCache": "Clear cache",
     "resetAiQueue": "Reset AI queue",
@@ -241,7 +230,6 @@
       "offset": "Offset:",
       "batchSize": "Batch:",
       "analyze": "Analyze",
-      "analyzing": "Analyzing...",
       "mechanical": "Detect (deterministic)",
       "mechanicalTooltip": "Detects obvious duplicates (hyphenation, plural/singular) without AI — instant and deterministic",
       "apply": "Apply selected",
@@ -286,7 +274,6 @@
       "loading": "Loading topics..."
     },
     "status": {
-      "title": "System Status",
       "loading": "Loading system metrics...",
       "refresh": "Refresh Metrics",
       "llmQueue": "Pending AI (Unread)",
@@ -318,7 +305,6 @@
     "ignoredTooltip": "Ignored — click to restore",
     "profileTooltip": "In your profile — click to ignore",
     "neutralTooltip": "Click to ignore",
-    "filterTooltip": "Click to filter by this tag",
     "clearFilter": "Clear tag filter"
   },
   "topics": {
@@ -328,7 +314,6 @@
   },
   "curation": {
     "curate": "Curate",
-    "results": "AI Curation:",
     "essential": "Essential",
     "redundant": "Redundant",
     "situational": "Situational",
@@ -437,9 +422,7 @@
   },
   "time": {
     "now": "now",
-    "unknown": "Unknown",
-    "hoursAgo": "{n} hour(s) ago",
-    "daysAgo": "{n} day(s) ago"
+    "unknown": "Unknown"
   },
   "refresh": {
     "updating": "Updating {current}/{total}: {title}...",
@@ -463,7 +446,6 @@
     "Invalid_OPML__no_body_element": "Invalid OPML: no body element",
     "File_must_be__opml_or__xml": "File must be .opml or .xml",
     "File_too_large__max_1MB_": "File too large (max 1MB)",
-    "Feed_is_disabled": "Feed is disabled",
     "Could_not_fetch_URL": "Could not fetch URL",
     "Category_cannot_be_its_own_parent": "Category cannot be its own parent",
     "Post_has_insufficient_content_for_summary": "Post has insufficient content for summary",
