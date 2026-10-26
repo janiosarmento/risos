@@ -10,6 +10,12 @@
   file the backend must read belongs under `/etc/risos/` (or an explicit
   `ReadWritePaths`/exception), never the deploying user's home. Add this to the
   README's deploy notes.
+- [ ] **gunicorn logs `Control server error: [Errno 30] Read-only file system:
+  '/var/www/.gunicorn'` on every start** (841 times since 2026-04). gunicorn
+  25's control socket defaults to the user's home, which systemd hardening
+  makes read-only. Harmless, but noise: disable the control server or point
+  it at a writable path (e.g. under `backend/data/`) in `install.sh` and the
+  prod drop-in.
 
 ## Dead-code cleanup (analysis of 2026-10-26)
 
