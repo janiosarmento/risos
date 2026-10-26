@@ -133,7 +133,6 @@ def test_read_state_filters(db):
     assert _search(db, ["arc"], include_unread=False) == [2]
 
 
-
 def test_results_carry_read_state(db):
     # The assistant only decrements unread counters for posts that were
     # actually unread, so each result reports is_read and keep_unread.
@@ -155,6 +154,7 @@ def test_results_carry_read_state(db):
     )
     state = {r["id"]: (r["is_read"], r["keep_unread"]) for r in results}
     assert state == {2: (True, False), 3: (False, True)}
+
 
 def test_index_follows_summary_writes(db):
     _add(db, 1, "Arc Browser ships tab sync")

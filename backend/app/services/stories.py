@@ -55,9 +55,6 @@ from app.services.curation import (
 
 logger = logging.getLogger(__name__)
 
-# Bump when scoring or grouping changes so any cached grouping is discarded.
-STORY_ALGO_VERSION = 9
-
 # Two posts further apart than this are never the same story.
 MAX_GAP = timedelta(hours=48)
 

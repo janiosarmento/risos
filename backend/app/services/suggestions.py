@@ -20,9 +20,6 @@ from app.services.user_profile import get_user_profile
 
 logger = logging.getLogger(__name__)
 
-# Default minimum tag overlap (can be overridden in preferences)
-DEFAULT_MIN_TAG_OVERLAP = 3
-
 # Maximum candidates to process per batch
 MAX_CANDIDATES_PER_BATCH = 50
 

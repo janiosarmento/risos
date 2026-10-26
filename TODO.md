@@ -73,10 +73,14 @@ against the current code, and update this list as items land.
   and comments; AI errors now reach the app's AI error handlers), `schemas.py`
   docstrings, `alembic/env.py`, `main.py`, `preferences.py`. Added
   `backendErrors.*` keys for every backend error message that lacked one.
-- [ ] **13. Re-run the dead-code scan** to catch what the cleanup exposed:
-  `vulture app scripts --min-confidence 60` (ignore route handlers and
-  Pydantic fields), routes vs. frontend `fetchApi` calls, unused i18n keys,
-  unread model columns, unimported requirements.
+- [x] **13. Re-run the dead-code scan.** vulture found three unused
+  constants (`MODELS_CACHE_TTL`, `SUMMARY_MAX_TOKENS`,
+  `DEFAULT_MIN_TAG_OVERLAP`) and `STORY_ALGO_VERSION`, whose "bump to discard
+  the cache" comment no code honored; all removed. Every API route has a
+  frontend caller, every i18n key is referenced (`backendErrors.*` by error
+  text), every requirement is imported. Left alone: `title_matches_term`
+  (the blocked-terms test's reference oracle) and auto-maintained
+  `updated_at` columns.
 - [x] **14. Silence gunicorn's control-server error.** `install.sh` passes
   `--no-control-socket` (gunicorn pinned to >=25.3.0); prod's unit file was
   patched the same way (backup at `risos.service.bak-20261026`).

@@ -1,12 +1,9 @@
 """Constants for the AI client."""
 
-from datetime import timedelta
-
 # API endpoints
 DEFAULT_API_BASE_URL = "https://api.cerebras.ai/v1"
 
 # Model cache
-MODELS_CACHE_TTL = timedelta(minutes=30)
 MODELS_FETCH_TIMEOUT = 10
 
 # Tag translation settings
@@ -17,7 +14,6 @@ TAG_TRANSLATION_TIMEOUT = 15
 
 # Summary generation
 SUMMARY_TEMPERATURE = 0.3
-SUMMARY_MAX_TOKENS = 8192
 
 # Content limits
 MAX_CONTENT_LENGTH = 12000
