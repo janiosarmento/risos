@@ -233,7 +233,7 @@ Edit `htdocs/static/locales/en-US.json` or `pt-BR.json`.
 
 ## Tech Stack
 
-- **Backend**: Python, FastAPI, SQLAlchemy, SQLite (WAL mode), APScheduler
+- **Backend**: Python, FastAPI, SQLAlchemy, SQLite (WAL mode), asyncio background jobs
 - **Frontend**: Alpine.js, Tailwind CSS (CDN)
 - **AI**: Any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.) with automatic model fallback
 

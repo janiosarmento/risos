@@ -66,8 +66,9 @@ summaries/tags and for grouping tags into topics.
 - **Entrypoint** `main.py` — builds the FastAPI app, mounts every router under
   `/api`, and a `lifespan` that (1) runs the HTML assembler, (2) runs Alembic
   migrations to `head` under an `flock` (safe with >1 gunicorn worker), (3) starts
-  the APScheduler background jobs. Exception handlers map the AI subsystem's typed
-  errors (`TemporaryError`, `RateLimited`, `PermanentError`, …) to HTTP 502.
+  the background jobs (`services/scheduler.py`, plain asyncio loops). Exception
+  handlers map the AI subsystem's typed errors (`TemporaryError`, `RateLimited`,
+  `PermanentError`, …) to HTTP 502.
 - **Routes** `app/routes/*.py` — one module per resource: `auth`, `feeds`,
   `categories`, `posts` (the large one: list/filter/read-state/curation), `tags`,
   `topics`, `preferences`, `admin`, `suggestions`, `proxy` (image/CORS proxy).

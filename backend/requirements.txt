@@ -1,19 +1,20 @@
-# FastAPI e servidor
+# FastAPI and server
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 gunicorn>=21.0.0
 
-# Banco de dados
+# Database
 sqlalchemy>=2.0.0
 alembic>=1.13.0
 
-# Configuração
+# Configuration (pyyaml reads prompts.yaml)
 pydantic-settings>=2.0.0
+pyyaml
 
-# Detecção de idioma (gate pós-sumarização contra mistura de idiomas)
+# Language detection (post-summary gate against mixed-language output)
 langdetect>=1.0.9
 
-# Parsing de feeds e conteúdo
+# Feed and content parsing
 feedparser>=6.0.0
 httpx[socks]>=0.26.0
 readability-lxml>=0.8.0
@@ -24,21 +25,15 @@ bleach>=6.1.0
 # SSH SOCKS fallback for blocked feed fetches (opened on demand, per attempt)
 asyncssh>=2.14.0
 
-# Background jobs
-apscheduler>=3.10.0
-
-# Autenticação
+# File uploads (OPML import)
 python-multipart>=0.0.6
 
 # Rate limiting
 slowapi>=0.1.9
 
-# Testes
+# Tests
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-pyyaml
-psutil>=5.9.0
 
-# Jano Secret Manager (produção/servidor)
+# Jano Secret Manager (production server only)
 -e /opt/jano
-

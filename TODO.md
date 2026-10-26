@@ -36,7 +36,7 @@ against the current code, and update this list as items land.
 - [x] **3. Delete the dead `recover_orphaned_queue()` in `main.py`** (~65
   lines, never called; the endpoint uses its own copy in `admin.py`). Drop the
   `NOTE` comment that points at it.
-- [ ] **4. Drop unused dependencies `apscheduler` and `psutil`** from
+- [x] **4. Drop unused dependencies `apscheduler` and `psutil`** from
   `requirements.txt` (never imported by the app, scripts, tests, or Jano on
   the server). Keep `lxml`, `lxml-html-clean`, `python-multipart` (indirect).
   Translate the Portuguese section comments in the file while there.
@@ -86,7 +86,8 @@ against the current code, and update this list as items land.
   `install-litellm.sh` (unreferenced; the latter installs a LiteLLM proxy for
   the Anthropic API, unrelated to Risos), `.superpowers/brainstorm/` (tool
   state, even a `server.pid`), finished plans in `docs/superpowers/` and
-  `docs/history/`. `screenshots/` (2025-12) predates the Material 3 redesign —
+  `docs/history/`. `AI.md` (May 2026 developer guide superseded by
+  CLAUDE.md; still says single-worker + APScheduler). `screenshots/` (2025-12) predates the Material 3 redesign —
   retake or drop, then fix the README.
 - [ ] **12. Translate remaining Portuguese in backend code to English.** Error
   messages (e.g. "Nenhum post selecionado para consolidar", "Posts não
