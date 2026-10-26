@@ -18,9 +18,9 @@ alone. Noted 2026-10-26; do it before offering the friend a copy.
   plain key path (env var or a key stored in Settings), make Jano optional,
   then document both.
 - [ ] **Host-specific defaults.** `cors_origins` defaults to
-  `https://rss.sarmento.org`, and the `USER_AGENT` URL and
-  `DEFAULT_API_BASE_URL` (Cerebras) point at the author's setup. Make them
-  neutral or document them in `.env.example`.
+  `https://rss.sarmento.org` and the `USER_AGENT` URL points at the author's
+  site. Make them neutral or document them in `.env.example`. (The AI default
+  is already OpenRouter + `openrouter/free`.)
 - [ ] **Install walk-through.** Follow the README on a clean machine
   (`install.sh`, `.env`, nginx/WordOps, first login, adding feeds, configuring
   AI) and fix every step that is wrong or missing.

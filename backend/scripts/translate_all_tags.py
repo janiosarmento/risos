@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Batch-translate all non-English tags in the database to English.
-Uses Cerebras llama3.1-8b for translation, same as the live pipeline.
+Uses the configured on-demand AI endpoint and model.
 Round-robins over the configured API keys (today there is only one).
 Updates post_tags rows in-place and also updates user_profile tags.
 """
@@ -23,7 +23,6 @@ from app.database import SessionLocal
 from app.models import AppSettings, PostTag
 from app.services.ai._constants import (
     TAG_TRANSLATION_MAX_TOKENS,
-    TAG_TRANSLATION_MODEL,
     TAG_TRANSLATION_TEMPERATURE,
     TAG_TRANSLATION_TIMEOUT,
 )
@@ -65,6 +64,18 @@ def get_all_keys() -> list:
 async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
     """Translate a batch of tags. Returns {old_tag: new_tag} mapping."""
     tags_str = ", ".join(tags)
+    from app.routes.preferences import (
+        get_effective_ai_model,
+        get_effective_api_base_url,
+    )
+
+    db = SessionLocal()
+    try:
+        api_base_url = get_effective_api_base_url(db)
+        model = get_effective_ai_model(db)
+    finally:
+        db.close()
+
     messages = [
         {
             "role": "system",
@@ -89,19 +100,11 @@ async def translate_batch(tags: list, api_key: str, key_label: str) -> dict:
         "Content-Type": "application/json",
     }
     payload = {
-        "model": TAG_TRANSLATION_MODEL,
+        "model": model,
         "messages": messages,
         "temperature": TAG_TRANSLATION_TEMPERATURE,
         "max_tokens": TAG_TRANSLATION_MAX_TOKENS,
     }
-
-    from app.routes.preferences import get_effective_api_base_url
-
-    db = SessionLocal()
-    try:
-        api_base_url = get_effective_api_base_url(db)
-    finally:
-        db.close()
 
     async with httpx.AsyncClient(
         timeout=TAG_TRANSLATION_TIMEOUT,

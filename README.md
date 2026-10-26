@@ -7,7 +7,7 @@ A self-hosted RSS reader with AI-powered summaries.
 ## Features
 
 - **RSS/Atom Feeds** — Subscribe to any feed, or paste a website URL for auto-discovery
-- **AI Summaries** — Automatic summarization via any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.)
+- **AI Summaries** — Automatic summarization via any OpenAI-compatible API (OpenRouter by default, whose free models cover most use; also LM Studio, Ollama, etc.)
   - Full article extraction for better context
   - Title translation for foreign-language articles (including title-only posts)
   - Automatic model fallback when preferred model fails
@@ -227,7 +227,7 @@ Edit `htdocs/static/locales/en-US.json` or `pt-BR.json`.
 
 - **Backend**: Python, FastAPI, SQLAlchemy, SQLite (WAL mode), asyncio background jobs
 - **Frontend**: Alpine.js, Tailwind CSS (CDN)
-- **AI**: Any OpenAI-compatible API (Cerebras, LM Studio, Ollama, etc.) with automatic model fallback
+- **AI**: Any OpenAI-compatible API (OpenRouter by default, whose free models cover most use; also LM Studio, Ollama, etc.) with automatic model fallback
 
 ## Development
 

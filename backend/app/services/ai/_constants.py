@@ -1,13 +1,13 @@
 """Constants for the AI client."""
 
 # API endpoints
-DEFAULT_API_BASE_URL = "https://api.cerebras.ai/v1"
+# OpenRouter: its free models (e.g. "openrouter/free") cover most use
+DEFAULT_API_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Model cache
 MODELS_FETCH_TIMEOUT = 10
 
 # Tag translation settings
-TAG_TRANSLATION_MODEL = "llama3.1-8b"
 TAG_TRANSLATION_TEMPERATURE = 0.1
 TAG_TRANSLATION_MAX_TOKENS = 200
 TAG_TRANSLATION_TIMEOUT = 15

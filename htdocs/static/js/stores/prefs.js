@@ -13,13 +13,13 @@ document.addEventListener('alpine:init', () => {
         janoSecretName: '',
         // Found/not-found state for the Jano secret name fields (null = not checked yet).
         janoSecretValid: null,
-        apiBaseUrl: 'https://api.cerebras.ai/v1',
+        apiBaseUrl: 'https://openrouter.ai/api/v1',
         // Background AI engine (batch processing)
         backgroundAiModel: null,
         backgroundAvailableModels: [],
         backgroundJanoSecretName: '',
         backgroundJanoSecretValid: null,
-        backgroundApiBaseUrl: 'https://api.cerebras.ai/v1',
+        backgroundApiBaseUrl: 'https://openrouter.ai/api/v1',
         systemPrompt: '',
         userPrompt: '',
         defaultSystemPrompt: '',

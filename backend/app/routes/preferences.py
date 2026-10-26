@@ -235,9 +235,7 @@ def get_preferences(
         background_api_base_url=prefs[PREF_BACKGROUND_API_BASE_URL]
         or prefs[PREF_API_BASE_URL]
         or DEFAULT_API_BASE_URL,
-        background_ai_model=prefs[PREF_BACKGROUND_AI_MODEL]
-        or prefs[PREF_AI_MODEL]
-        or "llama-3.3-70b",
+        background_ai_model=prefs[PREF_BACKGROUND_AI_MODEL] or r("ai_model"),
     )
 
 
@@ -475,7 +473,7 @@ class PrefSpec:
 
 PREF_SPEC: dict[str, PrefSpec] = {
     "summary_language": PrefSpec(PREF_SUMMARY_LANGUAGE, "Brazilian Portuguese"),
-    "ai_model": PrefSpec(PREF_AI_MODEL, "llama-3.3-70b"),
+    "ai_model": PrefSpec(PREF_AI_MODEL, "openrouter/free"),
     "feed_update_interval": PrefSpec(
         PREF_FEED_UPDATE_INTERVAL,
         30,
