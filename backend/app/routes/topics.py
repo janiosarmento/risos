@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import case, distinct, func
+from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -57,30 +57,34 @@ def list_topics(
     ):
         tags_by_topic.setdefault(topic_id, []).append(tag)
 
-    # Post and unread counts for every topic in a single grouped query,
-    # driven by the post_tags(tag, post_id) index. COUNT(DISTINCT ...)
-    # matches the previous per-topic semantics (a post is counted once per
-    # topic regardless of how many of its tags match).
-    counts: dict[int, tuple[int, int]] = {}
-    rows = (
-        db.query(
-            TopicTag.topic_id.label("topic_id"),
-            func.count(distinct(PostTag.post_id)).label("post_count"),
-            func.count(
-                distinct(case((Post.is_read.is_(False), PostTag.post_id)))
-            ).label("unread_count"),
-        )
+    # Post and unread counts per topic. COUNT(DISTINCT post_id) counts a post
+    # once per topic regardless of how many of its tags match.
+    #
+    # Two queries on purpose: joining every post_tags row to posts just to
+    # read is_read forces SQLite to load each (wide) post row, which took
+    # ~70s on prod. The total count never touches posts (post_tags rows are
+    # deleted with their post); the unread count starts from the small set
+    # of unread posts via the is_read index.
+    post_counts = dict(
+        db.query(TopicTag.topic_id, func.count(distinct(PostTag.post_id)))
         .join(PostTag, PostTag.tag == TopicTag.tag)
-        .join(Post, Post.id == PostTag.post_id)
         .group_by(TopicTag.topic_id)
         .all()
     )
-    for row in rows:
-        counts[row.topic_id] = (row.post_count or 0, row.unread_count or 0)
+    unread_counts = dict(
+        db.query(TopicTag.topic_id, func.count(distinct(PostTag.post_id)))
+        .select_from(Post)
+        .join(PostTag, PostTag.post_id == Post.id)
+        .join(TopicTag, TopicTag.tag == PostTag.tag)
+        .filter(Post.is_read.is_(False))
+        .group_by(TopicTag.topic_id)
+        .all()
+    )
 
     result = []
     for topic in topics:
-        post_count, unread_count = counts.get(topic.id, (0, 0))
+        post_count = post_counts.get(topic.id, 0)
+        unread_count = unread_counts.get(topic.id, 0)
         result.append(
             {
                 "id": topic.id,

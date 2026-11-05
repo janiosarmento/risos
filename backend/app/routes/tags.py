@@ -105,9 +105,15 @@ def get_popular_tags(
     """Get most popular tags by post count, excluding ignored tags."""
     ignored = {row.tag for row in db.query(IgnoredTag.tag).all()}
 
-    query = db.query(PostTag.tag, func.count(PostTag.post_id).label("count")).join(
-        Post, Post.id == PostTag.post_id
-    )
+    query = db.query(PostTag.tag, func.count(PostTag.post_id).label("count"))
+    # Join posts only when a post-level filter needs it: the unconditional
+    # join made SQLite load every (wide) post row and took ~60s on prod.
+    # post_tags rows are deleted with their post, so no join is needed to
+    # skip orphans.
+    if unread_only or starred_only or suggested_only or (
+        feed_id is not None or category_id is not None
+    ):
+        query = query.join(Post, Post.id == PostTag.post_id)
 
     if unread_only:
         query = query.filter(Post.is_read.is_(False))
@@ -136,7 +142,7 @@ def get_popular_tags(
                 .distinct()
                 .subquery()
             )
-            query = query.filter(Post.id.in_(topic_post_ids))
+            query = query.filter(PostTag.post_id.in_(topic_post_ids))
 
     rows = (
         query.group_by(PostTag.tag)
